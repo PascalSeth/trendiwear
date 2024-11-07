@@ -1,10 +1,8 @@
 // pages/page.tsx
 import React from 'react';
 import ShowCase from './components/ShowCase';
-import NewArrivals from './components/sections/NewArrivals';
 import Intro from './components/Intro';
-import TopSellers from './components/sections/TopSellers';
-import Sketches from './components/sections/Sketches';
+
 
 const Page: React.FC = () => {
   const categories = [

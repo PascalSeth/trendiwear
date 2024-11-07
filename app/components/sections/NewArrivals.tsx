@@ -50,9 +50,8 @@ const newArrivals: ClothingItem[] = [
   },
 ];
 
-type Props = {};
 
-function NewArrivals({}: Props) {
+function NewArrivals() {
   return (
     <div className="new-arrivals max-w-screen-xl mx-auto py-16">
       <div className="text-center mb-12">

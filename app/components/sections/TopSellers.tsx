@@ -35,9 +35,8 @@ const topSellers: Seller[] = [
   },
 ];
 
-type Props = {};
 
-function TopSellers({}: Props) {
+function TopSellers() {
   return (
     <div className="top-sellers py-12">
       <div className="max-w-7xl mx-auto px-4">

@@ -2,7 +2,6 @@
 import React from 'react';
 import ShowCase from './ShowCase';
 
-type Props = {};
 
 const trends = [
   { name: 'Vintage Casual', description: 'Retro tees, high-waisted jeans, and vintage sneakers.', image: 'https://images.unsplash.com/photo-1673417785716-1fa1f932066d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2FzdWFsfGVufDB8fDB8fHww' },
@@ -27,7 +26,7 @@ const trends = [
   { name: 'Resort Wear', description: 'Lightweight fabrics, tropical prints, and flowing silhouettes for vacation-ready outfits.', image: 'https://i.pinimg.com/564x/91/cb/ea/91cbea3ddbb294f08998d75f398d6ee1.jpg' },
 ];
 
-function FashionTrends({}: Props) {
+function FashionTrends() {
   return (
     <div className="bg-gray-100  px-4 sm:px-6 lg:px-8">
         <ShowCase/>
