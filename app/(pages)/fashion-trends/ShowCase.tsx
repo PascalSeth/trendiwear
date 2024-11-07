@@ -1,8 +1,6 @@
 'use client'
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 import React from 'react';
 import Slider from "react-slick";
-import { motion } from 'framer-motion';
 
 const images = [
   { url: 'https://images.unsplash.com/photo-1444942436885-ca7deb7d9a33?w=1200&auto=format&fit=crop&q=80&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fGNhc3VhbHxlbnwwfHwwfHx8MA%3D%3D', title: 'Explore the Latest Trends' },

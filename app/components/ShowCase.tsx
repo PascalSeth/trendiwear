@@ -1,5 +1,4 @@
 'use client';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 import React from 'react';
 import Slider from "react-slick";
 import { motion } from 'framer-motion';
@@ -23,23 +22,6 @@ const images = [
 ];
 
 function ShowCase() {
-  const NextArrow = (props: any) => {
-    const { onClick } = props;
-    return (
-      <div onClick={onClick} className="p-3 right-5 absolute z-10 top-1/2 bg-white cursor-pointer rounded-full shadow-lg">
-        <ArrowRight />
-      </div>
-    );
-  };
-
-  const PrevArrow = (props: any) => {
-    const { onClick } = props;
-    return (
-      <div onClick={onClick} className="p-3 left-5 absolute z-10 top-1/2 bg-white cursor-pointer rounded-full shadow-lg">
-        <ArrowLeft />
-      </div>
-    );
-  };
 
   const settings = {
     dots: false,
@@ -49,8 +31,7 @@ function ShowCase() {
     slidesToShow: 1,
     slidesToScroll: 1,
     arrows: true,
-    // nextArrow: <NextArrow />,
-    // prevArrow: <PrevArrow />
+
   };
 
   return (

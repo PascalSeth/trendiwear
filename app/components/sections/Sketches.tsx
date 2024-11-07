@@ -1,3 +1,4 @@
+'use client'
 import React from 'react';
 
 type ClothingItem = {
@@ -49,9 +50,8 @@ const newArrivals: ClothingItem[] = [
   },
 ];
 
-type Props = {};
 
-function Sketches({}: Props) {
+function Sketches() {
   return (
     <div className="new-arrivals max-w-screen-xl mx-auto py-16">
       <div className="text-center mb-12">

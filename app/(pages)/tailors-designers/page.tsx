@@ -1,3 +1,4 @@
+'use client'
 import React from 'react';
 import ShowCase from './ShowCase';
 
@@ -61,9 +62,8 @@ const professionals = [
   },
 ];
 
-type Props = {};
 
-function Page({}: Props) {
+function Page() {
   return (
     <div className="w-full h-full px-4 pt-0 py-8">
       <div>

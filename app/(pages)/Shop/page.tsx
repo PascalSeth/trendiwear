@@ -14,36 +14,36 @@ const categories = [
   { name: 'Hairbands', image: 'image_url_6' },
   { name: 'Fashion Stud Earrings', image: 'image_url_7' },
   { name: 'Hair Clips', image: 'image_url_8' },
-  // Add more categories as needed
 ];
 
 const dresses = [
   { id: 1, name: 'Dress 1', price: '$49.99', image: 'dress_image_url_1' },
   { id: 2, name: 'Dress 2', price: '$59.99', image: 'dress_image_url_2' },
-  // Add more dress data here
 ];
 
+type ArrowProps = {
+  onClick?: () => void;
+};
+
 function Shop() {
-  const NextArrow = (props:any) => {
-    const { onClick } = props;
+  const NextArrow: React.FC<ArrowProps> = ({ onClick }) => {
     return (
       <div
         onClick={onClick}
         className="p-3 right-3 absolute top-1/2 transform -translate-y-1/2 bg-white cursor-pointer rounded-full shadow-lg z-20"
-        style={{ marginRight: '-20px' }} // moves arrow outside the carousel
+        style={{ marginRight: '-20px' }}
       >
         <ArrowRight />
       </div>
     );
   };
 
-  const PrevArrow = (props:any) => {
-    const { onClick } = props;
+  const PrevArrow: React.FC<ArrowProps> = ({ onClick }) => {
     return (
       <div
         onClick={onClick}
         className="p-3 left-3 absolute top-1/2 transform -translate-y-1/2 bg-white cursor-pointer rounded-full shadow-lg z-20"
-        style={{ marginLeft: '-20px' }} // moves arrow outside the carousel
+        style={{ marginLeft: '-20px' }}
       >
         <ArrowLeft />
       </div>
@@ -74,10 +74,10 @@ function Shop() {
   return (
     <div className="shop-container flex flex-col">
       {/* Categories Carousel */}
-      <div className="categories-carousel p-4  bg-gray-100 relative">
+      <div className="categories-carousel p-4 bg-gray-100 relative">
         <Slider {...settings}>
           {categories.map((category, index) => (
-            <div key={index} className="justify-center px-10  w-full flex flex-col  items-center">
+            <div key={index} className="justify-center px-10 w-full flex flex-col items-center">
               <img
                 src={category.image}
                 alt={category.name}
@@ -100,7 +100,6 @@ function Shop() {
             <label className="flex items-center mt-2">
               <input type="checkbox" className="mr-2" /> Bodycon Dress (4646)
             </label>
-            {/* Add more filters as needed */}
           </div>
           <button className="mt-4 p-2 bg-black text-white rounded-lg">Hide Filters</button>
         </div>
@@ -115,7 +114,6 @@ function Shop() {
                 <option>Must Haves</option>
                 <option>Price: Low to High</option>
                 <option>Price: High to Low</option>
-                {/* Add more sorting options if needed */}
               </select>
             </div>
           </div>

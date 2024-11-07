@@ -1,12 +1,11 @@
+'use client'
 import { Button } from '@/components/ui/button';
 import { Menu, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
-type Props = {};
-
-function Navbar({}: Props) {
+function Navbar() {
   return (
     <div className='sticky top-0 right-0 left-0 w-full bg-white z-[999] shadow-lg'>
       <div className='max-lg:hidden flex space-x-3 max-w-6xl justify-between mx-auto items-center py-2 pb-0'>
