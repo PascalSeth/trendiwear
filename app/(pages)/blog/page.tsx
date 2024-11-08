@@ -80,18 +80,7 @@ function Blog() {
 
         {/* Render the rest of the posts on the right */}
         <div className="col-span-1 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {blogPosts.slice(1).map((post) => (
-            <div
-              key={post.id}
-              className={`rounded-lg p-6 ${post.bgColor} bg-cover bg-center`}
-              style={{ backgroundImage: post.imageUrl ? `url(${post.imageUrl})` : undefined }}
-            >
-              <p className="text-sm mb-2">{`Category: ${post.category} ${post.time ? `| ${post.time}` : ""}`}</p>
-              <h2 className="text-lg md:text-xl font-bold mb-2">{post.title}</h2>
-              {post.description && <p className="text-sm text-gray-700 mb-4">{post.description}</p>}
-            </div>
-          ))}
-
+         
           {/* Categories card */}
           <div className="bg-white border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Categories</h3>
@@ -103,7 +92,18 @@ function Blog() {
               ))}
             </div>
             <button className="mt-4 px-4 py-2 bg-gray-200 rounded-lg">View All Categories</button>
-          </div>
+          </div> {blogPosts.slice(1).map((post) => (
+            <div
+              key={post.id}
+              className={`rounded-lg p-6 ${post.bgColor} bg-cover bg-center`}
+              style={{ backgroundImage: post.imageUrl ? `url(${post.imageUrl})` : undefined }}
+            >
+              <p className="text-sm mb-2">{`Category: ${post.category} ${post.time ? `| ${post.time}` : ""}`}</p>
+              <h2 className="text-lg md:text-xl font-bold mb-2">{post.title}</h2>
+              {post.description && <p className="text-sm text-gray-700 mb-4">{post.description}</p>}
+            </div>
+          ))}
+
         </div>
       </div>
     </div>

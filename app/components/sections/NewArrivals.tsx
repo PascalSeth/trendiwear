@@ -9,6 +9,7 @@ type ClothingItem = {
   isNew: boolean;
   sellerName: string;
   sellerProfilePicUrl: string;
+  category: string; // Added category property
 };
 
 const newArrivals: ClothingItem[] = [
@@ -20,6 +21,7 @@ const newArrivals: ClothingItem[] = [
     isNew: true,
     sellerName: 'Sophia Turner',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+    category: 'Sweater'
   },
   {
     id: 2,
@@ -29,6 +31,7 @@ const newArrivals: ClothingItem[] = [
     isNew: true,
     sellerName: 'Emma Brown',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/45.jpg',
+    category: 'Turtleneck'
   },
   {
     id: 3,
@@ -38,6 +41,7 @@ const newArrivals: ClothingItem[] = [
     isNew: true,
     sellerName: 'Olivia White',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/46.jpg',
+    category: 'Pullover'
   },
   {
     id: 4,
@@ -47,15 +51,15 @@ const newArrivals: ClothingItem[] = [
     isNew: true,
     sellerName: 'Amelia Johnson',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/47.jpg',
+    category: 'Turtleneck'
   },
 ];
 
-
 function NewArrivals() {
   return (
-    <div className="new-arrivals max-w-screen-xl mx-auto py-16">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold text-gray-900 mb-6">New Fashion Arrivals</h2>
+    <div className="new-arrivals p-8 bg-gray-100">
+      <div className="flex items-center justify-between mb-12">
+        <h2 className="text-4xl font-bold text-gray-900">New Fashion Arrivals</h2>
         <button className="text-lg text-blue-600 hover:underline font-medium">View All</button>
       </div>
 
@@ -72,6 +76,9 @@ function NewArrivals() {
                   NEW
                 </span>
               )}
+              <span className="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 text-xs rounded-lg shadow-sm">
+                {item.category}
+              </span>
               <img
                 src={item.imageUrl}
                 alt={item.name}
@@ -84,7 +91,7 @@ function NewArrivals() {
                   <img
                     src={item.sellerProfilePicUrl}
                     alt={item.sellerName}
-                    className="w-12 h-12 rounded-full border-2 border-white mr-3"
+                    className="w-10 h-10 rounded-full border-2 border-white mr-3"
                   />
                   <div>
                     <p className="text-white text-sm font-medium">{item.sellerName}</p>

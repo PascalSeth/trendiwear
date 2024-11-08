@@ -38,11 +38,11 @@ const topSellers: Seller[] = [
 
 function TopSellers() {
   return (
-    <div className="top-sellers p-8">
+    <div className="top-sellers w-full p-8">
       <div className=" ">
         <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Top Fashionistas</h2>
 
-        <div className="grid px-10 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid px-10 max-lg:px-0 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {topSellers.map((seller) => (
             <div key={seller.id} className="border p-4 rounded-lg shadow-lg text-center">
               <img
