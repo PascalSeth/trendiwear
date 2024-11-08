@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import React from 'react';
 
-type Props = {}
+
 
 // Arrays for categories, featured products, and trending products
 const categories = [
@@ -25,7 +25,7 @@ const trendingProducts = [
   { name: 'Trending 4', price: '$69.99', imageUrl: 'https://source.unsplash.com/random/200x300?fashion-8' },
 ];
 
-const Page: React.FC<Props> = () => {
+const Page = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       {/* Showcase Section */}
