@@ -10,7 +10,7 @@ function Navbar() {
     <div className='sticky top-0 right-0 left-0 w-full bg-white z-[999] shadow-lg'>
       <div className='max-lg:hidden flex space-x-3 max-w-6xl justify-between mx-auto items-center py-2 pb-0'>
         <Link href='/' className='w-fit'>
-          <Image src='/navlogo.png' alt='Logo' width={100} height={80} />
+          <Image src='/navlogo.png' alt='Logo' width={120} height={60} />
         </Link>
 
         <div className='w-full max-lg:hidden'>

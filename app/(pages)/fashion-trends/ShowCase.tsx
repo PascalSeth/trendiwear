@@ -3,14 +3,14 @@ import React from 'react';
 import Slider from "react-slick";
 
 const images = [
-  { url: 'https://images.unsplash.com/photo-1444942436885-ca7deb7d9a33?w=1200&auto=format&fit=crop&q=80&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fGNhc3VhbHxlbnwwfHwwfHx8MA%3D%3D', title: 'Explore the Latest Trends' },
-  { url: 'https://images.unsplash.com/photo-1453858273663-c1df03018e67?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmFzaW9ufGVufDB8fDB8fHww', title: 'Stylish and Comfortable' },
+  { url: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', title: 'Explore the Latest Trends' },
+  { url: 'https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', title: 'Stylish and Comfortable' },
   { url: 'https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=1200&auto=format&fit=crop&q=80&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGNsb3RoaW5nfGVufDB8fDB8fHww', title: 'Discover Your New Look' }
 ];
 
 function ShowCase() {
   const settings = {
-    dots: true,
+    dots: false,
     infinite: true,
     autoplay: true,
     speed: 500,
@@ -20,7 +20,7 @@ function ShowCase() {
   };
 
   return (
-    <div className="relative pb-3 max-w-screen-xl mx-auto">
+    <div className="relative pb-3 max-w-screen-xl p-5 mx-auto">
       <Slider {...settings}>
         {images.map((image, index) => (
           <div key={index} className="relative w-full h-96">

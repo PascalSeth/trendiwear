@@ -22,7 +22,6 @@ const images = [
 ];
 
 function ShowCase() {
-
   const settings = {
     dots: false,
     infinite: true,
@@ -31,15 +30,18 @@ function ShowCase() {
     slidesToShow: 1,
     slidesToScroll: 1,
     arrows: true,
-
   };
 
   return (
-    <div className="relative max-w-7xl w-full overflow-hidden rounded-[2pc] mx-auto">
-      <Slider {...settings} className='rounded-[2pc] w-full max-lg:px-5'>
+    <div className="relative p-5 w-full overflow-hidden lg:max-w-7xl lg:mx-auto">
+      <Slider {...settings} className="w-full lg:rounded-[2pc]">
         {images.map((image, index) => (
-          <div key={index} className="relative w-full rounded-[2pc] h-[80vh] max-lg:h-96">
-            <img src={image.url} alt={image.title} className="w-full rounded-[2pc] h-full object-cover" />
+          <div key={index} className="relative w-full h-[80vh] max-lg:h-96 lg:rounded-[2pc] overflow-hidden">
+            <img 
+              src={image.url} 
+              alt={image.title} 
+              className="w-full h-full object-cover lg:rounded-[2pc]" 
+            />
             {/* Partial shadow overlay */}
             <div className="absolute inset-0 flex flex-col items-start justify-center text-white text-left p-6" style={{ background: 'linear-gradient(to top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0))' }}>
               <motion.h2 

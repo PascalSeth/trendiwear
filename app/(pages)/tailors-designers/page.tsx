@@ -69,7 +69,7 @@ function Page() {
       <div>
         <ShowCase/>
       </div>
-      <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Tailors & Designers</h1>
+      <h1 className="text-4xl font-bold mb-8  text-gray-800">Tailors & Designers</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {professionals.map((professional) => (
           <div key={professional.id} className="bg-white shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:shadow-xl">

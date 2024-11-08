@@ -2,6 +2,7 @@
 import React from 'react';
 import ShowCase from './components/ShowCase';
 import Intro from './components/Intro';
+import TopSellers from './components/sections/TopSellers';
 
 
 const Page: React.FC = () => {
@@ -31,7 +32,8 @@ const Page: React.FC = () => {
   return (
     <div>
       <ShowCase />
-      <Intro />
+            <Intro />
+<TopSellers/>
       
       {/* Categories Section */}
       <section className="py-8 px-4">
