@@ -38,7 +38,7 @@ const Page: React.FC = () => {
 <TopSellers/>
       
       {/* Categories Section */}
-      <section className="py-8 px-4">
+      {/* <section className="py-8 px-4">
         <h1 className="text-2xl font-bold mb-4 text-center">Categories</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {categories.map((category, index) => (
@@ -54,7 +54,7 @@ const Page: React.FC = () => {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
      
 <NewArrivals />
       {/* 

@@ -16,7 +16,7 @@ const newArrivals: ClothingItem[] = [
   {
     id: 1,
     name: 'Long Sleeve Sweater, Cream and Black Stripe',
-    imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
+    imageUrl: 'https://images.unsplash.com/photo-1510347026072-2c042ed96d42?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     price: 72.00,
     isNew: true,
     sellerName: 'Sophia Turner',
@@ -26,7 +26,7 @@ const newArrivals: ClothingItem[] = [
   {
     id: 2,
     name: 'Tatum Turtleneck, Olive',
-    imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
+    imageUrl: 'https://images.unsplash.com/photo-1522751707891-45b4e281010d?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     price: 54.00,
     isNew: true,
     sellerName: 'Emma Brown',
@@ -36,7 +36,7 @@ const newArrivals: ClothingItem[] = [
   {
     id: 3,
     name: 'Sabrina Ribbed Pullover, Dusty Rose',
-    imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
+    imageUrl: 'https://images.unsplash.com/photo-1647688574769-c2e78f477719?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     price: 54.00,
     isNew: true,
     sellerName: 'Olivia White',
@@ -46,7 +46,7 @@ const newArrivals: ClothingItem[] = [
   {
     id: 4,
     name: 'Sabrina Ribbed Turtleneck, White',
-    imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
+    imageUrl: 'https://media.istockphoto.com/id/1186159221/photo/handsome-man-posing-in-knitted-sweater-isolated-on-grey.webp?s=1024x1024&w=is&k=20&c=sm27ONxDvDngmt0OQnPToEgkCvpT1OjCVVWHv2KIq0g=',
     price: 54.00,
     isNew: true,
     sellerName: 'Amelia Johnson',
