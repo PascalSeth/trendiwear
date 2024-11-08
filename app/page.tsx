@@ -8,28 +8,28 @@ import BlogIntro from './components/sections/BlogIntro';
 
 
 const Page: React.FC = () => {
-  const categories = [
-    {
-      image: '/path/to/image1.jpg',
-      title: 'Electronics',
-      description: 'Latest and trending electronics.',
-    },
-    {
-      image: '/path/to/image2.jpg',
-      title: 'Fashion',
-      description: 'Stylish outfits and accessories.',
-    },
-    {
-      image: '/path/to/image3.jpg',
-      title: 'Home Appliances',
-      description: 'Quality appliances for your home.',
-    },
-    {
-      image: '/path/to/image4.jpg',
-      title: 'Sports & Outdoors',
-      description: 'Gear for your outdoor adventures.',
-    },
-  ];
+  // const categories = [
+  //   {
+  //     image: '/path/to/image1.jpg',
+  //     title: 'Electronics',
+  //     description: 'Latest and trending electronics.',
+  //   },
+  //   {
+  //     image: '/path/to/image2.jpg',
+  //     title: 'Fashion',
+  //     description: 'Stylish outfits and accessories.',
+  //   },
+  //   {
+  //     image: '/path/to/image3.jpg',
+  //     title: 'Home Appliances',
+  //     description: 'Quality appliances for your home.',
+  //   },
+  //   {
+  //     image: '/path/to/image4.jpg',
+  //     title: 'Sports & Outdoors',
+  //     description: 'Gear for your outdoor adventures.',
+  //   },
+  // ];
 
   return (
     <div>
