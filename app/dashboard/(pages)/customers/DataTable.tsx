@@ -1,15 +1,17 @@
 "use client";
 import {
   ColumnDef,
+  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
+import { DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Define the Customer data type
 type Customer = {
@@ -72,10 +76,7 @@ export const columns: ColumnDef<Customer>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
+        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
@@ -125,35 +126,48 @@ export const columns: ColumnDef<Customer>[] = [
     header: "Estimate Value",
     cell: ({ row }) => <div className="text-right">{row.getValue("estimateValue")}</div>,
   },
-
 ];
 
 export function CustomerDataTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("All Status");
-
-  const filteredData = data.filter((customer) => {
-    return (
-      (statusFilter === "All Status" || customer.status === statusFilter) &&
-      customer.profile.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [statusFilter, setStatusFilter] = React.useState<string>("All Status");
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
+      columnFilters,
       columnVisibility,
+      rowSelection,
     },
   });
+
+  const handleFilter = (status: string) => {
+    if (status === "All") {
+      setColumnFilters((filters) =>
+        filters.filter((filter) => filter.id !== "status")
+      );
+    } else {
+      setColumnFilters([
+        {
+          id: "status",
+          value: status,
+        },
+      ]);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -200,22 +214,59 @@ export function CustomerDataTable() {
       {/* Filters */}
       <div className="mb-6 flex items-center gap-4">
         <Input
-          placeholder="Search customer"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-1/3"
+          placeholder="Filter profile..."
+          value={(table.getColumn("profile")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("profile")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter} >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All Status">All Status</SelectItem>
-            <SelectItem value="Accepted">Accepted</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex items-center space-x-4 py-4">
+        {[
+          "All",
+          "Accepted",
+          "Pending",
+          "Cancelled",
+  
+        ].map((status) => (
+          <Button
+            key={status}
+            variant="outline"
+            size="sm"
+            onClick={() => handleFilter(status)}
+          >
+            {status}
+          </Button>
+        ))}
+      </div>
+
+        {/* Status Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columns <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Table Section */}
@@ -227,9 +278,7 @@ export function CustomerDataTable() {
                 <TableHead key={header.id}>
                   <div
                     {...{
-                      className: header.column.getCanSort()
-                        ? "cursor-pointer select-none"
-                        : "",
+                      className: header.column.getCanSort() ? "cursor-pointer select-none" : "",
                       onClick: header.column.getToggleSortingHandler(),
                     }}
                   >
@@ -247,7 +296,9 @@ export function CustomerDataTable() {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
               ))}
             </TableRow>
           ))}

@@ -3,15 +3,17 @@
 import * as React from "react";
 import {
   ColumnDef,
+  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {  MoreHorizontal } from "lucide-react";
+import {  ChevronDown, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -77,7 +80,7 @@ const data: Product[] = [
     purchaseUnitPrice: "$113.99",
     products: 1203,
     views: 1002,
-    status: "Inactive",
+    status: "Disabled",
     category: "Jackets",
     store: "Store C",
   },
@@ -86,7 +89,7 @@ const data: Product[] = [
     purchaseUnitPrice: "$113.99",
     products: 306,
     views: 807,
-    status: "Inactive",
+    status: "Disabled",
     category: "Jackets",
     store: "Store B",
   },
@@ -170,96 +173,111 @@ export const columns: ColumnDef<Product>[] = [
 ];
 
 export function ProductTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("All Products");
-  const [statusFilter, setStatusFilter] = React.useState("All Status");
-  const [priceFilter, setPriceFilter] = React.useState("$50 - $100");
-  const [storeFilter, setStoreFilter] = React.useState("All Store");
-
-  const filteredData = data.filter((product) => {
-    return (
-      (categoryFilter === "All Products" || product.category === categoryFilter) &&
-      (statusFilter === "All Status" || product.status === statusFilter) &&
-      (priceFilter === "$50 - $100" || (parseFloat(product.purchaseUnitPrice.replace("$", "")) >= 50 && parseFloat(product.purchaseUnitPrice.replace("$", "")) <= 100)) &&
-      (storeFilter === "All Store" || product.store === storeFilter) &&
-      product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
-
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+ 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
+      columnFilters,
       columnVisibility,
+      rowSelection,
     },
-  });
+  })
+
+  const handleFilter = (status: string) => {
+    if (status === "All") {
+      setColumnFilters((filters) =>
+        filters.filter((filter) => filter.id !== "status")
+      );
+    } else {
+      setColumnFilters([
+        {
+          id: "status",
+          value: status,
+        },
+      ]);
+    }
+  };
 
   return (
     <div className="w-full">
-      <div className="mb-4 flex justify-between items-center">
-        <Input
-          placeholder="Search products..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-1/4"
-        />
-        <Button variant="outline" className="h-8">
-          Add Product
-        </Button>
-      </div>
-      <div className="mb-4 flex space-x-4">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All Products">All Products</SelectItem>
-            <SelectItem value="Jackets">Jackets</SelectItem>
-            {/* Add more categories as needed */}
-          </SelectContent>
-        </Select>
+     <div className="mb-6 flex items-center gap-4">
+  {/* Email Filter */}
+  <Input
+    placeholder="Filter products..."
+    value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+    onChange={(event) =>
+      table.getColumn("name")?.setFilterValue(event.target.value)
+    }
+    className="max-w-sm"
+  />
+  
+  {/* Status Filter */}
+   <div className="flex items-center space-x-4 py-4">
+          {[
+            "All",
+            "Active",
+            "Disabled",
+    
+          ].map((status) => (
+            <Button
+              key={status}
+              variant="outline"
+              size="sm"
+              onClick={() => handleFilter(status)}
+            >
+              {status}
+            </Button>
+          ))}
+        </div>
+           {/* Status Filter */}
+           <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columns <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+</div>
+        
+      
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All Status">All Status</SelectItem>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={priceFilter} onValueChange={setPriceFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Price" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="$50 - $100">$50 - $100</SelectItem>
-            <SelectItem value="$100 - $200">$100 - $200</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={storeFilter} onValueChange={setStoreFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Store" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All Store">All Store</SelectItem>
-            <SelectItem value="Store A">Store A</SelectItem>
-            <SelectItem value="Store B">Store B</SelectItem>
-            <SelectItem value="Store C">Store C</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+ 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
