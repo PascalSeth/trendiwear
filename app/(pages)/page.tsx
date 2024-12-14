@@ -1,10 +1,10 @@
 // pages/page.tsx
 import React from 'react';
-import ShowCase from './components/ShowCase';
-import Intro from './components/Intro';
-import TopSellers from './components/sections/TopSellers';
-import NewArrivals from './components/sections/NewArrivals';
-import BlogIntro from './components/sections/BlogIntro';
+import ShowCase from '../components/ShowCase';
+import Intro from '../components/Intro';
+import TopSellers from '../components/sections/TopSellers';
+import NewArrivals from '../components/sections/NewArrivals';
+import BlogIntro from '../components/sections/BlogIntro';
 
 
 const Page: React.FC = () => {
@@ -32,7 +32,7 @@ const Page: React.FC = () => {
   // ];
 
   return (
-    <div>
+    <div className='w-full h-full overflow-x-hidden'>
       <ShowCase />
             <Intro />
 <TopSellers/>

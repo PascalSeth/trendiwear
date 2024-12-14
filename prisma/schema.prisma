@@ -3,67 +3,79 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id           String    @id @default(uuid()) // Changed to UUID
+  id           String    @id @default(uuid())
   name         String
   email        String    @unique
   password     String
   role         UserRole  @default(CUSTOMER)
   profession   Profession? @relation(fields: [professionId], references: [id])
-  professionId String?   // Changed to String for UUID reference
+  professionId String?   // UUID reference
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   bookings     Booking[]
-  services     Service[]  @relation("UserServices") // Added reverse relation field for services
+  services     Service[]  @relation("UserServices")
 }
 
 model Profession {
-  id             String    @id @default(uuid()) // Changed to UUID
-  name           String    // e.g., Tailor, Fashion Designer, Stylist
-  description    String?   // Optional field to describe the profession
-  specialty      String?   // Specific expertise within the profession (e.g., Wedding Dresses, Haute Couture, Casual Wear)
-  experience     Int?      // Years of experience in the profession
-  serviceRate    Float?    // Rate charged for services (per hour or per project)
-  portfolioUrl   String?   // Link to the professional’s portfolio or website
-  contactEmail   String?   // Contact email for business inquiries
-  contactPhone   String?   // Phone number for business inquiries
-  location       String?   // Geographical location (city, country) where the professional operates
-  availability   String?   // Availability status or hours of operation
-  users          User[]    // Relationship to the User model (professionals linked to this profession)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String              @id @default(uuid())
+  name                String              // e.g., Tailor, Designer
+  description         String?             // Description of the profession
+  specialty           String?             // Specific expertise
+  experience          Int?                // Years of experience
+  serviceRate         Float?              // Rate for services
+  portfolioUrl        String?             // Portfolio or website link
+  contactEmail        String?             // Contact email
+  contactPhone        String?             // Contact phone number
+  location            String?             // Location (city, country)
+  availability        String?             // Availability details
+  category            ProfessionCategory  @relation(fields: [categoryId], references: [id])
+  categoryId          String              // UUID reference to ProfessionCategory
+  users               User[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model ProfessionCategory {
+  id           String        @id @default(uuid())
+  name         String        @unique // e.g., Fashion, Styling
+  description  String?       // Optional description
+  professions  Profession[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Booking {
-  id          String    @id @default(uuid()) // Changed to UUID
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String    // Changed to String for UUID reference
-  service     Service   @relation(fields: [serviceId], references: [id])
-  serviceId   String    // Changed to String for UUID reference
+  id          String         @id @default(uuid())
+  user        User           @relation(fields: [userId], references: [id])
+  userId      String         // UUID reference
+  service     Service        @relation(fields: [serviceId], references: [id])
+  serviceId   String         // UUID reference
   date        DateTime
-  status      BookingStatus @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  status      BookingStatus  @default(PENDING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 model Service {
-  id            String    @id @default(uuid()) // Changed to UUID
-  name          String
-  description   String
-  price         Float
-  professional  User       @relation(fields: [professionalId], references: [id], name: "UserServices") 
-  professionalId String    // Changed to String for UUID reference
-  bookings      Booking[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String         @id @default(uuid())
+  name           String
+  description    String
+  price          Float
+  professional   User            @relation(fields: [professionalId], references: [id], name: "UserServices")
+  professionalId String          // UUID reference
+  bookings       Booking[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model ProductCategory {
-  id          String    @id @default(uuid()) // Changed to UUID
+  id          String    @id @default(uuid())
   name        String
   products    Product[]
   createdAt   DateTime  @default(now())
@@ -71,7 +83,7 @@ model ProductCategory {
 }
 
 model FashionTrendCategory {
-  id          String    @id @default(uuid()) // Changed to UUID
+  id          String    @id @default(uuid())
   name        String
   imageUrl    String
   trends      FashionTrend[]
@@ -80,9 +92,9 @@ model FashionTrendCategory {
 }
 
 model FashionTrend {
-  id          String    @id @default(uuid()) // Changed to UUID
+  id          String    @id @default(uuid())
   category    FashionTrendCategory @relation(fields: [categoryId], references: [id])
-  categoryId  String    // Changed to String for UUID reference
+  categoryId  String    // UUID reference
   title       String
   description String
   images      Json   
@@ -91,13 +103,13 @@ model FashionTrend {
 }
 
 model Product {
-  id          String    @id @default(uuid()) // Changed to UUID
+  id          String    @id @default(uuid())
   name        String
   description String
   price       Float
   stock       Int
   category    ProductCategory @relation(fields: [categoryId], references: [id])
-  categoryId  String    // Changed to String for UUID reference
+  categoryId  String    // UUID reference
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

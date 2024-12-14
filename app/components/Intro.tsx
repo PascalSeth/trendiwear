@@ -56,7 +56,7 @@ function Intro() {
                   src={item.image}
                   alt={item.title}
                 />
-                <div className="absolute top-0 left-0 bg-white bg-opacity-70 p-4 rounded-br-lg">
+                <div className="absolute top-0 left-0 bg-white bg-opacity-20 p-4 rounded-br-lg">
                   <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
                 </div>
               </div>
@@ -73,7 +73,7 @@ function Intro() {
                 src={item.image}
                 alt={item.title}
               />
-              <div className="absolute top-0 left-0 bg-white bg-opacity-70 p-4 rounded-br-lg">
+              <div className="absolute top-0 left-0 bg-white bg-opacity-20 p-4 rounded-br-lg">
                 <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
               </div>
             </div>
