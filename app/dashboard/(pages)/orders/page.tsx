@@ -1,9 +1,9 @@
 import React from 'react'
 import OrdersDataTable from './Datatable'
 
-type Props = {}
 
-function Orders({}: Props) {
+
+function Orders() {
   return (
     <div>
         <OrdersDataTable/>

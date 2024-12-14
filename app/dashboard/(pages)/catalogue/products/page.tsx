@@ -1,9 +1,9 @@
 import React from 'react'
 import { ProductTable } from './DataTable'
 
-type Props = {}
 
-function page({}: Props) {
+
+function page() {
   return (
     <div>
       <ProductTable/>

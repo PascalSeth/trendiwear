@@ -14,9 +14,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-type Props = {};
 
-const Navbar = ({}: Props) => {
+const Navbar = () => {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;

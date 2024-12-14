@@ -1,20 +1,19 @@
 "use client";
 
-import * as React from "react";
 import {
   ColumnDef,
   SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable,
+  useReactTable
 } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -31,10 +30,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 type People = {
   name: string;
+  imageUrl: string,
   jobTitle: string;
   department: string;
   site: string;
@@ -47,6 +46,7 @@ type People = {
 const data: People[] = [
   {
     name: "Anatoly Belik",
+    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
     jobTitle: "Head of Design",
     department: "Product",
     site: "Stockholm",
@@ -57,6 +57,7 @@ const data: People[] = [
   },
   {
     name: "Ksenia Bator",
+    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
     jobTitle: "Fullstack Engineer",
     department: "Engineering",
     site: "Miami",
@@ -67,6 +68,7 @@ const data: People[] = [
   },
   {
     name: "Bogdan Niktin",
+    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
     jobTitle: "Mobile Lead",
     department: "Product",
     site: "Kyiv",
@@ -77,6 +79,7 @@ const data: People[] = [
   },
   {
     name: "Arsen Yatsenko",
+    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
     jobTitle: "Sales Manager",
     department: "Operations",
     site: "Ottawa",
@@ -87,6 +90,7 @@ const data: People[] = [
   },
   {
     name: "Daria Yurchenko",
+    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
     jobTitle: "Network Engineer",
     department: "IT",
     site: "Sao Paulo",
@@ -124,7 +128,7 @@ export const columns: ColumnDef<People>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <img
-          src={`/avatars/${row.index + 1}.png`}
+          src={row.original.imageUrl}
           alt={row.getValue("name")}
           className="h-8 w-8 rounded-full object-cover"
         />

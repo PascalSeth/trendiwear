@@ -2,9 +2,9 @@ import React from "react";
 import Link from "next/link"; // Ensure you're using Next.js's Link component
 import { Bell, Menu, SearchIcon, ShoppingCart } from "lucide-react";
 
-type Props = {};
+;
 
-function Navbar({}: Props) {
+function Navbar() {
   return (
     <div className="bg-white border-b sticky w-full overflow-hidden top-0 left-0 right-0 bottom-0 z-[999] border-gray-200 shadow-sm">
       {/* Top Navigation Links */}
