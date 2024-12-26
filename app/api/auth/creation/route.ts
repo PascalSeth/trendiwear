@@ -1,35 +1,32 @@
-import prisma from "@/lib/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NextResponse } from "next/server";
+import { unstable_noStore as noStore } from "next/cache";
+import prisma from "@/lib/db";
 
-export async function GET() {
-    if (!process.env.NEXT_RUNTIME) {
-        return new Response("This API route is not accessible during static generation.", {
-            status: 403,
-        });
+export async function GET(){
+    noStore()
+    const {getUser}=getKindeServerSession();
+    const user= await getUser();
+
+    if(!user || user=== null || !user.id){
+        throw new Error("Something went Wrong.... Sorry")
     }
 
-    const { getUser } = getKindeServerSession();
-    const user = await getUser();
-
-    if (!user || !user.id) {
-        throw new Error("User not found");
-    }
-
-    let dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
+    let dbUser=await prisma.user.findUnique({
+        where:{
+            id:user.id,
+        }
     });
 
-    if (!dbUser) {
-        dbUser = await prisma.user.create({
-            data: {
-                id: user.id,
-                email: user.email ?? "",
-                name: user.given_name ?? "",
-                profileImage: user?.picture ?? `https://avatar.vercel.sh/${user.given_name}`,
-            },
-        });
+    if (!dbUser){
+        dbUser=await prisma.user.create({
+            data :{
+                email:user.email ?? '',
+                name: user.given_name ?? '',
+                id:user.id,
+                profileImage:user.picture ?? `https://avatar.vercel.sh/${user.given_name}`
+            }
+        })
     }
-
-    return NextResponse.redirect("https://trendiwear.netlify.app/");
+    return NextResponse.redirect("http://localhost:3000/") 
 }
