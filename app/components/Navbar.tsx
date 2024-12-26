@@ -11,7 +11,7 @@ import { getUserRole } from "../api/getUserRole/action";
 ;
 
 async function  Navbar() {
-  const { role, error } = await getUserRole(); // Fetch the user's role
+  const { role } = await getUserRole(); // Fetch the user's role
   const isProfessionalOrOwner = role === "PROFESSIONAL" || role === "OWNER"; // Role-based logic
   const {getUser}= getKindeServerSession()
   const user = await getUser()
