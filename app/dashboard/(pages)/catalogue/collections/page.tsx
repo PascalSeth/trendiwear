@@ -1,11 +1,12 @@
 import React from 'react'
+import { CollectionsTable } from './CollectionsDataTable'
 
 
 
-function page() {
+function Collections() {
   return (
-    <div>page</div>
+    <div><CollectionsTable/></div>
   )
 }
 
-export default page
+export default Collections

@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ProfessionalCategorySheet from "../../components/sheet/ProfessionalCategory/page";
 
 type People = {
   name: string;
@@ -205,7 +206,10 @@ export function ProfessionalsDataTable() {
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-yellow-50 to-gray-400 rounded-lg shadow-lg">
-        <h1 className="font-medium text-3xl">Professionals</h1>
+      <div className="flex items-center justify-between">
+                <h1 className="font-medium text-3xl">Professionals</h1>
+    <ProfessionalCategorySheet/>
+      </div>
           {/* Header Metrics */}
           <div className="grid grid-cols-4 items-center gap-4 mb-6">
         <div className="w-full">

@@ -9,119 +9,188 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  name         String
-  email        String    @unique
-  password     String
-  role         UserRole  @default(CUSTOMER)
-  profession   Profession? @relation(fields: [professionId], references: [id])
-  professionId String?   // UUID reference
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  bookings     Booking[]
-  services     Service[]  @relation("UserServices")
+  id            String             @id @default(uuid())
+  name          String
+  email         String             @unique
+  profileImage  String
+  role          Role               @default(CUSTOMER)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  blogs         Blog[]
+  services      Service[]
+  orders        Order[]
+  bookings      Booking[]
+  professionalProfile ProfessionalProfile? 
 }
 
-model Profession {
-  id                  String              @id @default(uuid())
-  name                String              // e.g., Tailor, Designer
-  description         String?             // Description of the profession
-  specialty           String?             // Specific expertise
-  experience          Int?                // Years of experience
-  serviceRate         Float?              // Rate for services
-  portfolioUrl        String?             // Portfolio or website link
-  contactEmail        String?             // Contact email
-  contactPhone        String?             // Contact phone number
-  location            String?             // Location (city, country)
-  availability        String?             // Availability details
-  category            ProfessionCategory  @relation(fields: [categoryId], references: [id])
-  categoryId          String              // UUID reference to ProfessionCategory
-  users               User[]
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+model ProfessionalProfile {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  professionId     String            // References ProfessionCategory
+  experience       Int               // Years of experience
+  bio              String?           // A short bio
+  portfolioUrl     String?           // URL to their portfolio
+  location         String            // Address or operational area
+  availability     String?           // Available hours/days
+  rating           Float?            // Average rating
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id])
+  profession       ProfessionCategory @relation(fields: [professionId], references: [id]) // Foreign key to ProfessionCategory
 }
 
 model ProfessionCategory {
-  id           String        @id @default(uuid())
-  name         String        @unique // e.g., Fashion, Styling
-  description  String?       // Optional description
-  professions  Profession[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String        @id @default(uuid())
+  name        String        @unique // Name of the profession (e.g., Tailor, Designer)
+  imageUrl    String? 
+  description String?       // Description of the profession category
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  professionals ProfessionalProfile[]
 }
 
-model Booking {
-  id          String         @id @default(uuid())
-  user        User           @relation(fields: [userId], references: [id])
-  userId      String         // UUID reference
-  service     Service        @relation(fields: [serviceId], references: [id])
-  serviceId   String         // UUID reference
-  date        DateTime
-  status      BookingStatus  @default(PENDING)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-}
 
-model Service {
-  id             String         @id @default(uuid())
-  name           String
-  description    String
-  price          Float
-  professional   User            @relation(fields: [professionalId], references: [id], name: "UserServices")
-  professionalId String          // UUID reference
-  bookings       Booking[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-}
-
-model ProductCategory {
-  id          String    @id @default(uuid())
-  name        String
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model FashionTrendCategory {
-  id          String    @id @default(uuid())
-  name        String
-  imageUrl    String
-  trends      FashionTrend[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model FashionTrend {
-  id          String    @id @default(uuid())
-  category    FashionTrendCategory @relation(fields: [categoryId], references: [id])
-  categoryId  String    // UUID reference
-  title       String
-  description String
-  images      Json   
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+enum Role {
+  CUSTOMER
+  PROFESSIONAL
+  OWNER
 }
 
 model Product {
-  id          String    @id @default(uuid())
-  name        String
-  description String
-  price       Float
-  stock       Int
-  category    ProductCategory @relation(fields: [categoryId], references: [id])
-  categoryId  String    // UUID reference
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  price          Float
+  stockQuantity  Int          @default(0)
+  imageUrl       String[]
+  categoryId     String
+  collectionId  String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  sizes         String[]  
+  category       Category     @relation(fields: [categoryId], references: [id])
+  Collection    Collection  @relation(fields: [collectionId], references: [id])
+  orderItems     OrderItem[]
 }
 
-enum UserRole {
-  CUSTOMER
-  PROFESSIONAL
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  imageUrl     String?
+  subcategories Collection[]
+  products     Product[]
+}
+
+model Collection {
+  id          String     @id @default(uuid())
+  name        String
+  imageUrl    String?
+  categoryId  String
+
+  category    Category   @relation(fields: [categoryId], references: [id])
+  products    Product[]
+}
+
+model Service {
+  id              String     @id @default(uuid())
+  name            String
+  description     String?
+  price           Float
+  imageUrl        String?
+  professionalId  String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  professional    User       @relation(fields: [professionalId], references: [id])
+  bookings        Booking[]
+}
+
+model Trend {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  categoryId  String?
+  category    Trendcategory? @relation(fields: [categoryId], references: [id])
+}
+
+model Trendcategory {
+  id          String            @id @default(uuid())
+  name        String
+  imageUrl    String?
+  subcategories TrendSubcategory[]
+  trends      Trend[]
+}
+
+model TrendSubcategory {
+  id          String           @id @default(uuid())
+  name        String
+  imageUrl    String?
+  categoryId  String
+  category    Trendcategory    @relation(fields: [categoryId], references: [id])
+}
+
+
+model Blog {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  imageUrl    String?
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User     @relation(fields: [authorId], references: [id])
+}
+
+model Order {
+  id          String       @id @default(uuid())
+  customerId  String
+  totalPrice  Float
+  status      OrderStatus  @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  customer    User         @relation(fields: [customerId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  price      Float
+
+  order      Order    @relation(fields: [orderId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  customerId  String
+  serviceId   String
+  bookingDate DateTime
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  customer    User          @relation(fields: [customerId], references: [id])
+  service     Service       @relation(fields: [serviceId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
-  COMPLETED
-  CANCELED
+  CANCELLED
 }

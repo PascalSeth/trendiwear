@@ -31,19 +31,19 @@ const additionalInspirations = [
 function Intro() {
   return (
     <div className="p-10 w-full">
-      <div className="">
-        
+      <div>
         {/* Main Feature Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
           {/* Main Feature Card */}
           <div className="lg:col-span-2 relative">
             <div className="bg-gradient-to-br p-5 from-[#FFA126] to-slate-800 h-full flex flex-col justify-center items-center rounded-lg shadow-lg">
               <h3 className="text-lg font-bold text-gray-300">Fashion Inspirations</h3>
               <p className="text-gray-300 mt-2 text-center px-6">
-                Explore our gallery of clothing and accessories to find your favorite combinations for  outfits that can inspire you to apply on your daily activity on all occasions.
+                Explore our gallery of clothing and accessories to find your favorite combinations for outfits that can inspire you to apply on your daily activity on all occasions.
               </p>
-              <Link href={'/fashion-trends'} className="mt-4 bg-black text-white px-4 py-2 rounded">Browse Inspirations</Link>
+              <Link href={'/fashion-trends'} className="mt-4 bg-black text-white px-4 py-2 rounded">
+                Browse Inspirations
+              </Link>
             </div>
           </div>
 
@@ -51,11 +51,13 @@ function Intro() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
             {featuredItems.map((item, index) => (
               <div key={index} className="relative">
-                <img
-                  className="w-full h-48 object-cover rounded-lg shadow-lg"
-                  src={item.image}
-                  alt={item.title}
-                />
+                <div className="w-full h-36">
+                  <img
+                    className="w-full h-full object-cover rounded-lg shadow-lg"
+                    src={item.image}
+                    alt={item.title}
+                  />
+                </div>
                 <div className="absolute top-0 left-0 bg-white bg-opacity-20 p-4 rounded-br-lg">
                   <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
                 </div>
@@ -68,11 +70,13 @@ function Intro() {
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-6">
           {additionalInspirations.map((item, index) => (
             <div key={index} className="relative">
-              <img
-                className="w-full h-60 object-cover rounded-lg shadow-lg"
-                src={item.image}
-                alt={item.title}
-              />
+              <div className="w-full h-48">
+                <img
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                  src={item.image}
+                  alt={item.title}
+                />
+              </div>
               <div className="absolute top-0 left-0 bg-white bg-opacity-20 p-4 rounded-br-lg">
                 <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
               </div>
@@ -81,7 +85,7 @@ function Intro() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Intro
+export default Intro;

@@ -54,7 +54,7 @@ const Navbar = () => {
               <DropdownMenuGroup>
                 <DropdownMenuItem  className='flex items-center '>
                   <Warehouse/>
-                  <Link href="/dashboard/catalogue/inventory">Inventory</Link>
+                  <Link href="/dashboard/catalogue/category">Category</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem  className='flex items-center '>
                   <CardStackIcon/>
@@ -96,11 +96,11 @@ const Navbar = () => {
               <DropdownMenuGroup>
                 <DropdownMenuItem  className='flex items-center '>
                   <Warehouse/>
-                  <Link href="/dashboard/catalogue/inventory">Categories</Link>
+                  <Link href="/dashboard/trends/category">Categories</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem  className='flex items-center '>
                   <CardStackIcon/>
-                  <Link href="/dashboard/catalogue/collections">Sub-Categories</Link>
+                  <Link href="/dashboard/trends/sub-category">Sub-Categories</Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

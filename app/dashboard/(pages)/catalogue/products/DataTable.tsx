@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Link from "next/link";
 
 // Define the Product data type
 type Product = {
@@ -217,6 +218,7 @@ export function ProductTable() {
 
   return (
     <div className="w-full">
+      <Link href='/dashboard/catalogue/products/add-product'> Add</Link>
      <div className="mb-6 flex items-center gap-4">
   {/* Email Filter */}
   <Input
