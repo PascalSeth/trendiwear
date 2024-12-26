@@ -32,7 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import TrendsubCategorySheet from "@/app/dashboard/components/sheet/TrendsubCategory/page";
 import TrendCategorySheet from "@/app/dashboard/components/sheet/TrendCategory/page";
 
 type Category = {

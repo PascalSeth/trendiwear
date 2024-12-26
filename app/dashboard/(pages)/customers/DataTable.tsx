@@ -132,7 +132,6 @@ export function CustomerDataTable() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [statusFilter, setStatusFilter] = React.useState<string>("All Status");
 
   const table = useReactTable({
     data,
