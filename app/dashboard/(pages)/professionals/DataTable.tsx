@@ -66,7 +66,7 @@ type Professional = {
     createdAt: string;
     updatedAt: string;
   };
-  store: any[]; // Assuming the store array can contain various objects or be empty
+  store: []; // Assuming the store array can contain various objects or be empty
 };
 
 // Define the Metrics type
@@ -77,11 +77,6 @@ type Metrics = {
   business: number;    // Count of professionals who are a business
 };
 
-// Define the API response type
-type ProfessionalsResponse = {
-  professionals: Professional[]; // Array of Professional objects
-  metrics: Metrics;             // Metrics object
-};
 
 const columns: ColumnDef<Professional>[] = [
   {

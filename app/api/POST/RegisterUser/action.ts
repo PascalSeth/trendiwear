@@ -43,7 +43,7 @@ export async function RegisterProfessionalAction(formData: FormData) {
   }
 
   // Create the professional profile first
-  const createdProfile = await prisma.professionalProfile.create({
+ await prisma.professionalProfile.create({
     data: {
       userId,
       professionId, // Link to the ProfessionCategory model

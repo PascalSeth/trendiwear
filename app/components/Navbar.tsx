@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
@@ -8,9 +8,15 @@ import Image from "next/image";
 import Link from "next/link"; // Ensure you're using Next.js's Link component
 import { usePathname } from "next/navigation"; // Import usePathname hook from Next.js
 
+type User = {
+  picture?: string;
+  given_name: string;
+  family_name: string;
+};
+
 type NavbarProps = {
   role: string | null;
-  user: any;
+  user: User | null;
 };
 
 async function Navbar({ role, user }: NavbarProps) {
@@ -44,14 +50,14 @@ async function Navbar({ role, user }: NavbarProps) {
               </Link>
             </div>
             <div className="flex items-center space-x-1">
-              {role ? (
+              {user ? (
                 <>
                   {/* Dropdown menu for logged-in users */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Image
                         className="hover:cursor-pointer w-8 h-8 rounded-full"
-                        src={user?.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                        src={user.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                         alt="User Profile"
                         width={32}
                         height={32}
@@ -62,7 +68,7 @@ async function Navbar({ role, user }: NavbarProps) {
                       className="z-[999] text-black bg-white"
                     >
                       <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
-                        {user?.given_name} {user?.family_name}
+                        {user.given_name} {user.family_name}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
                         <Link
@@ -128,7 +134,7 @@ async function Navbar({ role, user }: NavbarProps) {
           <ShoppingCart className="text-gray-600" />
         </div>
       </div>
-      
+
       {/* Mobile View (Menu Icon) */}
       <div className="lg:hidden flex items-center justify-between p-4">
         {/* Menu Icon */}

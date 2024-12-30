@@ -87,6 +87,7 @@ export async function CreateProduct(formData: FormData) {
         description,
         price,
         stockQuantity,
+        estimatedArrivalTime,
         sizes,
         imageUrls,
         isNew,
