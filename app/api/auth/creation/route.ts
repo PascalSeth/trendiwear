@@ -22,11 +22,12 @@ export async function GET(){
         dbUser=await prisma.user.create({
             data :{
                 email:user.email ?? '',
-                name: user.given_name ?? '',
+                firstName: user.given_name ?? '',
+                LastName: user.family_name ?? '',
                 id:user.id,
-                profileImage:user.picture ?? `https://avatar.vercel.sh/${user.given_name}`
+                profileImage:user.picture ?? `https://avatar.vercel.fsh/${user.given_name}`
             }
         })
     }
-    return NextResponse.redirect("https://trendiwear.netlify.app/") 
+    return NextResponse.redirect("http://localhost:3000/") 
 }

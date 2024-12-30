@@ -2,107 +2,88 @@
 
 import {
   ColumnDef,
+  ColumnFiltersState,
   SortingState,
+  VisibilityState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable
+  useReactTable,
 } from "@tanstack/react-table";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ProfessionalCategorySheet from "../../components/sheet/ProfessionalCategory/page";
 
-type People = {
-  name: string;
-  imageUrl: string,
-  jobTitle: string;
-  department: string;
-  site: string;
-  salary: string;
-  startDate: string;
-  lifecycle: string;
-  status: string;
+// Define the Professional data type
+type Professional = {
+  id: string;
+  userId: string;
+  professionId: string;
+  businessName: string;
+  isBusiness: boolean;
+  experience: number;
+  bio: string | null;
+  portfolioUrl: string | null;
+  location: string;
+  availability: string | null;
+  isVerified: boolean;
+  rating: number;
+  createdAt: string;
+  updatedAt: string;
+  hasStore: boolean;
+  socialMedia: string[];
+  documents: string[];
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profileImage: string;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  profession: {
+    id: string;
+    name: string;
+    imageUrl: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  store: any[]; // Assuming the store array can contain various objects or be empty
 };
 
-const data: People[] = [
-  {
-    name: "Anatoly Belik",
-    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
-    jobTitle: "Head of Design",
-    department: "Product",
-    site: "Stockholm",
-    salary: "$1,350",
-    startDate: "Mar 13, 2023",
-    lifecycle: "Hired",
-    status: "Invited",
-  },
-  {
-    name: "Ksenia Bator",
-    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
-    jobTitle: "Fullstack Engineer",
-    department: "Engineering",
-    site: "Miami",
-    salary: "$1,500",
-    startDate: "Oct 13, 2023",
-    lifecycle: "Hired",
-    status: "Absent",
-  },
-  {
-    name: "Bogdan Niktin",
-    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
-    jobTitle: "Mobile Lead",
-    department: "Product",
-    site: "Kyiv",
-    salary: "$2,600",
-    startDate: "Nov 4, 2023",
-    lifecycle: "Employed",
-    status: "Absent",
-  },
-  {
-    name: "Arsen Yatsenko",
-    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
-    jobTitle: "Sales Manager",
-    department: "Operations",
-    site: "Ottawa",
-    salary: "$900",
-    startDate: "Sep 4, 2024",
-    lifecycle: "Employed",
-    status: "Invited",
-  },
-  {
-    name: "Daria Yurchenko",
-    imageUrl: 'https://i.pinimg.com/236x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg',
-    jobTitle: "Network Engineer",
-    department: "IT",
-    site: "Sao Paulo",
-    salary: "$1,700",
-    startDate: "Feb 21, 2023",
-    lifecycle: "Hired",
-    status: "Absent",
-  },
-];
+// Define the Metrics type
+type Metrics = {
+  total: number;       // Total number of professionals
+  verified: number;    // Count of verified professionals
+  hasStores: number;   // Count of professionals with stores
+  business: number;    // Count of professionals who are a business
+};
 
-export const columns: ColumnDef<People>[] = [
+// Define the API response type
+type ProfessionalsResponse = {
+  professionals: Professional[]; // Array of Professional objects
+  metrics: Metrics;             // Metrics object
+};
+
+const columns: ColumnDef<Professional>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -124,230 +105,234 @@ export const columns: ColumnDef<People>[] = [
     ),
   },
   {
-    accessorKey: "name",
-    header: "Name",
+    accessorKey: "businessName",
+    header: "Business Name",
+    cell: ({ row }) => row.getValue("businessName"),
+  },
+  {
+    accessorKey: "experience",
+    header: "Experience",
+    cell: ({ row }) => <div className="text-right">{row.getValue("experience")}</div>,
+  },
+  {
+    accessorKey: "location",
+    header: "Location",
+    cell: ({ row }) => <div className="text-right">{row.getValue("location")}</div>,
+  },
+  {
+    accessorKey: "rating",
+    header: "Rating",
+    cell: ({ row }) => <div className="text-right">{row.getValue("rating")}</div>,
+  },
+  {
+    id: "actions",
+    header: "Action",
     cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <img
-          src={row.original.imageUrl}
-          alt={row.getValue("name")}
-          className="h-8 w-8 rounded-full object-cover"
-        />
-        {row.getValue("name")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "jobTitle",
-    header: "Job Title",
-    cell: ({ row }) => row.getValue("jobTitle"),
-  },
-  {
-    accessorKey: "department",
-    header: "Department",
-    cell: ({ row }) => row.getValue("department"),
-  },
-  {
-    accessorKey: "site",
-    header: "Site",
-    cell: ({ row }) => row.getValue("site"),
-  },
-  {
-    accessorKey: "salary",
-    header: "Salary",
-    cell: ({ row }) => row.getValue("salary"),
-  },
-  {
-    accessorKey: "startDate",
-    header: "Start Date",
-    cell: ({ row }) => row.getValue("startDate"),
-  },
-  {
-    accessorKey: "lifecycle",
-    header: "Lifecycle",
-    cell: ({ row }) => row.getValue("lifecycle"),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <span
-        className={`rounded-full px-3 py-1 text-sm font-medium border border-transparent ${
-          row.getValue("status") === "Invited"
-            ? "bg-blue-100 text-blue-700"
-            : row.getValue("status") === "Absent"
-            ? "bg-yellow-100 text-yellow-700"
-            : "bg-green-100 text-green-700"
-        }`}
-      >
-        {row.getValue("status")}
-      </span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.businessName)}>
+            Edit
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     ),
   },
 ];
 
 export function ProfessionalsDataTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [searchQuery, setSearchQuery] = React.useState("");
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [data, setData] = React.useState<Professional[]>([]);
+  const [metrics, setMetrics] = React.useState<Metrics>();
 
-  const filteredData = data.filter((person) =>
-    person.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/GET/getProfessionals");
+        const result = await response.json();
+      // Set the professionals data
+      setData(result.professionals);
+
+      // Set the metrics data
+      setMetrics(result.metrics);      } catch (error) {
+        console.error("Error fetching professionals:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    state: { sorting },
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
   });
+
+  const handleFilter = (status: string) => {
+    if (status === "All") {
+      setColumnFilters((filters) => filters.filter((filter) => filter.id !== "status"));
+    } else {
+      setColumnFilters([
+        {
+          id: "status",
+          value: status,
+        },
+      ]);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-yellow-50 to-gray-400 rounded-lg shadow-lg">
-      <div className="flex items-center justify-between">
-                <h1 className="font-medium text-3xl">Professionals</h1>
-    <ProfessionalCategorySheet/>
-      </div>
-          {/* Header Metrics */}
-          <div className="grid grid-cols-4 items-center gap-4 mb-6">
-        <div className="w-full">
-          <h2 className="text-lg font-medium">Interviews</h2>
-          <div className="bg-gray-200 w-full h-8 rounded-full overflow-hidden">
-            <div className="bg-black w-[25%] h-full"></div>
-          </div>
-          <p className="text-gray-700">25%</p>
-        </div>
-        <div className="w-full">
-          <h2 className="text-lg font-medium">Hired</h2>
-          <div className="bg-gray-200 w-full h-8 rounded-full overflow-hidden">
-            <div className="bg-yellow-500 w-[51%] h-full"></div>
-          </div>
-          <p className="text-gray-700">51%</p>
-        </div>
-        <div className="w-full">
-          <h2 className="text-lg font-medium">Project Time</h2>
-          <div className="bg-gray-200 w-full h-8 rounded-full overflow-hidden">
-            <div className="bg-gray-500 w-[100%] h-full"></div>
-          </div>
-          <p className="text-gray-700">100%</p>
-        </div>
-        <div className="w-full">
-          <h2 className="text-lg font-medium">Output</h2>
-          <div className="bg-gray-200 w-full h-8 rounded-full overflow-hidden">
-            <div className="bg-gray-400 w-[14%] h-full"></div>
-          </div>
-          <p className="text-gray-700">14%</p>
-        </div>
-      </div>
+  <div className="bg-gradient-to-r from-blue-100 to-blue-300 p-6 rounded-lg shadow-lg mb-6">
+  <div className="grid grid-cols-4 gap-4">
+    <div className="flex flex-col items-center">
+      <span className="text-lg font-bold">{metrics?.total}</span>
+      <span className="text-sm text-gray-700">Total</span>
+    </div>
+    <div className="flex flex-col items-center">
+      <span className="text-lg font-bold">{metrics?.verified}</span>
+      <span className="text-sm text-gray-700">Verified</span>
+    </div>
+    <div className="flex flex-col items-center">
+      <span className="text-lg font-bold">{metrics?.hasStores}</span>
+      <span className="text-sm text-gray-700">Has Stores</span>
+    </div>
+    <div className="flex flex-col items-center">
+      <span className="text-lg font-bold">{metrics?.business}</span>
+      <span className="text-sm text-gray-700">Business</span>
+    </div>
+  </div>
+</div>
 
-      {/* Filters */}
-      <div className="flex justify-between items-center">
+
+     
+     <ProfessionalCategorySheet/>
+      <div className="mb-6 flex items-center gap-4">
+        {/* Email Filter */}
         <Input
-          placeholder="Search People"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-72 border-gray-300 shadow-sm rounded-lg"
+          placeholder="Filter products..."
+          value={(table.getColumn("businessName")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("businessName")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
         />
-        <div className="flex gap-4">
-          <Select>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Department" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="product">Product</SelectItem>
-              <SelectItem value="engineering">Engineering</SelectItem>
-              <SelectItem value="operations">Operations</SelectItem>
-              <SelectItem value="it">IT</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select>
-          <SelectTrigger className="w-36">
-              <SelectValue placeholder="Site" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="stockholm">Stockholm</SelectItem>
-              <SelectItem value="miami">Miami</SelectItem>
-              <SelectItem value="kyiv">Kyiv</SelectItem>
-              <SelectItem value="ottawa">Ottawa</SelectItem>
-              <SelectItem value="sao-paulo">Sao Paulo</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" className="shadow-sm">
-            Export
-          </Button>
+        {/* Status Filter */}
+        <div className="flex items-center space-x-4 py-4">
+          {["All", "Active", "Disabled"].map((status) => (
+            <Button
+              key={status}
+              variant="outline"
+              size="sm"
+              onClick={() => handleFilter(status)}
+            >
+              {status}
+            </Button>
+          ))}
         </div>
+        {/* Columns Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columns <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  className="capitalize"
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) =>
+                    column.toggleVisibility(!!value)
+                  }
+                >
+                  {column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>People</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-gray-700">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-gray-50">
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center">
-                    No results found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-               <div className="flex items-center justify-end space-x-2 py-4">
-                  <div className="space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-        </CardContent>
-      </Card>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

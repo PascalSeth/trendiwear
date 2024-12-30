@@ -7,10 +7,10 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
 model User {
   id            String             @id @default(uuid())
-  name          String
+  firstName String 
+  LastName String
   email         String             @unique
   profileImage  String
   role          Role               @default(CUSTOMER)
@@ -20,25 +20,90 @@ model User {
   services      Service[]
   orders        Order[]
   bookings      Booking[]
+  products      Product[]          @relation("UserProducts") // Backrelation field for Product
   professionalProfile ProfessionalProfile? 
+}
+model SocialMedia {
+  id                    String              @id @default(uuid())
+  profileId             String              // Foreign key to ProfessionalProfile
+  platform              SocialMediaPlatform // Enum for the platform name
+  url                   String              // The URL for the social media profile
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  professionalProfile   ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model VerificationDocument {
+  id                    String              @id @default(uuid())
+  professionalProfileId String              // Foreign key to ProfessionalProfile
+  documentType          DocumentType        // Enum for document types
+  documentUrl           String              // URL where the document is stored
+  isVerified            Boolean             @default(false) // Indicates if the document has been verified
+  verificationMessage   String?             // Optional message from the verifier (e.g., reasons for rejection)
+  uploadedAt            DateTime            @default(now())
+  verifiedAt            DateTime?           // Timestamp for when the document was verified
+
+  professionalProfile   ProfessionalProfile @relation(fields: [professionalProfileId], references: [id], onDelete: Cascade)
 }
 
 model ProfessionalProfile {
-  id               String            @id @default(uuid())
-  userId           String            @unique
-  professionId     String            // References ProfessionCategory
-  experience       Int               // Years of experience
-  bio              String?           // A short bio
-  portfolioUrl     String?           // URL to their portfolio
-  location         String            // Address or operational area
-  availability     String?           // Available hours/days
-  rating           Float?            // Average rating
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id               String                @id @default(uuid())
+  userId           String                @unique  // Ensure userId is unique for one-to-one relation
+  professionId     String                // References ProfessionCategory
+  businessName   String       // Business name for professionals
+  isBusiness     Boolean      // True if the user is a business, false if individual
+  experience       Int                   // Years of experience
+  bio              String?               // A short bio
+  portfolioUrl     String?               // URL to their portfolio
+  location         String                // Address or operational area
+  availability     String?               // Available hours/days
+  isVerified       Boolean               @default(false) // Indicates if the profile is verified
+  rating           Float?                // Average rating
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  hasStore         Boolean               @default(false)  // Indicates if the professional has a store
 
-  user             User              @relation(fields: [userId], references: [id])
-  profession       ProfessionCategory @relation(fields: [professionId], references: [id]) // Foreign key to ProfessionCategory
+  socialMedia      SocialMedia[]         // One-to-many relationship with SocialMedia model
+  documents        VerificationDocument[] // One-to-many relationship with VerificationDocument
+
+  user             User                  @relation(fields: [userId], references: [id])
+  profession       ProfessionCategory    @relation(fields: [professionId], references: [id]) // Foreign key to ProfessionCategory
+
+  store            Store[]                @relation
 }
+
+enum DocumentType {
+  NATIONAL_ID
+  BUSINESS_REGISTRATION
+  DELIVERY_RECEIPT
+  OTHER
+}
+
+
+enum SocialMediaPlatform {
+  Facebook
+  Twitter
+  Instagram
+  LinkedIn
+  Youtube
+  Tiktok
+}
+
+model Store {
+  id            String     @id @default(uuid())
+  name          String     // Store name
+  imageUrl      String?    // Store image URL (optional)
+  InteriorImageUrl String[]
+  workingHours  String     // Working hours (e.g., "Mon-Fri: 9 AM - 6 PM")
+  location      String     // Physical store location
+  userId        String     @unique // Ensure userId is unique for one-to-one relation
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  professional  ProfessionalProfile @relation(fields: [userId], references: [userId]) // Only define the relation on one side (Store)
+}
+
 
 model ProfessionCategory {
   id          String        @id @default(uuid())
@@ -63,15 +128,22 @@ model Product {
   name           String
   description    String?
   price          Float
-  stockQuantity  Int          @default(0)
+  stockQuantity  Int?          @default(0)
   imageUrl       String[]
   categoryId     String
-  collectionId  String
+  collectionId   String
+  professionalId String
+  isNew          Boolean      @default(false)
+  isFeatured     Boolean?      @default(false)
+  isTrending     Boolean?      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  sizes         String[]  
+  sizes          String[]
+  estimatedArrivalTime Int?
+  isShipped      Boolean? @default(false)
   category       Category     @relation(fields: [categoryId], references: [id])
-  Collection    Collection  @relation(fields: [collectionId], references: [id])
+  collection     Collection   @relation(fields: [collectionId], references: [id])
+  professional   User         @relation("UserProducts", fields: [professionalId], references: [id])
   orderItems     OrderItem[]
 }
 

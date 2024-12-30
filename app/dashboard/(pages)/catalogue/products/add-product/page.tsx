@@ -4,8 +4,11 @@ import { CreateProduct } from "@/app/api/POST/Products/action";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type SizeOption = "2" | "4" | "6" | "8" | "10" | "12" | "14" | "16" | "34" | "36" | "38" | "40" | "42" | "44" | "46" | "48" | "6" | "8" | "10" | "12" | "14" | "16" | "18" | "20" | "XS" | "S" | "M" | "L" | "XL" | "XXL";
-
+type SizeOption =
+  | "US 2" | "US 4" | "US 6" | "US 8" | "US 10" | "US 12" | "US 14" | "US 16"
+  | "EU 34" | "EU 36" | "EU 38" | "EU 40" | "EU 42" | "EU 44" | "EU 46" | "EU 48"
+  | "UK 6" | "UK 8" | "UK 10" | "UK 12" | "UK 14" | "UK 16" | "UK 18" | "UK 20"
+  | "XS" | "S" | "M" | "L" | "XL" | "XXL";
 function AddProductPage() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<SizeOption[]>([]);
@@ -14,13 +17,18 @@ function AddProductPage() {
   const [collections, setCollections] = useState<{ id: string, name: string }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedCollection, setSelectedCollection] = useState<string>("");
+  const [isNew, setIsNew] = useState<boolean>(false);
+  const [isFeatured, setIsFeatured] = useState<boolean>(false);
+  const [isTrending, setIsTrending] = useState<boolean>(false);
+  const [isShipped, setIsShipped] = useState<boolean>(false); 
 
-  const sizeOptions = {
-    US: ["2", "4", "6", "8", "10", "12", "14", "16"] as SizeOption[],
-    EU: ["34", "36", "38", "40", "42", "44", "46", "48"] as SizeOption[],
-    UK: ["6", "8", "10", "12", "14", "16", "18", "20"] as SizeOption[],
-    General: ["XS", "S", "M", "L", "XL", "XXL"] as SizeOption[],
-  };
+const sizeOptions = {
+  US: ["US 2", "US 4", "US 6", "US 8", "US 10", "US 12", "US 14", "US 16"] as SizeOption[],
+  EU: ["EU 34", "EU 36", "EU 38", "EU 40", "EU 42", "EU 44", "EU 46", "EU 48"] as SizeOption[],
+  UK: ["UK 6", "UK 8", "UK 10", "UK 12", "UK 14", "UK 16", "UK 18", "UK 20"] as SizeOption[],
+  General: ["XS", "S", "M", "L", "XL", "XXL"] as SizeOption[],
+};
+
 
   useEffect(() => {
     // Fetch categories and collections
@@ -124,18 +132,19 @@ function AddProductPage() {
   </div>
 
   {/* Size Options */}
-  <div className="flex flex-wrap gap-4">
-    {sizeOptions[denomination].map((size) => (
-      <label key={size} className="flex items-center gap-2">
-        <Checkbox
-          name="sizes"
-          checked={selectedSizes.includes(size)}
-          onCheckedChange={() => handleSizeSelection(size)}
-        />
-        <span>{denomination === "General" ? size : `${denomination} ${size}`}</span>
-      </label>
-    ))}
-  </div>
+  <input type="hidden" name="sizes" value={JSON.stringify(selectedSizes)} />
+
+<div className="flex flex-wrap gap-4">
+  {sizeOptions[denomination].map((size) => (
+    <label key={size} className="flex items-center gap-2">
+      <Checkbox
+        checked={selectedSizes.includes(size)}
+        onCheckedChange={() => handleSizeSelection(size)}
+      />
+      <span> {size}</span>
+    </label>
+  ))}
+</div>
 </div>
 
 
@@ -189,6 +198,11 @@ function AddProductPage() {
                 step="0.01"
                 className="w-full border border-gray-300 rounded-md p-2 mb-4"
               />
+                          
+{!isShipped && (
+  <div>
+
+
               <label className="block mb-2 text-sm font-medium">Stock</label>
               <input
                 type="number"
@@ -196,8 +210,65 @@ function AddProductPage() {
                 placeholder="77"
                 className="w-full border border-gray-300 rounded-md p-2 mb-4"
               />
+                </div>)}
             </div>
           </div>
+
+          {/* Shipping Checkbox and Estimated Arrival */}
+          <div className="mb-6">
+          <label className="flex items-center gap-2">
+    <Checkbox
+      checked={isShipped}
+      onCheckedChange={() => setIsShipped((prev) => !prev)}
+    />
+    <input type="hidden" name="isShipped" value={isShipped.toString()} />
+    <span>Is Shipped</span>
+  </label>
+
+            {isShipped && (
+              <div className="mt-4">
+                <label className="block mb-2 text-sm font-medium">Estimated Arrival (in days)</label>
+                <input
+                  type="number"
+                  name="estimatedArrivalTime"
+                  placeholder="Estimated arrival in days"
+                  className="w-full border border-gray-300 rounded-md p-2"
+                  min={1}
+                />
+              </div>
+            )}
+          </div>
+
+{/* Boolean Fields */}
+<div className="mb-6 hidden">
+  <h2 className="text-lg font-semibold mb-3">Product Status</h2>
+  <label className="flex items-center gap-2">
+    <Checkbox
+      checked={isNew}
+      onCheckedChange={() => setIsNew((prev) => !prev)}
+    />
+    <input type="hidden" name="isNew" value={isNew.toString()} />
+    <span>Is New</span>
+  </label>
+  <label className="flex items-center gap-2 mt-2">
+    <Checkbox
+      checked={isFeatured}
+      onCheckedChange={() => setIsFeatured((prev) => !prev)}
+    />
+    <input type="hidden" name="isFeatured" value={isFeatured.toString()} />
+    <span>Is Featured</span>
+  </label>
+  <label className="flex items-center gap-2 mt-2">
+    <Checkbox
+      checked={isTrending}
+      onCheckedChange={() => setIsTrending((prev) => !prev)}
+    />
+    <input type="hidden" name="isTrending" value={isTrending.toString()} />
+    <span>Is Trending</span>
+  </label>
+</div>
+
+
 
           {/* Buttons */}
           <div className="flex justify-end gap-4">

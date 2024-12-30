@@ -4,6 +4,7 @@ import "../globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Navbar from "../components/Navbar";
+import ServerNavbar from "../components/ServerNavbar";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -31,7 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar/>
+        <ServerNavbar/>
         {children}
       </body>
     </html>

@@ -1,29 +1,52 @@
+import prisma from "@/lib/db";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import React from "react";
 
-const Home = () => {
+async function Home() {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+
+  // Fetch professional details of the logged-in user
+  const professionalProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: user?.id },
+  });
+
+  // Fetch name of the professional category
+  const professionalCategory = professionalProfile?.professionId
+    ? await prisma.professionCategory.findUnique({
+        where: { id: professionalProfile.professionId },
+        select: { name: true },
+      })
+    : null;
+
   return (
     <div className="bg-gradient-to-br from-gray-100 to-yellow-50 min-h-screen p-8">
       {/* Header Section */}
       <header className="flex justify-between items-center mb-8">
         <div className="space-y-3">
-          <h1 className="text-3xl font-bold">Welcome in, Nixtio</h1>
-          <p className="text-sm text-gray-500">UX/UI Designer Dashboard</p>
+          <h1 className="text-3xl font-bold">
+            Welcome in, {professionalProfile?.businessName || "User"}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {professionalProfile?.isBusiness ? "Business Profile" : "Individual Profile"}
+          </p>
         </div>
         <div className="flex space-x-6">
-        <div className="text-right">
-          <p className="text-xl font-bold">78</p>
-          <p className="text-sm text-gray-500">Employees</p>
+          <div className="text-center">
+            <p className="text-sm font-bold">{professionalProfile?.experience || 0}</p>
+            <p className="text-sm text-gray-500">Years Experience</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold">{professionalProfile?.rating || "N/A"}</p>
+            <p className="text-sm text-gray-500">Rating</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold">
+              {professionalProfile?.isVerified ? "Verified" : "Not Verified"}
+            </p>
+            <p className="text-sm text-gray-500">Status</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-xl font-bold">78</p>
-          <p className="text-sm text-gray-500">Hirings</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xl font-bold">78</p>
-          <p className="text-sm text-gray-500">Projects</p>
-        </div>
-        </div>
-        
       </header>
 
       {/* Main Content */}
@@ -39,12 +62,18 @@ const Home = () => {
             />
             {/* Overlay Text */}
             <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-end p-4">
-              <h2 className="text-lg font-bold text-white">Lora Piterson</h2>
+              <h2 className="text-lg font-bold text-white">
+                {professionalProfile?.businessName || "User"}
+              </h2>
               <div className="flex w-full justify-between items-center">
-               <p className="text-sm text-gray-300">UX/UI Designer</p>
-              <p className="text-xl font-bold text-yellow-400">$1,200</p>
+                <p className="text-sm text-gray-300">
+                  {professionalCategory?.name || "Professional Category"}
+                </p>
+                <p className="text-xl font-bold text-yellow-400">
+                  {professionalProfile?.rating || "$1,200"}
+                </p>
               </div>
-                          </div>
+            </div>
           </div>
         </section>
 
@@ -77,6 +106,6 @@ const Home = () => {
       </main>
     </div>
   );
-};
+}
 
 export default Home;
