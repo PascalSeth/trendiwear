@@ -9,14 +9,15 @@ import Link from "next/link"; // Ensure you're using Next.js's Link component
 import { usePathname } from "next/navigation"; // Import usePathname hook from Next.js
 
 type User = {
-  picture?: string;
-  given_name: string;
-  family_name: string;
+  picture?: string | null;  // Allow `null` here
+  given_name: string | null; // Allow `null` here
+  family_name: string | null; // Allow `null` here
 };
+
 
 type NavbarProps = {
   role: string | null;
-  user: User | null;
+  user: User ;
 };
 
 async function Navbar({ role, user }: NavbarProps) {
