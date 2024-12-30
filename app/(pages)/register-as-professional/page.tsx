@@ -9,9 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RegisterProfessionalAction } from "@/app/api/POST/RegisterUser/action";
 
+// Define the type for the professional category data.
+interface ProfessionalCategory {
+  id: string;
+  name: string;
+}
+
 export default function RegisterProfessionalForm() {
   const [hasStore, setHasStore] = useState(false);
-  const [professionalCategories, setProfessionalCategories] = useState<any[]>([]);
+  const [professionalCategories, setProfessionalCategories] = useState<ProfessionalCategory[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null);
 
   // Fetch professional categories from the API on mount
@@ -35,12 +41,12 @@ export default function RegisterProfessionalForm() {
         <div className="flex flex-col justify-center bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white p-10 space-y-8">
           <h1 className="text-4xl font-bold">Transform Your Fashion Business</h1>
           <p className="text-lg">
-            Unlock the power of TrendiWear's cutting-edge dashboard. Track your sales, analyze trends, and watch your profits soar. Your next big success starts here!
+            Unlock the power of TrendiWear&apos;s cutting-edge dashboard. Track your sales, analyze trends, and watch your profits soar. Your next big success starts here!
           </p>
           <div className="space-y-4">
             <div className="p-4 bg-gray-800 rounded-lg shadow-md">
               <p className="italic">
-                "Since joining TrendiWear, my sales have skyrocketed, and the insights are unmatched. Don’t wait to take your business to the next level!"
+                &quot;Since joining TrendiWear, my sales have skyrocketed, and the insights are unmatched. Don&apos;t wait to take your business to the next level!&quot;
               </p>
               <p className="mt-4 text-sm font-semibold">- Taylor Monroe</p>
             </div>

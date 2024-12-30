@@ -34,7 +34,7 @@ export async function CreateProduct(formData: FormData) {
     const price = parseFloat(formData.get("price") as string);
     let stockQuantity = parseInt(formData.get("stockQuantity") as string, 10);
     const categoryId = formData.get("categoryId") as string;
-    let estimatedArrivalTime = parseInt(formData.get("estimatedArrivalTime") as string, 10);
+    const estimatedArrivalTime = parseInt(formData.get("estimatedArrivalTime") as string, 10);
     const collectionId = formData.get("collectionId") as string;
     const imageFiles = formData.getAll("images") as File[];
     const imageUrls: string[] = [];
