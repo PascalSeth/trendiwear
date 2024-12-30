@@ -1,5 +1,4 @@
 import React from 'react'
-import Navbar from './components/Navbar';
 import "../globals.css";
 import ServerNavbar from './components/ServerNavbar';
 export default function DashboardLayout({
