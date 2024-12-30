@@ -13,7 +13,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-
 // Define type for Navbar props
 type NavbarProps = {
   role: string | null;

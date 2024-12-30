@@ -1,12 +1,11 @@
 'use client'
 import React from "react";
-import Link from "next/link"; // Ensure you're using Next.js's Link component
-import { Bell, DollarSign, Menu, SearchIcon, ShoppingCart } from "lucide-react";
-import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { Bell, DollarSign, Menu, SearchIcon, ShoppingCart } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link"; // Ensure you're using Next.js's Link component
 import { usePathname } from "next/navigation"; // Import usePathname hook from Next.js
 
 type NavbarProps = {
