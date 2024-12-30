@@ -7,12 +7,17 @@ export async function RegisterProfessionalAction(formData: FormData) {
   // Retrieve user information from the Kinde session
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-
+  console.log(user);  // Check the content of user
   if (!user) {
-    throw new Error("User is not authenticated.");
+      throw new Error("User is not authenticated.");
   }
+  
 
-  const userId = user.id;
+  const userId = user?.id;
+if (!userId) {
+  throw new Error("User ID is missing or session is invalid.");
+}
+
 
   // Collect data from the form
   const businessName = formData.get("businessName") as string;
