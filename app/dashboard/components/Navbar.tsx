@@ -13,15 +13,23 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Role } from '@prisma/client';
+
 // Define type for Navbar props
 type NavbarProps = {
-  role: string | null;
+  role: Role;
 };
 
 const Navbar: React.FC<NavbarProps> = ({ role }) => {
+  console.log(role);
   const pathname = usePathname();
-
+  
   const isActive = (path: string) => pathname === path;
+
+  // Helper function to check if user has admin privileges
+  const hasAdminPrivileges = (userRole: Role) => {
+    return userRole === 'PROFESSIONAL' || userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
+  };
 
   return (
     <div className="bg-gradient-to-r from-gray-50 via-white to-gray-400 shadow-md">
@@ -55,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48">
               <DropdownMenuGroup>
-                {role === 'PROFESSIONAL' && (
+                {hasAdminPrivileges(role) && (
                   <>
                     <DropdownMenuItem className="flex items-center">
                       <Warehouse />
@@ -93,8 +101,8 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
             </Link>
           ))}
 
-          {/* Professiona Link - Only for PROFESSIONAL */}
-          {role === 'PROFESSIONAL' && (
+          {/* Professional Link - Only for PROFESSIONAL/ADMIN/SUPER_ADMIN */}
+          {hasAdminPrivileges(role) && (
             <Link
               href="/dashboard/professionals"
               className={`px-4 py-2 rounded-full ${
@@ -118,11 +126,11 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48">
               <DropdownMenuGroup>
-                {role === 'PROFESSIONAL' && (
+                {hasAdminPrivileges(role) && (
                   <>
                     <DropdownMenuItem className="flex items-center">
                       <Warehouse />
-                      <Link href="/dashboard/trends/category">Categories</Link>
+                      <Link href="/dashboard/trends/events">Events</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem className="flex items-center">
                       <CardStackIcon />
@@ -130,10 +138,10 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
                     </DropdownMenuItem>
                   </>
                 )}
-                    <DropdownMenuItem className="flex items-center">
-                      <CardStackIcon />
-                      <Link href="/dashboard/trends/trends">Trends</Link>
-                    </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center">
+                  <CardStackIcon />
+                  <Link href="/dashboard/trends">Trends</Link>
+                </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
             </DropdownMenuContent>

@@ -5,27 +5,27 @@ import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextj
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { Bell, DollarSign, Menu, SearchIcon, ShoppingCart } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link"; // Ensure you're using Next.js's Link component
-import { usePathname } from "next/navigation"; // Import usePathname hook from Next.js
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Role } from "@prisma/client";
 
 type User = {
-  picture?: string | null;  // Allow `null` here
-  given_name: string | null; // Allow `null` here
-  family_name: string | null; // Allow `null` here
+  picture?: string | null;
+  given_name: string | null;
+  family_name: string | null;
 };
-
 
 type NavbarProps = {
-  role: string | null;
-  user: User ;
+  role: Role;
+  user: User | null; // Allow user to be null
 };
 
-async function Navbar({ role, user }: NavbarProps) {
-  const pathname = usePathname(); // Get the current pathname
+function Navbar({ role, user }: NavbarProps) {
+  const pathname = usePathname();
   
-  const isActive = (path: string) => pathname === path; // Check if the current path matches
+  const isActive = (path: string) => pathname === path;
 
-  const isProfessionalOrOwner = role === "PROFESSIONAL" || role === "OWNER"; // Role-based logic
+  const isProfessionalOrOwner = role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN";
 
   return (
     <div className="bg-white border-b sticky w-full overflow-hidden top-0 left-0 right-0 bottom-0 z-[999] border-gray-200 shadow-sm">
@@ -107,15 +107,15 @@ async function Navbar({ role, user }: NavbarProps) {
       </div>
 
       {/* Main Navbar Section */}
-      <div className="container mx-auto flex items-center justify-between p-2">
+      <div className="container max-lg:hidden mx-auto flex items-center justify-between p-2">
         {/* Logo Section */}
-        <div className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center space-x-2">
           <img
-            src="/navlogo.png" // Replace with your logo path
+            src="/navlogo.png"
             alt="BeliBeli Logo"
             className="h-12 w-12"
           />
-        </div>
+        </Link>
 
         {/* Search Bar */}
         <div className="flex-grow mx-4">
@@ -141,7 +141,7 @@ async function Navbar({ role, user }: NavbarProps) {
         {/* Menu Icon */}
         <div className="flex items-center">
           <img
-            src="/navlogo.png" // Replace with your logo path
+            src="/navlogo.png"
             alt="BeliBeli Logo"
             className="h-10 w-10"
           />
@@ -151,7 +151,43 @@ async function Navbar({ role, user }: NavbarProps) {
         <div className="flex items-center space-x-4">
           <ShoppingCart className="text-gray-600 h-5 w-5" />
           <Bell className="text-gray-600 h-5 w-5" />
-          <Menu className="text-gray-600 h-6 w-6" />
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Image
+                  className="hover:cursor-pointer w-6 h-6 rounded-full"
+                  src={user.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                  alt="User Profile"
+                  width={24}
+                  height={24}
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="z-[999] text-black bg-white"
+              >
+                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                  {user.given_name} {user.family_name}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                  <Link
+                    href={isProfessionalOrOwner ? "/dashboard" : "/register-as-professional"}
+                    className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
+                  >
+                    {isProfessionalOrOwner ? "Dashboard" : "Earn as a Professional"}
+                    {isProfessionalOrOwner ? "" : <DollarSign size={14} />}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-semibold">
+                  <div className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
+                    <LogoutLink className="w-full">Logout</LogoutLink>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Menu className="text-gray-600 h-6 w-6" />
+          )}
         </div>
       </div>
     </div>

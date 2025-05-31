@@ -1,5 +1,8 @@
-
 import { createClient } from '@supabase/supabase-js'
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(`https://leafbfetdewlxeofugvl.supabase.co`, `${process.env.SUPABASE_ANON_KEY}`)
+const supabaseUrl = process.env.SUPABASE_URL!
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)

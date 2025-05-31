@@ -7,262 +7,926 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+// ================================
+// USER MANAGEMENT
+// ================================
+
 model User {
   id            String             @id @default(uuid())
-  firstName String 
-  LastName String
+  firstName     String 
+  lastName      String
   email         String             @unique
-  profileImage  String
+  phone         String?
+  profileImage  String?
   role          Role               @default(CUSTOMER)
+  isActive      Boolean            @default(true)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
-  blogs         Blog[]
-  services      Service[]
-  orders        Order[]
-  bookings      Booking[]
-  products      Product[]          @relation("UserProducts") // Backrelation field for Product
-  professionalProfile ProfessionalProfile? 
-}
-model SocialMedia {
-  id                    String              @id @default(uuid())
-  profileId             String              // Foreign key to ProfessionalProfile
-  platform              SocialMediaPlatform // Enum for the platform name
-  url                   String              // The URL for the social media profile
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
 
-  professionalProfile   ProfessionalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  // Customer Relations
+  orders                Order[]
+  bookings              Booking[]
+  reviews               Review[]
+  wishlist              WishlistItem[]
+  cart                  CartItem[]
+  addresses             Address[]
+  measurements          Measurement?
+  savedOutfits          SavedOutfit[]
+  notifications         Notification[]
+  deliveryConfirmations DeliveryConfirmation[]
+  paymentEscrows        PaymentEscrow[]
+  conversations_customer Conversation[] @relation("CustomerConversations")
+  conversations_professional Conversation[] @relation("ProfessionalConversations")
+  messages              Message[]
+  recommendations       UserRecommendation[]
+  auditLogs             AuditLog[]
+  reportedContent       ReportedContent[]
+
+  // Professional Relations
+  professionalProfile   ProfessionalProfile?
+  products              Product[]
+  services              Service[]
+  blogs                 Blog[]
+  outfitInspirations    OutfitInspiration[]
+  analytics             ProfessionalAnalytics?
+}
+
+model Address {
+  id          String      @id @default(uuid())
+  userId      String
+  type        AddressType @default(HOME)
+  firstName   String
+  lastName    String
+  street      String
+  city        String
+  state       String
+  zipCode     String
+  country     String      @default("Kenya")
+  isDefault   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+}
+
+model Measurement {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  // Detailed measurements (optional)
+  bust        Float?
+  waist       Float?
+  hips        Float?
+  shoulder    Float?
+  armLength   Float?
+  inseam      Float?
+  height      Float?
+  weight      Float?
+  // Standard sizes for quick personalization
+  topSize     String?        // XS, S, M, L, XL, XXL
+  bottomSize  String?        // XS, S, M, L, XL, XXL
+  dressSize   String?        // XS, S, M, L, XL, XXL
+  shoeSize    String?        // UK/US/EU sizes
+  // Style preferences for personalized search
+  bodyType    BodyType?
+  stylePreferences StylePreference[]
+  preferredColors  String[]   // Array of preferred colors
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ================================
+// PROFESSIONAL PROFILES
+// ================================
+
+model ProfessionalProfile {
+  id               String                @id @default(uuid())
+  userId           String                @unique
+  businessName     String
+  businessImage    String?
+  specialization   ProfessionalType
+  experience       Int
+  bio              String?
+  portfolioUrl     String?
+  location         String
+  availability     String?
+  isVerified       Boolean               @default(false)
+  rating           Float?                @default(0)
+  totalReviews     Int                   @default(0)
+  completedOrders  Int                   @default(0)
+  accountBalance   Float                 @default(0)
+  freeDeliveryThreshold Float?           // Minimum order amount for free delivery
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialMedia      SocialMedia[]
+  documents        VerificationDocument[]
+  store            Store?
+  deliveryZones    DeliveryZone[]
+}
+
+model DeliveryZone {
+  id                String              @id @default(uuid())
+  professionalId    String
+  zoneName          String              // e.g., "Downtown", "Suburbs"
+  baseDeliveryFee   Float
+  freeDeliveryAbove Float?              // Free delivery above this amount
+  estimatedDays     Int                 // Estimated delivery days
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  professional      ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+}
+
+model SocialMedia {
+  id                    String                @id @default(uuid())
+  professionalId        String
+  platform              SocialMediaPlatform
+  url                   String
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  professional          ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 }
 
 model VerificationDocument {
   id                    String              @id @default(uuid())
-  professionalProfileId String              // Foreign key to ProfessionalProfile
-  documentType          DocumentType        // Enum for document types
-  documentUrl           String              // URL where the document is stored
-  isVerified            Boolean             @default(false) // Indicates if the document has been verified
-  verificationMessage   String?             // Optional message from the verifier (e.g., reasons for rejection)
+  professionalId        String
+  documentType          DocumentType
+  documentUrl           String
+  isVerified            Boolean             @default(false)
+  verificationMessage   String?
   uploadedAt            DateTime            @default(now())
-  verifiedAt            DateTime?           // Timestamp for when the document was verified
+  verifiedAt            DateTime?
 
-  professionalProfile   ProfessionalProfile @relation(fields: [professionalProfileId], references: [id], onDelete: Cascade)
-}
-
-model ProfessionalProfile {
-  id               String                @id @default(uuid())
-  userId           String                @unique  // Ensure userId is unique for one-to-one relation
-  professionId     String                // References ProfessionCategory
-  businessName   String       // Business name for professionals
-  isBusiness     Boolean      // True if the user is a business, false if individual
-  experience       Int                   // Years of experience
-  bio              String?               // A short bio
-  portfolioUrl     String?               // URL to their portfolio
-  location         String                // Address or operational area
-  availability     String?               // Available hours/days
-  isVerified       Boolean               @default(false) // Indicates if the profile is verified
-  rating           Float?                // Average rating
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  hasStore         Boolean               @default(false)  // Indicates if the professional has a store
-
-  socialMedia      SocialMedia[]         // One-to-many relationship with SocialMedia model
-  documents        VerificationDocument[] // One-to-many relationship with VerificationDocument
-
-  user             User                  @relation(fields: [userId], references: [id])
-  profession       ProfessionCategory    @relation(fields: [professionId], references: [id]) // Foreign key to ProfessionCategory
-
-  store            Store[]                @relation
-}
-
-enum DocumentType {
-  NATIONAL_ID
-  BUSINESS_REGISTRATION
-  DELIVERY_RECEIPT
-  OTHER
-}
-
-
-enum SocialMediaPlatform {
-  Facebook
-  Twitter
-  Instagram
-  LinkedIn
-  Youtube
-  Tiktok
+  professional          ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 }
 
 model Store {
-  id            String     @id @default(uuid())
-  name          String     // Store name
-  imageUrl      String?    // Store image URL (optional)
-  InteriorImageUrl String[]
-  workingHours  String     // Working hours (e.g., "Mon-Fri: 9 AM - 6 PM")
-  location      String     // Physical store location
-  userId        String     @unique // Ensure userId is unique for one-to-one relation
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id               String              @id @default(uuid())
+  professionalId   String              @unique
+  name             String
+  imageUrl         String?
+  interiorImages   String[]
+  workingHours     String
+  location         String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-  professional  ProfessionalProfile @relation(fields: [userId], references: [userId]) // Only define the relation on one side (Store)
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 }
 
-
-model ProfessionCategory {
-  id          String        @id @default(uuid())
-  name        String        @unique // Name of the profession (e.g., Tailor, Designer)
-  imageUrl    String? 
-  description String?       // Description of the profession category
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  professionals ProfessionalProfile[]
-}
-
-
-enum Role {
-  CUSTOMER
-  PROFESSIONAL
-  OWNER
-}
+// ================================
+// PRODUCT MANAGEMENT
+// ================================
 
 model Product {
-  id             String       @id @default(uuid())
-  name           String
-  description    String?
-  price          Float
-  stockQuantity  Int?          @default(0)
-  imageUrl       String[]
-  categoryId     String
-  collectionId   String
-  professionalId String
-  isNew          Boolean      @default(false)
-  isFeatured     Boolean?      @default(false)
-  isTrending     Boolean?      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  sizes          String[]
-  estimatedArrivalTime Int?
-  isShipped      Boolean? @default(false)
-  category       Category     @relation(fields: [categoryId], references: [id])
-  collection     Collection   @relation(fields: [collectionId], references: [id])
-  professional   User         @relation("UserProducts", fields: [professionalId], references: [id])
-  orderItems     OrderItem[]
+  id                   String       @id @default(uuid())
+  name                 String
+  description          String?
+  price                Float
+  stockQuantity        Int          @default(0)
+  images               String[]     // Multiple product images
+  categoryId           String
+  collectionId         String?
+  professionalId       String
+  sizes                String[]     // Available sizes [XS, S, M, L, XL]
+  colors               String[]     // Available colors
+  material             String?
+  careInstructions     String?
+  estimatedDelivery    Int?         // days for production/shipping
+  isCustomizable       Boolean      @default(false)
+  tags                 ProductTag[] // TRENDING, NEW, BESTSELLER, etc.
+  gender               Gender       @default(UNISEX)
+  isActive             Boolean      @default(true)
+  isInStock            Boolean      @default(true)
+  viewCount            Int          @default(0)    // Track product views
+  wishlistCount        Int          @default(0)    // Track wishlist additions
+  cartCount            Int          @default(0)    // Track cart additions
+  soldCount            Int          @default(0)    // Track sales
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  category             Category     @relation(fields: [categoryId], references: [id])
+  collection           Collection?  @relation(fields: [collectionId], references: [id])
+  professional         User         @relation(fields: [professionalId], references: [id])
+  orderItems           OrderItem[]
+  wishlistItems        WishlistItem[]
+  cartItems            CartItem[]
+  outfitProducts       OutfitProduct[]
+  analytics            ProductAnalytics?
+  recommendations      UserRecommendation[]
 }
 
 model Category {
   id           String        @id @default(uuid())
-  name         String
+  name         String        @unique  // MEN, WOMEN, ACCESSORIES, BAGS, SHOES
+  slug         String        @unique
+  description  String?
   imageUrl     String?
-  subcategories Collection[]
+  parentId     String?       // For sub-categories
+  isActive     Boolean       @default(true)
+  order        Int           @default(0)  // For ordering categories
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]    @relation("CategoryHierarchy")
+  collections  Collection[]
   products     Product[]
 }
 
 model Collection {
   id          String     @id @default(uuid())
-  name        String
+  name        String     @unique
+  slug        String     @unique
+  description String?
   imageUrl    String?
   categoryId  String
+  season      Season?    // Optional seasonal collection
+  isActive    Boolean    @default(true)
+  isFeatured  Boolean    @default(false)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   category    Category   @relation(fields: [categoryId], references: [id])
   products    Product[]
 }
 
+// ================================
+// SERVICES
+// ================================
+
 model Service {
-  id              String     @id @default(uuid())
+  id              String          @id @default(uuid())
   name            String
   description     String?
   price           Float
+  duration        Int             // minutes
   imageUrl        String?
   professionalId  String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  categoryId      String
+  isHomeService   Boolean         @default(false)  // Can be done at customer's location
+  requirements    String?         // What customer needs to bring/prepare
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  professional    User       @relation(fields: [professionalId], references: [id])
+  professional    User            @relation(fields: [professionalId], references: [id])
+  category        ServiceCategory @relation(fields: [categoryId], references: [id])
   bookings        Booking[]
 }
 
-model Trend {
-  id          String       @id @default(uuid())
-  name        String
+model ServiceCategory {
+  id          String     @id @default(uuid())
+  name        String     @unique  // TAILORING, STYLING, DESIGN_CONSULTATION, etc.
   description String?
   imageUrl    String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  categoryId  String?
-  category    Trendcategory? @relation(fields: [categoryId], references: [id])
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  services    Service[]
 }
 
-model Trendcategory {
-  id          String            @id @default(uuid())
-  name        String
-  imageUrl    String?
-  subcategories TrendSubcategory[]
-  trends      Trend[]
+// ================================
+// FASHION INSPIRATION & EVENTS
+// ================================
+
+model Event {
+  id               String            @id @default(uuid())
+  name             String            @unique  // OFFICE, ROMANTIC, STREETWEAR, WEDDING, etc.
+  description      String?
+  imageUrl         String?
+  dressCodes       String[]
+  seasonality      Season[]
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  outfitInspirations OutfitInspiration[]
 }
 
-model TrendSubcategory {
-  id          String           @id @default(uuid())
-  name        String
-  imageUrl    String?
-  categoryId  String
-  category    Trendcategory    @relation(fields: [categoryId], references: [id])
+model OutfitInspiration {
+  id              String         @id @default(uuid())
+  eventId         String
+  stylistId       String
+  title           String
+  description     String?
+  outfitImageUrl  String         // Main styled outfit photo
+  totalPrice      Float?         // Optional total price of all items
+  tags            String[]       // Style tags like "elegant", "casual", "trendy"
+  likes           Int            @default(0)
+  views           Int            @default(0)
+  isActive        Boolean        @default(true)
+  isFeatured      Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  event           Event          @relation(fields: [eventId], references: [id])
+  stylist         User           @relation(fields: [stylistId], references: [id])
+  products        OutfitProduct[]
+  savedByUsers    SavedOutfit[]
 }
 
+model OutfitProduct {
+  id              String           @id @default(uuid())
+  outfitId        String
+  productId       String
+  position        Int?             // Position of product in outfit (for styling)
+  notes           String?          // Styling notes for this specific item
 
-model Blog {
-  id          String   @id @default(uuid())
-  title       String
-  content     String
-  imageUrl    String?
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  outfit          OutfitInspiration @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  product         Product          @relation(fields: [productId], references: [id])
 
-  author      User     @relation(fields: [authorId], references: [id])
+  @@unique([outfitId, productId])
 }
+
+model SavedOutfit {
+  id         String            @id @default(uuid())
+  userId     String
+  outfitId   String
+  createdAt  DateTime          @default(now())
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfit     OutfitInspiration @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, outfitId])
+}
+
+// ================================
+// ORDERS & BOOKINGS
+// ================================
 
 model Order {
-  id          String       @id @default(uuid())
-  customerId  String
-  totalPrice  Float
-  status      OrderStatus  @default(PENDING)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  customerId      String
+  addressId       String
+  subtotal        Float
+  shippingCost    Float        @default(0)
+  tax             Float        @default(0)
+  totalPrice      Float
+  status          OrderStatus  @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   String?
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  actualDelivery  DateTime?
+  deliveryZone    String?      // Which delivery zone was used
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  customer    User         @relation(fields: [customerId], references: [id])
-  orderItems  OrderItem[]
+  customer        User         @relation(fields: [customerId], references: [id])
+  address         Address      @relation(fields: [addressId], references: [id])
+  items           OrderItem[]
+  deliveryConfirmation DeliveryConfirmation?
+  paymentEscrow   PaymentEscrow?
+  coupons         OrderCoupon[]
 }
 
 model OrderItem {
   id         String   @id @default(uuid())
   orderId    String
   productId  String
+  professionalId String  // To track which professional gets paid
   quantity   Int
+  size       String?
+  color      String?
   price      Float
+  notes      String?
 
-  order      Order    @relation(fields: [orderId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId, size, color])
+}
+
+model DeliveryConfirmation {
+  id              String          @id @default(uuid())
+  orderId         String          @unique
+  customerId      String
+  professionalId  String
+  status          ConfirmationStatus @default(PENDING)
+  customerConfirmed Boolean       @default(false)
+  confirmationDeadline DateTime   // 2 days from delivery
+  createdAt       DateTime        @default(now())
+  confirmedAt     DateTime?
+  
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer        User            @relation(fields: [customerId], references: [id])
+}
+
+model PaymentEscrow {
+  id              String          @id @default(uuid())
+  orderId         String          @unique
+  professionalId  String
+  amount          Float
+  status          EscrowStatus    @default(HELD)
+  releaseDate     DateTime?       // When funds will be released
+  releasedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  professional    User            @relation(fields: [professionalId], references: [id])
 }
 
 model Booking {
+  id             String        @id @default(uuid())
+  customerId     String
+  serviceId      String
+  bookingDate    DateTime
+  endTime        DateTime?     // Calculated from service duration
+  location       String?       // If it's a home service
+  notes          String?
+  status         BookingStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  customer       User          @relation(fields: [customerId], references: [id])
+  service        Service       @relation(fields: [serviceId], references: [id])
+}
+
+// ================================
+// SHOPPING FEATURES
+// ================================
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  userId     String
+  productId  String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id         String   @id @default(uuid())
+  userId     String
+  productId  String
+  quantity   Int      @default(1)
+  size       String?
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, size, color])
+}
+
+// ================================
+// REVIEWS & CONTENT
+// ================================
+
+model Review {
+  id          String     @id @default(uuid())
+  userId      String
+  targetId    String     // Can be product, service, or professional
+  targetType  ReviewType
+  orderId     String?    // Link to order for verified purchases
+  rating      Int        // 1-5
+  title       String?
+  comment     String?
+  images      String[]
+  isVerified  Boolean    @default(false)  // Verified purchase
+  helpfulCount Int       @default(0)      // How many found it helpful
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetId, targetType])
+}
+
+model Blog {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  imageUrl    String?
+  tags        String[]
+  authorId    String
+  categoryId  String?  // Blog categories
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User     @relation(fields: [authorId], references: [id])
+}
+
+// ================================
+// NOTIFICATIONS
+// ================================
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?            // Additional data for the notification
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ================================
+// ANALYTICS & TRACKING
+// ================================
+
+model ProductAnalytics {
+  id            String   @id @default(uuid())
+  productId     String   @unique
+  totalViews    Int      @default(0)
+  totalWishlisted Int    @default(0)
+  totalCartAdds Int      @default(0)
+  totalPurchases Int     @default(0)
+  conversionRate Float   @default(0)  // purchases/views
+  avgRating     Float    @default(0)
+  lastUpdated   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProfessionalAnalytics {
+  id              String   @id @default(uuid())
+  professionalId  String   @unique
+  totalOrders     Int      @default(0)
+  totalRevenue    Float    @default(0)
+  avgOrderValue   Float    @default(0)
+  totalBookings   Int      @default(0)
+  completedOrders Int      @default(0)
+  cancelledOrders Int      @default(0)
+  avgRating       Float    @default(0)
+  profileViews    Int      @default(0)
+  responseRate    Float    @default(100)  // Percentage of responded bookings
+  onTimeDelivery  Float    @default(100)  // Percentage of on-time deliveries
+  lastUpdated     DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  professional    User     @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+}
+
+// ================================
+// PROMOTIONAL FEATURES
+// ================================
+
+model Coupon {
+  id              String     @id @default(uuid())
+  code            String     @unique
+  description     String?
+  type            CouponType
+  value           Float      // Percentage or fixed amount
+  minOrderAmount  Float?     // Minimum order to apply coupon
+  maxDiscount     Float?     // Maximum discount for percentage coupons
+  usageLimit      Int?       // Total usage limit
+  usedCount       Int        @default(0)
+  isActive        Boolean    @default(true)
+  validFrom       DateTime
+  validUntil      DateTime
+  applicableCategories String[] // Category IDs where applicable
+  applicableProfessionals String[] // Professional IDs where applicable
+  createdBy       String     // Admin who created it
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  orders          OrderCoupon[]
+}
+
+model OrderCoupon {
+  id         String  @id @default(uuid())
+  orderId    String
+  couponId   String
+  discount   Float   // Actual discount applied
+
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  coupon     Coupon  @relation(fields: [couponId], references: [id])
+
+  @@unique([orderId, couponId])
+}
+
+// ================================
+// COMMUNICATION SYSTEM
+// ================================
+
+model Conversation {
+  id              String    @id @default(uuid())
+  customerId      String
+  professionalId  String
+  subject         String?
+  lastMessageAt   DateTime  @default(now())
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer        User      @relation("CustomerConversations", fields: [customerId], references: [id])
+  professional    User      @relation("ProfessionalConversations", fields: [professionalId], references: [id])
+  messages        Message[]
+
+  @@unique([customerId, professionalId])
+}
+
+model Message {
+  id               String       @id @default(uuid())
+  conversationId   String
+  senderId         String
+  content          String
+  attachments      String[]     // URLs to attached files/images
+  isRead           Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender           User         @relation(fields: [senderId], references: [id])
+}
+
+// ================================
+// FASHION TRENDS & RECOMMENDATIONS
+// ================================
+
+model TrendingSearch {
+  id          String   @id @default(uuid())
+  searchTerm  String   @unique
+  searchCount Int      @default(1)
+  category    String?  // Which category it's trending in
+  lastSearched DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model UserRecommendation {
+  id            String   @id @default(uuid())
+  userId        String
+  productId     String
+  score         Float    @default(0)  // Recommendation score
+  reason        String?  // Why recommended (similar purchases, style match, etc.)
+  isViewed      Boolean  @default(false)
+  isInteracted  Boolean  @default(false)  // Clicked, wishlisted, etc.
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+// ================================
+// SYSTEM ADMINISTRATION
+// ================================
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("general")
+  updatedBy   String
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  action      String    // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity      String?   // Product, Order, User, etc.
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  user        User?     @relation(fields: [userId], references: [id])
+}
+
+model ReportedContent {
   id          String        @id @default(uuid())
-  customerId  String
-  serviceId   String
-  bookingDate DateTime
-  status      BookingStatus @default(PENDING)
+  reporterId  String
+  contentType ContentType   // PRODUCT, REVIEW, BLOG, etc.
+  contentId   String
+  reason      ReportReason
+  description String?
+  status      ReportStatus  @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  resolution  String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  customer    User          @relation(fields: [customerId], references: [id])
-  service     Service       @relation(fields: [serviceId], references: [id])
+  reporter    User          @relation(fields: [reporterId], references: [id])
+}
+
+// ================================
+// ENUMS
+// ================================
+
+enum Role {
+  CUSTOMER
+  PROFESSIONAL
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ProfessionalType {
+  FASHION_DESIGNER
+  TAILOR
+  STYLIST
+  SEAMSTRESS
+  FASHION_CONSULTANT
+  PATTERN_MAKER
+  BOUTIQUE_OWNER
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+enum DocumentType {
+  NATIONAL_ID
+  BUSINESS_REGISTRATION
+  PORTFOLIO
+  CERTIFICATION
+  TAX_CERTIFICATE
+  OTHER
+}
+
+enum SocialMediaPlatform {
+  FACEBOOK
+  TWITTER
+  INSTAGRAM
+  LINKEDIN
+  YOUTUBE
+  TIKTOK
+  PINTEREST
+  WHATSAPP
 }
 
 enum OrderStatus {
   PENDING
-  COMPLETED
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
   CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
+  IN_PROGRESS
+  COMPLETED
   CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum ReviewType {
+  PRODUCT
+  SERVICE
+  PROFESSIONAL
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  BOOKING_CONFIRMATION
+  NEW_INSPIRATION
+  PAYMENT_RECEIVED
+  REVIEW_RECEIVED
+  PROMOTION
+  SYSTEM_UPDATE
+  DELIVERY_CONFIRMATION_REQUEST
+  PAYMENT_RELEASED
+  MESSAGE_RECEIVED
+  WISHLIST_SALE
+  STOCK_ALERT
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+  ALL_SEASON
+}
+
+enum BodyType {
+  PEAR
+  APPLE
+  HOURGLASS
+  RECTANGLE
+  INVERTED_TRIANGLE
+  OVAL
+}
+
+enum StylePreference {
+  CASUAL
+  FORMAL
+  BUSINESS
+  BOHEMIAN
+  MINIMALIST
+  VINTAGE
+  TRENDY
+  CLASSIC
+  STREETWEAR
+  ROMANTIC
+  EDGY
+  PREPPY
+}
+
+enum ProductTag {
+  NEW
+  TRENDING
+  BESTSELLER
+  SALE
+  LIMITED_EDITION
+  CUSTOM_MADE
+  ECO_FRIENDLY
+  HANDMADE
+  FEATURED
+}
+
+enum Gender {
+  MEN
+  WOMEN
+  KIDS
+  UNISEX
+}
+
+enum ConfirmationStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  DISPUTED
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_ONE_GET_ONE
+}
+
+enum ContentType {
+  PRODUCT
+  REVIEW
+  BLOG
+  COMMENT
+  MESSAGE
+  PROFILE
+  OUTFIT_INSPIRATION
+}
+
+enum ReportReason {
+  INAPPROPRIATE_CONTENT
+  SPAM
+  FAKE_PRODUCT
+  COPYRIGHT_VIOLATION
+  HARASSMENT
+  MISLEADING_INFORMATION
+  QUALITY_ISSUES
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+  ESCALATED
 }

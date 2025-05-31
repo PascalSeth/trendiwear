@@ -1,10 +1,10 @@
 // pages/page.tsx
 import React from 'react';
 import ShowCase from '../components/ShowCase';
-import Intro from '../components/Intro';
 import TopSellers from '../components/sections/TopSellers';
 import NewArrivals from '../components/sections/NewArrivals';
 import BlogIntro from '../components/sections/BlogIntro';
+import FashionInspo from '../components/Intro';
 
 
 const Page: React.FC = () => {
@@ -34,7 +34,7 @@ const Page: React.FC = () => {
   return (
     <div className='w-full h-full overflow-x-hidden'>
       <ShowCase />
-            <Intro />
+          
 <TopSellers/>
       
       {/* Categories Section */}
@@ -57,7 +57,7 @@ const Page: React.FC = () => {
       </section> */}
      
 <NewArrivals />
-      {/* 
+   <FashionInspo />     {/* 
       <TopSellers />
       <Sketches /> */}
     <BlogIntro/> </div>

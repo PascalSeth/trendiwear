@@ -1,7 +1,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NextResponse } from "next/server";
 import { unstable_noStore as noStore } from "next/cache";
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(){
     noStore()
@@ -23,7 +23,7 @@ export async function GET(){
             data :{
                 email:user.email ?? '',
                 firstName: user.given_name ?? '',
-                LastName: user.family_name ?? '',
+                lastName: user.family_name ?? '',
                 id:user.id,
                 profileImage:user.picture ?? `https://avatar.vercel.fsh/${user.given_name}`
             }

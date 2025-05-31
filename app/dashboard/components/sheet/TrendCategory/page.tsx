@@ -1,6 +1,5 @@
 "use client";
 
-import { CreateTrendCategory } from "@/app/api/POST/trendCategory/action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +27,7 @@ export default function TrendCategorySheet() {
             Enter the details of the Trend category below.
           </SheetDescription>
         </SheetHeader>
-        <form action={CreateTrendCategory}>
+        <form >
           <div className="grid gap-4 py-4">
             {/* Name Field */}
             <div className="grid grid-cols-4 items-center gap-4">
