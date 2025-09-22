@@ -1,4 +1,5 @@
 'use client'
+import React, { useState, useEffect } from 'react';
 import {
     BarChart3,
     Bell,
@@ -23,36 +24,125 @@ import {
     Users,
     XCircle
 } from 'lucide-react';
-import { useState } from 'react';
+
+interface Order {
+  id: string;
+  customer: string;
+  professional: string;
+  amount: number;
+  status: string;
+  date: string;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  owner: string;
+  revenue: number;
+  orders: number;
+  rating: number;
+  status: string;
+}
+
+interface ApiOrder {
+  id: string;
+  createdAt: string;
+  totalPrice: number;
+  status: string;
+  customer: {
+    firstName: string;
+    lastName: string;
+  };
+  items: Array<{
+    product?: {
+      name: string;
+    };
+  }>;
+}
+
+interface ApiProfessional {
+  id: string;
+  businessName: string;
+  isVerified: boolean;
+  rating: number;
+  user: {
+    firstName: string;
+    lastName: string;
+    _count?: {
+      professionalServices: number;
+    };
+  };
+}
+
+interface Stats {
+  totalUsers: number;
+  totalProfessionals: number;
+  totalOrders: number;
+  totalRevenue: number;
+  monthlyGrowth: number;
+  pendingOrders: number;
+}
 
 const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState({
-    totalUsers: 1247,
-    totalProfessionals: 89,
-    totalOrders: 3456,
-    totalRevenue: 125430.50,
-    monthlyGrowth: 12.5,
-    pendingOrders: 23
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [recentOrders, setRecentOrders] = useState([
-    { id: '1', customer: 'Jane Doe', professional: 'Elegant Designs', amount: 2500, status: 'completed', date: '2024-05-29' },
-    { id: '2', customer: 'John Smith', professional: 'Fashion Studio', amount: 4200, status: 'pending', date: '2024-05-29' },
-    { id: '3', customer: 'Mary Johnson', professional: 'Style Hub', amount: 1800, status: 'processing', date: '2024-05-28' },
-    { id: '4', customer: 'David Wilson', professional: 'Trend Makers', amount: 3600, status: 'shipped', date: '2024-05-28' },
-    { id: '5', customer: 'Sarah Brown', professional: 'Chic Boutique', amount: 2100, status: 'completed', date: '2024-05-27' }
-  ]);
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const [professionals, setProfessionals] = useState([
-    { id: '1', name: 'Elegant Designs', owner: 'Alice Wanjiku', revenue: 45200, orders: 156, rating: 4.8, status: 'verified' },
-    { id: '2', name: 'Fashion Studio', owner: 'Peter Kimani', revenue: 38900, orders: 134, rating: 4.6, status: 'verified' },
-    { id: '3', name: 'Style Hub', owner: 'Grace Muthoni', revenue: 32100, orders: 98, rating: 4.7, status: 'pending' },
-    { id: '4', name: 'Trend Makers', owner: 'Michael Ochieng', revenue: 28600, orders: 87, rating: 4.5, status: 'verified' },
-    { id: '5', name: 'Chic Boutique', owner: 'Susan Akinyi', revenue: 25400, orders: 76, rating: 4.9, status: 'verified' }
-  ]);
+        // Fetch stats
+        const statsResponse = await fetch('/api/dashboard/stats');
+        if (!statsResponse.ok) throw new Error('Failed to fetch stats');
+        const statsData = await statsResponse.json();
+        setStats(statsData);
 
-  const StatCard = ({ icon: Icon, title, value, change, color }) => (
+        // Fetch recent orders
+        const ordersResponse = await fetch('/api/orders?limit=5');
+        if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+        const ordersData = await ordersResponse.json();
+        const formattedOrders: Order[] = ordersData.orders.map((order: ApiOrder) => ({
+          id: order.id,
+          customer: `${order.customer.firstName} ${order.customer.lastName}`,
+          professional: order.items[0]?.product?.name || 'Unknown',
+          amount: order.totalPrice,
+          status: order.status.toLowerCase(),
+          date: new Date(order.createdAt).toISOString().split('T')[0]
+        }));
+        setRecentOrders(formattedOrders);
+
+        // Fetch professionals
+        const professionalsResponse = await fetch('/api/professional-profiles?limit=5');
+        if (!professionalsResponse.ok) throw new Error('Failed to fetch professionals');
+        const professionalsData = await professionalsResponse.json();
+        const formattedProfessionals: Professional[] = professionalsData.profiles.map((profile: ApiProfessional) => ({
+          id: profile.id,
+          name: profile.businessName,
+          owner: `${profile.user.firstName} ${profile.user.lastName}`,
+          revenue: 0, // This would need to be calculated from orders
+          orders: profile.user._count?.professionalServices || 0,
+          rating: profile.rating || 0,
+          status: profile.isVerified ? 'verified' : 'pending'
+        }));
+        setProfessionals(formattedProfessionals);
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const StatCard = ({ icon: Icon, title, value, change, color }: { icon: React.ComponentType<{ className?: string }>; title: string; value: string | number; change?: number; color: string }) => (
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
@@ -72,7 +162,7 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-  const OrderRow = ({ order }) => (
+  const OrderRow = ({ order }: { order: Order }) => (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">#{order.id}</div>
@@ -107,7 +197,7 @@ const SuperAdminDashboard = () => {
     </tr>
   );
 
-  const ProfessionalRow = ({ prof }) => (
+  const ProfessionalRow = ({ prof }: { prof: Professional }) => (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
@@ -155,6 +245,44 @@ const SuperAdminDashboard = () => {
       </td>
     </tr>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <p className="mt-4 text-gray-600">Error loading dashboard: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">No data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

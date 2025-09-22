@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Plus, MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -45,7 +45,10 @@ type ServiceCategory = {
   };
 };
 
-export const columns: ColumnDef<Service>[] = [
+const getColumns = (
+  setData: React.Dispatch<React.SetStateAction<Service[]>>,
+  setEditingService: React.Dispatch<React.SetStateAction<Service | null>>
+): ColumnDef<Service>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -157,7 +160,7 @@ export const columns: ColumnDef<Service>[] = [
           }
 
           // Remove from local state
-          setData(prev => prev.filter(s => s.id !== service.id));
+          setData((prev: Service[]) => prev.filter((s: Service) => s.id !== service.id));
         } catch (error) {
           console.error("Error deleting service:", error);
           alert(error instanceof Error ? error.message : "Failed to delete service");
@@ -245,6 +248,8 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
       console.error('Failed to fetch categories:', error);
     }
   };
+
+  const columns = getColumns(setData, setEditingService);
 
   const table = useReactTable({
     data,

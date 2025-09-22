@@ -361,7 +361,7 @@ function FashionInspo() {
               </div>
 
               <h3 className="text-3xl font-bold text-slate-900 mb-4">
-                Can't Find Your Perfect Style?
+                Can&apos;t Find Your Perfect Style?
               </h3>
               <p className="text-slate-600 mb-8 max-w-lg mx-auto leading-relaxed">
                 Take our style quiz and get personalized fashion recommendations based on your preferences, body type, and lifestyle.
