@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (user.role === "CUSTOMER") {
       where.customerId = user.id
     } else if (user.role === "PROFESSIONAL") {
-      where.service = { professionalId: user.id }
+      where.professionalId = user.id
     } else if (!["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -39,16 +39,16 @@ export async function GET(request: NextRequest) {
           },
           service: {
             include: {
-              professional: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  professionalProfile: {
-                    select: { businessName: true },
-                  },
-                },
-              },
               category: true,
+            },
+          },
+          professional: {
+            select: {
+              firstName: true,
+              lastName: true,
+              professionalProfile: {
+                select: { businessName: true },
+              },
             },
           },
         },
@@ -86,21 +86,39 @@ export async function POST(request: NextRequest) {
       notes?: string
     } = body
 
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
+    // Find the service and get the professional who offers it
+    const professionalService = await prisma.professionalService.findFirst({
+      where: {
+        serviceId,
+        isActive: true,
+      },
+      include: {
+        professional: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            professionalProfile: {
+              select: { businessName: true },
+            },
+          },
+        },
+        service: true,
+      },
     })
 
-    if (!service || !service.isActive) {
+    if (!professionalService || !professionalService.service.isActive) {
       return NextResponse.json({ error: "Service not available" }, { status: 400 })
     }
 
     const bookingDateTime = new Date(bookingDate)
-    const endTime = new Date(bookingDateTime.getTime() + service.duration * 60000)
+    const endTime = new Date(bookingDateTime.getTime() + professionalService.service.duration * 60000)
 
     const booking = await prisma.booking.create({
       data: {
         customerId: user.id,
         serviceId,
+        professionalId: professionalService.professionalId,
         bookingDate: bookingDateTime,
         endTime,
         location,
@@ -109,16 +127,16 @@ export async function POST(request: NextRequest) {
       include: {
         service: {
           include: {
-            professional: {
-              select: {
-                firstName: true,
-                lastName: true,
-                professionalProfile: {
-                  select: { businessName: true },
-                },
-              },
-            },
             category: true,
+          },
+        },
+        professional: {
+          select: {
+            firstName: true,
+            lastName: true,
+            professionalProfile: {
+              select: { businessName: true },
+            },
           },
         },
       },
