@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -63,7 +66,14 @@ type Collection = {
   };
 };
 
-export const columns: ColumnDef<Collection>[] = [
+export function CollectionsTable() {
+  const [collections, setCollections] = React.useState<Collection[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [editingCollection, setEditingCollection] = React.useState<Collection | null>(null);
+
+  const columns: ColumnDef<Collection>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -183,13 +193,68 @@ export const columns: ColumnDef<Collection>[] = [
     ),
     cell: ({ row }) => <span className="text-sm">{row.getValue("order")}</span>,
   },
-];
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const collection = row.original;
 
-export function CollectionsTable() {
-  const [collections, setCollections] = React.useState<Collection[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+      const handleDelete = async () => {
+        if (!confirm(`Are you sure you want to delete "${collection.name}"?`)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/collections/${collection.id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Failed to delete collection");
+          }
+
+          // Remove from local state
+          setCollections(prev => prev.filter(col => col.id !== collection.id));
+        } catch (error) {
+          console.error("Error deleting collection:", error);
+          alert(error instanceof Error ? error.message : "Failed to delete collection");
+        }
+      };
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(collection.id)}
+            >
+              Copy collection ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setEditingCollection(collection)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleDelete}
+              className="text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
+];
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -282,7 +347,15 @@ export function CollectionsTable() {
 
   return (
     <div className="w-full">
-      <CollectionSheet categories={categories} onCollectionAdded={handleCollectionAdded} />
+      <CollectionSheet
+        categories={categories}
+        onCollectionAdded={handleCollectionAdded}
+        collectionToEdit={editingCollection || undefined}
+        onCollectionUpdated={(updatedCollection) => {
+          setCollections(prev => prev.map(col => col.id === updatedCollection.id ? updatedCollection : col));
+          setEditingCollection(null);
+        }}
+      />
       <div className="flex items-center py-4 gap-4">
         <Input
           placeholder="Filter collections..."

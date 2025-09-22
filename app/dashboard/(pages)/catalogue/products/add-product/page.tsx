@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useState } from "react";
-import { CreateProduct } from "@/app/api/POST/Products/action";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -64,7 +63,7 @@ const sizeOptions = {
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="max-w-5xl mx-auto bg-white shadow-md rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
-        <form action={CreateProduct}>
+        <form>
           {/* General Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>

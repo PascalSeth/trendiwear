@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,  } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,11 +55,15 @@ interface Collection {
 interface CollectionSheetProps {
   categories: Category[];
   onCollectionAdded: (collection: Collection) => void;
+  collectionToEdit?: Collection;
+  onCollectionUpdated?: (collection: Collection) => void;
 }
 
 export default function CollectionSheet({
   categories = [],
   onCollectionAdded,
+  collectionToEdit,
+  onCollectionUpdated,
 }: CollectionSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -73,6 +77,23 @@ export default function CollectionSheet({
     isFeatured: false,
     order: 0,
   });
+
+  React.useEffect(() => {
+    if (collectionToEdit) {
+      setFormData({
+        name: collectionToEdit.name,
+        slug: collectionToEdit.slug,
+        description: collectionToEdit.description || "",
+        categoryId: collectionToEdit.categoryId || "",
+        season: collectionToEdit.season || "",
+        isFeatured: collectionToEdit.isFeatured,
+        order: collectionToEdit.order,
+      });
+      if (collectionToEdit.imageUrl) {
+        setImagePreview(collectionToEdit.imageUrl);
+      }
+    }
+  }, [collectionToEdit]);
 
   const generateSlug = (name: string): string => {
     return name
@@ -152,11 +173,14 @@ export default function CollectionSheet({
         season: formData.season || undefined,
         isFeatured: formData.isFeatured,
         order: formData.order,
-        isActive: true,
+        ...(collectionToEdit ? {} : { isActive: true }), // Only set isActive for new collections
       };
 
-      const response = await fetch("/api/categories", {
-        method: "POST",
+      const url = collectionToEdit ? `/api/collections/${collectionToEdit.id}` : "/api/collections";
+      const method = collectionToEdit ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -165,36 +189,43 @@ export default function CollectionSheet({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create collection");
+        throw new Error(errorData.error || `Failed to ${collectionToEdit ? 'update' : 'create'} collection`);
       }
 
-      const newCollectionFromAPI = await response.json();
+      const collectionFromAPI = await response.json();
 
-      const newCollection: Collection = {
-        ...newCollectionFromAPI,
-        isActive: newCollectionFromAPI.isActive ?? true,
-        category: newCollectionFromAPI.categoryId
-          ? categories.find((cat) => cat.id === newCollectionFromAPI.categoryId)
+      const collection: Collection = {
+        ...collectionFromAPI,
+        isActive: collectionFromAPI.isActive ?? true,
+        category: collectionFromAPI.categoryId
+          ? categories.find((cat) => cat.id === collectionFromAPI.categoryId)
           : undefined,
         _count: { products: 0 },
       };
 
-      setFormData({
-        name: "",
-        slug: "",
-        description: "",
-        categoryId: "",
-        season: "",
-        isFeatured: false,
-        order: 0,
-      });
-      setImageFile(null);
-      setImagePreview(null);
+      if (collectionToEdit && onCollectionUpdated) {
+        onCollectionUpdated(collection);
+      } else {
+        onCollectionAdded(collection);
+      }
 
-      onCollectionAdded(newCollection);
+      // Reset form only for new collections
+      if (!collectionToEdit) {
+        setFormData({
+          name: "",
+          slug: "",
+          description: "",
+          categoryId: "",
+          season: "",
+          isFeatured: false,
+          order: 0,
+        });
+        setImageFile(null);
+        setImagePreview(null);
+      }
 
-      toast.success("Collection created successfully!", {
-        description: `Collection "${newCollection.name}" has been added.`,
+      toast.success(`Collection ${collectionToEdit ? 'updated' : 'created'} successfully!`, {
+        description: `Collection "${collection.name}" has been ${collectionToEdit ? 'updated' : 'added'}.`,
       });
     } catch (error) {
       console.error("Error creating collection:", error);
@@ -216,9 +247,9 @@ export default function CollectionSheet({
       </SheetTrigger>
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Add Collection</SheetTitle>
+          <SheetTitle>{collectionToEdit ? 'Edit Collection' : 'Add Collection'}</SheetTitle>
           <SheetDescription>
-            Create a new collection to organize your products.
+            {collectionToEdit ? 'Update the collection details.' : 'Create a new collection to organize your products.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -402,7 +433,7 @@ export default function CollectionSheet({
             onClick={handleSubmit}
             disabled={isLoading || !formData.name.trim()}
           >
-            {isLoading ? "Creating..." : "Create Collection"}
+            {isLoading ? (collectionToEdit ? "Updating..." : "Creating...") : (collectionToEdit ? "Update Collection" : "Create Collection")}
           </Button>
         </SheetFooter>
       </SheetContent>

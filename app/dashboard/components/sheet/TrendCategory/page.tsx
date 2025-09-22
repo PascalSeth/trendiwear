@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,47 @@ import {
 } from "@/components/ui/sheet";
 
 export default function TrendCategorySheet() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const name = formData.get("name") as string;
+    const image = formData.get("image") as File;
+
+    if (!name || !image) {
+      setError("Name and image are required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/GET/getTrendCategories", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create category");
+      }
+
+      const newCategory = await response.json();
+      console.log("Category created:", newCategory);
+
+      // Close the sheet or reset form
+      // You can add logic to refresh the data table here
+    } catch (error) {
+      console.error("Error creating category:", error);
+      setError(error instanceof Error ? error.message : "Failed to create category");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -27,7 +69,7 @@ export default function TrendCategorySheet() {
             Enter the details of the Trend category below.
           </SheetDescription>
         </SheetHeader>
-        <form >
+        <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Name Field */}
             <div className="grid grid-cols-4 items-center gap-4">
@@ -58,12 +100,18 @@ export default function TrendCategorySheet() {
               />
             </div>
 
-             
+            {error && (
+              <div className="col-span-4 text-red-500 text-sm">
+                {error}
+              </div>
+            )}
           </div>
 
           <SheetFooter>
             <SheetClose asChild>
-              <Button type="submit">Save Category</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Category"}
+              </Button>
             </SheetClose>
           </SheetFooter>
         </form>

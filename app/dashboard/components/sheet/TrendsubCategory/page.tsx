@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { CreateTrendsubCategory } from "@/app/api/POST/trendsubCategory/action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,10 +27,13 @@ import {
 interface Category{
   id: string;
   name: string;
+  parentId?: string;
 }
 export default function TrendsubCategorySheet() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -41,7 +43,9 @@ export default function TrendsubCategorySheet() {
           throw new Error("Failed to fetch categories");
         }
         const data = await response.json();
-        setCategories(data);
+        // Filter for top-level categories (no parent)
+        const topLevelCategories = data.filter((cat: Category) => !cat.parentId);
+        setCategories(topLevelCategories);
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
@@ -51,6 +55,45 @@ export default function TrendsubCategorySheet() {
 
     fetchCategories();
   }, []);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const name = formData.get("name") as string;
+    const image = formData.get("image") as File;
+    const categoryId = formData.get("categoryId") as string;
+
+    if (!name || !image || !categoryId) {
+      setError("All fields are required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/GET/getTrendCategories", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create sub-category");
+      }
+
+      const newCategory = await response.json();
+      console.log("Sub-category created:", newCategory);
+
+      // Close the sheet or reset form
+      // You can add logic to refresh the data table here
+    } catch (error) {
+      console.error("Error creating sub-category:", error);
+      setError(error instanceof Error ? error.message : "Failed to create sub-category");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Sheet>
@@ -64,7 +107,7 @@ export default function TrendsubCategorySheet() {
             Enter the details of the Trend sub-category below.
           </SheetDescription>
         </SheetHeader>
-        <form action={CreateTrendsubCategory}>
+        <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Name Field */}
             <div className="grid grid-cols-4 items-center gap-4">
@@ -116,11 +159,19 @@ export default function TrendsubCategorySheet() {
                 </SelectContent>
               </Select>
             </div>
+
+            {error && (
+              <div className="col-span-4 text-red-500 text-sm">
+                {error}
+              </div>
+            )}
           </div>
 
           <SheetFooter>
             <SheetClose asChild>
-              <Button type="submit">Save Sub-Category</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Sub-Category"}
+              </Button>
             </SheetClose>
           </SheetFooter>
         </form>

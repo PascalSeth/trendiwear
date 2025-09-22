@@ -1,14 +1,12 @@
 import React from 'react'
 import OrdersDataTable from './Datatable'
 
-
-
-function Orders() {
+function OrdersPage() {
   return (
-    <div>
-        <OrdersDataTable/>
+    <div className="container mx-auto py-8 px-4">
+      <OrdersDataTable />
     </div>
   )
 }
 
-export default Orders
+export default OrdersPage

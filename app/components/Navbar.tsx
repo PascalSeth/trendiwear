@@ -28,25 +28,25 @@ function Navbar({ role, user }: NavbarProps) {
   const isProfessionalOrOwner = role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN";
 
   return (
-    <div className="bg-white border-b sticky w-full overflow-hidden top-0 left-0 right-0 bottom-0 z-[999] border-gray-200 shadow-sm">
+    <div className="bg-white border-b sticky w-full overflow-hidden top-0 left-0 right-0 bottom-0 z-[99] border-gray-200 shadow-sm">
       {/* Top Navigation Links */}
       <div className="w-full max-lg:hidden">
         <div className="border-b border-gray-200 py-2">
           <div className="container mx-auto flex items-center justify-between text-sm text-gray-600">
-            <div className="flex items-center space-x-4">
-              <Link href="/fashion-trends" className={`hover:text-[#F59E0B] ${isActive('/fashion-trends') ? 'text-[#F59E0B]' : ''}`}>
+            <div className="flex items-center font-semibold space-x-4">
+              <Link href="/fashion-trends" className={`hover:text-red-900 ${isActive('/fashion-trends') ? 'text-red-900' : ''}`}>
                 Fashion Trends
               </Link>
-              <Link href="/tailors-designers" className={`hover:text-[#F59E0B] ${isActive('/tailors-designers') ? 'text-[#F59E0B]' : ''}`}>
+              <Link href="/tailors-designers" className={`hover:text-red-900 ${isActive('/tailors-designers') ? 'text-red-900' : ''}`}>
                 Tailors & Designers
               </Link>
-              <Link href="/shop" className={`hover:text-[#F59E0B] ${isActive('/shop') ? 'text-[#F59E0B]' : ''}`}>
+              <Link href="/shop" className={`hover:text-red-900 ${isActive('/shop') ? 'text-red-900' : ''}`}>
                 Shop
               </Link>
-              <Link href="/blog" className={`hover:text-[#F59E0B] ${isActive('/blog') ? 'text-[#F59E0B]' : ''}`}>
+              <Link href="/blog" className={`hover:text-red-900 ${isActive('/blog') ? 'text-red-900' : ''}`}>
                 Blog
               </Link>
-              <Link href="/about" className={`hover:text-[#F59E0B] ${isActive('/about') ? 'text-[#F59E0B]' : ''}`}>
+              <Link href="/about" className={`hover:text-red-900 ${isActive('/about') ? 'text-red-900' : ''}`}>
                 About Us
               </Link>
             </div>
@@ -60,8 +60,8 @@ function Navbar({ role, user }: NavbarProps) {
                         className="hover:cursor-pointer w-8 h-8 rounded-full"
                         src={user.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                         alt="User Profile"
-                        width={32}
-                        height={32}
+                        width={50}
+                        height={50}
                       />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -74,14 +74,14 @@ function Navbar({ role, user }: NavbarProps) {
                       <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
                         <Link
                           href={isProfessionalOrOwner ? "/dashboard" : "/register-as-professional"}
-                          className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
+                          className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
                         >
                           {isProfessionalOrOwner ? "Dashboard" : "Earn as a Professional"}
                           {isProfessionalOrOwner ? "" : <DollarSign size={14} />}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-semibold">
-                        <div className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
+                        <div className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
                           <LogoutLink className="w-full">Logout</LogoutLink>
                         </div>
                       </DropdownMenuItem>
@@ -164,7 +164,7 @@ function Navbar({ role, user }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="z-[999] text-black bg-white"
+                className="z-[9999] text-black bg-white"
               >
                 <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
                   {user.given_name} {user.family_name}
@@ -172,14 +172,14 @@ function Navbar({ role, user }: NavbarProps) {
                 <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
                   <Link
                     href={isProfessionalOrOwner ? "/dashboard" : "/register-as-professional"}
-                    className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
+                    className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
                   >
                     {isProfessionalOrOwner ? "Dashboard" : "Earn as a Professional"}
                     {isProfessionalOrOwner ? "" : <DollarSign size={14} />}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-semibold">
-                  <div className="rounded-[8px] hover:bg-orange-200 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
+                  <div className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
                     <LogoutLink className="w-full">Logout</LogoutLink>
                   </div>
                 </DropdownMenuItem>

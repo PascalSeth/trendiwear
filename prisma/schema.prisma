@@ -26,7 +26,6 @@ model User {
 
   // Customer Relations
   orders                Order[]
-  bookings              Booking[]
   reviews               Review[]
   wishlist              WishlistItem[]
   cart                  CartItem[]
@@ -39,6 +38,8 @@ model User {
   conversations_customer Conversation[] @relation("CustomerConversations")
   conversations_professional Conversation[] @relation("ProfessionalConversations")
   messages              Message[]
+  bookingCustomers      Booking[]       @relation("BookingCustomer")
+  bookingProfessionals  Booking[]       @relation("BookingProfessional")
   recommendations       UserRecommendation[]
   auditLogs             AuditLog[]
   reportedContent       ReportedContent[]
@@ -46,7 +47,7 @@ model User {
   // Professional Relations
   professionalProfile   ProfessionalProfile?
   products              Product[]
-  services              Service[]
+  professionalServices  ProfessionalService[]
   blogs                 Blog[]
   outfitInspirations    OutfitInspiration[]
   analytics             ProfessionalAnalytics?
@@ -108,7 +109,7 @@ model ProfessionalProfile {
   userId           String                @unique
   businessName     String
   businessImage    String?
-  specialization   ProfessionalType
+  specializationId String
   experience       Int
   bio              String?
   portfolioUrl     String?
@@ -120,10 +121,14 @@ model ProfessionalProfile {
   completedOrders  Int                   @default(0)
   accountBalance   Float                 @default(0)
   freeDeliveryThreshold Float?           // Minimum order amount for free delivery
+  slug             String?               @unique  // For direct URL access
+  spotlightVideoUrl String?              // Promotional video/content
+  creditScore      Float                 @default(0)  // Calculated from reviews
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialization   ProfessionalType      @relation(fields: [specializationId], references: [id])
   socialMedia      SocialMedia[]
   documents        VerificationDocument[]
   store            Store?
@@ -210,6 +215,12 @@ model Product {
   wishlistCount        Int          @default(0)    // Track wishlist additions
   cartCount            Int          @default(0)    // Track cart additions
   soldCount            Int          @default(0)    // Track sales
+  // Showcase approval fields
+  submittedForShowcase Boolean      @default(false)
+  isShowcaseApproved   Boolean      @default(false)
+  submittedAt          DateTime?
+  approvedAt           DateTime?
+  approvedBy           String?      // Super admin who approved
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
@@ -268,10 +279,8 @@ model Service {
   id              String          @id @default(uuid())
   name            String
   description     String?
-  price           Float
   duration        Int             // minutes
   imageUrl        String?
-  professionalId  String
   categoryId      String
   isHomeService   Boolean         @default(false)  // Can be done at customer's location
   requirements    String?         // What customer needs to bring/prepare
@@ -279,9 +288,24 @@ model Service {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  professional    User            @relation(fields: [professionalId], references: [id])
   category        ServiceCategory @relation(fields: [categoryId], references: [id])
+  professionalServices ProfessionalService[]
   bookings        Booking[]
+}
+
+model ProfessionalService {
+  id             String   @id @default(uuid())
+  professionalId String
+  serviceId      String
+  price          Float    // Professional sets their own price
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  professional   User     @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, serviceId])
 }
 
 model ServiceCategory {
@@ -442,6 +466,7 @@ model Booking {
   id             String        @id @default(uuid())
   customerId     String
   serviceId      String
+  professionalId String
   bookingDate    DateTime
   endTime        DateTime?     // Calculated from service duration
   location       String?       // If it's a home service
@@ -450,8 +475,9 @@ model Booking {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  customer       User          @relation(fields: [customerId], references: [id])
+  customer       User          @relation("BookingCustomer", fields: [customerId], references: [id])
   service        Service       @relation(fields: [serviceId], references: [id])
+  professional   User          @relation("BookingProfessional", fields: [professionalId], references: [id])
 }
 
 // ================================
@@ -686,6 +712,53 @@ model UserRecommendation {
 }
 
 // ================================
+// SURVEY SYSTEM
+// ================================
+
+model SurveyResponse {
+  id              String          @id @default(uuid())
+  surveyType      SurveyType      // BUYER or SELLER
+  respondentEmail String?         // Optional for anonymous responses
+  respondentName  String?         // Optional
+  isAnonymous     Boolean         @default(true)
+  ipAddress       String?         // For analytics
+  userAgent       String?         // Browser/device info
+  completedAt     DateTime?       // When survey was completed
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  answers         SurveyAnswer[]
+}
+
+model SurveyQuestion {
+  id          String        @id @default(uuid())
+  surveyType  SurveyType
+  section     String        // Section name (e.g., "Current Shopping Methods")
+  question    String        // The actual question text
+  questionType QuestionType // TEXT, MULTIPLE_CHOICE, CHECKBOX, etc.
+  options     String[]      // For multiple choice questions
+  isRequired  Boolean       @default(false)
+  order       Int           @default(0)  // Question order in survey
+  createdAt   DateTime      @default(now())
+
+  answers     SurveyAnswer[]
+}
+
+model SurveyAnswer {
+  id            String   @id @default(uuid())
+  responseId    String
+  questionId    String
+  answerText    String?  // For text answers
+  selectedOptions String[] // For multiple choice/checkbox answers
+  createdAt     DateTime @default(now())
+
+  response      SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question      SurveyQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([responseId, questionId])
+}
+
+// ================================
 // SYSTEM ADMINISTRATION
 // ================================
 
@@ -743,14 +816,15 @@ enum Role {
   SUPER_ADMIN
 }
 
-enum ProfessionalType {
-  FASHION_DESIGNER
-  TAILOR
-  STYLIST
-  SEAMSTRESS
-  FASHION_CONSULTANT
-  PATTERN_MAKER
-  BOUTIQUE_OWNER
+model ProfessionalType {
+  id            String              @id @default(uuid())
+  name          String              @unique
+  description   String?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  professionals ProfessionalProfile[]
 }
 
 enum AddressType {
@@ -828,6 +902,8 @@ enum NotificationType {
   MESSAGE_RECEIVED
   WISHLIST_SALE
   STOCK_ALERT
+  SHIPPING_UPDATE
+  DELIVERY_ARRIVAL
 }
 
 enum Season {
@@ -929,4 +1005,18 @@ enum ReportStatus {
   RESOLVED
   REJECTED
   ESCALATED
+}
+
+enum SurveyType {
+  BUYER
+  SELLER
+}
+
+enum QuestionType {
+  TEXT
+  TEXTAREA
+  MULTIPLE_CHOICE
+  CHECKBOX
+  RATING
+  YES_NO
 }

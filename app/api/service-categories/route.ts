@@ -2,18 +2,21 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireRole } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const dashboard = searchParams.get("dashboard") === "true"
+
     const categories = await prisma.serviceCategory.findMany({
-      where: { isActive: true },
+      where: dashboard ? {} : { isActive: true }, // Show all for dashboard, only active for public
       include: {
         services: {
-          where: { isActive: true },
-          take: 5,
+          where: dashboard ? {} : { isActive: true },
+          take: dashboard ? undefined : 5,
         },
         _count: {
           select: {
-            services: { where: { isActive: true } },
+            services: dashboard ? {} : { where: { isActive: true } },
           },
         },
       },

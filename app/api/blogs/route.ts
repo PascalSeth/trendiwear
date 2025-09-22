@@ -11,11 +11,13 @@ export async function GET(request: NextRequest) {
     const authorId = searchParams.get("authorId")
     const featured = searchParams.get("featured") === "true"
     const published = searchParams.get("published") !== "false"
+    const dashboard = searchParams.get("dashboard") === "true"
     const search = searchParams.get("search")
     const tags = searchParams.get("tags")?.split(",")
 
     const where: Prisma.BlogWhereInput = {}
-    if (published) where.isPublished = true
+    // For dashboard, show all blogs; for public, only published
+    if (!dashboard && published) where.isPublished = true
     if (authorId) where.authorId = authorId
     if (featured) where.isFeatured = true
 

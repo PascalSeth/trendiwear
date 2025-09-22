@@ -18,6 +18,7 @@ export async function getCurrentUser() {
           documents: true,
           store: true,
           deliveryZones: true,
+          specialization: true,
         }
       },
       measurements: true,
@@ -31,14 +32,25 @@ export async function getCurrentUser() {
         },
         take: 10 // Get last 10 orders
       },
-      bookings: {
+      bookingCustomers: {
         include: {
           service: true,
+          professional: true,
         },
         orderBy: {
           createdAt: 'desc'
         },
-        take: 10 // Get last 10 bookings
+        take: 10 // Get last 10 bookings as customer
+      },
+      bookingProfessionals: {
+        include: {
+          service: true,
+          customer: true,
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 10 // Get last 10 bookings as professional
       },
       wishlist: {
         include: {
@@ -80,6 +92,7 @@ export async function getCurrentUser() {
             documents: true,
             store: true,
             deliveryZones: true,
+            specialization: true,
           }
         },
         measurements: true,
@@ -93,9 +106,20 @@ export async function getCurrentUser() {
           },
           take: 10
         },
-        bookings: {
+        bookingCustomers: {
           include: {
             service: true,
+            professional: true,
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 10
+        },
+        bookingProfessionals: {
+          include: {
+            service: true,
+            customer: true,
           },
           orderBy: {
             createdAt: 'desc'

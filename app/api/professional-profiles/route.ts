@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
-import type { Prisma, ProfessionalType } from "@prisma/client"
+import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "12")
-    const specialization = searchParams.get("specialization") as ProfessionalType
+    const specialization = searchParams.get("specialization")
     const location = searchParams.get("location")
     const minRating = searchParams.get("minRating")
     const search = searchParams.get("search")
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       isVerified: verified === "true" ? true : undefined,
     }
 
-    if (specialization) where.specialization = specialization
+    if (specialization) where.specializationId = specialization
     if (location) where.location = { contains: location, mode: "insensitive" }
     if (minRating) where.rating = { gte: Number.parseFloat(minRating) }
 
@@ -47,6 +47,17 @@ export async function GET(request: NextRequest) {
               lastName: true,
               profileImage: true,
               email: true,
+              _count: {
+                select: {
+                  professionalServices: true,
+                  products: true,
+                },
+              },
+            },
+          },
+          specialization: {
+            select: {
+              name: true,
             },
           },
           socialMedia: true,
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
     const {
       businessName,
       businessImage,
-      specialization,
+      specializationId,
       experience,
       bio,
       portfolioUrl,
@@ -98,7 +109,7 @@ export async function POST(request: NextRequest) {
     }: {
       businessName: string
       businessImage?: string
-      specialization: ProfessionalType
+      specializationId: string
       experience: number
       bio?: string
       portfolioUrl?: string
@@ -114,7 +125,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         businessName,
         businessImage,
-        specialization,
+        specializationId,
         experience,
         bio,
         portfolioUrl,

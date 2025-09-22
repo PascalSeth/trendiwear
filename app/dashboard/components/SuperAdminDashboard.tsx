@@ -187,9 +187,12 @@ const SuperAdminDashboard = () => {
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'orders', label: 'Orders', icon: ShoppingBag },
             { id: 'professionals', label: 'Professionals', icon: UserCheck },
+            { id: 'services', label: 'Services', icon: Settings },
+            { id: 'professional-types', label: 'Prof. Types', icon: UserCheck },
             { id: 'users', label: 'Users', icon: Users },
+            { id: 'content', label: 'Content', icon: Eye },
             { id: 'analytics', label: 'Analytics', icon: PieChart },
-            { id: 'settings', label: 'Settings', icon: Settings }
+            { id: 'system', label: 'System', icon: Settings }
           ].map(tab => (
             <button
               key={tab.id}
@@ -470,6 +473,135 @@ const SuperAdminDashboard = () => {
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Analytics Dashboard</h3>
             <p className="text-gray-600">Advanced analytics and reporting tools coming soon...</p>
+          </div>
+        )}
+
+        {activeTab === 'services' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Service Management</h3>
+                <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                  <Plus className="h-4 w-4" />
+                  <span>Create Service</span>
+                </button>
+              </div>
+              <p className="text-gray-600">Manage base services that professionals can offer. Set categories, descriptions, and durations.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">All Services</h3>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-600">Service listing and management interface...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'professional-types' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Professional Types</h3>
+                <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                  <Plus className="h-4 w-4" />
+                  <span>Add Type</span>
+                </button>
+              </div>
+              <p className="text-gray-600">Manage professional categories like Fashion Designers, Tailors, Sellers, etc.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Professional Categories</h3>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-600">Professional type management interface...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'content' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Moderation</h3>
+              <p className="text-gray-600">Monitor and moderate user-generated content, reviews, blogs, and reported items.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-red-500">
+                <div className="flex items-center">
+                  <XCircle className="h-8 w-8 text-red-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Reported Content</p>
+                    <p className="text-2xl font-bold text-gray-900">12</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-yellow-500">
+                <div className="flex items-center">
+                  <Clock className="h-8 w-8 text-yellow-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
+                    <p className="text-2xl font-bold text-gray-900">8</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
+                <div className="flex items-center">
+                  <Eye className="h-8 w-8 text-blue-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Blogs to Review</p>
+                    <p className="text-2xl font-bold text-gray-900">15</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'system' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Administration</h3>
+              <p className="text-gray-600">Platform-wide settings, financial controls, and system maintenance.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Financial Controls</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Platform Commission</span>
+                    <span className="text-sm font-medium">15%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Escrow Hold Period</span>
+                    <span className="text-sm font-medium">7 days</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Minimum Payout</span>
+                    <span className="text-sm font-medium">KSh 1,000</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">System Settings</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Maintenance Mode</span>
+                    <span className="text-sm font-medium text-green-600">Disabled</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Email Notifications</span>
+                    <span className="text-sm font-medium text-green-600">Enabled</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Auto-approval</span>
+                    <span className="text-sm font-medium text-red-600">Disabled</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

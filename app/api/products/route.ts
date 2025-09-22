@@ -20,10 +20,32 @@ export async function GET(request: NextRequest) {
     const sizes = searchParams.get("sizes")?.split(",")
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
+    const dashboard = searchParams.get("dashboard") === "true" // Flag for dashboard requests
+    const showcase = searchParams.get("showcase") // "pending" for showcase submissions
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
-      isInStock: true,
+    }
+
+    // Role-based filtering for dashboard
+    if (dashboard) {
+      try {
+        const user = await requireAuth()
+        if (user.role === "PROFESSIONAL") {
+          where.professionalId = user.id
+          // For professionals, don't filter by isInStock to show all their products
+          delete where.isInStock
+        } else if (user.role === "CUSTOMER") {
+          where.isInStock = true // Customers only see in-stock products
+        }
+        // Admins can see all products
+      } catch {
+        // If not authenticated, show only in-stock products
+        where.isInStock = true
+      }
+    } else {
+      // Public API - only show active and in-stock products
+      where.isInStock = true
     }
 
     if (categoryId) where.categoryId = categoryId
@@ -47,6 +69,12 @@ export async function GET(request: NextRequest) {
     if (tags && tags.length > 0) where.tags = { hasSome: tags }
     if (colors && colors.length > 0) where.colors = { hasSome: colors }
     if (sizes && sizes.length > 0) where.sizes = { hasSome: sizes }
+
+    // Showcase filter for dashboard
+    if (showcase === "pending") {
+      where.submittedForShowcase = true
+      where.isShowcaseApproved = false
+    }
 
     const orderBy: Prisma.ProductOrderByWithRelationInput = {}
     if (sortBy === "createdAt" || sortBy === "price" || sortBy === "viewCount") {
@@ -144,6 +172,7 @@ export async function POST(request: NextRequest) {
       isCustomizable,
       tags,
       gender,
+      submittedForShowcase,
     } = body
 
     const product = await prisma.product.create({
@@ -164,6 +193,8 @@ export async function POST(request: NextRequest) {
         isCustomizable: Boolean(isCustomizable),
         tags,
         gender: gender || "UNISEX",
+        submittedForShowcase: Boolean(submittedForShowcase),
+        submittedAt: submittedForShowcase ? new Date() : null,
       },
       include: {
         category: true,

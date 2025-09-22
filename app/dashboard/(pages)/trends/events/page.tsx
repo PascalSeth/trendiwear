@@ -1,12 +1,10 @@
 import React from 'react'
-import {  EventTable } from './EventsDataTable'
-
-
+import { EventsDataTable } from './EventsDataTable'
 
 function page() {
   return (
     <div>
-        <EventTable/>
+        <EventsDataTable/>
     </div>
   )
 }

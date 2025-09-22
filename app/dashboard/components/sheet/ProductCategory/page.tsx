@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,19 +24,27 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, Upload, X } from "lucide-react";
 import { Category } from "@/app/dashboard/types/category";
+import Image from "next/image";
 
 interface ProductCategorySheetProps {
   categories: Category[];
   onCategoryAdded: (category: Category) => void;
+  categoryToEdit?: Category;
+  onCategoryUpdated?: (category: Category) => void;
+  onClose?: () => void;
 }
 
 export default function ProductCategorySheet({
   categories = [],
   onCategoryAdded,
+  categoryToEdit,
+  onCategoryUpdated,
+  onClose,
 }: ProductCategorySheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -44,6 +52,42 @@ export default function ProductCategorySheet({
     parentId: "",
     order: 0,
   });
+
+  React.useEffect(() => {
+    if (categoryToEdit) {
+      setFormData({
+        name: categoryToEdit.name,
+        slug: categoryToEdit.slug,
+        description: categoryToEdit.description || "",
+        parentId: categoryToEdit.parentId || "",
+        order: categoryToEdit.order,
+      });
+      if (categoryToEdit.imageUrl) {
+        setImagePreview(categoryToEdit.imageUrl);
+      }
+      setIsOpen(true);
+    }
+  }, [categoryToEdit]);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Reset form when closing
+      setFormData({
+        name: "",
+        slug: "",
+        description: "",
+        parentId: "",
+        order: 0,
+      });
+      setImageFile(null);
+      setImagePreview(null);
+      // Call onClose callback if provided
+      if (onClose) {
+        onClose();
+      }
+    }
+  };
 
   const generateSlug = (name: string): string => {
     return name
@@ -118,11 +162,14 @@ export default function ProductCategorySheet({
         imageUrl,
         parentId: formData.parentId === "none" ? undefined : formData.parentId || undefined,
         order: formData.order,
-        isActive: true,
+        ...(categoryToEdit ? {} : { isActive: true }), // Only set isActive for new categories
       };
 
-      const response = await fetch("/api/categories", {
-        method: "POST",
+      const url = categoryToEdit ? `/api/categories/${categoryToEdit.id}` : "/api/categories";
+      const method = categoryToEdit ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -131,38 +178,45 @@ export default function ProductCategorySheet({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create category");
+        throw new Error(error.error || `Failed to ${categoryToEdit ? 'update' : 'create'} category`);
       }
 
-      const newCategoryFromAPI = await response.json();
+      const categoryFromAPI = await response.json();
 
-      const newCategory: Category = {
-        ...newCategoryFromAPI,
-        isActive: newCategoryFromAPI.isActive ?? true,
-        parent: newCategoryFromAPI.parentId
-          ? categories.find((cat) => cat.id === newCategoryFromAPI.parentId)
+      const category: Category = {
+        ...categoryFromAPI,
+        isActive: categoryFromAPI.isActive ?? true,
+        parent: categoryFromAPI.parentId
+          ? categories.find((cat) => cat.id === categoryFromAPI.parentId)
           : undefined,
         children: [],
         collections: [],
         _count: { products: 0 },
       };
 
-      setFormData({
-        name: "",
-        slug: "",
-        description: "",
-        parentId: "",
-        order: 0,
-      });
-      setImageFile(null);
-      setImagePreview(null);
+      if (categoryToEdit && onCategoryUpdated) {
+        onCategoryUpdated(category);
+      } else {
+        onCategoryAdded(category);
+      }
 
-      onCategoryAdded(newCategory);
+      // Reset form only for new categories
+      if (!categoryToEdit) {
+        setFormData({
+          name: "",
+          slug: "",
+          description: "",
+          parentId: "",
+          order: 0,
+        });
+        setImageFile(null);
+        setImagePreview(null);
+      }
 
-      alert("Category created successfully!");
+      alert(`Category ${categoryToEdit ? 'updated' : 'created'} successfully!`);
     } catch (error) {
-      console.error("Error creating category:", error);
-      alert(error instanceof Error ? error.message : "Failed to create category");
+      console.error(`Error ${categoryToEdit ? 'updating' : 'creating'} category:`, error);
+      alert(error instanceof Error ? error.message : `Failed to ${categoryToEdit ? 'update' : 'create'} category`);
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +225,7 @@ export default function ProductCategorySheet({
   const parentCategories = categories.filter((cat) => !cat.parentId);
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Plus className="h-4 w-4" />
@@ -180,9 +234,9 @@ export default function ProductCategorySheet({
       </SheetTrigger>
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Add Product Category</SheetTitle>
+          <SheetTitle>{categoryToEdit ? 'Edit Product Category' : 'Add Product Category'}</SheetTitle>
           <SheetDescription>
-            Create a new product category to organize your products.
+            {categoryToEdit ? 'Update the product category details.' : 'Create a new product category to organize your products.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -272,17 +326,18 @@ export default function ProductCategorySheet({
           <div className="space-y-2">
             <Label>Category Image</Label>
             {imagePreview ? (
-              <div className="relative">
-                <img
+              <div className="relative w-full h-32">
+                <Image
                   src={imagePreview}
                   alt="Category preview"
-                  className="w-full h-32 object-cover rounded-lg border"
+                  fill
+                  className="object-cover rounded-lg border"
                 />
                 <Button
                   type="button"
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2 h-6 w-6"
+                  className="absolute top-2 right-2 h-6 w-6 z-10"
                   onClick={removeImage}
                 >
                   <X className="h-3 w-3" />
@@ -326,7 +381,7 @@ export default function ProductCategorySheet({
             onClick={handleSubmit}
             disabled={isLoading || !formData.name.trim()}
           >
-            {isLoading ? "Creating..." : "Create Category"}
+            {isLoading ? (categoryToEdit ? "Updating..." : "Creating...") : (categoryToEdit ? "Update Category" : "Create Category")}
           </Button>
         </SheetFooter>
       </SheetContent>
