@@ -34,13 +34,13 @@ interface ProductCategorySheetProps {
   onClose?: () => void;
 }
 
-export default function ProductCategorySheet({
+const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
   categories = [],
   onCategoryAdded,
   categoryToEdit,
   onCategoryUpdated,
   onClose,
-}: ProductCategorySheetProps) {
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -387,4 +387,6 @@ export default function ProductCategorySheet({
       </SheetContent>
     </Sheet>
   );
-}
+};
+
+export default ProductCategorySheet;

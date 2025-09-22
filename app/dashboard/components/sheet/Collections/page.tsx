@@ -59,12 +59,12 @@ interface CollectionSheetProps {
   onCollectionUpdated?: (collection: Collection) => void;
 }
 
-export default function CollectionSheet({
+const CollectionSheet: React.FC<CollectionSheetProps> = ({
   categories = [],
   onCollectionAdded,
   collectionToEdit,
   onCollectionUpdated,
-}: CollectionSheetProps) {
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -439,4 +439,6 @@ export default function CollectionSheet({
       </SheetContent>
     </Sheet>
   );
-}
+};
+
+export default CollectionSheet;

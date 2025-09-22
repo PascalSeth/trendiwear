@@ -75,13 +75,13 @@ interface ServiceSheetProps {
   onClose?: () => void;
 }
 
-export default function ServiceSheet({
+const ServiceSheet: React.FC<ServiceSheetProps> = ({
   categories = [],
   onServiceAdded,
   serviceToEdit,
   onServiceUpdated,
   onClose,
-}: ServiceSheetProps) {
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -435,4 +435,6 @@ export default function ServiceSheet({
       </SheetContent>
     </Sheet>
   );
-}
+};
+
+export default ServiceSheet;

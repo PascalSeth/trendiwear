@@ -48,12 +48,12 @@ interface EventSheetProps {
   onClose?: () => void;
 }
 
-export default function EventSheet({
+const EventSheet: React.FC<EventSheetProps> = ({
   onEventAdded,
   eventToEdit,
   onEventUpdated,
   onClose,
-}: EventSheetProps) {
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -405,4 +405,6 @@ export default function EventSheet({
       </SheetContent>
     </Sheet>
   );
-}
+};
+
+export default EventSheet;

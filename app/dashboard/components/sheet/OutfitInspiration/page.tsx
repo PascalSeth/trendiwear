@@ -100,13 +100,13 @@ interface OutfitInspirationSheetProps {
   onClose?: () => void;
 }
 
-export default function OutfitInspirationSheet({
+const OutfitInspirationSheet: React.FC<OutfitInspirationSheetProps> = ({
   events = [],
   onOutfitAdded,
   outfitToEdit,
   onOutfitUpdated,
   onClose,
-}: OutfitInspirationSheetProps) {
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -492,4 +492,6 @@ export default function OutfitInspirationSheet({
       </SheetContent>
     </Sheet>
   );
-}
+};
+
+export default OutfitInspirationSheet;
