@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, requireRole } from "@/lib/auth"
 import type { Prisma } from "@prisma/client"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     const currentUser = await requireAuth()
 
     if (currentUser.id !== id && !["ADMIN", "SUPER_ADMIN"].includes(currentUser.role)) {
@@ -47,9 +47,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     const currentUser = await requireAuth()
     const body = await request.json()
 
@@ -81,9 +81,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     await prisma.user.delete({ where: { id } })
