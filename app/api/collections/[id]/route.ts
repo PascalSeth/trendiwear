@@ -4,11 +4,12 @@ import { requireRole } from "@/lib/auth"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const collection = await prisma.collection.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         _count: {
@@ -32,9 +33,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
 
@@ -61,7 +63,7 @@ export async function PUT(
     } = body
 
     const collection = await prisma.collection.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(slug && { slug }),
@@ -85,14 +87,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     // Check if collection has products
     const collection = await prisma.collection.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: { products: true }
@@ -111,7 +114,7 @@ export async function DELETE(
     }
 
     await prisma.collection.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: "Collection deleted successfully" })
