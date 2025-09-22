@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import CollectionSheet from "@/app/dashboard/components/sheet/Collections/page"; // Adjust path if needed
+import CollectionSheet from "@/app/dashboard/components/sheet/Collections/CollectionSheet";
 
 type Category = {
   id: string;

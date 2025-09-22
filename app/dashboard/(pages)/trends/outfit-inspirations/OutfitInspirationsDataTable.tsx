@@ -16,7 +16,7 @@ import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2, Shirt, Heart, S
 import * as React from "react";
 import Image from "next/image";
 
-import OutfitInspirationSheet, { type OutfitInspiration } from "@/app/dashboard/components/sheet/OutfitInspiration/page";
+import OutfitInspirationSheet, { type OutfitInspiration } from "@/app/dashboard/components/sheet/OutfitInspiration/OutfitInspirationSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

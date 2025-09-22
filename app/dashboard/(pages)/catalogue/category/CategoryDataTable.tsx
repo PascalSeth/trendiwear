@@ -16,7 +16,7 @@ import { ArrowUpDown, ChevronDown, FolderOpen, Package, MoreHorizontal, Edit, Tr
 import * as React from "react";
 import Image from "next/image";
 
-import ProductCategorySheet from "@/app/dashboard/components/sheet/ProductCategory/page";
+import ProductCategorySheet from "@/app/dashboard/components/sheet/ProductCategory/ProductCategorySheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

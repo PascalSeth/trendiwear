@@ -16,7 +16,7 @@ import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign } from "luci
 import * as React from "react";
 import { useEffect, useState } from "react";
 
-import ServiceSheet, { type Service } from "@/app/dashboard/components/sheet/Service/page";
+import ServiceSheet, { type Service } from "@/app/dashboard/components/sheet/Service/ServiceSheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";

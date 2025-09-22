@@ -21,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const canUpdate =
       booking.customerId === user.id ||
-      booking.service.professionalId === user.id ||
+      booking.professionalId === user.id ||
       ["ADMIN", "SUPER_ADMIN"].includes(user.role)
 
     if (!canUpdate) {
@@ -39,19 +39,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             email: true,
           },
         },
-        service: {
-          include: {
-            professional: {
-              select: {
-                firstName: true,
-                lastName: true,
-                professionalProfile: {
-                  select: { businessName: true },
-                },
-              },
-            },
-          },
-        },
+        service: true,
       },
     })
 

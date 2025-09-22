@@ -16,7 +16,7 @@ import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2, Calendar } from
 import * as React from "react";
 import Image from "next/image";
 
-import EventSheet from "@/app/dashboard/components/sheet/Event/page";
+import EventSheet from "@/app/dashboard/components/sheet/Event/EventSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
