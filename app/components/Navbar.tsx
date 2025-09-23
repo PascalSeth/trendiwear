@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/component
 import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { Bell, DollarSign, Menu, SearchIcon, ShoppingCart } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -149,8 +150,52 @@ function Navbar({ role, user }: NavbarProps) {
 
         {/* Icons */}
         <div className="flex items-center space-x-4">
-          <ShoppingCart className="text-gray-600 h-5 w-5" />
-          <Bell className="text-gray-600 h-5 w-5" />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Menu className="text-gray-600 h-6 w-6 cursor-pointer" />
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[400px] z-[10000]">
+              <div className="flex flex-col space-y-4 mt-4">
+                <div className="flex items-center space-x-2 mb-6">
+                  <img
+                    src="/navlogo.png"
+                    alt="BeliBeli Logo"
+                    className="h-8 w-8"
+                  />
+                  <h2 className="text-lg font-semibold text-gray-800">Menu</h2>
+                </div>
+                <Link href="/fashion-trends" className={`block py-2 hover:text-red-900 ${isActive('/fashion-trends') ? 'text-red-900' : 'text-gray-600'}`}>
+                  Fashion Trends
+                </Link>
+                <Link href="/tailors-designers" className={`block py-2 hover:text-red-900 ${isActive('/tailors-designers') ? 'text-red-900' : 'text-gray-600'}`}>
+                  Tailors & Designers
+                </Link>
+                <Link href="/shop" className={`block py-2 hover:text-red-900 ${isActive('/shop') ? 'text-red-900' : 'text-gray-600'}`}>
+                  Shop
+                </Link>
+                <Link href="/blog" className={`block py-2 hover:text-red-900 ${isActive('/blog') ? 'text-red-900' : 'text-gray-600'}`}>
+                  Blog
+                </Link>
+                <Link href="/about" className={`block py-2 hover:text-red-900 ${isActive('/about') ? 'text-red-900' : 'text-gray-600'}`}>
+                  About Us
+                </Link>
+                <div className="flex space-x-4 mt-6 pt-4 border-t border-gray-200">
+                  <ShoppingCart className="text-gray-600 h-6 w-6" />
+                  <Bell className="text-gray-600 h-6 w-6" />
+                </div>
+                {!user && (
+                  <div className="flex flex-col space-y-2 mt-4">
+                    <RegisterLink className="px-4 py-2 rounded-[8px] text-center text-white font-semibold bg-[#48A0ff] hover:bg-[#48a0ff60]">
+                      Sign up
+                    </RegisterLink>
+                    <LoginLink className="px-4 py-2 rounded-[8px] text-center text-white font-semibold bg-gray-400 hover:bg-gray-300">
+                      Login
+                    </LoginLink>
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -185,9 +230,7 @@ function Navbar({ role, user }: NavbarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Menu className="text-gray-600 h-6 w-6" />
-          )}
+          ) : null}
         </div>
       </div>
     </div>
