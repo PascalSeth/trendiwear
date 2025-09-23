@@ -91,17 +91,17 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: "name",
     header: "Product",
     cell: ({ row }) => (
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2 md:space-x-3">
         <Image
           src={row.original.images[0] || "/placeholder-product.jpg"}
           alt={row.getValue("name")}
-          width={40}
-          height={40}
-          className="rounded-lg object-cover"
+          width={32}
+          height={32}
+          className="rounded-lg object-cover md:w-10 md:h-10"
         />
         <div>
-          <div className="font-medium">{row.getValue("name")}</div>
-          <div className="text-sm text-gray-500">{row.original.category.name}</div>
+          <div className="font-medium text-sm md:text-base">{row.getValue("name")}</div>
+          <div className="text-xs md:text-sm text-gray-500">{row.original.category.name}</div>
         </div>
       </div>
     ),
@@ -126,12 +126,12 @@ export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "soldCount",
     header: "Sold",
-    cell: ({ row }) => <div className="text-center">{row.getValue("soldCount")}</div>,
+    cell: ({ row }) => <div className="text-center hidden md:block">{row.getValue("soldCount")}</div>,
   },
   {
     accessorKey: "viewCount",
     header: "Views",
-    cell: ({ row }) => <div className="text-center">{row.getValue("viewCount")}</div>,
+    cell: ({ row }) => <div className="text-center hidden md:block">{row.getValue("viewCount")}</div>,
   },
   {
     id: "status",
@@ -262,23 +262,24 @@ export function ProductTable({ initialData }: ProductTableProps) {
   return (
     <div className="w-full space-y-4">
       {/* Header with Add Product Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl md:text-2xl font-bold tracking-tight">Products</h2>
+          <p className="text-muted-foreground text-sm md:text-base">
             Manage your product catalog and inventory
           </p>
         </div>
         <Link href='/dashboard/catalogue/products/add-product'>
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Add Product
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </Link>
       </div>
 
       {/* Filters and Search */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4">
         <Input
           placeholder="Search products..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -288,52 +289,54 @@ export function ProductTable({ initialData }: ProductTableProps) {
           className="max-w-sm"
         />
 
-        {/* Status Filter */}
-        <div className="flex items-center space-x-2">
+        {/* Status Filter and Column Visibility */}
+        <div className="flex flex-wrap items-center gap-2">
           {["All", "Active", "Inactive"].map((status) => (
             <Button
               key={status}
               variant="outline"
               size="sm"
               onClick={() => handleStatusFilter(status)}
+              className="text-xs md:text-sm"
             >
               {status}
             </Button>
           ))}
-        </div>
 
-        {/* Column Visibility */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* Column Visibility */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto">
+                <span className="hidden sm:inline">Columns</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -370,17 +373,18 @@ export function ProductTable({ initialData }: ProductTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-0 sm:space-x-2 py-4">
+        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} product(s) selected.
         </div>
-        <div className="space-x-2">
+        <div className="flex justify-center sm:justify-end space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="text-xs md:text-sm"
           >
             Previous
           </Button>
@@ -389,6 +393,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="text-xs md:text-sm"
           >
             Next
           </Button>

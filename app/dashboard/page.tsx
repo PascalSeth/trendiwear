@@ -50,26 +50,26 @@ async function Home() {
 
   return (
    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-     <div className="container mx-auto px-6 py-8">
+     <div className="w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
        {/* Header Section */}
        <div className="mb-8">
-         <div className="flex items-center justify-between">
+         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
            <div>
-             <h1 className="text-3xl font-bold text-gray-900">
+             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                Welcome back, {professionalProfile.businessName || "Professional"}
              </h1>
-             <p className="text-lg text-gray-600 mt-1">
+             <p className="text-base md:text-lg text-gray-600 mt-1">
                {professionalProfile.specialization ? formatSpecialization(professionalProfile.specialization.name) : 'No specialization'}
              </p>
            </div>
            <div className="flex items-center space-x-4">
              <div className="text-right">
-               <p className="text-2xl font-bold text-green-600">
+               <p className="text-xl md:text-2xl font-bold text-green-600">
                  ${professionalProfile.accountBalance?.toFixed(2) || "0.00"}
                </p>
                <p className="text-sm text-gray-500">Account Balance</p>
              </div>
-             <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white shadow-lg">
+             <div className="w-12 md:w-16 h-12 md:h-16 rounded-full overflow-hidden border-4 border-white shadow-lg">
                <Image
                  src={professionalProfile.businessImage || "/beccaProfile.jpg"}
                  alt="Profile"

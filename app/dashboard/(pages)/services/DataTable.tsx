@@ -297,10 +297,10 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
       />
 
       {/* Header with Add Service Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Services</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl md:text-2xl font-bold tracking-tight">Services</h2>
+          <p className="text-muted-foreground text-sm md:text-base">
             Manage your service offerings and bookings
           </p>
         </div>
@@ -370,7 +370,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
       </div>
 
       {/* Filters and Search */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4">
         <Input
           placeholder="Search services..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -381,7 +381,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
         />
 
         {/* Status Filter */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -390,6 +390,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 filters.filter((filter) => filter.id !== "isActive")
               );
             }}
+            className="text-xs md:text-sm"
           >
             All
           </Button>
@@ -404,6 +405,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 },
               ]);
             }}
+            className="text-xs md:text-sm"
           >
             Active
           </Button>
@@ -418,6 +420,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 },
               ]);
             }}
+            className="text-xs md:text-sm"
           >
             Inactive
           </Button>
@@ -425,8 +428,8 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -463,17 +466,18 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-0 sm:space-x-2 py-4">
+        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} service(s) selected.
         </div>
-        <div className="space-x-2">
+        <div className="flex justify-center sm:justify-end space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="text-xs md:text-sm"
           >
             Previous
           </Button>
@@ -482,6 +486,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="text-xs md:text-sm"
           >
             Next
           </Button>

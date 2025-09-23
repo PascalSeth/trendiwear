@@ -210,7 +210,7 @@ export function CustomerDataTable() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex flex-col gap-4">
         <Input
           placeholder="Filter profile..."
           value={(table.getColumn("profile")?.getFilterValue() as string) ?? ""}
@@ -219,56 +219,58 @@ export function CustomerDataTable() {
           }
           className="max-w-sm"
         />
-      <div className="flex items-center space-x-4 py-4">
-        {[
-          "All",
-          "Accepted",
-          "Pending",
-          "Cancelled",
-  
-        ].map((status) => (
-          <Button
-            key={status}
-            variant="outline"
-            size="sm"
-            onClick={() => handleFilter(status)}
-          >
-            {status}
-          </Button>
-        ))}
-      </div>
-
-        {/* Status Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            "All",
+            "Accepted",
+            "Pending",
+            "Cancelled",
+          ].map((status) => (
+            <Button
+              key={status}
+              variant="outline"
+              size="sm"
+              onClick={() => handleFilter(status)}
+              className="text-xs md:text-sm"
+            >
+              {status}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ))}
+
+          {/* Status Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto">
+                <span className="hidden sm:inline">Columns</span>
+                <ChevronDown className="h-4 w-4 sm:ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table Section */}
-      <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -301,16 +303,22 @@ export function CustomerDataTable() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
       {/* Pagination Section */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="space-x-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-0 sm:space-x-2 py-4">
+        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="flex justify-center sm:justify-end space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="text-xs md:text-sm"
           >
             Previous
           </Button>
@@ -319,6 +327,7 @@ export function CustomerDataTable() {
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="text-xs md:text-sm"
           >
             Next
           </Button>

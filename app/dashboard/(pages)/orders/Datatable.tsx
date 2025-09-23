@@ -90,22 +90,22 @@ export const columns: ColumnDef<Order>[] = [
     accessorKey: "id",
     header: "Order ID",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => (
-      <div className="font-medium">#{(row.getValue("id") as string).slice(-8)}</div>
+      <div className="font-medium text-sm">#{(row.getValue("id") as string).slice(-8)}</div>
     ),
   },
   {
     id: "customer",
     header: "Customer",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => (
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+      <div className="flex items-center space-x-2 md:space-x-3">
+        <div className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs md:text-sm">
           {row.original.customer.firstName[0]}{row.original.customer.lastName[0]}
         </div>
         <div>
-          <div className="font-medium">
+          <div className="font-medium text-sm">
             {row.original.customer.firstName} {row.original.customer.lastName}
           </div>
-          <div className="text-sm text-gray-500">{row.original.customer.email}</div>
+          <div className="text-xs md:text-sm text-gray-500 hidden sm:block">{row.original.customer.email}</div>
         </div>
       </div>
     ),
@@ -114,7 +114,7 @@ export const columns: ColumnDef<Order>[] = [
     id: "items",
     header: "Items",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => (
-      <div className="space-y-1">
+      <div className="space-y-1 hidden md:block">
         {row.original.items.slice(0, 2).map((item: Order['items'][0], index: number) => (
           <div key={index} className="text-sm">
             {item.quantity}x {item.product.name}
@@ -132,12 +132,12 @@ export const columns: ColumnDef<Order>[] = [
     accessorKey: "totalPrice",
     header: "Total",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => (
-      <div className="font-medium">${(row.getValue("totalPrice") as number).toFixed(2)}</div>
+      <div className="font-medium text-sm md:text-base">${(row.getValue("totalPrice") as number).toFixed(2)}</div>
     ),
   },
   {
     accessorKey: "status",
-    header: "Order Status",
+    header: "Status",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => {
       const status = row.getValue("status") as string;
       return (
@@ -150,8 +150,9 @@ export const columns: ColumnDef<Order>[] = [
             status === "CANCELLED" ? "destructive" :
             "default"
           }
+          className="text-xs"
         >
-          {status}
+          {status.length > 10 ? status.substring(0, 8) + '...' : status}
         </Badge>
       );
     },
@@ -169,6 +170,7 @@ export const columns: ColumnDef<Order>[] = [
             status === "FAILED" ? "destructive" :
             "secondary"
           }
+          className="text-xs hidden sm:inline-flex"
         >
           {status}
         </Badge>
@@ -179,7 +181,7 @@ export const columns: ColumnDef<Order>[] = [
     accessorKey: "createdAt",
     header: "Date",
     cell: ({ row }: { row: { getValue: (key: string) => unknown; original: Order } }) => (
-      <div className="text-sm">
+      <div className="text-xs md:text-sm hidden md:block">
         {new Date(row.getValue("createdAt") as string).toLocaleDateString()}
       </div>
     ),
@@ -188,9 +190,8 @@ export const columns: ColumnDef<Order>[] = [
     id: "actions",
     header: "Actions",
     cell: () => (
-      <Button variant="ghost" size="sm">
-        <Eye className="h-4 w-4 mr-2" />
-        View Details
+      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Eye className="h-4 w-4" />
       </Button>
     ),
   },
@@ -345,14 +346,15 @@ function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <div className="flex flex-wrap items-center gap-2">
           {["All", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].map((status) => (
             <Button
               key={status}
               variant="outline"
               size="sm"
               onClick={() => handleStatusFilter(status)}
+              className="text-xs md:text-sm"
             >
               {status === "All" ? status : status.charAt(0) + status.slice(1).toLowerCase()}
             </Button>
@@ -361,8 +363,8 @@ function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -413,17 +415,18 @@ function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-0 sm:space-x-2 py-4">
+        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} order(s) selected.
         </div>
-        <div className="space-x-2">
+        <div className="flex justify-center sm:justify-end space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="text-xs md:text-sm"
           >
             Previous
           </Button>
@@ -432,6 +435,7 @@ function OrdersDataTable({ initialData }: OrdersDataTableProps) {
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="text-xs md:text-sm"
           >
             Next
           </Button>

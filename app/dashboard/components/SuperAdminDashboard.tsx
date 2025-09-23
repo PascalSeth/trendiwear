@@ -164,19 +164,19 @@ const SuperAdminDashboard = () => {
 
   const OrderRow = ({ order }: { order: Order }) => (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">#{order.id}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{order.customer}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{order.professional}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">KSh {order.amount.toLocaleString()}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
           order.status === 'completed' ? 'bg-green-100 text-green-800' :
           order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -186,10 +186,10 @@ const SuperAdminDashboard = () => {
           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {order.date}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <button className="text-indigo-600 hover:text-indigo-900">
           <MoreHorizontal className="h-4 w-4" />
         </button>
@@ -199,39 +199,40 @@ const SuperAdminDashboard = () => {
 
   const ProfessionalRow = ({ prof }: { prof: Professional }) => (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="h-10 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-medium">
+          <div className="h-8 md:h-10 w-8 md:w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
             {prof.name.charAt(0)}
           </div>
-          <div className="ml-4">
+          <div className="ml-2 md:ml-4">
             <div className="text-sm font-medium text-gray-900">{prof.name}</div>
-            <div className="text-sm text-gray-500">{prof.owner}</div>
+            <div className="text-xs md:text-sm text-gray-500">{prof.owner}</div>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">KSh {prof.revenue.toLocaleString()}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{prof.orders}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <Star className="h-4 w-4 text-yellow-400 mr-1" />
           <span className="text-sm text-gray-900">{prof.rating}</span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
         <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center w-fit ${
           prof.status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
         }`}>
           {prof.status === 'verified' ? <CheckCircle className="h-3 w-3 mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
-          {prof.status.charAt(0).toUpperCase() + prof.status.slice(1)}
+          <span className="hidden sm:inline">{prof.status.charAt(0).toUpperCase() + prof.status.slice(1)}</span>
+          <span className="sm:hidden">{prof.status === 'verified' ? 'V' : 'P'}</span>
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div className="flex items-center space-x-2">
+      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div className="flex items-center space-x-1 md:space-x-2">
           <button className="text-indigo-600 hover:text-indigo-900">
             <Eye className="h-4 w-4" />
           </button>
@@ -286,60 +287,63 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Manage your TrendiZip platform</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                <Plus className="h-4 w-4" />
-                <span>Add New</span>
-              </button>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 md:px-6 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
+                <p className="text-gray-600 mt-1 text-sm md:text-base">Manage your TrendiZip platform</p>
+              </div>
+              <div className="flex items-center space-x-2 md:space-x-4">
+                <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                </button>
+                <button className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add New</span>
+                  <span className="sm:hidden">Add</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white px-6 py-3 border-b border-gray-200">
-        <div className="flex space-x-8">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'orders', label: 'Orders', icon: ShoppingBag },
-            { id: 'professionals', label: 'Professionals', icon: UserCheck },
-            { id: 'services', label: 'Services', icon: Settings },
-            { id: 'professional-types', label: 'Prof. Types', icon: UserCheck },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'content', label: 'Content', icon: Eye },
-            { id: 'analytics', label: 'Analytics', icon: PieChart },
-            { id: 'system', label: 'System', icon: Settings }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'text-indigo-600 bg-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+        {/* Navigation Tabs */}
+        <nav className="bg-white px-6 py-3 border-b border-gray-200">
+          <div className="flex space-x-2 md:space-x-8 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'orders', label: 'Orders', icon: ShoppingBag },
+              { id: 'professionals', label: 'Professionals', icon: UserCheck },
+              { id: 'services', label: 'Services', icon: Settings },
+              { id: 'professional-types', label: 'Prof. Types', icon: UserCheck },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'content', label: 'Content', icon: Eye },
+              { id: 'analytics', label: 'Analytics', icon: PieChart },
+              { id: 'system', label: 'System', icon: Settings }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
 
-      {/* Main Content */}
-      <main className="p-6">
+        {/* Main Content */}
+        <main className="p-4 md:p-6 lg:p-8">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Grid */}
@@ -433,16 +437,16 @@ const SuperAdminDashboard = () => {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professional</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                      <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professional</th>
+                      <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -485,15 +489,15 @@ const SuperAdminDashboard = () => {
 
             {/* Professionals Table */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professional</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professional</th>
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -566,7 +570,7 @@ const SuperAdminDashboard = () => {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
@@ -739,7 +743,8 @@ const SuperAdminDashboard = () => {
             <p className="text-gray-600">System configuration and settings coming soon...</p>
           </div>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

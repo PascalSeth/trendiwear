@@ -78,7 +78,7 @@ const ProfessionalsPage = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full max-w-7xl mx-auto py-8 px-4 md:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Professional Management</h1>
@@ -188,7 +188,7 @@ const ProfessionalsPage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

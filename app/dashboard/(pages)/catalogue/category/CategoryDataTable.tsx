@@ -545,7 +545,7 @@ export function CategoryTable() {
   }}
   onClose={() => setEditingCategory(null)}  />
       
-      <div className="flex items-center py-4 space-x-4">
+      <div className="flex flex-col gap-4 py-4">
         <Input
           placeholder="Filter categories..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -554,58 +554,60 @@ export function CategoryTable() {
           }
           className="max-w-sm"
         />
-        
-        <div className="flex items-center space-x-2">
+
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="text-xs">
             Total: {categories.length}
           </Badge>
           <Badge variant="outline" className="text-xs">
             Active: {categories.filter(c => c.isActive).length}
           </Badge>
-        </div>
-        
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="flex items-center border rounded-lg p-1">
+
+          <div className="flex items-center border rounded-lg p-1 ml-auto">
             <Button
               variant={viewMode === 'table' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('table')}
-              className="h-8 px-3"
+              className="h-8 px-2 md:px-3 text-xs md:text-sm"
             >
-              Table View
+              <span className="hidden sm:inline">Table View</span>
+              <span className="sm:hidden">Table</span>
             </Button>
             <Button
               variant={viewMode === 'tree' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('tree')}
-              className="h-8 px-3"
+              className="h-8 px-2 md:px-3 text-xs md:text-sm"
             >
-              Tree View
+              <span className="hidden sm:inline">Tree View</span>
+              <span className="sm:hidden">Tree</span>
             </Button>
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <span className="hidden sm:inline">Columns</span>
+                <ChevronDown className="h-4 w-4 sm:ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Bulk Actions */}
@@ -667,8 +669,8 @@ export function CategoryTable() {
       )}
 
       {viewMode === 'table' ? (
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="w-full">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -766,20 +768,21 @@ export function CategoryTable() {
         </div>
       )}
       
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
+        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
+        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
           <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
+            <p className="text-xs md:text-sm font-medium hidden sm:block">Rows per page</p>
+            <p className="text-xs md:text-sm font-medium sm:hidden">Rows:</p>
             <select
               value={table.getState().pagination.pageSize}
               onChange={(e) => {
                 table.setPageSize(Number(e.target.value));
               }}
-              className="h-8 w-[70px] rounded border border-input px-3 py-1 text-sm"
+              className="h-8 w-[60px] md:w-[70px] rounded border border-input px-2 md:px-3 py-1 text-xs md:text-sm"
             >
               {[10, 20, 30, 40, 50].map((pageSize) => (
                 <option key={pageSize} value={pageSize}>
@@ -788,16 +791,17 @@ export function CategoryTable() {
               ))}
             </select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex items-center justify-center text-xs md:text-sm font-medium min-w-[80px] md:min-w-[100px]">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
+              className="hidden md:flex"
             >
               {"<<"}
             </Button>
@@ -806,14 +810,17 @@ export function CategoryTable() {
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              className="text-xs md:text-sm"
             >
-              Previous
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">Prev</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              className="text-xs md:text-sm"
             >
               Next
             </Button>
@@ -822,6 +829,7 @@ export function CategoryTable() {
               size="sm"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
+              className="hidden md:flex"
             >
               {">>"}
             </Button>
