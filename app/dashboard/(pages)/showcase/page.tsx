@@ -217,7 +217,7 @@ export default function ShowcaseManagementPage() {
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-800 text-sm">
                   <strong>Professional:</strong> Submit your products for showcase approval by setting
-                  "Submit for Showcase" when creating or editing products in the catalogue section.
+                  Submit for Showcase when creating or editing products in the catalogue section.
                 </p>
               </div>
             )}

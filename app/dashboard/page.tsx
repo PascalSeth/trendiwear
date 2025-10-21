@@ -7,12 +7,51 @@ import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import AnalyticsInsights from "./components/AnalyticsInsights";
 
 // Professional Business Dashboard Component
+interface ServiceItem {
+  name: string;
+  revenue: number;
+}
+
+interface PeriodComparison {
+  change?: number;
+}
+
+interface SearchItem {
+  term: string;
+  count: number;
+}
+
+interface InsightItem {
+  title: string;
+  description: string;
+  change?: number;
+  period?: string;
+}
+
+interface Analytics {
+  periodComparison?: PeriodComparison;
+  trendingSearches?: SearchItem[];
+  insights?: InsightItem[];
+}
+
+interface DashboardData {
+  metrics?: {
+    totalRevenue?: number;
+    completedOrders?: number;
+    avgRating?: number;
+    totalReviews?: number;
+    activeCustomers?: number;
+  };
+  analytics?: Analytics;
+  topServices?: ServiceItem[];
+}
+
 function ProfessionalBusinessDashboard({
   professionalProfile,
   dashboardData
 }: {
   professionalProfile: ProfessionalProfile & { specialization: { name: string } };
-  dashboardData?: any;
+  dashboardData?: DashboardData;
 }) {
   // Format the specialization name for display
   const formatSpecialization = (name: string) => {
@@ -85,7 +124,7 @@ function ProfessionalBusinessDashboard({
                 <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Monthly Revenue</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">${dashboardData?.metrics?.totalRevenue?.toFixed(2) || professionalProfile.accountBalance?.toFixed(2) || "0.00"}</p>
                 <p className="text-xs text-green-600 font-medium">
-                  {dashboardData?.analytics?.periodComparison?.change >= 0 ? '+' : ''}
+                  {dashboardData?.analytics?.periodComparison?.change !== undefined && (dashboardData.analytics.periodComparison.change >= 0 ? '+' : '')}
                   {dashboardData?.analytics?.periodComparison?.change?.toFixed(1) || '0.0'}% from last month
                 </p>
               </div>
@@ -104,7 +143,7 @@ function ProfessionalBusinessDashboard({
                 <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Orders Completed</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}</p>
                 <p className="text-xs text-blue-600 font-medium">
-                  {dashboardData?.analytics?.periodComparison?.change >= 0 ? '+' : ''}
+                  {dashboardData?.analytics?.periodComparison?.change !== undefined && (dashboardData.analytics.periodComparison.change >= 0 ? '+' : '')}
                   {dashboardData?.analytics?.periodComparison?.change?.toFixed(1) || '0.0'}% from last month
                 </p>
               </div>
@@ -156,7 +195,7 @@ function ProfessionalBusinessDashboard({
             </h3>
             <div className="space-y-4">
               {dashboardData?.topServices && dashboardData.topServices.length > 0 ? (
-                dashboardData.topServices.map((service: any, index: number) => {
+                dashboardData.topServices.map((service: ServiceItem, index: number) => {
                   const colors = ['bg-green-50 text-green-600', 'bg-blue-50 text-blue-600', 'bg-purple-50 text-purple-600'];
                   const colorClass = colors[index % colors.length];
                   return (

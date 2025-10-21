@@ -794,7 +794,7 @@ function EditProductPage() {
                           </PopoverTrigger>
                           <PopoverContent className="w-80">
                             <p className="text-sm text-neutral-600">
-                              <strong>Customizable:</strong> Customers can request customizations like different colors, sizes, or modifications. You'll receive customization requests through the platform.
+                              <strong>Customizable:</strong> Customers can request customizations like different colors, sizes, or modifications. You&apos;ll receive customization requests through the platform.
                             </p>
                           </PopoverContent>
                         </Popover>
@@ -830,7 +830,7 @@ function EditProductPage() {
                           </PopoverTrigger>
                           <PopoverContent className="w-80">
                             <p className="text-sm text-neutral-600">
-                              <strong>Custom order (shipped):</strong> This is a made-to-order item that will be produced after purchase. You'll need to provide an estimated delivery time, and stock quantity won't be required.
+                              <strong>Custom order (shipped):</strong> This is a made-to-order item that will be produced after purchase. You&apos;ll need to provide an estimated delivery time, and stock quantity won&apos;t be required.
                             </p>
                           </PopoverContent>
                         </Popover>

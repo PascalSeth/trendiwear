@@ -1,7 +1,26 @@
 'use client';
 import React from "react";
 
-function AnalyticsInsights({ dashboardData }: { dashboardData?: any }) {
+interface SearchItem {
+  term: string;
+  count: number;
+}
+
+interface InsightItem {
+  title: string;
+  description: string;
+  change?: number;
+  period?: string;
+}
+
+interface DashboardData {
+  analytics?: {
+    trendingSearches?: SearchItem[];
+    insights?: InsightItem[];
+  };
+}
+
+function AnalyticsInsights({ dashboardData }: { dashboardData?: DashboardData }) {
 
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
@@ -20,7 +39,7 @@ function AnalyticsInsights({ dashboardData }: { dashboardData?: any }) {
           <div>
             <h4 className="text-lg font-semibold mb-3 text-gray-800">Popular Search Terms</h4>
             <div className="space-y-2">
-              {dashboardData.analytics.trendingSearches.slice(0, 5).map((search: any, index: number) => (
+              {dashboardData.analytics.trendingSearches.slice(0, 5).map((search: SearchItem, index: number) => (
                 <div key={index} className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                   <span className="font-medium text-gray-900">&ldquo;{search.term}&rdquo;</span>
                   <span className="text-sm text-blue-600 font-semibold">{search.count} searches</span>
@@ -36,7 +55,7 @@ function AnalyticsInsights({ dashboardData }: { dashboardData?: any }) {
           <h4 className="text-lg font-semibold mb-3 text-gray-800">Business Insights</h4>
           <div className="space-y-3">
             {dashboardData?.analytics?.insights && dashboardData.analytics.insights.length > 0 ? (
-              dashboardData.analytics.insights.map((insight: any, index: number) => {
+              dashboardData.analytics.insights.map((insight: InsightItem, index: number) => {
                 const colors = [
                   'from-orange-50 to-red-50',
                   'from-purple-50 to-pink-50',
