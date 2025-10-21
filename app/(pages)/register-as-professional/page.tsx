@@ -6,38 +6,62 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import LocationPicker from "@/app/components/LocationPicker";
 
-
-interface DeliveryZone {
-  zoneName: string;
-  baseDeliveryFee: number;
-  freeDeliveryAbove: number;
-}
 
 interface SocialMedia {
   platform: string;
   url: string;
-  followers?: number;
+}
+
+interface ProfessionalType {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 export default function RegisterProfessionalForm() {
+  // Form state
+  const [formData, setFormData] = useState({
+    businessName: "",
+    experience: 0,
+    bio: "",
+    portfolioUrl: "",
+    spotlightVideoUrl: "",
+    availability: "",
+    freeDeliveryThreshold: 0,
+  });
+
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([{ zoneName: "", baseDeliveryFee: 0, freeDeliveryAbove: 0 }]);
-  const [socialMedia, setSocialMedia] = useState<SocialMedia[]>([{ platform: "", url: "", followers: 0 }]);
+  const [socialMedia, setSocialMedia] = useState<SocialMedia[]>([{ platform: "", url: "" }]);
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [professionalTypes, setProfessionalTypes] = useState<ProfessionalType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationAddress, setLocationAddress] = useState<string>("");
 
-  const specializationOptions = [
-    { value: "FASHION_DESIGNER", label: "Fashion Designer", icon: "✨" },
-    { value: "TAILOR", label: "Tailor", icon: "🪡" },
-    { value: "SEAMSTRESS", label: "Seamstress", icon: "🧵" },
-    { value: "STYLIST", label: "Stylist", icon: "👗" },
-    { value: "BOUTIQUE_OWNER", label: "Boutique Owner", icon: "🏪" },
-    { value: "ALTERATIONS", label: "Alterations Specialist", icon: "✂️" },
-    { value: "CUSTOM_CLOTHING", label: "Custom Clothing", icon: "👔" },
-    { value: "OTHER", label: "Other", icon: "🎨" }
-  ];
+  // Fetch professional types
+  useEffect(() => {
+    const fetchProfessionalTypes = async () => {
+      try {
+        const response = await fetch('/api/professional-types');
+        if (response.ok) {
+          const types = await response.json();
+          setProfessionalTypes(types);
+        }
+      } catch (error) {
+        console.error('Error fetching professional types:', error);
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+
+    fetchProfessionalTypes();
+  }, []);
 
   // Mouse tracking for interactive effects
   useEffect(() => {
@@ -52,7 +76,7 @@ export default function RegisterProfessionalForm() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('bucket', 'professionals');
+      formData.append('bucket', 'images');
       formData.append('folder', 'business-images');
       
       const response = await fetch('/api/upload', {
@@ -72,57 +96,55 @@ export default function RegisterProfessionalForm() {
     }
   };
 
-  const updateDeliveryZone = (index: number, field: keyof DeliveryZone, value: string | number) => {
-    const updated = [...deliveryZones];
-    updated[index] = { ...updated[index], [field]: value };
-    setDeliveryZones(updated);
-  };
-
-  const addDeliveryZone = () => {
-    setDeliveryZones([...deliveryZones, { zoneName: "", baseDeliveryFee: 0, freeDeliveryAbove: 0 }]);
-  };
-
-  const removeDeliveryZone = (index: number) => {
-    if (deliveryZones.length > 1) {
-      setDeliveryZones(deliveryZones.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateSocialMedia = (index: number, field: keyof SocialMedia, value: string | number) => {
+  const updateSocialMedia = (index: number, field: keyof SocialMedia, value: string) => {
     const updated = [...socialMedia];
     updated[index] = { ...updated[index], [field]: value };
     setSocialMedia(updated);
   };
 
-  const addSocialMedia = () => {
-    setSocialMedia([...socialMedia, { platform: "", url: "", followers: 0 }]);
-  };
-
-  const removeSocialMedia = (index: number) => {
-    if (socialMedia.length > 1) {
-      setSocialMedia(socialMedia.filter((_, i) => i !== index));
-    }
+  const handleLocationChange = (lat: number, lng: number, address: string) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setLocationAddress(address);
   };
 
   const handleSubmit = async () => {
     try {
+      // Validation
+      if (!formData.businessName.trim()) {
+        alert('Business name is required');
+        setCurrentStep(1);
+        return;
+      }
+
+      if (!selectedSpecialization) {
+        alert('Please select a specialization');
+        setCurrentStep(1);
+        return;
+      }
+
       let businessImageUrl = "";
       if (businessImage) {
         businessImageUrl = await handleImageUpload(businessImage);
       }
 
       const profileData = {
-        businessName: (document.getElementById('businessName') as HTMLInputElement)?.value,
+        businessName: formData.businessName,
         businessImage: businessImageUrl,
-        specialization: selectedSpecialization,
-        experience: parseInt((document.getElementById('experience') as HTMLInputElement)?.value) || 0,
-        bio: (document.getElementById('bio') as HTMLTextAreaElement)?.value,
-        portfolioUrl: (document.getElementById('portfolioUrl') as HTMLInputElement)?.value || undefined,
-        location: (document.getElementById('location') as HTMLInputElement)?.value,
-        availability: (document.getElementById('availability') as HTMLTextAreaElement)?.value,
-        freeDeliveryThreshold: parseFloat((document.getElementById('freeDeliveryThreshold') as HTMLInputElement)?.value) || 0,
-        socialMedia: socialMedia.filter(sm => sm.platform && sm.url),
-        deliveryZones: deliveryZones.filter(zone => zone.zoneName)
+        specializationId: selectedSpecialization,
+        experience: formData.experience,
+        bio: formData.bio || undefined,
+        portfolioUrl: formData.portfolioUrl || undefined,
+        spotlightVideoUrl: formData.spotlightVideoUrl || undefined,
+        latitude,
+        longitude,
+        location: locationAddress,
+        availability: formData.availability || undefined,
+        freeDeliveryThreshold: formData.freeDeliveryThreshold || undefined,
+        socialMedia: socialMedia.filter(sm => sm.platform && sm.url).map(sm => ({
+          platform: sm.platform.toUpperCase(),
+          url: sm.url
+        }))
       };
 
       const response = await fetch('/api/professional-profiles', {
@@ -139,8 +161,9 @@ export default function RegisterProfessionalForm() {
       }
 
       const result = await response.json();
-      console.log('Professional profile created:', result);
-      alert('Professional profile created successfully!');
+      console.log('Professional profile saved:', result);
+      const isUpdate = response.status === 200;
+      alert(`Professional profile ${isUpdate ? 'updated' : 'created'} successfully!`);
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -148,7 +171,7 @@ export default function RegisterProfessionalForm() {
     }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 2));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   return (
@@ -257,9 +280,9 @@ export default function RegisterProfessionalForm() {
             <div className="backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
               {/* Progress Bar */}
               <div className="h-2 bg-black/20">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500 ease-out"
-                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                  style={{ width: `${(currentStep / 2) * 100}%` }}
                 ></div>
               </div>
 
@@ -268,39 +291,38 @@ export default function RegisterProfessionalForm() {
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold text-white mb-2">
                     {currentStep === 1 && "Basic Information"}
-                    {currentStep === 2 && "Professional Details"}
-                    {currentStep === 3 && "Business Setup"}
-                    {currentStep === 4 && "Social & Delivery"}
+                    {currentStep === 2 && "Business Details"}
                   </h2>
                   <p className="text-gray-300">
-                    Step {currentStep} of 4 - Let&apos;s build your professional profile
+                    Step {currentStep} of 2 - Let&apos;s build your professional profile
                   </p>
                 </div>
 
                 {/* Step 1: Basic Information */}
                 {currentStep === 1 && (
                   <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="businessName" className="text-white font-medium">Business Name *</Label>
-                        <Input
-                          id="businessName"
-                          name="businessName"
-                          placeholder="Your fashion brand name"
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
-                          required
-                        />
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="businessName" className="text-white font-medium">Business Name *</Label>
+                          <Input
+                            id="businessName"
+                            name="businessName"
+                            value={formData.businessName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                            placeholder="Your fashion brand name"
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
+                            required
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location" className="text-white font-medium">Location *</Label>
-                        <Input
-                          id="location"
-                          name="location"
-                          placeholder="Your business location"
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
-                          required
-                        />
-                      </div>
+
+                      <LocationPicker
+                        latitude={latitude}
+                        longitude={longitude}
+                        location={locationAddress}
+                        onLocationChange={handleLocationChange}
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -310,17 +332,15 @@ export default function RegisterProfessionalForm() {
                         value={selectedSpecialization}
                         onValueChange={setSelectedSpecialization}
                         required
+                        disabled={loadingTypes}
                       >
                         <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-xl h-12">
-                          <SelectValue placeholder="Choose your specialization" />
+                          <SelectValue placeholder={loadingTypes ? "Loading specializations..." : "Choose your specialization"} />
                         </SelectTrigger>
                         <SelectContent className="bg-gray-900 border-gray-700">
-                          {specializationOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value} className="text-white hover:bg-gray-800">
-                              <span className="flex items-center space-x-2">
-                                <span>{option.icon}</span>
-                                <span>{option.label}</span>
-                              </span>
+                          {professionalTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id} className="text-white hover:bg-gray-800">
+                              {type.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -334,6 +354,8 @@ export default function RegisterProfessionalForm() {
                         name="experience"
                         type="number"
                         min="0"
+                        value={formData.experience}
+                        onChange={(e) => setFormData(prev => ({ ...prev, experience: parseInt(e.target.value) || 0 }))}
                         placeholder="How many years of experience do you have?"
                         className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
                         required
@@ -356,201 +378,125 @@ export default function RegisterProfessionalForm() {
                   </div>
                 )}
 
-                {/* Step 2: Professional Details */}
+                {/* Step 2: Business Details */}
                 {currentStep === 2 && (
                   <div className="space-y-6 animate-in fade-in duration-500">
                     <div className="space-y-2">
-                      <Label htmlFor="bio" className="text-white font-medium">Professional Bio *</Label>
+                      <Label htmlFor="bio" className="text-white font-medium">Professional Bio</Label>
                       <Textarea
                         id="bio"
                         name="bio"
+                        value={formData.bio}
+                        onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                         placeholder="Tell us about your expertise, style, and what makes you unique in the fashion industry..."
-                        rows={5}
+                        rows={4}
                         className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl resize-none"
-                        required
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="portfolioUrl" className="text-white font-medium">Portfolio URL</Label>
-                      <Input
-                        id="portfolioUrl"
-                        name="portfolioUrl"
-                        type="url"
-                        placeholder="https://yourportfolio.com"
-                        className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl" className="text-white font-medium">Portfolio URL</Label>
+                        <Input
+                          id="portfolioUrl"
+                          name="portfolioUrl"
+                          type="url"
+                          value={formData.portfolioUrl}
+                          onChange={(e) => setFormData(prev => ({ ...prev, portfolioUrl: e.target.value }))}
+                          placeholder="https://yourportfolio.com"
+                          className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="spotlightVideoUrl" className="text-white font-medium">Video URL</Label>
+                        <Input
+                          id="spotlightVideoUrl"
+                          name="spotlightVideoUrl"
+                          type="url"
+                          value={formData.spotlightVideoUrl}
+                          onChange={(e) => setFormData(prev => ({ ...prev, spotlightVideoUrl: e.target.value }))}
+                          placeholder="https://youtube.com/watch?v=..."
+                          className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="availability" className="text-white font-medium">Availability *</Label>
-                      <Textarea
-                        id="availability"
-                        name="availability"
-                        placeholder="e.g., Monday to Friday, 9 AM - 6 PM. Weekend appointments available by request."
-                        rows={3}
-                        className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl resize-none"
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 3: Business Setup */}
-                {currentStep === 3 && (
-                  <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="space-y-2">
-                      <Label htmlFor="freeDeliveryThreshold" className="text-white font-medium">Free Delivery Threshold (KES)</Label>
-                      <Input
-                        id="freeDeliveryThreshold"
-                        name="freeDeliveryThreshold"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="5000"
-                        className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
-                      />
-                    </div>
-
+                    {/* Advanced Options - Collapsible */}
                     <div className="space-y-4">
-                      <Label className="text-white font-medium">Delivery Zones</Label>
-                      {deliveryZones.map((zone, index) => (
-                        <div key={index} className="backdrop-blur-lg bg-white/5 p-6 rounded-2xl border border-white/10">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-semibold">Zone {index + 1}</h4>
-                            {deliveryZones.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeDeliveryZone(index)}
-                                className="border-red-400/50 text-red-400 hover:bg-red-500/10"
-                              >
-                                Remove
-                              </Button>
-                            )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="border-white/20 text-white hover:bg-white/10 rounded-xl w-full"
+                      >
+                        {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                      </Button>
+
+                      {showAdvanced && (
+                        <div className="space-y-4 animate-in fade-in duration-300">
+                          <div className="space-y-2">
+                            <Label htmlFor="availability" className="text-white font-medium">Availability</Label>
+                            <Textarea
+                              id="availability"
+                              name="availability"
+                              value={formData.availability}
+                              onChange={(e) => setFormData(prev => ({ ...prev, availability: e.target.value }))}
+                              placeholder="e.g., Monday to Friday, 9 AM - 6 PM"
+                              rows={2}
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl resize-none"
+                            />
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <Label className="text-gray-300 text-sm">Zone Name</Label>
-                              <Input
-                                placeholder="e.g., Nairobi CBD"
-                                value={zone.zoneName}
-                                onChange={(e) => updateDeliveryZone(index, 'zoneName', e.target.value)}
-                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10 mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-gray-300 text-sm">Base Fee (KES)</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={zone.baseDeliveryFee}
-                                onChange={(e) => updateDeliveryZone(index, 'baseDeliveryFee', parseFloat(e.target.value) || 0)}
-                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10 mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-gray-300 text-sm">Free Above (KES)</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={zone.freeDeliveryAbove}
-                                onChange={(e) => updateDeliveryZone(index, 'freeDeliveryAbove', parseFloat(e.target.value) || 0)}
-                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10 mt-1"
-                              />
-                            </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="freeDeliveryThreshold" className="text-white font-medium">Free Delivery Threshold (KES)</Label>
+                            <Input
+                              id="freeDeliveryThreshold"
+                              name="freeDeliveryThreshold"
+                              type="number"
+                              min="0"
+                              value={formData.freeDeliveryThreshold}
+                              onChange={(e) => setFormData(prev => ({ ...prev, freeDeliveryThreshold: parseFloat(e.target.value) || 0 }))}
+                              placeholder="5000"
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl h-12"
+                            />
+                          </div>
+
+                          {/* Social Media - Simplified */}
+                          <div className="space-y-2">
+                            <Label className="text-white font-medium">Social Media (Optional)</Label>
+                            {socialMedia.slice(0, 2).map((social, index) => (
+                              <div key={index} className="grid grid-cols-2 gap-2">
+                                <Select
+                                  value={social.platform}
+                                  onValueChange={(value) => updateSocialMedia(index, 'platform', value)}
+                                >
+                                  <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-lg h-10">
+                                    <SelectValue placeholder="Platform" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-gray-900 border-gray-700">
+                                    <SelectItem value="INSTAGRAM" className="text-white hover:bg-gray-800">Instagram</SelectItem>
+                                    <SelectItem value="FACEBOOK" className="text-white hover:bg-gray-800">Facebook</SelectItem>
+                                    <SelectItem value="TIKTOK" className="text-white hover:bg-gray-800">TikTok</SelectItem>
+                                    <SelectItem value="YOUTUBE" className="text-white hover:bg-gray-800">YouTube</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  type="url"
+                                  placeholder="Profile URL"
+                                  value={social.url}
+                                  onChange={(e) => updateSocialMedia(index, 'url', e.target.value)}
+                                  className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10"
+                                />
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={addDeliveryZone}
-                        className="border-white/20 text-white hover:bg-white/10 rounded-xl"
-                      >
-                        + Add Delivery Zone
-                      </Button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Step 4: Social & Final */}
-                {currentStep === 4 && (
-                  <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="space-y-4">
-                      <Label className="text-white font-medium">Social Media Presence</Label>
-                      {socialMedia.map((social, index) => (
-                        <div key={index} className="backdrop-blur-lg bg-white/5 p-6 rounded-2xl border border-white/10">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-semibold">Social Media {index + 1}</h4>
-                            {socialMedia.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeSocialMedia(index)}
-                                className="border-red-400/50 text-red-400 hover:bg-red-500/10"
-                              >
-                                Remove
-                              </Button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <Label className="text-gray-300 text-sm">Platform</Label>
-                              <Select
-                                value={social.platform}
-                                onValueChange={(value) => updateSocialMedia(index, 'platform', value)}
-                              >
-                                <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-lg h-10 mt-1">
-                                  <SelectValue placeholder="Select platform" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-gray-900 border-gray-700">
-                                  <SelectItem value="Instagram" className="text-white hover:bg-gray-800">📸 Instagram</SelectItem>
-                                  <SelectItem value="Facebook" className="text-white hover:bg-gray-800">📘 Facebook</SelectItem>
-                                  <SelectItem value="Twitter" className="text-white hover:bg-gray-800">🐦 Twitter</SelectItem>
-                                  <SelectItem value="TikTok" className="text-white hover:bg-gray-800">🎵 TikTok</SelectItem>
-                                  <SelectItem value="YouTube" className="text-white hover:bg-gray-800">📺 YouTube</SelectItem>
-                                  <SelectItem value="Pinterest" className="text-white hover:bg-gray-800">📌 Pinterest</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label className="text-gray-300 text-sm">Profile URL</Label>
-                              <Input
-                                type="url"
-                                placeholder="https://instagram.com/yourbrand"
-                                value={social.url}
-                                onChange={(e) => updateSocialMedia(index, 'url', e.target.value)}
-                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10 mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-gray-300 text-sm">Followers</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                placeholder="1000"
-                                value={social.followers || ''}
-                                onChange={(e) => updateSocialMedia(index, 'followers', parseInt(e.target.value) || 0)}
-                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-lg h-10 mt-1"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={addSocialMedia}
-                        className="border-white/20 text-white hover:bg-white/10 rounded-xl"
-                      >
-                        + Add Social Media
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Navigation Buttons */}
                 <div className="flex justify-between pt-8 border-t border-white/20">
@@ -564,7 +510,7 @@ export default function RegisterProfessionalForm() {
                     Previous
                   </Button>
                   
-                  {currentStep < 4 ? (
+                  {currentStep < 2 ? (
                     <Button
                       type="button"
                       onClick={nextStep}

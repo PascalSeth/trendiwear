@@ -1,179 +1,121 @@
 'use client'
-import React, { useState } from 'react';
-import { Star, TrendingUp, Award, ShoppingBag, Eye, Heart } from 'lucide-react';
+import React from 'react';
+import { Eye, Sparkles } from 'lucide-react';
 
 type TopSeller = {
   id: number;
+  rank: number;
   name: string;
-  avatarUrl: string;
-  topProduct: {
-    name: string;
-    imageUrl: string;
-    price: number;
-  };
+  profession: string;
+  imageUrl: string;
+  businessImage: string;
+  color: string;
+  bgColor: string;
   totalSales: number;
-  rating: number;
-  followers: number;
-  badge: string;
-  isVerified: boolean;
 };
 
 const topSellers: TopSeller[] = [
   {
     id: 1,
+    rank: 1,
     name: 'Sarah Chen',
-    avatarUrl: 'https://randomuser.me/api/portraits/women/32.jpg',
-    topProduct: {
-      name: 'Designer Silk Blouse',
-      imageUrl: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1374&auto=format&fit=crop',
-      price: 189.99
-    },
-    totalSales: 1247,
-    rating: 4.9,
-    followers: 15420,
-    badge: 'Top Seller',
-    isVerified: true
+    profession: 'Fashion Designer',
+    imageUrl: 'https://randomuser.me/api/portraits/women/32.jpg',
+    businessImage: 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2xvdGhpbmd8ZW58MHx8MHx8fDA%3D',
+    color: 'from-emerald-400 to-teal-600',
+    bgColor: 'bg-emerald-50',
+    totalSales: 1247
   },
   {
     id: 2,
+    rank: 2,
     name: 'Marcus Rodriguez',
-    avatarUrl: 'https://randomuser.me/api/portraits/men/45.jpg',
-    topProduct: {
-      name: 'Premium Leather Jacket',
-      imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1350&auto=format&fit=crop',
-      price: 299.99
-    },
-    totalSales: 892,
-    rating: 4.8,
-    followers: 12890,
-    badge: 'Rising Star',
-    isVerified: true
+    profession: 'Style Consultant',
+    imageUrl: 'https://randomuser.me/api/portraits/men/45.jpg',
+    businessImage: 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8ZmFzaGlvbnxlbnwwfHwwfHx8MA%3D%3D',
+    color: 'from-pink-400 to-rose-600',
+    bgColor: 'bg-pink-50',
+    totalSales: 892
   },
   {
     id: 3,
+    rank: 3,
     name: 'Emma Thompson',
-    avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
-    topProduct: {
-      name: 'Vintage Denim Collection',
-      imageUrl: 'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=1426&auto=format&fit=crop',
-      price: 159.99
-    },
-    totalSales: 756,
-    rating: 4.7,
-    followers: 9876,
-    badge: 'Verified Pro',
-    isVerified: true
+    profession: 'Vintage Specialist',
+    imageUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
+    businessImage: 'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=1426&auto=format&fit=crop',
+    color: 'from-purple-400 to-indigo-600',
+    bgColor: 'bg-purple-50',
+    totalSales: 756
   },
   {
     id: 4,
+    rank: 4,
     name: 'David Kim',
-    avatarUrl: 'https://randomuser.me/api/portraits/men/51.jpg',
-    topProduct: {
-      name: 'Custom Tailored Suit',
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1374&auto=format&fit=crop',
-      price: 599.99
-    },
-    totalSales: 543,
-    rating: 4.9,
-    followers: 7654,
-    badge: 'Elite Seller',
-    isVerified: true
+    profession: 'Tailor & Couturier',
+    imageUrl: 'https://randomuser.me/api/portraits/men/51.jpg',
+    businessImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1374&auto=format&fit=crop',
+    color: 'from-orange-400 to-red-600',
+    bgColor: 'bg-orange-50',
+    totalSales: 543
   }
 ];
 
 function SellerCard({ seller, index }: { seller: TopSeller; index: number }) {
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
     <div
-      className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1 animate-fade-in-up"
-      style={{ animationDelay: `${index * 100}ms` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className={`group relative bg-white rounded-3xl overflow-hidden shadow-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ${seller.bgColor} border border-gray-100`}
+      style={{
+        animationDelay: `${index * 0.1}s`,
+        animation: 'fadeInUp 0.6s ease-out forwards'
+      }}
     >
-      {/* Seller Header */}
-      <div className="relative p-6 pb-4">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <img
-              src={seller.avatarUrl}
-              alt={seller.name}
-              className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg"
-            />
-            {seller.isVerified && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <Award className="w-3 h-3 text-white" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-bold text-slate-900">{seller.name}</h3>
-              <span className="px-2 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-semibold rounded-full">
-                {seller.badge}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-slate-600">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                <span className="font-medium">{seller.rating}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Heart className="w-4 h-4 text-red-500" />
-                <span>{seller.followers.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Product */}
-      <div className="relative overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div className="relative h-48 overflow-hidden">
         <img
-          src={seller.topProduct.imageUrl}
-          alt={seller.topProduct.name}
-          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+          src={seller.businessImage}
+          alt={`${seller.name}'s work`}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
+        <div className={`absolute inset-0 bg-gradient-to-t ${seller.color} opacity-60 group-hover:opacity-40 transition-opacity duration-300`}></div>
 
-        {/* Overlay with product info */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h4 className="text-white font-semibold text-sm mb-1 line-clamp-2">
-              {seller.topProduct.name}
-            </h4>
-            <p className="text-white/90 font-bold text-lg">
-              ${seller.topProduct.price}
-            </p>
+        {/* Rank Badge */}
+        <div className="absolute top-4 left-4 z-20">
+          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-lg">#{seller.rank}</span>
           </div>
         </div>
 
-        {/* Sales Badge */}
-        <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-          <TrendingUp className="w-3 h-3" />
-          {seller.totalSales} sold
+        {/* Total Sales Badge */}
+        <div className="absolute top-4 right-4 z-20">
+          <div className="bg-black/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+            {seller.totalSales.toLocaleString()} sales
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="p-6 pt-4">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-lg font-bold text-slate-900">{seller.totalSales}</div>
-            <div className="text-xs text-slate-600">Total Sales</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-slate-900">{seller.rating}</div>
-            <div className="text-xs text-slate-600">Rating</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-slate-900">{(seller.followers / 1000).toFixed(0)}K</div>
-            <div className="text-xs text-slate-600">Followers</div>
-          </div>
+      {/* Profile Image */}
+      <div className="flex justify-center -mt-12 relative z-10">
+        <div className="relative">
+          <img
+            src={seller.imageUrl}
+            alt={seller.name}
+            className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
+          />
+          <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${seller.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-6 pb-6 pt-4">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">{seller.name}</h2>
+          <p className="text-gray-600 font-medium">{seller.profession}</p>
         </div>
 
-        {/* Action Button */}
-        <button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
-          <ShoppingBag className="w-4 h-4" />
+        {/* View Shop Button */}
+        <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg">
+          <Eye className="w-4 h-4" />
           View Shop
         </button>
       </div>
@@ -183,34 +125,32 @@ function SellerCard({ seller, index }: { seller: TopSeller; index: number }) {
 
 function TopSellers() {
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-white py-16 px-4">
+    <div className="bg-gradient-to-br from-slate-50 via-white to-slate-100 py-16 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-full px-4 py-2 mb-4">
-            <Award className="w-4 h-4 text-purple-600" />
-            <span className="text-slate-700 text-sm font-medium">Elite Performers</span>
-          </div>
-
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-800 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-medium mb-6 shadow-lg">
+            <Sparkles className="w-4 h-4" />
             Top Sellers
+          </div>
+          <h2 className="text-6xl font-black bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-4">
+            Elite Fashion Sellers
           </h2>
-
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Meet our highest-performing sellers who consistently deliver exceptional fashion and outstanding customer experiences
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
+            Discover our highest-performing sellers who consistently deliver exceptional fashion and outstanding customer experiences
           </p>
         </div>
 
         {/* Sellers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
           {topSellers.map((seller, index) => (
             <SellerCard key={seller.id} seller={seller} index={index} />
           ))}
         </div>
 
         {/* Bottom CTA */}
-        <div className="text-center mt-12">
-          <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
+        <div className="text-center mt-16">
+          <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
             <Eye className="w-4 h-4" />
             Explore All Sellers
           </button>
@@ -218,7 +158,7 @@ function TopSellers() {
       </div>
 
       <style jsx>{`
-        @keyframes fade-in-up {
+        @keyframes fadeInUp {
           from {
             opacity: 0;
             transform: translateY(30px);
@@ -227,18 +167,6 @@ function TopSellers() {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out forwards;
-          opacity: 0;
-        }
-
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
         }
       `}</style>
     </div>

@@ -1,12 +1,16 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Heart, ShoppingBag, Star, Eye, Sparkles } from 'lucide-react';
+import { Heart, Star, Eye } from 'lucide-react';
+import Link from 'next/link';
+import { WishlistButton } from '@/components/ui/wishlist-button';
+import { AddToCartButton } from '@/components/ui/add-to-cart-button';
 
 type ClothingItem = {
-  id: number;
+  id: string;
   name: string;
-  imageUrl: string;
+  images: string[];
   price: number;
+  currency: string;
   isNew: boolean;
   sellerName: string;
   sellerProfilePicUrl: string;
@@ -16,65 +20,77 @@ type ClothingItem = {
   likes?: number;
 };
 
-const newArrivals: ClothingItem[] = [
-  {
-    id: 1,
-    name: 'Long Sleeve Sweater, Cream and Black Stripe',
-    imageUrl: 'https://images.unsplash.com/photo-1510347026072-2c042ed96d42?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    price: 72.00,
-    isNew: true,
-    sellerName: 'Sophia Turner',
-    sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
-    category: 'Sweater',
-    rating: 4.8,
-    views: 1200,
-    likes: 89
-  },
-  {
-    id: 2,
-    name: 'Tatum Turtleneck, Olive',
-    imageUrl: 'https://images.unsplash.com/photo-1522751707891-45b4e281010d?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    price: 54.00,
-    isNew: true,
-    sellerName: 'Emma Brown',
-    sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/45.jpg',
-    category: 'Turtleneck',
-    rating: 4.6,
-    views: 950,
-    likes: 67
-  },
-  {
-    id: 3,
-    name: 'Sabrina Ribbed Pullover, Dusty Rose',
-    imageUrl: 'https://images.unsplash.com/photo-1647688574769-c2e78f477719?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    price: 54.00,
-    isNew: true,
-    sellerName: 'Olivia White',
-    sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/46.jpg',
-    category: 'Pullover',
-    rating: 4.7,
-    views: 1100,
-    likes: 78
-  },
-  {
-    id: 4,
-    name: 'Sabrina Ribbed Turtleneck, White',
-    imageUrl: 'https://media.istockphoto.com/id/1186159221/photo/handsome-man-posing-in-knitted-sweater-isolated-on-grey.webp?s=1024x1024&w=is&k=20&c=sm27ONxDvDngmt0OQnPToEgkCvpT1OjCVVWHv2KIq0g=',
-    price: 54.00,
-    isNew: true,
-    sellerName: 'Amelia Johnson',
-    sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/47.jpg',
-    category: 'Turtleneck',
-    rating: 4.9,
-    views: 870,
-    likes: 92
-  },
-];
+function NewArrivals() {
+  const [newArrivals, setNewArrivals] = useState<ClothingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNewArrivals = async () => {
+      try {
+        const response = await fetch('/api/products?sortBy=createdAt&sortOrder=desc&limit=4');
+        if (response.ok) {
+          const data = await response.json();
+          const transformedProducts = data.products.map((product: {
+            id: string;
+            name: string;
+            images: string[];
+            price: number;
+            currency: string;
+            stockQuantity: number;
+            isActive: boolean;
+            isInStock: boolean;
+            viewCount: number;
+            soldCount: number;
+            createdAt: string;
+            tags?: string[];
+            category: { name: string };
+            collection?: { name: string };
+            professional: {
+              firstName: string;
+              lastName: string;
+              professionalProfile?: {
+                businessName: string;
+                businessImage: string;
+                rating: number;
+                totalReviews: number;
+              };
+            };
+            _count: {
+              wishlistItems: number;
+              cartItems: number;
+              orderItems: number;
+              reviews: number;
+            };
+          }) => ({
+            id: product.id,
+            name: product.name,
+            images: product.images,
+            price: product.price,
+            currency: product.currency || 'GHS',
+            isNew: product.tags?.includes('NEW') || false,
+            sellerName: product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`,
+            sellerProfilePicUrl: product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg',
+            category: product.category.name,
+            rating: product.professional.professionalProfile?.rating || 4.5,
+            views: product.viewCount,
+            likes: product._count.wishlistItems
+          }));
+          setNewArrivals(transformedProducts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch new arrivals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewArrivals();
+  }, []);
 
 function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
-  const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentLikes, setCurrentLikes] = useState(item.likes || 0);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -101,7 +117,6 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
         <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
           {item.isNew && (
             <span className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 animate-pulse">
-              <Sparkles className="w-3 h-3" />
               NEW
             </span>
           )}
@@ -116,36 +131,50 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
         {isMobile ? (
           // Mobile/Tablet: Vertical buttons in middle right
           <div className={`absolute top-1/2 right-3 transform -translate-y-1/2 z-20 flex flex-col gap-2 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <button
-              onClick={() => setIsLiked(!isLiked)}
-              className={`backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:scale-110 transition-all duration-200 ${isLiked ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-700 hover:bg-white'}`}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            </button>
-            <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-2.5 rounded-full shadow-lg hover:scale-110 transition-all duration-200">
-              <ShoppingBag className="w-4 h-4" />
-            </button>
+            <WishlistButton
+              productId={item.id}
+              variant="overlay"
+              size="sm"
+              showCount={true}
+              count={currentLikes}
+              onWishlistChange={(isInWishlist) => {
+                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
+              }}
+            />
+            <AddToCartButton
+              productId={item.id}
+              variant="overlay"
+              size="sm"
+            />
           </div>
         ) : (
           // Desktop: Horizontal centered buttons with eye
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 flex gap-3 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <button className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200">
-              <Eye className="w-5 h-5 text-slate-700" />
-            </button>
-            <button
-              onClick={() => setIsLiked(!isLiked)}
-              className={`backdrop-blur-sm p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200 ${isLiked ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-700 hover:bg-white'}`}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            </button>
-            <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-full shadow-lg hover:scale-110 transition-all duration-200">
-              <ShoppingBag className="w-5 h-5" />
-            </button>
+            <Link href={`/shopping/products/${item.id}`}>
+              <button className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200">
+                <Eye className="w-5 h-5 text-slate-700" />
+              </button>
+            </Link>
+            <WishlistButton
+              productId={item.id}
+              variant="overlay"
+              size="md"
+              showCount={true}
+              count={currentLikes}
+              onWishlistChange={(isInWishlist) => {
+                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
+              }}
+            />
+            <AddToCartButton
+              productId={item.id}
+              variant="overlay"
+              size="md"
+            />
           </div>
         )}
 
         <img
-          src={item.imageUrl}
+          src={item.images[0] || "/placeholder-product.jpg"}
           alt={item.name}
           className={`w-full h-64 lg:h-72 object-cover transition-transform duration-500 ${isHovered && !isMobile ? 'scale-105' : 'scale-100'}`}
           loading="lazy"
@@ -177,17 +206,19 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
 
       {/* Product Info */}
       <div className="p-4">
-        <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
-          {item.name}
-        </h3>
+        <Link href={`/shopping/products/${item.id}`}>
+          <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight cursor-pointer">
+            {item.name}
+          </h3>
+        </Link>
 
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col">
-            <span className="text-xl font-bold text-slate-900">${item.price.toFixed(2)}</span>
+            <span className="text-xl font-bold text-slate-900">{item.currency} {item.price.toFixed(2)}</span>
           </div>
           <div className="flex items-center gap-1 text-slate-600">
             <Heart className="w-4 h-4" />
-            <span className="text-sm">{item.likes}</span>
+            <span className="text-sm">{currentLikes}</span>
           </div>
         </div>
 
@@ -210,7 +241,38 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
   );
 }
 
-function NewArrivals() {
+  if (loading) {
+    return (
+      <div className="bg-white py-16 px-4 lg:px-8">
+        <div className="relative z-10 max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 animate-fade-in-up">
+              New Arrivals
+            </h2>
+          </div>
+
+          {/* Loading Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+                <div className="h-64 lg:h-72 bg-gray-200"></div>
+                <div className="p-4">
+                  <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                  <div className="flex justify-between items-center">
+                    <div className="h-5 bg-gray-200 rounded w-16"></div>
+                    <div className="h-4 bg-gray-200 rounded w-8"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white py-16 px-4 lg:px-8">
       {/* Animated Background Elements */}
@@ -239,7 +301,7 @@ function NewArrivals() {
         <div className="text-center mt-12">
           <div className="flex items-center justify-center gap-6 text-sm text-slate-600 animate-fade-in-up" style={{ animationDelay: '800ms' }}>
             <div className="text-center">
-              <div className="text-xl font-bold text-slate-900 mb-1">24+</div>
+              <div className="text-xl font-bold text-slate-900 mb-1">{newArrivals.length}+</div>
               <div>New Items</div>
             </div>
             <div className="w-px h-10 bg-slate-300"></div>

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     console.log("Parsing form data...")
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const bucket = (formData.get("bucket") as string) || "general"
+    const bucket = (formData.get("bucket") as string) || "images"
     const folder = (formData.get("folder") as string) || "uploads"
 
     console.log("Form data parsed:", { bucket, folder, hasFile: !!file })
@@ -43,23 +43,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Validate file type
-    console.log("Validating file type:", file.type)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!allowedTypes.includes(file.type)) {
-      console.log("Invalid file type:", file.type)
+    // Validate bucket - only allow images, documents, videos
+    const allowedBuckets = ['images', 'documents', 'videos']
+    const targetBucket = bucket || "images" // Default to images if not specified
+
+    if (!allowedBuckets.includes(targetBucket)) {
       return NextResponse.json({
-        error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed."
+        error: `Invalid bucket. Allowed buckets: ${allowedBuckets.join(', ')}`
       }, { status: 400 })
     }
 
-    // Validate file size (5MB limit)
+    // Validate file type based on bucket
+    console.log("Validating file type:", file.type)
+    let allowedTypes: string[] = []
+
+    if (targetBucket === 'videos') {
+      allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/mkv']
+    } else if (targetBucket === 'images') {
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    } else if (targetBucket === 'documents') {
+      allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf']
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      console.log("Invalid file type:", file.type, "for bucket:", targetBucket)
+      return NextResponse.json({
+        error: `Invalid file type for ${targetBucket} bucket. Allowed types: ${allowedTypes.join(', ')}`
+      }, { status: 400 })
+    }
+
+    // Validate file size based on bucket
     console.log("Validating file size:", file.size)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    let maxSize: number
+    let sizeText: string
+
+    if (targetBucket === 'videos') {
+      maxSize = 50 * 1024 * 1024 // 50MB for videos
+      sizeText = "50MB"
+    } else if (targetBucket === 'documents') {
+      maxSize = 25 * 1024 * 1024 // 25MB for documents
+      sizeText = "25MB"
+    } else {
+      maxSize = 10 * 1024 * 1024 // 10MB for images
+      sizeText = "10MB"
+    }
+
     if (file.size > maxSize) {
       console.log("File too large:", file.size, "max:", maxSize)
       return NextResponse.json({
-        error: "File too large. Maximum size is 5MB."
+        error: `File too large. Maximum size for ${targetBucket} is ${sizeText}.`
       }, { status: 400 })
     }
 
@@ -67,21 +99,18 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now()
     const fileName = `${folder}/${user.id}/${timestamp}.${fileExt}`
 
-    // Set bucket to images for all image uploads
-    const imageBucket = "images"
-
     console.log("Generated filename:", fileName)
-    console.log("Using Supabase for images bucket")
+    console.log("Using Supabase for bucket:", targetBucket)
 
     if (!supabase) {
       return NextResponse.json({
-        error: "Supabase storage is not configured. Image uploads require Supabase."
+        error: "Supabase storage is not configured. File uploads require Supabase."
       }, { status: 500 })
     }
 
     console.log("Attempting Supabase upload...")
-    // Upload to images bucket
-    const { data, error } = await supabase.storage.from(imageBucket).upload(fileName, file, {
+    // Upload to specified bucket
+    const { data, error } = await supabase.storage.from(targetBucket).upload(fileName, file, {
       cacheControl: "3600",
       upsert: false,
     })
@@ -99,7 +128,7 @@ export async function POST(request: NextRequest) {
 
       if (error.message?.includes('Bucket not found')) {
         return NextResponse.json({
-          error: `Storage bucket '${imageBucket}' not found. Please create it in your Supabase dashboard.`,
+          error: `Storage bucket '${targetBucket}' not found. Please create it in your Supabase dashboard.`,
           details: "Go to Storage → Create bucket"
         }, { status: 500 })
       }
@@ -109,13 +138,13 @@ export async function POST(request: NextRequest) {
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from(imageBucket).getPublicUrl(fileName)
+    } = supabase.storage.from(targetBucket).getPublicUrl(fileName)
 
     console.log("Supabase upload successful")
     const uploadResult = {
       url: publicUrl,
       path: data.path,
-      bucket: imageBucket,
+      bucket: targetBucket,
       provider: 'supabase'
     }
 

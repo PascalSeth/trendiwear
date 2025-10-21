@@ -51,6 +51,19 @@ model User {
   blogs                 Blog[]
   outfitInspirations    OutfitInspiration[]
   analytics             ProfessionalAnalytics?
+
+  // Analytics Relations
+  searches              UserSearch[]
+  movements             UserMovement[]
+
+  // Social Relations
+  profileExtension      UserProfileExtension?
+  postComments          PostComment[]
+  postLikes             PostLike[]
+  challengeSubmissions  ChallengeSubmission[]
+  challengeVotes        ChallengeVote[]
+  liveStreams           LiveStream[]
+  streamChatMessages    StreamChatMessage[]
 }
 
 model Address {
@@ -113,7 +126,9 @@ model ProfessionalProfile {
   experience       Int
   bio              String?
   portfolioUrl     String?
-  location         String
+  latitude         Float?
+  longitude        Float?
+  location         String?               // Human-readable address
   availability     String?
   isVerified       Boolean               @default(false)
   rating           Float?                @default(0)
@@ -196,8 +211,10 @@ model Product {
   name                 String
   description          String?
   price                Float
+  currency             String       @default("GHS")  // Currency code (GHS, USD, EUR, GBP, KES, etc.)
   stockQuantity        Int          @default(0)
-  images               String[]     // Multiple product images
+  images               String[]     // Multiple product images (max 4)
+  videoUrl             String?      // Single product video
   categoryId           String
   collectionId         String?
   professionalId       String
@@ -208,13 +225,19 @@ model Product {
   estimatedDelivery    Int?         // days for production/shipping
   isCustomizable       Boolean      @default(false)
   tags                 ProductTag[] // TRENDING, NEW, BESTSELLER, etc.
-  gender               Gender       @default(UNISEX)
+  isUnisex             Boolean      @default(true)
   isActive             Boolean      @default(true)
   isInStock            Boolean      @default(true)
   viewCount            Int          @default(0)    // Track product views
   wishlistCount        Int          @default(0)    // Track wishlist additions
   cartCount            Int          @default(0)    // Track cart additions
   soldCount            Int          @default(0)    // Track sales
+  // Discount/Promotion fields
+  discountPercentage   Float?       // Percentage discount (e.g., 20 for 20% off)
+  discountPrice        Float?       // Fixed discounted price (alternative to percentage)
+  discountStartDate    DateTime?    // When discount becomes active
+  discountEndDate      DateTime?    // When discount expires
+  isOnSale             Boolean      @default(false) // Quick flag for active promotions
   // Showcase approval fields
   submittedForShowcase Boolean      @default(false)
   isShowcaseApproved   Boolean      @default(false)
@@ -233,6 +256,8 @@ model Product {
   outfitProducts       OutfitProduct[]
   analytics            ProductAnalytics?
   recommendations      UserRecommendation[]
+  socialPosts          SocialPost[]
+  performance          ProductPerformance[]
 }
 
 model Category {
@@ -358,6 +383,7 @@ model OutfitInspiration {
   stylist         User           @relation(fields: [stylistId], references: [id])
   products        OutfitProduct[]
   savedByUsers    SavedOutfit[]
+  socialPosts     SocialPost[]
 }
 
 model OutfitProduct {
@@ -695,6 +721,57 @@ model TrendingSearch {
   createdAt   DateTime @default(now())
 }
 
+model UserSearch {
+  id          String   @id @default(uuid())
+  userId      String?
+  searchTerm  String
+  category    String?
+  resultsCount Int     @default(0)
+  sessionId   String?  // For tracking user sessions
+  ipAddress   String?
+  userAgent   String?
+  searchedAt  DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model UserMovement {
+  id            String         @id @default(uuid())
+  userId        String?
+  action        UserAction
+  targetType    MovementTarget // PRODUCT, CATEGORY, PROFESSIONAL, etc.
+  targetId      String
+  referrer      String?        // Where they came from
+  sessionId     String?
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?          // Additional data like product details, search terms, etc.
+  createdAt     DateTime       @default(now())
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model ProductPerformance {
+  id                String   @id @default(uuid())
+  productId         String   @unique
+  professionalId    String
+  date              DateTime // Date for this performance record
+  views             Int      @default(0)
+  searches          Int      @default(0)
+  wishlists         Int      @default(0)
+  cartAdds          Int      @default(0)
+  purchases         Int      @default(0)
+  revenue           Float    @default(0)
+  conversionRate    Float    @default(0)
+  avgRating         Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, date])
+}
+
 model UserRecommendation {
   id            String   @id @default(uuid())
   userId        String
@@ -756,6 +833,202 @@ model SurveyAnswer {
   question      SurveyQuestion @relation(fields: [questionId], references: [id])
 
   @@unique([responseId, questionId])
+}
+
+// ================================
+// SOCIAL COMMERCE FEATURES
+// ================================
+
+model UserProfileExtension {
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  bio               String?
+  stylePreferences  StylePreference[]
+  portfolioImages   String[]
+  socialLinks       SocialLinkExtension[]
+  followerCount     Int             @default(0)
+  followingCount    Int             @default(0)
+  reputationScore   Int             @default(0)
+  level             Int             @default(1)
+  experiencePoints  Int             @default(0)
+  badges            UserBadge[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts             SocialPost[]
+  followers         Follow[]        @relation("Following")
+  following         Follow[]        @relation("Follower")
+}
+
+model SocialLinkExtension {
+  id                String              @id @default(uuid())
+  userProfileId     String
+  platform          SocialMediaPlatform
+  url               String
+  createdAt         DateTime            @default(now())
+
+  userProfile       UserProfileExtension @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id            String   @id @default(uuid())
+  followerId    String
+  followingId   String
+  createdAt     DateTime @default(now())
+
+  follower      UserProfileExtension @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following     UserProfileExtension @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model SocialPost {
+  id          String     @id @default(uuid())
+  authorId    String
+  type        PostType
+  title       String?
+  content     String?
+  images      String[]
+  tags        String[]
+  productId   String?    // Link to product if it's a product share
+  outfitId    String?    // Link to outfit inspiration
+  likes       Int        @default(0)
+  shares      Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  author      UserProfileExtension @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    PostComment[]
+  likes_rel   PostLike[]
+  product     Product?   @relation(fields: [productId], references: [id])
+  outfit      OutfitInspiration? @relation(fields: [outfitId], references: [id])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User       @relation(fields: [authorId], references: [id])
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model CommunityChallenge {
+  id            String                @id @default(uuid())
+  title         String
+  description   String
+  imageUrl      String?
+  startDate     DateTime
+  endDate       DateTime
+  rewardType    ChallengeRewardType
+  rewardValue   String                // Points, badge, discount, etc.
+  maxParticipants Int?
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  submissions   ChallengeSubmission[]
+}
+
+model ChallengeSubmission {
+  id            String            @id @default(uuid())
+  challengeId   String
+  userId        String
+  title         String
+  description   String?
+  images        String[]
+  votes         Int               @default(0)
+  isWinner      Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+
+  challenge     CommunityChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id])
+  votes_rel     ChallengeVote[]
+}
+
+model ChallengeVote {
+  id            String   @id @default(uuid())
+  submissionId  String
+  userId        String
+  createdAt     DateTime @default(now())
+
+  submission    ChallengeSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, userId])
+}
+
+model LiveStream {
+  id            String        @id @default(uuid())
+  hostId        String
+  title         String
+  description   String?
+  streamKey     String        @unique
+  scheduledTime DateTime?
+  startTime     DateTime?
+  endTime       DateTime?
+  viewers       Int           @default(0)
+  isLive        Boolean       @default(false)
+  isRecorded    Boolean       @default(false)
+  recordingUrl  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  host          User          @relation(fields: [hostId], references: [id])
+  chatMessages  StreamChatMessage[]
+}
+
+model StreamChatMessage {
+  id        String   @id @default(uuid())
+  streamId  String
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  stream    LiveStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id])
+}
+
+model UserBadge {
+  id          String   @id @default(uuid())
+  userId      String
+  badgeId     String
+  earnedAt    DateTime @default(now())
+
+  user        UserProfileExtension @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+model Badge {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String
+  iconUrl     String
+  category    BadgeCategory
+  pointsRequired Int?   // For level-based badges
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  users       UserBadge[]
 }
 
 // ================================
@@ -950,12 +1223,6 @@ enum ProductTag {
   FEATURED
 }
 
-enum Gender {
-  MEN
-  WOMEN
-  KIDS
-  UNISEX
-}
 
 enum ConfirmationStatus {
   PENDING
@@ -1019,4 +1286,56 @@ enum QuestionType {
   CHECKBOX
   RATING
   YES_NO
+}
+
+enum PostType {
+  OUTFIT
+  PRODUCT
+  CHALLENGE
+  TUTORIAL
+  GENERAL
+  POLL
+}
+
+enum ChallengeRewardType {
+  POINTS
+  BADGE
+  DISCOUNT
+  FEATURED_POST
+  EXCLUSIVE_ACCESS
+}
+
+enum BadgeCategory {
+  ACHIEVEMENT
+  SOCIAL
+  COMMERCE
+  CREATIVE
+  COMMUNITY
+}
+
+enum UserAction {
+  VIEW_PRODUCT
+  ADD_TO_WISHLIST
+  ADD_TO_CART
+  PURCHASE
+  SEARCH
+  VIEW_CATEGORY
+  VIEW_PROFESSIONAL
+  BOOK_SERVICE
+  LEAVE_REVIEW
+  SHARE_PRODUCT
+  FOLLOW_USER
+}
+
+enum MovementTarget {
+  PRODUCT
+  CATEGORY
+  COLLECTION
+  PROFESSIONAL
+  SERVICE
+  OUTFIT_INSPIRATION
+  BLOG_POST
+  SEARCH_RESULT
+  CART
+  WISHLIST
 }

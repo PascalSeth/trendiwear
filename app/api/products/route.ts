@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
-import type { Prisma, ProductTag, Gender } from "@prisma/client"
+import { AnalyticsTracker } from "@/lib/analytics"
+import type { Prisma, ProductTag } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,6 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get("minPrice")
     const maxPrice = searchParams.get("maxPrice")
     const tags = searchParams.get("tags")?.split(",") as ProductTag[]
-    const gender = searchParams.get("gender") as Gender
     const colors = searchParams.get("colors")?.split(",")
     const sizes = searchParams.get("sizes")?.split(",")
     const sortBy = searchParams.get("sortBy") || "createdAt"
@@ -48,10 +48,28 @@ export async function GET(request: NextRequest) {
       where.isInStock = true
     }
 
-    if (categoryId) where.categoryId = categoryId
+    if (categoryId) {
+      // If categoryId is provided, include products from the category and all its children
+      const categoryIds = [categoryId];
+
+      // Get all child category IDs recursively
+      const getAllChildIds = async (parentId: string): Promise<string[]> => {
+        const children = await prisma.category.findMany({
+          where: { parentId, isActive: true },
+          select: { id: true },
+        });
+        const childIds = children.map(c => c.id);
+        const nestedIds = await Promise.all(childIds.map(id => getAllChildIds(id)));
+        return [...childIds, ...nestedIds.flat()];
+      };
+
+      const childIds = await getAllChildIds(categoryId);
+      categoryIds.push(...childIds);
+
+      where.categoryId = { in: categoryIds };
+    }
     if (collectionId) where.collectionId = collectionId
     if (professionalId) where.professionalId = professionalId
-    if (gender) where.gender = gender
 
     if (search) {
       where.OR = [
@@ -95,6 +113,7 @@ export async function GET(request: NextRequest) {
               professionalProfile: {
                 select: {
                   businessName: true,
+                  businessImage: true,
                   rating: true,
                   totalReviews: true,
                 },
@@ -126,7 +145,7 @@ export async function GET(request: NextRequest) {
             targetType: "PRODUCT",
           },
         })
-        
+
         return {
           ...product,
           _count: {
@@ -136,6 +155,34 @@ export async function GET(request: NextRequest) {
         }
       })
     )
+
+    // Track search analytics if search was performed
+    if (search && !dashboard) {
+      try {
+        // Get user ID if authenticated
+        let userId = null;
+        try {
+          const user = await requireAuth();
+          userId = user.id;
+        } catch {
+          // User not authenticated, track as anonymous
+        }
+
+        // Track the search
+        await AnalyticsTracker.trackSearch(
+          userId,
+          search,
+          categoryId || undefined,
+          productsWithReviewCounts.length,
+          undefined, // sessionId
+          request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+          request.headers.get('user-agent') || undefined
+        );
+      } catch (error) {
+        console.error('Error tracking search analytics:', error);
+        // Don't fail the request if analytics tracking fails
+      }
+    }
 
     return NextResponse.json({
       products: productsWithReviewCounts,
@@ -162,6 +209,7 @@ export async function POST(request: NextRequest) {
       price,
       stockQuantity,
       images,
+      videoUrl,
       categoryId,
       collectionId,
       sizes,
@@ -171,10 +219,11 @@ export async function POST(request: NextRequest) {
       estimatedDelivery,
       isCustomizable,
       tags,
-      gender,
+      isUnisex,
       submittedForShowcase,
     } = body
 
+    const finalTags = ['NEW' as ProductTag, ...(tags || [])]
     const product = await prisma.product.create({
       data: {
         name,
@@ -182,6 +231,7 @@ export async function POST(request: NextRequest) {
         price: Number.parseFloat(price),
         stockQuantity: Number.parseInt(stockQuantity),
         images,
+        videoUrl,
         categoryId,
         collectionId,
         professionalId: user.id,
@@ -191,8 +241,8 @@ export async function POST(request: NextRequest) {
         careInstructions,
         estimatedDelivery: estimatedDelivery ? Number.parseInt(estimatedDelivery) : null,
         isCustomizable: Boolean(isCustomizable),
-        tags,
-        gender: gender || "UNISEX",
+        tags: finalTags,
+        isUnisex: Boolean(isUnisex),
         submittedForShowcase: Boolean(submittedForShowcase),
         submittedAt: submittedForShowcase ? new Date() : null,
       },

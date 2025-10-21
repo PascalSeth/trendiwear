@@ -3,12 +3,13 @@ import React from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { Bell, DollarSign, Menu, SearchIcon, ShoppingCart } from "lucide-react";
+import { Bell, DollarSign, Menu, SearchIcon, User, Package, Heart, MapPin, Ruler, Settings, HelpCircle, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
+import { CartSheetTrigger } from "@/components/ui/cart-sheet-trigger";
 
 type User = {
   picture?: string | null;
@@ -19,14 +20,22 @@ type User = {
 type NavbarProps = {
   role: Role;
   user: User | null; // Allow user to be null
+  profileSlug?: string; // Optional profile slug passed from server
 };
 
-function Navbar({ role, user }: NavbarProps) {
+function Navbar({ role, user, profileSlug }: NavbarProps) {
   const pathname = usePathname();
-  
+
   const isActive = (path: string) => pathname === path;
 
-  const isProfessionalOrOwner = role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN";
+  // Generate personalized profile URL
+  const getProfileUrl = (): string => {
+    if (profileSlug) {
+      return `/tz/${profileSlug}`;
+    }
+    return '/profile'; // fallback to profile page
+  };
+
 
   return (
     <div className="bg-white border-b sticky w-full overflow-hidden top-0 left-0 right-0 bottom-0 z-[99] border-gray-200 shadow-sm">
@@ -41,8 +50,8 @@ function Navbar({ role, user }: NavbarProps) {
               <Link href="/tailors-designers" className={`hover:text-red-900 ${isActive('/tailors-designers') ? 'text-red-900' : ''}`}>
                 Tailors & Designers
               </Link>
-              <Link href="/shop" className={`hover:text-red-900 ${isActive('/shop') ? 'text-red-900' : ''}`}>
-                Shop
+              <Link href="/shopping" className={`hover:text-red-900 ${isActive('/shopping') ? 'text-red-900' : ''}`}>
+                Shopping
               </Link>
               <Link href="/blog" className={`hover:text-red-900 ${isActive('/blog') ? 'text-red-900' : ''}`}>
                 Blog
@@ -67,25 +76,135 @@ function Navbar({ role, user }: NavbarProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      className="z-[999] text-black bg-white"
+                      className="z-[999] text-black bg-white w-64"
                     >
-                      <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
-                        {user.given_name} {user.family_name}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
-                        <Link
-                          href={isProfessionalOrOwner ? "/dashboard" : "/register-as-professional"}
-                          className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
-                        >
-                          {isProfessionalOrOwner ? "Dashboard" : "Earn as a Professional"}
-                          {isProfessionalOrOwner ? "" : <DollarSign size={14} />}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-semibold">
-                        <div className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
+                      {/* User Info */}
+                      <div className="px-3 py-2 border-b border-gray-200">
+                        <p className="font-semibold text-gray-900">{user.given_name} {user.family_name}</p>
+                        <p className="text-sm text-gray-600">Welcome back!</p>
+                      </div>
+
+                      {/* Account Section */}
+                      <div className="py-1">
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <User className="w-4 h-4 mr-3" />
+                          <Link
+                            href={getProfileUrl()}
+                            className="w-full"
+                          >
+                            My Profile
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <Package className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/orders"
+                            className="w-full"
+                          >
+                            My Orders
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <Heart className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/wishlist"
+                            className="w-full"
+                          >
+                            Wishlist
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+
+                      {/* Professional Section */}
+                      {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                        <>
+                          <div className="border-t border-gray-200 my-1"></div>
+                          <div className="py-1">
+                            <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                              <Settings className="w-4 h-4 mr-3" />
+                              <Link
+                                href="/dashboard"
+                                className="w-full"
+                              >
+                                Professional Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Become Professional */}
+                      {role === "CUSTOMER" && (
+                        <>
+                          <div className="border-t border-gray-200 my-1"></div>
+                          <div className="py-1">
+                            <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                              <DollarSign className="w-4 h-4 mr-3" />
+                              <Link
+                                href="/register-as-professional"
+                                className="w-full"
+                              >
+                                Become a Professional
+                              </Link>
+                            </DropdownMenuItem>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Settings & Support */}
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="py-1">
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <MapPin className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/addresses"
+                            className="w-full"
+                          >
+                            Addresses
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <Ruler className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/measurements"
+                            className="w-full"
+                          >
+                            Measurements
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <Settings className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/settings"
+                            className="w-full"
+                          >
+                            Account Settings
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                          <HelpCircle className="w-4 h-4 mr-3" />
+                          <Link
+                            href="/help"
+                            className="w-full"
+                          >
+                            Help & Support
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+
+                      {/* Logout */}
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="py-1">
+                        <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium text-red-600 hover:bg-red-50">
+                          <LogOut className="w-4 h-4 mr-3" />
                           <LogoutLink className="w-full">Logout</LogoutLink>
-                        </div>
-                      </DropdownMenuItem>
+                        </DropdownMenuItem>
+                      </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
@@ -133,7 +252,7 @@ function Navbar({ role, user }: NavbarProps) {
         {/* Notification and Cart Icons */}
         <div className="flex items-center space-x-4">
           <Bell className="text-gray-600" />
-          <ShoppingCart className="text-gray-600" />
+          <CartSheetTrigger />
         </div>
       </div>
 
@@ -170,8 +289,8 @@ function Navbar({ role, user }: NavbarProps) {
                 <Link href="/tailors-designers" className={`block py-2 hover:text-red-900 ${isActive('/tailors-designers') ? 'text-red-900' : 'text-gray-600'}`}>
                   Tailors & Designers
                 </Link>
-                <Link href="/shop" className={`block py-2 hover:text-red-900 ${isActive('/shop') ? 'text-red-900' : 'text-gray-600'}`}>
-                  Shop
+                <Link href="/shopping" className={`block py-2 hover:text-red-900 ${isActive('/shopping') ? 'text-red-900' : 'text-gray-600'}`}>
+                  Shopping
                 </Link>
                 <Link href="/blog" className={`block py-2 hover:text-red-900 ${isActive('/blog') ? 'text-red-900' : 'text-gray-600'}`}>
                   Blog
@@ -180,7 +299,7 @@ function Navbar({ role, user }: NavbarProps) {
                   About Us
                 </Link>
                 <div className="flex space-x-4 mt-6 pt-4 border-t border-gray-200">
-                  <ShoppingCart className="text-gray-600 h-6 w-6" />
+                  <CartSheetTrigger />
                   <Bell className="text-gray-600 h-6 w-6" />
                 </div>
                 {!user && (
@@ -209,25 +328,135 @@ function Navbar({ role, user }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="z-[9999] text-black bg-white"
+                className="z-[9999] text-black bg-white w-64"
               >
-                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
-                  {user.given_name} {user.family_name}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
-                  <Link
-                    href={isProfessionalOrOwner ? "/dashboard" : "/register-as-professional"}
-                    className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-medium"
-                  >
-                    {isProfessionalOrOwner ? "Dashboard" : "Earn as a Professional"}
-                    {isProfessionalOrOwner ? "" : <DollarSign size={14} />}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-semibold">
-                  <div className="rounded-[8px] hover:bg-red-900 p-2 hover:text-white w-full hover:cursor-pointer items-center flex font-semibold">
+                {/* User Info */}
+                <div className="px-3 py-2 border-b border-gray-200">
+                  <p className="font-semibold text-gray-900">{user.given_name} {user.family_name}</p>
+                  <p className="text-sm text-gray-600">Welcome back!</p>
+                </div>
+
+                {/* Account Section */}
+                <div className="py-1">
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <User className="w-4 h-4 mr-3" />
+                    <Link
+                      href={getProfileUrl()}
+                      className="w-full"
+                    >
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <Package className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/orders"
+                      className="w-full"
+                    >
+                      My Orders
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <Heart className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/wishlist"
+                      className="w-full"
+                    >
+                      Wishlist
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+
+                {/* Professional Section */}
+                {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                  <>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <div className="py-1">
+                      <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                        <Settings className="w-4 h-4 mr-3" />
+                        <Link
+                          href="/dashboard"
+                          className="w-full"
+                        >
+                          Professional Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </div>
+                  </>
+                )}
+
+                {/* Become Professional */}
+                {role === "CUSTOMER" && (
+                  <>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <div className="py-1">
+                      <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                        <DollarSign className="w-4 h-4 mr-3" />
+                        <Link
+                          href="/register-as-professional"
+                          className="w-full"
+                        >
+                          Become a Professional
+                        </Link>
+                      </DropdownMenuItem>
+                    </div>
+                  </>
+                )}
+
+                {/* Settings & Support */}
+                <div className="border-t border-gray-200 my-1"></div>
+                <div className="py-1">
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <MapPin className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/addresses"
+                      className="w-full"
+                    >
+                      Addresses
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <Ruler className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/measurements"
+                      className="w-full"
+                    >
+                      Measurements
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <Settings className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/settings"
+                      className="w-full"
+                    >
+                      Account Settings
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium">
+                    <HelpCircle className="w-4 h-4 mr-3" />
+                    <Link
+                      href="/help"
+                      className="w-full"
+                    >
+                      Help & Support
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+
+                {/* Logout */}
+                <div className="border-t border-gray-200 my-1"></div>
+                <div className="py-1">
+                  <DropdownMenuItem className="rounded-[8px] hover:cursor-pointer items-center flex font-medium text-red-600 hover:bg-red-50">
+                    <LogOut className="w-4 h-4 mr-3" />
                     <LogoutLink className="w-full">Logout</LogoutLink>
-                  </div>
-                </DropdownMenuItem>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}

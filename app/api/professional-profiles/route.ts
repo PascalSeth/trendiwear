@@ -1,45 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "12")
-    const specialization = searchParams.get("specialization")
-    const location = searchParams.get("location")
-    const minRating = searchParams.get("minRating")
-    const search = searchParams.get("search")
-    const verified = searchParams.get("verified")
+    const isPublic = searchParams.get("public") === "true"
 
-    const where: Prisma.ProfessionalProfileWhereInput = {
-      isVerified: verified === "true" ? true : undefined,
-    }
-
-    if (specialization) where.specializationId = specialization
-    if (location) where.location = { contains: location, mode: "insensitive" }
-    if (minRating) where.rating = { gte: Number.parseFloat(minRating) }
-
-    if (search) {
-      where.OR = [
-        { businessName: { contains: search, mode: "insensitive" } },
-        { bio: { contains: search, mode: "insensitive" } },
-        {
-          user: {
-            OR: [
-              { firstName: { contains: search, mode: "insensitive" } },
-              { lastName: { contains: search, mode: "insensitive" } },
-            ],
-          },
-        },
-      ]
-    }
-
-    const [profiles, total] = await Promise.all([
-      prisma.professionalProfile.findMany({
-        where,
+    if (isPublic) {
+      // Public endpoint to fetch all professional profiles
+      const profiles = await prisma.professionalProfile.findMany({
+        where: {},
         include: {
           user: {
             select: {
@@ -47,10 +20,18 @@ export async function GET(request: NextRequest) {
               lastName: true,
               profileImage: true,
               email: true,
+            },
+            include: {
+              products: {
+                where: { isActive: true },
+              },
+              professionalServices: {
+                where: { isActive: true },
+              },
               _count: {
                 select: {
-                  professionalServices: true,
                   products: true,
+                  professionalServices: true,
                 },
               },
             },
@@ -64,18 +45,61 @@ export async function GET(request: NextRequest) {
           store: true,
           deliveryZones: true,
         },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: [{ isVerified: "desc" }, { rating: "desc" }, { totalReviews: "desc" }],
-      }),
-      prisma.professionalProfile.count({ where }),
-    ])
+        orderBy: { createdAt: "desc" },
+      })
 
-    return NextResponse.json({
-      profiles,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      return NextResponse.json(profiles)
+    }
+
+    // Private endpoint for authenticated user
+    const { getUser } = getKindeServerSession()
+    const user = await getUser()
+
+    if (!user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const profile = await prisma.professionalProfile.findUnique({
+      where: { userId: user.id },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+            email: true,
+            products: {
+              where: { isActive: true },
+            },
+            professionalServices: {
+              where: { isActive: true },
+            },
+            _count: {
+              select: {
+                products: true,
+                professionalServices: true,
+              },
+            },
+          },
+        },
+        specialization: {
+          select: {
+            name: true,
+          },
+        },
+        socialMedia: true,
+        store: true,
+        deliveryZones: true,
+      },
     })
+
+    if (!profile) {
+      return NextResponse.json({ error: "Professional profile not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(profile)
   } catch (error) {
+    console.error("Error in professional-profiles GET:", error)
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
@@ -90,10 +114,6 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    if (existingProfile) {
-      return NextResponse.json({ error: "Professional profile already exists" }, { status: 400 })
-    }
-
     const {
       businessName,
       businessImage,
@@ -101,11 +121,13 @@ export async function POST(request: NextRequest) {
       experience,
       bio,
       portfolioUrl,
+      spotlightVideoUrl,
+      latitude,
+      longitude,
       location,
       availability,
       freeDeliveryThreshold,
       socialMedia,
-      deliveryZones,
     }: {
       businessName: string
       businessImage?: string
@@ -113,44 +135,85 @@ export async function POST(request: NextRequest) {
       experience: number
       bio?: string
       portfolioUrl?: string
-      location: string
+      spotlightVideoUrl?: string
+      latitude?: number
+      longitude?: number
+      location?: string
       availability?: string
       freeDeliveryThreshold?: number
       socialMedia?: Prisma.SocialMediaCreateWithoutProfessionalInput[]
-      deliveryZones?: Prisma.DeliveryZoneCreateWithoutProfessionalInput[]
     } = body
 
-    const profile = await prisma.professionalProfile.create({
-      data: {
-        userId: user.id,
-        businessName,
-        businessImage,
-        specializationId,
-        experience,
-        bio,
-        portfolioUrl,
-        location,
-        availability,
-        freeDeliveryThreshold,
-        socialMedia: { create: socialMedia || [] },
-        deliveryZones: { create: deliveryZones || [] },
-      },
-      include: {
-        user: {
-          select: { firstName: true, lastName: true, email: true },
+    let profile;
+
+    if (existingProfile) {
+      // Update existing profile
+      profile = await prisma.professionalProfile.update({
+        where: { userId: user.id },
+        data: {
+          businessName,
+          businessImage,
+          specializationId,
+          experience,
+          bio,
+          portfolioUrl,
+          spotlightVideoUrl,
+          ...(latitude && { latitude }),
+          ...(longitude && { longitude }),
+          ...(location && { location }),
+          availability,
+          freeDeliveryThreshold,
+          socialMedia: {
+            deleteMany: {}, // Clear existing social media
+            create: socialMedia || []
+          },
         },
-        socialMedia: true,
-        deliveryZones: true,
-      },
-    })
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+          socialMedia: true,
+        },
+      })
+    } else {
+      // Create new profile
+      profile = await prisma.professionalProfile.create({
+        data: {
+          userId: user.id,
+          businessName,
+          businessImage,
+          specializationId,
+          experience,
+          bio,
+          portfolioUrl,
+          spotlightVideoUrl,
+          ...(latitude && { latitude }),
+          ...(longitude && { longitude }),
+          ...(location && { location }),
+          availability,
+          freeDeliveryThreshold,
+          socialMedia: { create: socialMedia || [] },
+        },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+          socialMedia: true,
+        },
+      })
+    }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "PROFESSIONAL" },
-    })
+    // Only update user role if this is a new profile
+    if (!existingProfile) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "PROFESSIONAL" },
+      })
+    }
 
-    return NextResponse.json(profile, { status: 201 })
+    return NextResponse.json(profile, { status: existingProfile ? 200 : 201 })
   } catch (error) {
+    console.error("Error in professional-profiles POST:", error)
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { AvatarIcon, CardStackIcon } from '@radix-ui/react-icons';
-import { Bell, Menu, Settings, Shirt, Warehouse, X } from 'lucide-react';
+import { Bell, Menu, Settings, Shirt, Warehouse, X, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,6 +38,11 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
     return userRole === 'SUPER_ADMIN';
   };
 
+  // Helper function to check if user is professional
+  const isProfessional = (userRole: Role) => {
+    return userRole === 'PROFESSIONAL';
+  };
+
   return (
     <div className="bg-white shadow-sm border-b border-gray-200">
       <div className="flex items-center justify-between px-4 md:px-8 py-3">
@@ -59,144 +64,209 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
             Dashboard
           </Link>
 
-          {/* Catalogue Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/dashboard/catalogue')
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Catalogue
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-              <DropdownMenuGroup>
-                {hasAdminPrivileges(role) && (
-                  <>
-                    <DropdownMenuItem className="flex items-center">
-                      <Warehouse />
-                      <Link href="/dashboard/catalogue/category">Category</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center">
-                      <CardStackIcon />
-                      <Link href="/dashboard/catalogue/collections">Collections</Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuItem className="flex items-center">
-                  <Shirt />
-                  <Link href="/dashboard/catalogue/products">Products</Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Additional Links */}
-          {[
-            { href: '/dashboard/orders', label: 'Orders' },
-            { href: '/dashboard/services', label: 'Services' },
-            { href: '/dashboard/customers', label: 'Customers' },
-            { href: '/dashboard/reports', label: 'Reports' },
-          ].map((link) => (
+          {/* Catalogue/Products */}
+          {isProfessional(role) ? (
             <Link
-              key={link.href}
-              href={link.href}
+              href="/dashboard/catalogue/products"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive(link.href)
+                isActive('/dashboard/catalogue/products')
                   ? 'bg-indigo-100 text-indigo-700'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              {link.label}
+              Products
             </Link>
-          ))}
-
-          {/* Professional Link - Only for PROFESSIONAL/ADMIN/SUPER_ADMIN */}
-          {hasAdminPrivileges(role) && (
-            <Link
-              href="/dashboard/professionals"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/dashboard/professionals')
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Professionals
-            </Link>
-          )}
-
-          {/* Trends Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/dashboard/trends')
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Trends
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-              <DropdownMenuGroup>
-                {hasAdminPrivileges(role) && (
-                  <>
-                    <DropdownMenuItem className="flex items-center">
-                      <Warehouse />
-                      <Link href="/dashboard/trends/events">Events</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center">
-                      <Shirt />
-                      <Link href="/dashboard/trends/outfit-inspirations">Outfit Inspirations</Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Management Dropdown - Only for SUPER_ADMIN */}
-          {isSuperAdmin(role) && (
+          ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/management')
+                    isActive('/dashboard/catalogue')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  Management
+                  Catalogue
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48">
                 <DropdownMenuGroup>
+                  {hasAdminPrivileges(role) && !isProfessional(role) && (
+                    <>
+                      <DropdownMenuItem className="flex items-center">
+                        <Warehouse />
+                        <Link href="/dashboard/catalogue/category">Category</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center">
+                        <CardStackIcon />
+                        <Link href="/dashboard/catalogue/collections">Collections</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem className="flex items-center">
-                    <Settings />
-                    <Link href="/dashboard/management/services">Services</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center">
-                    <AvatarIcon />
-                    <Link href="/dashboard/management/professional-types">Professional Types</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center">
-                    <Bell />
-                    <Link href="/dashboard/management/content">Content Moderation</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center">
-                    <Settings />
-                    <Link href="/dashboard/management/system">System Settings</Link>
+                    <Shirt />
+                    <Link href="/dashboard/catalogue/products">Products</Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {/* Professional-specific menu */}
+          {isProfessional(role) ? (
+            <>
+              <Link
+                href="/dashboard/orders"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/dashboard/orders')
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Orders
+              </Link>
+              <Link
+                href="/dashboard/services"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/dashboard/services')
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Services
+              </Link>
+              <Link
+                href="/dashboard/analytics"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/dashboard/analytics')
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Analytics
+              </Link>
+              <Link
+                href="/dashboard/showcase"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/dashboard/showcase')
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Showcase
+              </Link>
+            </>
+          ) : (
+            <>
+              {/* Admin/SuperAdmin menu */}
+              {[
+                { href: '/dashboard/orders', label: 'Orders' },
+                { href: '/dashboard/services', label: 'Services' },
+                { href: '/dashboard/customers', label: 'Customers' },
+                { href: '/dashboard/reports', label: 'Reports' },
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive(link.href)
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {/* Professional Link - Only for ADMIN/SUPER_ADMIN */}
+              {hasAdminPrivileges(role) && !isProfessional(role) && (
+                <Link
+                  href="/dashboard/professionals"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/professionals')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Professionals
+                </Link>
+              )}
+
+              {/* Trends Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive('/dashboard/trends')
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Trends
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuGroup>
+                    {hasAdminPrivileges(role) && (
+                      <>
+                        <DropdownMenuItem className="flex items-center">
+                          <Warehouse />
+                          <Link href="/dashboard/trends/events">Events</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="flex items-center">
+                          <Shirt />
+                          <Link href="/dashboard/trends/outfit-inspirations">Outfit Inspirations</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Management Dropdown - Only for SUPER_ADMIN */}
+              {isSuperAdmin(role) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/management')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Management
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem className="flex items-center">
+                        <Settings />
+                        <Link href="/dashboard/management/services">Services</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center">
+                        <AvatarIcon />
+                        <Link href="/dashboard/management/professional-types">Professional Types</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center">
+                        <Bell />
+                        <Link href="/dashboard/management/content">Content Moderation</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center">
+                        <Star />
+                        <Link href="/dashboard/showcase">Showcase</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="flex items-center">
+                        <Settings />
+                        <Link href="/dashboard/management/system">System Settings</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </>
           )}
         </div>
 
@@ -250,40 +320,11 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
               Dashboard
             </Link>
 
-            {/* Catalogue Dropdown for Mobile */}
-            <div className="space-y-1">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Catalogue
-              </div>
-              {hasAdminPrivileges(role) && (
-                <>
-                  <Link
-                    href="/dashboard/catalogue/category"
-                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/dashboard/catalogue/category')
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Category
-                  </Link>
-                  <Link
-                    href="/dashboard/catalogue/collections"
-                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/dashboard/catalogue/collections')
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Collections
-                  </Link>
-                </>
-              )}
+            {/* Catalogue/Products for Mobile */}
+            {isProfessional(role) ? (
               <Link
                 href="/dashboard/catalogue/products"
-                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive('/dashboard/catalogue/products')
                     ? 'bg-indigo-100 text-indigo-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -292,110 +333,69 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
               >
                 Products
               </Link>
-            </div>
-
-            {/* Main Links */}
-            <Link
-              href="/dashboard/orders"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/dashboard/orders')
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Orders
-            </Link>
-            <Link
-              href="/dashboard/services"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/dashboard/services')
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Services
-            </Link>
-            <Link
-              href="/dashboard/customers"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/dashboard/customers')
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Customers
-            </Link>
-            <Link
-              href="/dashboard/reports"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/dashboard/reports')
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Reports
-            </Link>
-
-            {/* Professionals Link - Only for PROFESSIONAL/ADMIN/SUPER_ADMIN */}
-            {hasAdminPrivileges(role) && (
-              <Link
-                href="/dashboard/professionals"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/dashboard/professionals')
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Professionals
-              </Link>
-            )}
-
-            {/* Trends Dropdown for Mobile */}
-            {hasAdminPrivileges(role) && (
+            ) : (
               <div className="space-y-1">
                 <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Trends
+                  Catalogue
                 </div>
+                {hasAdminPrivileges(role) && !isProfessional(role) && (
+                  <>
+                    <Link
+                      href="/dashboard/catalogue/category"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/catalogue/category')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Category
+                    </Link>
+                    <Link
+                      href="/dashboard/catalogue/collections"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/catalogue/collections')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Collections
+                    </Link>
+                  </>
+                )}
                 <Link
-                  href="/dashboard/trends/events"
+                  href="/dashboard/catalogue/products"
                   className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/trends/events')
+                    isActive('/dashboard/catalogue/products')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Events
-                </Link>
-                <Link
-                  href="/dashboard/trends/outfit-inspirations"
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/trends/outfit-inspirations')
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Outfit Inspirations
+                  Products
                 </Link>
               </div>
             )}
 
-            {/* Management Dropdown - Only for SUPER_ADMIN */}
-            {isSuperAdmin(role) && (
-              <div className="space-y-1">
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Management
-                </div>
+            {/* Professional-specific mobile menu */}
+            {isProfessional(role) ? (
+              <>
                 <Link
-                  href="/dashboard/management/services"
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/management/services')
+                  href="/dashboard/orders"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/orders')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Orders
+                </Link>
+                <Link
+                  href="/dashboard/services"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/services')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
@@ -404,39 +404,186 @@ const Navbar: React.FC<NavbarProps> = ({ role }) => {
                   Services
                 </Link>
                 <Link
-                  href="/dashboard/management/professional-types"
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/management/professional-types')
+                  href="/dashboard/analytics"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/analytics')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Professional Types
+                  Analytics
                 </Link>
                 <Link
-                  href="/dashboard/management/content"
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/management/content')
+                  href="/dashboard/showcase"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/showcase')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Content Moderation
+                  Showcase
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Admin/SuperAdmin mobile menu */}
+                <Link
+                  href="/dashboard/orders"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/orders')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Orders
                 </Link>
                 <Link
-                  href="/dashboard/management/system"
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/dashboard/management/system')
+                  href="/dashboard/services"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/services')
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  System Settings
+                  Services
                 </Link>
-              </div>
+                <Link
+                  href="/dashboard/customers"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/customers')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Customers
+                </Link>
+                <Link
+                  href="/dashboard/reports"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard/reports')
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Reports
+                </Link>
+
+                {/* Professionals Link - Only for ADMIN/SUPER_ADMIN */}
+                {hasAdminPrivileges(role) && !isProfessional(role) && (
+                  <Link
+                    href="/dashboard/professionals"
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive('/dashboard/professionals')
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Professionals
+                  </Link>
+                )}
+
+                {/* Trends Dropdown for Mobile */}
+                {hasAdminPrivileges(role) && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Trends
+                    </div>
+                    <Link
+                      href="/dashboard/trends/events"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/trends/events')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Events
+                    </Link>
+                    <Link
+                      href="/dashboard/trends/outfit-inspirations"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/trends/outfit-inspirations')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Outfit Inspirations
+                    </Link>
+                  </div>
+                )}
+
+                {/* Management Dropdown - Only for SUPER_ADMIN */}
+                {isSuperAdmin(role) && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Management
+                    </div>
+                    <Link
+                      href="/dashboard/management/services"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/management/services')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Services
+                    </Link>
+                    <Link
+                      href="/dashboard/management/professional-types"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/management/professional-types')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Professional Types
+                    </Link>
+                    <Link
+                      href="/dashboard/management/content"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/management/content')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Content Moderation
+                    </Link>
+                    <Link
+                      href="/dashboard/showcase"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/showcase')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Showcase
+                    </Link>
+                    <Link
+                      href="/dashboard/management/system"
+                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                        isActive('/dashboard/management/system')
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      System Settings
+                    </Link>
+                  </div>
+                )}
+              </>
             )}
 
             <Link

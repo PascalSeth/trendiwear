@@ -74,8 +74,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const updateData: Prisma.ProductUpdateInput = { ...body }
     if (body.price) updateData.price = Number.parseFloat(body.price)
-    if (body.stockQuantity) updateData.stockQuantity = Number.parseInt(body.stockQuantity)
-    if (body.estimatedDelivery) updateData.estimatedDelivery = Number.parseInt(body.estimatedDelivery)
+    if (body.stockQuantity !== undefined) updateData.stockQuantity = Number.parseInt(body.stockQuantity)
+    if (body.estimatedDelivery !== undefined) updateData.estimatedDelivery = Number.parseInt(body.estimatedDelivery)
+    if (body.discountPercentage !== undefined) updateData.discountPercentage = body.discountPercentage ? Number.parseFloat(body.discountPercentage) : null
+    if (body.discountPrice !== undefined) updateData.discountPrice = body.discountPrice ? Number.parseFloat(body.discountPrice) : null
+    if (body.discountStartDate !== undefined) updateData.discountStartDate = body.discountStartDate ? new Date(body.discountStartDate) : null
+    if (body.discountEndDate !== undefined) updateData.discountEndDate = body.discountEndDate ? new Date(body.discountEndDate) : null
+    if (body.isOnSale !== undefined) updateData.isOnSale = Boolean(body.isOnSale)
 
     const product = await prisma.product.update({
       where: { id },

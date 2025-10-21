@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Shirt, Sparkles, ArrowRight, Star, Zap } from 'lucide-react';
 
 const fashionCategories = [
@@ -188,7 +189,7 @@ const FloatingParticles: React.FC = () => {
         const currentSize = particle.size * (0.8 + Math.sin(Date.now() * 0.001 * particle.pulse) * 0.2);
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, currentSize, 0, Math.PI * 2);
-        ctx.fillStyle = `${particle.color}${Math.floor(particle.alpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.fillStyle = `rgba(${parseInt(particle.color.slice(1,3),16)}, ${parseInt(particle.color.slice(3,5),16)}, ${parseInt(particle.color.slice(5,7),16)}, ${particle.alpha})`;
         ctx.fill();
       });
 
@@ -295,8 +296,8 @@ function FashionInspo() {
                   left: `${position.x}%`,
                   top: `${position.y}%`,
                   animationDelay: `${800 + index * 100}ms`,
-                  width: screenSize.width < 640 ? '140px' : screenSize.width < 1024 ? '180px' : '220px',
-                  height: screenSize.width < 640 ? '180px' : screenSize.width < 1024 ? '240px' : '300px',
+                  width: screenSize.width < 640 ? '120px' : screenSize.width < 1024 ? '180px' : '220px',
+                  height: screenSize.width < 640 ? '150px' : screenSize.width < 1024 ? '240px' : '300px',
                   zIndex: hoveredIndex === index ? 15 : 10 - Math.abs(index - Math.floor(14 / 2)),
                   transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scale})`,
                   transformOrigin: 'center'
@@ -313,10 +314,11 @@ function FashionInspo() {
                 <div className="relative bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg sm:shadow-xl hover:shadow-xl sm:hover:shadow-2xl transition-all duration-500 sm:duration-700 transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:rotate-1 group-hover:rotate-0">
                   <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                   <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
-                    <img
+                    <Image
                       src={category.image}
                       alt={category.title}
-                      className="w-full h-full object-cover transition-all duration-500 sm:duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
+                      fill
+                      className="object-cover transition-all duration-500 sm:duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
 
@@ -332,7 +334,7 @@ function FashionInspo() {
                       <div className="text-center text-white transform transition-all duration-500">
                         <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3 transform translate-y-2 sm:translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{category.title}</h3>
                         <p className="text-xs sm:text-sm opacity-90 mb-3 sm:mb-6 transform translate-y-2 sm:translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100 line-clamp-2 sm:line-clamp-none">{category.description}</p>
-                        <button className="bg-white/20 backdrop-blur-md border-2 border-white/40 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold hover:bg-white/30 transition-all duration-300 transform translate-y-2 sm:translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-200 hover:scale-105">
+                        <button className="bg-white/20 backdrop-blur-md border-2 border-white/40 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold hover:bg-white/30 transform translate-y-2 sm:translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-200 hover:scale-105">
                           Explore Looks
                         </button>
                       </div>
