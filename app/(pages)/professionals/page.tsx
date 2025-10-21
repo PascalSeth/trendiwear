@@ -75,7 +75,6 @@ const professionals = [
 ];
 
 function Page() {
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [likedCards, setLikedCards] = useState<Set<string>>(new Set());
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
@@ -165,16 +164,10 @@ function Page() {
         {/* Professional Cards Grid */}
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-            {filteredProfessionals.map((professional, index) => (
+            {filteredProfessionals.map((professional) => (
               <div
                 key={professional.id}
                 className={`group relative bg-white rounded-3xl overflow-hidden shadow-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ?{professional.bgColor} border border-gray-100`}
-                onMouseEnter={() => setHoveredCard(professional.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  animationDelay: `?{index * 0.1}s`,
-                  animation: 'fadeInUp 0.6s ease-out forwards'
-                }}
               >
                 {/* Background Image with Overlay */}
                 <div className="relative h-48 overflow-hidden">

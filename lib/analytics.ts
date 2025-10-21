@@ -5,6 +5,7 @@ export class AnalyticsTracker {
   /**
    * Track user search queries
    */
+  
   static async trackSearch(
     userId: string | null,
     searchTerm: string,

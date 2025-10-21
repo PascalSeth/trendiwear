@@ -91,7 +91,6 @@ interface Filters {
 }
 
 function ProductCard({ item }: { item: Product }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentLikes, setCurrentLikes] = useState(item._count.wishlistItems);
 
@@ -109,8 +108,6 @@ function ProductCard({ item }: { item: Product }) {
   return (
     <div
       className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02] animate-fade-in-up"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Container */}
       <div className="relative overflow-hidden">
