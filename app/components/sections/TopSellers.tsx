@@ -1,6 +1,8 @@
 'use client'
 import React from 'react';
-import { Eye, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowUpRight, Crown, Medal, Award } from 'lucide-react';
+import Image from 'next/image';
 
 type TopSeller = {
   id: number;
@@ -8,12 +10,11 @@ type TopSeller = {
   name: string;
   profession: string;
   imageUrl: string;
-  businessImage: string;
   color: string;
-  bgColor: string;
   totalSales: number;
 };
 
+// KEPT ORIGINAL DATA
 const topSellers: TopSeller[] = [
   {
     id: 1,
@@ -21,9 +22,7 @@ const topSellers: TopSeller[] = [
     name: 'Sarah Chen',
     profession: 'Fashion Designer',
     imageUrl: 'https://randomuser.me/api/portraits/women/32.jpg',
-    businessImage: 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2xvdGhpbmd8ZW58MHx8MHx8fDA%3D',
     color: 'from-emerald-400 to-teal-600',
-    bgColor: 'bg-emerald-50',
     totalSales: 1247
   },
   {
@@ -32,9 +31,7 @@ const topSellers: TopSeller[] = [
     name: 'Marcus Rodriguez',
     profession: 'Style Consultant',
     imageUrl: 'https://randomuser.me/api/portraits/men/45.jpg',
-    businessImage: 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8ZmFzaGlvbnxlbnwwfHwwfHx8MA%3D%3D',
     color: 'from-pink-400 to-rose-600',
-    bgColor: 'bg-pink-50',
     totalSales: 892
   },
   {
@@ -43,9 +40,7 @@ const topSellers: TopSeller[] = [
     name: 'Emma Thompson',
     profession: 'Vintage Specialist',
     imageUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
-    businessImage: 'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=1426&auto=format&fit=crop',
     color: 'from-purple-400 to-indigo-600',
-    bgColor: 'bg-purple-50',
     totalSales: 756
   },
   {
@@ -54,121 +49,126 @@ const topSellers: TopSeller[] = [
     name: 'David Kim',
     profession: 'Tailor & Couturier',
     imageUrl: 'https://randomuser.me/api/portraits/men/51.jpg',
-    businessImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1374&auto=format&fit=crop',
     color: 'from-orange-400 to-red-600',
-    bgColor: 'bg-orange-50',
     totalSales: 543
   }
 ];
 
-function SellerCard({ seller, index }: { seller: TopSeller; index: number }) {
+function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
+  // Determine rank icon
+  const RankIcon = () => {
+    if (seller.rank === 1) return <Crown className="w-5 h-5 text-amber-600" />;
+    if (seller.rank === 2) return <Medal className="w-5 h-5 text-stone-400" />;
+    if (seller.rank === 3) return <Award className="w-5 h-5 text-amber-700" />;
+    return null;
+  };
+
   return (
-    <div
-      className={`group relative bg-white rounded-3xl overflow-hidden shadow-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ${seller.bgColor} border border-gray-100`}
-      style={{
-        animationDelay: `${index * 0.1}s`,
-        animation: 'fadeInUp 0.6s ease-out forwards'
-      }}
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      className="group relative flex items-center gap-8 py-8 border-b border-stone-100 last:border-0 hover:bg-stone-50 transition-colors duration-500 cursor-pointer"
     >
-      {/* Background Image with Overlay */}
-      <div className="relative h-48 overflow-hidden">
-        <img
-          src={seller.businessImage}
-          alt={`${seller.name}'s work`}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className={`absolute inset-0 bg-gradient-to-t ${seller.color} opacity-60 group-hover:opacity-40 transition-opacity duration-300`}></div>
+      {/* Large Background Rank Number (Editorial Watermark) */}
+      <div className="absolute -left-6 -top-4 text-[8rem] font-serif font-bold text-stone-100 leading-none opacity-0 group-hover:opacity-100 transition-opacity duration-700 select-none pointer-events-none z-0">
+        0{seller.rank}
+      </div>
 
-        {/* Rank Badge */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">#{seller.rank}</span>
-          </div>
-        </div>
-
-        {/* Total Sales Badge */}
-        <div className="absolute top-4 right-4 z-20">
-          <div className="bg-black/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-            {seller.totalSales.toLocaleString()} sales
-          </div>
+      {/* Rank Column */}
+      <div className="w-12 text-center relative z-10">
+        <div className="flex flex-col items-center gap-1">
+          {RankIcon()}
+          <span className="font-mono text-xs font-bold text-stone-400 group-hover:text-stone-900 transition-colors">
+            #{seller.rank}
+          </span>
         </div>
       </div>
 
       {/* Profile Image */}
-      <div className="flex justify-center -mt-12 relative z-10">
-        <div className="relative">
-          <img
+      <div className="relative w-16 h-16 flex-shrink-0 z-10">
+        <div className="w-full h-full rounded-full border-2 border-stone-100 group-hover:border-stone-900 transition-colors overflow-hidden">
+          <Image
             src={seller.imageUrl}
             alt={seller.name}
-            className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
+            width={64}
+            height={64}
+            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
           />
-          <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${seller.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-6 pb-6 pt-4">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">{seller.name}</h2>
-          <p className="text-gray-600 font-medium">{seller.profession}</p>
-        </div>
-
-        {/* View Shop Button */}
-        <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg">
-          <Eye className="w-4 h-4" />
-          View Shop
-        </button>
+      {/* Seller Info */}
+      <div className="flex-1 min-w-0 z-10">
+        <h3 className="text-xl font-serif text-stone-900 group-hover:italic transition-all duration-300">
+          {seller.name}
+        </h3>
+        <p className="text-xs font-mono uppercase tracking-widest text-stone-500 mt-1">
+          {seller.profession}
+        </p>
       </div>
-    </div>
+
+      {/* Stats Column */}
+      <div className="text-right relative z-10 min-w-[120px]">
+        <div className="text-2xl font-serif font-medium text-stone-900 group-hover:translate-x-1 transition-transform duration-300">
+          {seller.totalSales.toLocaleString()}
+        </div>
+        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span className="text-xs font-mono text-stone-500 uppercase tracking-widest">Sales</span>
+          <ArrowUpRight size={12} className="text-stone-900" />
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 function TopSellers() {
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-white to-slate-100 py-16 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-medium mb-6 shadow-lg">
-            <Sparkles className="w-4 h-4" />
-            Top Sellers
+    <div className="min-h-screen bg-[#FAFAF9] py-24 px-6 md:px-12">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Editorial Header */}
+        <header className="mb-16 border-b border-stone-200 pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400 mb-2 block">
+                Seasonal Performance
+              </span>
+              <h1 className="text-5xl md:text-7xl font-serif font-medium text-stone-900 leading-none">
+                Top Sellers
+              </h1>
+            </div>
+            <div className="text-right hidden md:block">
+              <p className="font-serif text-stone-500 italic text-lg max-w-xs">
+                The leading voices defining this season&apos;s trends.
+              </p>
+            </div>
           </div>
-          <h2 className="text-6xl font-black bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-4">
-            Elite Fashion Sellers
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
-            Discover our highest-performing sellers who consistently deliver exceptional fashion and outstanding customer experiences
+        </header>
+
+        {/* List Container */}
+        <div className="relative">
+           {/* Subtle decorative line */}
+           <div className="absolute left-[3.5rem] top-0 bottom-0 w-px bg-stone-200 hidden md:block"></div>
+           
+           <div className="space-y-0">
+              {topSellers.map((seller, index) => (
+                <SellerRow key={seller.id} seller={seller} index={index} />
+              ))}
+           </div>
+        </div>
+
+        {/* Footer CTA */}
+        <div className="mt-16 text-center border-t border-stone-200 pt-12">
+          <p className="font-mono text-xs uppercase tracking-widest text-stone-400 mb-6">
+            View all rankings
           </p>
-        </div>
-
-        {/* Sellers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-          {topSellers.map((seller, index) => (
-            <SellerCard key={seller.id} seller={seller} index={index} />
-          ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="text-center mt-16">
-          <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Explore All Sellers
+          <button className="group px-8 py-3 border border-stone-900 text-stone-900 text-xs font-mono uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all duration-300">
+            See Full Leaderboard
           </button>
         </div>
-      </div>
 
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+      </div>
     </div>
   );
 }

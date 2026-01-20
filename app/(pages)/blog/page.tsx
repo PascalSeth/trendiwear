@@ -1,7 +1,11 @@
-'use client'
-import React, { useState, useEffect } from 'react';
-import { ChevronRight, Clock, Tag, Sparkles, Heart, Share2, BookOpen, TrendingUp, Star } from 'lucide-react';
+'use client';
+import React from 'react';
+import { ArrowUpRight, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import Image from 'next/image';
 
+// --- Data ---
 type BlogPost = {
   id: number;
   category: string;
@@ -10,7 +14,6 @@ type BlogPost = {
   description?: string;
   imageUrl: string;
   tags?: string[];
-  bgColor?: string;
   featured?: boolean;
 };
 
@@ -21,30 +24,27 @@ const blogPosts: BlogPost[] = [
     time: "5 min read",
     title: "Effortless Urban Chic: Mastering the Art of Street Fashion",
     description: "Discover how to blend comfort with cutting-edge style in the concrete jungle. From oversized blazers to statement sneakers, we explore the essential pieces that define modern street fashion.",
-    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1600&auto=format&fit=crop&q=80",
     featured: true,
     tags: ["trending", "street-style", "urban"],
-    bgColor: "bg-gradient-to-br from-purple-900 via-pink-900 to-rose-900",
   },
   {
     id: 2,
     category: "Sustainable Fashion",
     time: "3 min read",
     title: "Eco-Luxury: The Future of Conscious Fashion",
-    description: "Explore how sustainable practices are reshaping the fashion industry with innovative materials and ethical production methods.",
-    imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80",
-    bgColor: "bg-gradient-to-br from-emerald-600 to-teal-700",
-    tags: ["sustainable", "eco-friendly", "luxury"],
+    description: "Explore how sustainable practices are reshaping the fashion industry with innovative materials.",
+    imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1000&auto=format&fit=crop&q=80",
+    tags: ["sustainable", "eco-friendly"],
   },
   {
     id: 3,
     category: "Designer Spotlight",
     time: "4 min read",
     title: "Rising Stars: Emerging Designers Breaking Boundaries",
-    description: "Meet the visionary creators reshaping fashion's future with bold concepts and innovative approaches to design.",
-    imageUrl: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format&fit=crop&q=80",
-    bgColor: "bg-gradient-to-br from-indigo-600 to-purple-700",
-    tags: ["designers", "fashion-week", "innovation"],
+    description: "Meet the visionary creators reshaping fashion's future with bold concepts.",
+    imageUrl: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1000&auto=format&fit=crop&q=80",
+    tags: ["designers", "innovation"],
   },
   {
     id: 4,
@@ -52,19 +52,17 @@ const blogPosts: BlogPost[] = [
     time: "2 min read",
     title: "Statement Pieces: Accessories That Transform Your Look",
     description: "The power of the perfect accessory to elevate any outfit from ordinary to extraordinary.",
-    imageUrl: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&auto=format&fit=crop&q=80",
-    bgColor: "bg-gradient-to-br from-amber-500 to-orange-600",
-    tags: ["accessories", "styling", "jewelry"],
+    imageUrl: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1000&auto=format&fit=crop&q=80",
+    tags: ["accessories", "jewelry"],
   },
   {
     id: 5,
     category: "Fashion Tech",
     time: "6 min read",
     title: "Wearable Innovation: Where Technology Meets Style",
-    description: "Exploring the cutting-edge intersection of fashion and technology, from smart fabrics to AI-driven design.",
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
-    bgColor: "bg-gradient-to-br from-cyan-600 to-blue-700",
-    tags: ["tech", "innovation", "future"],
+    description: "Exploring the cutting-edge intersection of fashion and technology.",
+    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1000&auto=format&fit=crop&q=80",
+    tags: ["tech", "future"],
   },
   {
     id: 6,
@@ -72,280 +70,233 @@ const blogPosts: BlogPost[] = [
     time: "4 min read",
     title: "Timeless Elegance: Vintage Pieces Making a Comeback",
     description: "How classic vintage styles are being reimagined for the modern wardrobe.",
-    imageUrl: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=800&auto=format&fit=crop&q=80",
-    bgColor: "bg-gradient-to-br from-rose-600 to-pink-700",
-    tags: ["vintage", "classic", "timeless"],
+    imageUrl: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=1000&auto=format&fit=crop&q=80",
+    tags: ["vintage", "classic"],
   },
 ];
 
 const trendingCategories = [
-  { name: "Runway Reviews", count: 24, color: "from-pink-500 to-rose-500", icon: "🌟" },
-  { name: "Sustainable Fashion", count: 18, color: "from-green-500 to-emerald-500", icon: "🌱" },
-  { name: "Street Style", count: 32, color: "from-purple-500 to-indigo-500", icon: "🔥" },
-  { name: "Designer Spotlight", count: 15, color: "from-blue-500 to-cyan-500", icon: "✨" },
-  { name: "Fashion Tech", count: 12, color: "from-orange-500 to-red-500", icon: "🚀" },
-  { name: "Vintage Revival", count: 21, color: "from-yellow-500 to-amber-500", icon: "💎" },
+  { name: "Runway Reviews", count: 24 },
+  { name: "Sustainable Fashion", count: 18 },
+  { name: "Street Style", count: 32 },
+  { name: "Designer Spotlight", count: 15 },
+  { name: "Fashion Tech", count: 12 },
+  { name: "Vintage Revival", count: 21 },
 ];
 
-function Blog() {
-  const [hoveredPost, setHoveredPost] = useState<number | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+// --- Components ---
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
-  const BlogCard = ({ post, index }: { post: BlogPost; index: number }) => (
-    <div
-      className={`group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20 ${
-        post.featured ? 'col-span-1 md:col-span-2 row-span-2' : 'col-span-1'
-      }`}
-      onMouseEnter={() => setHoveredPost(post.id)}
-      onMouseLeave={() => setHoveredPost(null)}
-      style={{ animationDelay: `${index * 150}ms` }}
+
+// 2. Featured Large Card (Breaks grid)
+const FeaturedCard = ({ post }: { post: BlogPost }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="relative w-full h-[85vh] overflow-hidden mb-24 group"
     >
-      {/* Background Image with Enhanced Parallax Effect */}
-      <div
-        className={`absolute inset-0 ${post.bgColor} transition-all duration-700 group-hover:scale-110 group-hover:brightness-110`}
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url(${post.imageUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+      <div className="absolute inset-0 bg-black/30 z-10 group-hover:bg-black/20 transition-colors duration-700" />
+      <motion.img 
+        src={post.imageUrl} 
+        alt={post.title}
+        initial={{ scale: 1.1 }}
+        whileHover={{ scale: 1 }}
+        transition={{ duration: 1.2 }}
+        className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000"
       />
       
-      {/* Dynamic Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      {/* Floating Action Buttons */}
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-[-20px] group-hover:translate-y-0">
-        <div className="p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 hover:scale-110 transition-all cursor-pointer border border-white/20">
-          <Heart className="w-5 h-5 text-white" />
+      <div className="absolute inset-0 z-20 flex flex-col justify-end p-8 md:p-16 max-w-4xl">
+        <div className="flex items-center gap-4 mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-4 group-hover:translate-y-0">
+           <span className="px-3 py-1 border border-white/30 text-white text-xs uppercase tracking-widest rounded-full backdrop-blur-md">
+             {post.category}
+           </span>
+           <span className="text-white/80 text-xs font-mono flex items-center gap-2">
+             <Clock size={12} /> {post.time}
+           </span>
         </div>
-        <div className="p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 hover:scale-110 transition-all cursor-pointer border border-white/20">
-          <Share2 className="w-5 h-5 text-white" />
-        </div>
-      </div>
+        
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-medium text-white leading-[0.95] mb-6 mix-blend-overlay">
+          {post.title}
+        </h1>
+        
+        <p className="text-white/80 text-lg md:text-xl font-light max-w-2xl leading-relaxed mb-8 border-l-2 border-white/40 pl-6">
+          {post.description}
+        </p>
 
-      {/* Enhanced Content */}
-      <div className={`relative z-10 p-6 h-full flex flex-col justify-end text-white ${post.featured ? 'p-8' : ''}`}>
-        {/* Category Badge with Animation */}
-        <div className="flex items-center gap-3 mb-4">
-          <span className="px-4 py-2 bg-white/25 backdrop-blur-md rounded-full text-sm font-semibold border border-white/30 hover:bg-white/35 transition-all cursor-pointer">
+        <Link href="#" className="inline-flex items-center gap-2 text-white font-mono text-sm uppercase tracking-widest border-b border-transparent hover:border-white transition-all pb-1 w-fit group/btn">
+          Read Story <ArrowUpRight size={16} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
+
+// 3. Standard Grid Card
+const GridCard = ({ post, index }: { post: BlogPost, index: number }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="group cursor-pointer flex flex-col h-full"
+    >
+      <div className="relative overflow-hidden aspect-[3/4] mb-6">
+        <Image
+          src={post.imageUrl}
+          alt={post.title}
+          fill
+          className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-105"
+        />
+        <div className="absolute top-4 left-4 z-10">
+          <span className="bg-black/80 text-white text-[10px] uppercase tracking-widest px-2 py-1 backdrop-blur-sm">
             {post.category}
           </span>
-          {post.time && (
-            <span className="flex items-center gap-1 text-sm opacity-90 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
-              <Clock className="w-4 h-4" />
-              {post.time}
-            </span>
-          )}
         </div>
-
-        {/* Enhanced Title */}
-        <h2 className={`font-bold mb-4 leading-tight transition-all duration-300 ${
-          post.featured ? 'text-3xl md:text-4xl' : 'text-xl md:text-2xl'
-        } ${hoveredPost === post.id ? 'transform translate-y-[-8px] text-shadow-lg' : ''}`}>
+        {/* Hover Overlay Actions */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+           <button className="bg-white text-black p-4 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 hover:scale-110">
+             <ArrowUpRight size={24} />
+           </button>
+        </div>
+      </div>
+      
+      <div className="flex flex-col flex-1">
+        <h3 className="text-2xl font-serif font-medium leading-tight mb-3 group-hover:underline decoration-1 underline-offset-4">
           {post.title}
-        </h2>
+        </h3>
+        <p className="text-neutral-500 text-sm line-clamp-2 leading-relaxed mb-4">
+          {post.description}
+        </p>
+        <div className="mt-auto flex items-center gap-4 text-xs font-mono text-neutral-400">
+          <span>{post.time}</span>
+          <span>•</span>
+          <span className="group-hover:text-black transition-colors">Read Article</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
-        {/* Enhanced Description */}
-        {post.description && (
-          <p className={`text-gray-200 mb-6 leading-relaxed transition-all duration-500 ${
-            post.featured ? 'text-lg' : 'text-sm'
-          } ${hoveredPost === post.id ? 'opacity-100 transform translate-y-[-4px]' : 'opacity-85'}`}>
-            {post.description}
-          </p>
-        )}
-
-        {/* Enhanced Tags */}
-        {post.tags && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {post.tags.map((tag: string, idx: number) => (
-              <span
-                key={idx}
-                className="text-xs px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/25 hover:bg-white/25 hover:scale-105 transition-all cursor-pointer font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Enhanced Read More Button */}
-        <div className={`flex items-center justify-between transition-all duration-300 ${
-          hoveredPost === post.id ? 'transform translate-x-2' : ''
-        }`}>
-          <div className="flex items-center text-sm font-semibold">
-            <span className="mr-2">Read Article</span>
-            <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-2" />
-          </div>
-          <div className="flex items-center gap-1 text-xs opacity-75">
-            <Star className="w-4 h-4 text-yellow-400" />
-            <span>4.8</span>
-          </div>
+// 4. Minimal Sidebar List
+const SidebarList = () => {
+  return (
+    <div className="sticky top-32">
+      <div className="mb-8">
+        <h4 className="font-mono text-xs uppercase tracking-widest text-neutral-500 mb-6 border-b border-neutral-200 pb-2">
+          Trending Topics
+        </h4>
+        <div className="space-y-6">
+          {trendingCategories.map((cat, idx) => (
+            <div key={idx} className="group cursor-pointer flex justify-between items-baseline border-b border-transparent hover:border-neutral-300 pb-2 transition-all">
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-xs text-neutral-400">0{idx + 1}</span>
+                <span className="text-lg font-serif italic text-neutral-800 group-hover:text-black transition-colors">
+                  {cat.name}
+                </span>
+              </div>
+              <span className="font-mono text-xs text-neutral-400">{cat.count}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Enhanced Sparkles Animation */}
-      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-        hoveredPost === post.id ? 'opacity-100' : 'opacity-0'
-      }`}>
-        <Sparkles className="absolute top-1/4 left-1/4 w-5 h-5 text-white animate-pulse" />
-        <Sparkles className="absolute top-3/4 right-1/4 w-4 h-4 text-yellow-300 animate-pulse" style={{ animationDelay: '0.5s' }} />
-        <Sparkles className="absolute top-1/2 right-1/3 w-3 h-3 text-pink-300 animate-pulse" style={{ animationDelay: '1s' }} />
-        <Sparkles className="absolute bottom-1/3 left-1/2 w-2 h-2 text-cyan-300 animate-pulse" style={{ animationDelay: '1.5s' }} />
+      <div className="p-8 bg-neutral-100 border border-neutral-200 mt-12">
+        <h4 className="font-serif text-2xl mb-4">The Newsletter</h4>
+        <p className="text-sm text-neutral-600 mb-6 font-light">
+          Curated fashion insights delivered to your inbox weekly. No spam, just style.
+        </p>
+        <div className="flex flex-col gap-3">
+          <input 
+            type="email" 
+            placeholder="Email Address" 
+            className="bg-transparent border-b border-neutral-400 py-2 focus:outline-none focus:border-black transition-colors text-sm placeholder:text-neutral-400"
+          />
+          <button className="bg-black text-white py-3 text-xs uppercase tracking-widest hover:bg-neutral-800 transition-colors mt-2">
+            Subscribe
+          </button>
+        </div>
       </div>
     </div>
   );
+};
+
+// --- Main Page ---
+function Blog() {
+  // Logic remains the same, just visual output changes
+  const featuredPost = blogPosts.find(p => p.featured) || blogPosts[0];
+  const regularPosts = blogPosts.filter(p => p.id !== featuredPost.id);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Enhanced Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-purple-50">
-        {/* More Prominent Background Elements */}
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-20 left-10 w-40 h-40 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-32 h-32 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-20 left-1/4 w-28 h-28 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-1/2 right-1/3 w-24 h-24 bg-gradient-to-r from-rose-400 to-orange-400 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-        
-        {/* Enhanced Header Content */}
-        <div className="relative z-10 container mx-auto px-6 py-20">
-          <div className="text-center">
-            {/* More Vibrant Title */}
-            <h1 className="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 mb-8 animate-fade-in relative">
-              TrendiZip
-              <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
-            </h1>
-            <div className="text-2xl md:text-3xl font-semibold bg-gradient-to-r from-gray-700 to-purple-600 bg-clip-text text-transparent mb-8 animate-fade-in-delay">
-              Where Fashion Meets Innovation ✨
+    <div className="min-h-screen bg-[#FAFAF9] text-neutral-900 selection:bg-black selection:text-white overflow-x-hidden">
+
+      {/* Hero Section - Editorial Typography */}
+      <section className="px-6 md:px-12 pt-32 pb-12 max-w-[1600px] mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-neutral-500 mb-4">Vol. 42 — October 2024</p>
+              <h1 className="text-[12vw] md:text-[8rem] font-serif leading-[0.85] tracking-tighter text-black">
+                THE<br />JOURNAL
+              </h1>
             </div>
-            
-            {/* Enhanced Live Display */}
-            <div className="flex items-center justify-center gap-6 text-gray-600 mb-12 flex-wrap">
-              <div className="flex items-center gap-3 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm">
-                <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse"></div>
-                <span className="font-medium">Live: {currentTime.toLocaleTimeString()}</span>
-              </div>
-              <div className="flex items-center gap-3 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm">
-                <BookOpen className="w-5 h-5 text-purple-600" />
-                <span className="font-medium">{blogPosts.length} Latest Articles</span>
-              </div>
-              <div className="flex items-center gap-3 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm">
-                <TrendingUp className="w-5 h-5 text-pink-600" />
-                <span className="font-medium">Trending Now</span>
-              </div>
+            <div className="hidden md:block max-w-xs text-right mt-8">
+              <p className="font-serif text-2xl italic text-neutral-600">
+                &apos;Fashion is the armor to survive the reality of everyday life.&apos;
+              </p>
+              <p className="font-mono text-xs mt-2 uppercase tracking-widest">— Bill Cunningham</p>
             </div>
           </div>
+          
+          <div className="h-px w-full bg-neutral-300"></div>
+        </motion.div>
+      </section>
+
+      {/* Featured Content */}
+      <section className="w-full px-0">
+        <FeaturedCard post={featuredPost} />
+      </section>
+
+      {/* Grid Content + Sidebar */}
+      <section className="px-6 md:px-12 py-12 max-w-[1600px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
+          
+          {/* Main Grid */}
+          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
+            {regularPosts.map((post, index) => (
+              <GridCard key={post.id} post={post} index={index} />
+            ))}
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-4">
+            <SidebarList />
+          </div>
+
         </div>
+      </section>
+
+      {/* Footer Marquee */}
+      <div className="mt-32 py-12 bg-black text-white overflow-hidden whitespace-nowrap border-y border-neutral-800">
+        <motion.div 
+          animate={{ x: [0, -1000] }} 
+          transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+          className="inline-block font-mono text-4xl italic opacity-50"
+        >
+          TRENDIZIP • CURATED FASHION • EDITORIAL • DESIGN • LIFESTYLE • TRENDIZIP • CURATED FASHION • EDITORIAL • DESIGN • LIFESTYLE •
+        </motion.div>
       </div>
 
-      {/* Enhanced Main Content */}
-      <div className="container mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          {/* Enhanced Blog Posts Grid */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr">
-              {blogPosts.map((post, index) => (
-                <BlogCard key={post.id} post={post} index={index} />
-              ))}
-            </div>
-          </div>
-
-          {/* Enhanced Sidebar */}
-          <div className="lg:col-span-1 space-y-8">
-            {/* Enhanced Trending Categories */}
-            <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-3xl p-8 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
-                  <Tag className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-600 bg-clip-text text-transparent">Trending Now</h3>
-              </div>
-              
-              <div className="space-y-4">
-                {trendingCategories.map((category, index) => (
-                  <div
-                    key={index}
-                    className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-purple-200 transform hover:scale-105"
-                    onMouseEnter={() => setHoveredCategory(index)}
-                    onMouseLeave={() => setHoveredCategory(null)}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="text-xl">{category.icon}</div>
-                      <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${category.color} transition-transform duration-300 ${hoveredCategory === index ? 'scale-125' : ''}`} />
-                      <span className="text-gray-800 group-hover:text-purple-600 transition-colors font-semibold">
-                        {category.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-600 font-bold">{category.count}</span>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <button className="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl text-white font-bold text-lg hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                Explore All Categories
-              </button>
-            </div>
-
-            {/* Enhanced Newsletter Signup */}
-            <div className="bg-gradient-to-br from-purple-100 via-pink-50 to-blue-50 rounded-3xl p-8 border-2 border-purple-200 shadow-lg">
-              <div className="text-center mb-6">
-                <div className="text-4xl mb-4">💌</div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">Stay in Style</h3>
-                <p className="text-gray-700 font-medium">Get the latest fashion insights delivered to your inbox every week.</p>
-              </div>
-              
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  className="w-full px-6 py-4 bg-white border-2 border-purple-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all font-medium"
-                />
-                <button
-                  className="w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white rounded-2xl font-bold text-lg hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  Subscribe Now 🚀
-                </button>
-                <p className="text-xs text-gray-500 text-center">Join 50,000+ fashion enthusiasts</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 1.2s ease-out;
-        }
-        a
-        .animate-fade-in-delay {
-          animation: fade-in 1.2s ease-out 0.6s both;
-        }
-        
-        .text-shadow-lg {
-          text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-      `}</style>
+      {/* Simple Footer */}
+      <footer className="py-12 px-6 text-center font-mono text-xs uppercase tracking-widest text-neutral-500">
+        © 2024 TrendiZip Inc. All rights reserved.
+      </footer>
     </div>
   );
 }

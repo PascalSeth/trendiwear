@@ -66,7 +66,7 @@ export function AddToCartButton({
   }
 
   const variantClasses = {
-    default: 'p-2 rounded-full hover:bg-gray-100 transition-colors',
+    default: 'p-2 rounded-full !text-white hover:bg-gray-100 transition-colors',
     overlay: 'bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200',
     inline: 'hover:text-blue-500 transition-colors',
     primary: 'w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2'
@@ -76,13 +76,13 @@ export function AddToCartButton({
     <button
       onClick={handleCartAction}
       disabled={cartLoading || isAdding}
-      className={`relative ${variantClasses[variant]} ${className} ${(cartLoading || isAdding) ? 'opacity-50 cursor-not-allowed' : ''} ${productInCart ? 'bg-green-600 text-white hover:bg-green-500 cursor-default' : ''}`}
+      className={`relative ${variantClasses[variant]} ${className} ${(cartLoading || isAdding) ? 'opacity-50 cursor-not-allowed !text-white' : ''} ${productInCart ? 'bg-green-600 text-white hover:bg-green-500 cursor-default' : ''}`}
       aria-label={productInCart ? 'Remove from cart' : 'Add to cart'}
     >
       {productInCart ? (
         variant === 'primary' ? (
           <span className="flex items-center gap-2">
-            <Check className={`${sizeClasses[size]} text-white`} />
+            <Check className={`${sizeClasses[size]} !text-white`} />
             Added to Cart
           </span>
         ) : (

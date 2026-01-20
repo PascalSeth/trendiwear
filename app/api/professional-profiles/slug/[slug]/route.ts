@@ -28,6 +28,58 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
+    if (profile) {
+      // Fetch reviews and products in parallel
+      const [reviews, products] = await Promise.all([
+        prisma.review.findMany({
+          where: {
+            targetId: profile.id,
+            targetType: 'PROFESSIONAL'
+          },
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              },
+            },
+          },
+          take: 3,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.product.findMany({
+          where: {
+            professionalId: profile.userId,
+            isActive: true,
+          },
+          include: {
+            professional: {
+              select: {
+                firstName: true,
+                lastName: true,
+                professionalProfile: {
+                  select: {
+                    businessName: true,
+                    businessImage: true,
+                  },
+                },
+              },
+            },
+            _count: {
+              select: {
+                wishlistItems: true,
+              },
+            },
+          },
+          take: 3,
+          orderBy: { createdAt: 'desc' }
+        })
+      ])
+
+      return NextResponse.json({ ...profile, reviews, products })
+    }
+
     // If not found by slug, try to find by business name (URL decoded)
     if (!profile) {
       const decodedSlug = decodeURIComponent(slug).replace(/-/g, ' ')
@@ -41,6 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         include: {
           user: {
             select: {
+              id: true,
               firstName: true,
               lastName: true,
               profileImage: true,
@@ -57,6 +110,58 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           deliveryZones: true,
         },
       })
+
+      if (profile) {
+        // Fetch reviews and products in parallel
+        const [reviews, products] = await Promise.all([
+          prisma.review.findMany({
+            where: {
+              targetId: profile.id,
+              targetType: 'PROFESSIONAL'
+            },
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  profileImage: true,
+                },
+              },
+            },
+            take: 3,
+            orderBy: { createdAt: 'desc' }
+          }),
+          prisma.product.findMany({
+            where: {
+              professionalId: profile.userId,
+              isActive: true,
+            },
+            include: {
+              professional: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  professionalProfile: {
+                    select: {
+                      businessName: true,
+                      businessImage: true,
+                    },
+                  },
+                },
+              },
+              _count: {
+                select: {
+                  wishlistItems: true,
+                },
+              },
+            },
+            take: 3,
+            orderBy: { createdAt: 'desc' }
+          })
+        ])
+
+        return NextResponse.json({ ...profile, reviews, products })
+      }
     }
 
     // If still not found, try to find by user name (for non-professionals or fallback)
@@ -80,6 +185,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         include: {
           user: {
             select: {
+              id: true,
               firstName: true,
               lastName: true,
               profileImage: true,
@@ -96,6 +202,58 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           deliveryZones: true,
         },
       })
+
+      if (profile) {
+        // Fetch reviews and products in parallel
+        const [reviews, products] = await Promise.all([
+          prisma.review.findMany({
+            where: {
+              targetId: profile.id,
+              targetType: 'PROFESSIONAL'
+            },
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  profileImage: true,
+                },
+              },
+            },
+            take: 3,
+            orderBy: { createdAt: 'desc' }
+          }),
+          prisma.product.findMany({
+            where: {
+              professionalId: profile.userId,
+              isActive: true,
+            },
+            include: {
+              professional: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  professionalProfile: {
+                    select: {
+                      businessName: true,
+                      businessImage: true,
+                    },
+                  },
+                },
+              },
+              _count: {
+                select: {
+                  wishlistItems: true,
+                },
+              },
+            },
+            take: 3,
+            orderBy: { createdAt: 'desc' }
+          })
+        ])
+
+        return NextResponse.json({ ...profile, reviews, products })
+      }
     }
 
     if (!profile) {

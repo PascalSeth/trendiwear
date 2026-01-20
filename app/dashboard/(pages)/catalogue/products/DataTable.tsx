@@ -45,6 +45,7 @@ type Product = {
   id: string;
   name: string;
   price: number;
+  currency: string;
   stockQuantity: number;
   images: string[];
   isActive: boolean;
@@ -313,7 +314,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
     {
       accessorKey: "price",
       header: "Price",
-      cell: ({ row }) => <div className="font-semibold text-green-600">${row.getValue("price")}</div>,
+      cell: ({ row }) => <div className="font-semibold text-green-600">{row.original.currency} {row.getValue("price")}</div>,
     },
     {
       accessorKey: "stockQuantity",
@@ -648,7 +649,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
                 {/* Pricing Section */}
                 <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                   <div className="text-sm text-blue-700 font-medium mb-1">Price</div>
-                  <div className="text-3xl font-bold text-blue-900">${selectedProduct.price}</div>
+                  <div className="text-3xl font-bold text-blue-900">{selectedProduct.currency} {selectedProduct.price}</div>
                 </div>
 
                 {/* Stock Information */}

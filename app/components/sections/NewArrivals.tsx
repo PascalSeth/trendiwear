@@ -1,7 +1,10 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, Eye } from 'lucide-react';
+import { Star, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 import { WishlistButton } from '@/components/ui/wishlist-button';
 import { AddToCartButton } from '@/components/ui/add-to-cart-button';
 
@@ -90,7 +93,6 @@ function NewArrivals() {
 function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [currentLikes, setCurrentLikes] = useState(item.likes || 0);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -102,142 +104,104 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const showOverlayContent = isMobile || isHovered;
-
   return (
-    <div
-      className={`group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02] animate-fade-in-up`}
-      style={{ animationDelay: `${index * 100}ms` }}
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="group relative w-full cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02]"
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
     >
-      {/* Image Container */}
-      <div className="relative overflow-hidden">
-        {/* Badges */}
-        <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
-          {item.isNew && (
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 animate-pulse">
-              NEW
-            </span>
-          )}
-        </div>
+      {/* Image Container - Full Bleed */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-t-2xl">
 
-        {/* Category Badge */}
-        <span className="absolute top-3 right-3 z-20 bg-slate-800/80 backdrop-blur-sm text-white px-2 py-1 text-xs rounded-full font-medium">
-          {item.category}
-        </span>
-
-        {/* Action Buttons - Desktop: centered with eye, Mobile: top-right vertical */}
-        {isMobile ? (
-          // Mobile/Tablet: Vertical buttons in middle right
-          <div className={`absolute top-1/2 right-3 transform -translate-y-1/2 z-20 flex flex-col gap-2 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <WishlistButton
-              productId={item.id}
-              variant="overlay"
-              size="sm"
-              showCount={true}
-              count={currentLikes}
-              onWishlistChange={(isInWishlist) => {
-                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
-              }}
-            />
-            <AddToCartButton
-              productId={item.id}
-              variant="overlay"
-              size="sm"
-            />
-          </div>
-        ) : (
-          // Desktop: Horizontal centered buttons with eye
-          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 flex gap-3 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <Link href={`/shopping/products/${item.id}`}>
-              <button className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200">
-                <Eye className="w-5 h-5 text-slate-700" />
-              </button>
-            </Link>
-            <WishlistButton
-              productId={item.id}
-              variant="overlay"
-              size="md"
-              showCount={true}
-              count={currentLikes}
-              onWishlistChange={(isInWishlist) => {
-                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
-              }}
-            />
-            <AddToCartButton
-              productId={item.id}
-              variant="overlay"
-              size="md"
-            />
-          </div>
-        )}
-
-        <img
+        {/* Image with Parallax-like Scale */}
+        <motion.img
           src={item.images[0] || "/placeholder-product.jpg"}
           alt={item.name}
-          className={`w-full h-64 lg:h-72 object-cover transition-transform duration-500 ${isHovered && !isMobile ? 'scale-105' : 'scale-100'}`}
-          loading="lazy"
+          className="w-full h-full object-cover"
+          animate={{ scale: isHovered ? 1.05 : 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
         />
 
-        {/* Gradient Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 ${showOverlayContent ? 'opacity-100' : 'opacity-0'}`} />
+        {/* Overlay Gradient */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
+          isHovered && "opacity-100"
+        )} />
 
-        {/* Seller Info - Always visible on mobile/tablet, hover on desktop */}
-        <div className={`absolute bottom-3 left-3 right-3 transition-all duration-300 ${showOverlayContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg">
-            <img
-              src={item.sellerProfilePicUrl}
-              alt={item.sellerName}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-md mr-3"
-              loading="lazy"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-slate-900 text-sm font-semibold truncate">{item.sellerName}</p>
-              <div className="flex items-center gap-1">
-                <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                <span className="text-xs text-slate-600">{item.rating}</span>
-                <span className="text-xs text-slate-400 ml-1">{item.views} views</span>
-              </div>
-            </div>
+        {/* Seller Info Overlay - Top Left */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+          <Image
+            src={item.sellerProfilePicUrl}
+            alt={item.sellerName}
+            width={24}
+            height={24}
+            className="rounded-full border border-white/50"
+          />
+          <div className="text-white text-xs font-medium drop-shadow-lg">
+            {item.sellerName}
           </div>
         </div>
+
+        {/* Top Badges - Minimalist */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+           {item.isNew && (
+             <span className="bg-white/90 backdrop-blur text-black text-[10px] font-bold tracking-widest px-2 py-1 uppercase">
+               New Arrival
+             </span>
+           )}
+        </div>
+
+        {/* Floating Actions (Replaces the old centered buttons) */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.4 }}
+          className="absolute bottom-6 left-6 right-6 flex justify-between items-end z-20"
+        >
+          <div className="flex flex-col gap-2">
+             <Link href={`/shopping/products/${item.id}`}>
+                <button className="bg-white text-black px-6 py-3 rounded-full font-medium text-sm hover:bg-stone-200 transition-colors flex items-center gap-2">
+                  View Details <ArrowUpRight size={16} />
+                </button>
+             </Link>
+          </div>
+
+          <div className="flex flex-col gap-3">
+             <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
+                <WishlistButton productId={item.id} variant="default" size="sm" />
+             </div>
+             <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
+                <AddToCartButton productId={item.id} variant="default" size="sm" />
+             </div>
+          </div>
+        </motion.div>
+
       </div>
 
-      {/* Product Info */}
-      <div className="p-4">
-        <Link href={`/shopping/products/${item.id}`}>
-          <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight cursor-pointer">
+      {/* Product Info - Editorial Layout */}
+      <div className="mt-6 flex justify-between items-start border-b border-stone-200 pb-4 group-hover:border-black transition-colors px-6">
+        <div>
+          <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">{item.category}</p>
+          <h3 className="text-xl font-serif font-medium text-stone-900 leading-tight group-hover:italic transition-all">
             {item.name}
           </h3>
-        </Link>
-
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex flex-col">
-            <span className="text-xl font-bold text-slate-900">{item.currency} {item.price.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center gap-1 text-slate-600">
-            <Heart className="w-4 h-4" />
-            <span className="text-sm">{currentLikes}</span>
-          </div>
         </div>
-
-        {/* Quick Stats */}
-        <div className="flex items-center gap-3 text-xs text-slate-500">
-          <div className="flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            <span>{item.views}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-500 fill-current" />
-            <span>{item.rating}</span>
+        <div className="text-right">
+          <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
+             <Star size={10} className="fill-current text-stone-400" />
+             {item.rating}
           </div>
         </div>
       </div>
 
       {/* Hover Effect Ring */}
       <div className={`absolute inset-0 rounded-2xl border-2 border-blue-500/30 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100`}></div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,10 +1,15 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, Eye, Zap, TrendingUp } from 'lucide-react';
+import { Star, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { cn } from '@/lib/utils'; // Assuming you have a utility for merging classes, otherwise use clsx/tailwind-merge
 import { WishlistButton } from '@/components/ui/wishlist-button';
 import { AddToCartButton } from '@/components/ui/add-to-cart-button';
 
+// --- Types ---
 interface Category {
   id: string;
   name: string;
@@ -23,19 +28,7 @@ interface Product {
   currency: string;
   images: string[];
   videoUrl?: string;
-  sizes: string[];
-  colors: string[];
-  material?: string;
-  careInstructions?: string;
-  estimatedDelivery?: number;
-  isCustomizable: boolean;
-  tags: string[];
-  viewCount: number;
-  soldCount: number;
   category: {
-    name: string;
-  };
-  collection?: {
     name: string;
   };
   professional: {
@@ -45,175 +38,158 @@ interface Product {
       businessName?: string;
       businessImage?: string;
       rating?: number;
-      totalReviews?: number;
     };
   };
   _count: {
     wishlistItems: number;
-    cartItems: number;
-    orderItems: number;
     reviews: number;
   };
+  viewCount: number;
   isNew?: boolean;
-  rating?: number;
-  views?: number;
-  likes?: number;
 }
 
+// --- Components ---
 
-function ProductCard({ item, index }: { item: Product & { isNew?: boolean; rating?: number; views?: number; likes?: number }; index: number }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [currentLikes, setCurrentLikes] = useState(item.likes || item._count.wishlistItems);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const showOverlayContent = isMobile || isHovered;
-
+// 2. Marquee Component for visual flow
+const InfiniteScrollText = ({ text }: { text: string }) => {
   return (
-    <div
-      className={`group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02] animate-fade-in-up`}
-      style={{ animationDelay: `${index * 100}ms` }}
-      onMouseEnter={() => !isMobile && setIsHovered(true)}
-      onMouseLeave={() => !isMobile && setIsHovered(false)}
-    >
-      {/* Image Container */}
-      <div className="relative overflow-hidden">
-        {/* Badges */}
-        <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
-          {item.isNew && (
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-2 py-1 text-xs font-bold rounded-full flex items-center gap-1 animate-pulse">
-              NEW
-            </span>
-          )}
-        </div>
-
-        {/* Category Badge */}
-        <span className="absolute top-3 right-3 z-20 bg-slate-800/80 backdrop-blur-sm text-white px-2 py-1 text-xs rounded-full font-medium">
-          {item.category.name}
-        </span>
-
-        {/* Action Buttons - Desktop: centered with eye, Mobile: top-right vertical */}
-        {isMobile ? (
-          // Mobile/Tablet: Vertical buttons in middle right
-          <div className={`absolute top-1/2 right-3 transform -translate-y-1/2 z-20 flex flex-col gap-2 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <WishlistButton
-              productId={item.id}
-              variant="overlay"
-              size="sm"
-              showCount={true}
-              count={currentLikes}
-              onWishlistChange={(isInWishlist) => {
-                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
-              }}
-            />
-            <AddToCartButton
-              productId={item.id}
-              variant="overlay"
-              size="sm"
-            />
-          </div>
-        ) : (
-          // Desktop: Horizontal centered buttons with eye
-          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 flex gap-3 transition-all duration-300 ${showOverlayContent ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-            <Link href={`/shopping/products/${item.id}`}>
-              <button className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200">
-                <Eye className="w-5 h-5 text-slate-700" />
-              </button>
-            </Link>
-            <WishlistButton
-              productId={item.id}
-              variant="overlay"
-              size="md"
-              showCount={true}
-              count={currentLikes}
-              onWishlistChange={(isInWishlist) => {
-                setCurrentLikes(prev => isInWishlist ? prev + 1 : Math.max(0, prev - 1));
-              }}
-            />
-            <AddToCartButton
-              productId={item.id}
-              variant="overlay"
-              size="md"
-            />
-          </div>
-        )}
-
-        <img
-          src={item.images[0] || "/placeholder-product.jpg"}
-          alt={item.name}
-          className={`w-full h-64 lg:h-72 object-cover transition-transform duration-500 ${isHovered && !isMobile ? 'scale-105' : 'scale-100'}`}
-          loading="lazy"
-        />
-
-        {/* Gradient Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 ${showOverlayContent ? 'opacity-100' : 'opacity-0'}`} />
-
-        {/* Seller Info - Always visible on mobile/tablet, hover on desktop */}
-        <div className={`absolute bottom-3 left-3 right-3 transition-all duration-300 ${showOverlayContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg">
-            <img
-              src={item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg'}
-              alt={item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-md mr-3"
-              loading="lazy"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-slate-900 text-sm font-semibold truncate">{item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`}</p>
-              <div className="flex items-center gap-1">
-                <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                <span className="text-xs text-slate-600">{item.professional.professionalProfile?.rating?.toFixed(1) || '4.5'}</span>
-                <span className="text-xs text-slate-400 ml-1">{item.viewCount} views</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Info */}
-      <div className="p-4">
-        <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight cursor-pointer">
-          {item.name}
-        </h3>
-
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex flex-col">
-            <span className="text-xl font-bold text-slate-900">{item.currency} {item.price.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center gap-1 text-slate-600">
-            <Heart className="w-4 h-4" />
-            <span className="text-sm">{currentLikes}</span>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="flex items-center gap-3 text-xs text-slate-500">
-          <div className="flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            <span>{item.viewCount}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-500 fill-current" />
-            <span>{item.professional.professionalProfile?.rating?.toFixed(1) || '4.5'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Hover Effect Ring */}
-      <div className={`absolute inset-0 rounded-2xl border-2 border-blue-500/30 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100`}></div>
+    <div className="w-full overflow-hidden whitespace-nowrap py-12 bg-stone-100 border-y border-stone-200">
+      <motion.div 
+        animate={{ x: [0, -1000] }} 
+        transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+        className="inline-block font-serif text-4xl md:text-6xl text-stone-300 italic font-bold"
+      >
+        {text} • {text} • {text} • {text} • {text} • {text} • {text} • {text}
+      </motion.div>
     </div>
   );
-}
+};
 
+// 3. Redesigned Product Card
+const ProductCard = ({ item, index }: { item: Product, index: number }) => {
+  const [isHovered, setIsHovered] = useState(false);
 
+  const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
+  const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="group relative w-full cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Image Container - Full Bleed */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-sm">
+        
+        {/* Image with Parallax-like Scale */}
+        <motion.img
+          src={item.images[0] || "/placeholder-product.jpg"}
+          alt={item.name}
+          className="w-full h-full object-cover"
+          animate={{ scale: isHovered ? 1.05 : 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        />
+
+        {/* Overlay Gradient */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
+          isHovered && "opacity-100"
+        )} />
+
+        {/* Floating Actions (Replaces the old centered buttons) */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.4 }}
+          className="absolute bottom-6 left-6 right-6 flex justify-between items-end z-20"
+        >
+          <div className="flex flex-col gap-2">
+             <Link href={`/shopping/products/${item.id}`}>
+                <button className="bg-white text-black px-6 py-3 rounded-full font-medium text-sm hover:bg-stone-200 transition-colors flex items-center gap-2">
+                  View Details <ArrowUpRight size={16} />
+                </button>
+             </Link>
+          </div>
+          
+          <div className="flex flex-col gap-3">
+             <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
+                <WishlistButton productId={item.id} variant="default" size="sm" />
+             </div>
+             <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
+                <AddToCartButton productId={item.id} variant="default" size="sm" />
+             </div>
+          </div>
+        </motion.div>
+
+        {/* Seller Info Overlay - Top Left */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+          <img
+            src={sellerProfilePicUrl}
+            alt={sellerName}
+            className="w-6 h-6 rounded-full border border-white/50"
+          />
+          <div className="text-white text-xs font-medium drop-shadow-lg">
+            {sellerName}
+          </div>
+        </div>
+
+        {/* Top Badges - Minimalist */}
+        {/* <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+           {item.isNew && (
+             <span className="bg-white/90 backdrop-blur text-black text-[10px] font-bold tracking-widest px-2 py-1 uppercase">
+               New Arrival
+             </span>
+           )}
+        </div> */}
+      </div>
+
+      {/* Product Info - Editorial Layout */}
+      <div className="mt-6 flex justify-between items-start border-b border-stone-200 pb-4 group-hover:border-black transition-colors">
+        <div>
+          <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">{item.category.name}</p>
+          <h3 className="text-xl font-serif font-medium text-stone-900 leading-tight group-hover:italic transition-all">
+            {item.name}
+          </h3>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
+             <Star size={10} className="fill-current text-stone-400" />
+             {item.professional.professionalProfile?.rating || '4.5'}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// 4. Category Item - Compact Block Style
+const CategoryBlock = ({ category }: { category: Category }) => (
+  <Link href={`/shopping/categories/${category.id}`} className="group relative block w-full overflow-hidden h-48 lg:h-64">
+    <Image
+      src={category.imageUrl || "/placeholder-category.jpg"}
+      alt={category.name}
+      fill
+      className="object-cover transition-transform duration-700 group-hover:scale-105 grayscale group-hover:grayscale-0"
+    />
+    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+    <div className="absolute inset-0 flex flex-col justify-end items-start text-white p-6">
+      <h3 className="text-xl lg:text-2xl font-serif font-bold italic mb-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+        {category.name}
+      </h3>
+      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 text-xs uppercase tracking-[0.2em]">
+        Explore
+      </span>
+    </div>
+  </Link>
+);
+
+// --- Main Page Component ---
 const Page = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -221,42 +197,33 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Preserving Logic
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        const [catRes, featRes, trendRes] = await Promise.all([
+          fetch('/api/categories/parents'),
+          fetch('/api/products?limit=4&sortBy=createdAt&sortOrder=desc'),
+          fetch('/api/products?limit=4&sortBy=viewCount&sortOrder=desc')
+        ]);
 
-        // Fetch parent categories only
-        const categoriesResponse = await fetch('/api/categories/parents');
-        if (!categoriesResponse.ok) throw new Error('Failed to fetch categories');
-        const categoriesData = await categoriesResponse.json();
+        if (!catRes.ok || !featRes.ok || !trendRes.ok) throw new Error('Failed to fetch data');
+
+        const categoriesData = await catRes.json();
+        const featuredData = await featRes.json();
+        const trendingData = await trendRes.json();
+
+        // Preserve Transformation Logic
+        const transformProduct = (product: Product) => ({
+          ...product,
+          isNew: product.isNew || false,
+        });
+
         setCategories(categoriesData);
-
-        // Fetch featured products (recently added)
-        const featuredResponse = await fetch('/api/products?limit=4&sortBy=createdAt&sortOrder=desc');
-        if (!featuredResponse.ok) throw new Error('Failed to fetch featured products');
-        const featuredData = await featuredResponse.json();
-        const transformedFeatured = featuredData.products.map((product: Product) => ({
-          ...product,
-          isNew: product.tags?.includes('NEW') || false,
-          rating: product.professional.professionalProfile?.rating || 4.5,
-          views: product.viewCount,
-          likes: product._count.wishlistItems
-        }));
-        setFeaturedProducts(transformedFeatured);
-
-        // Fetch trending products (most viewed)
-        const trendingResponse = await fetch('/api/products?limit=4&sortBy=viewCount&sortOrder=desc');
-        if (!trendingResponse.ok) throw new Error('Failed to fetch trending products');
-        const trendingData = await trendingResponse.json();
-        const transformedTrending = trendingData.products.map((product: Product) => ({
-          ...product,
-          isNew: product.tags?.includes('NEW') || false,
-          rating: product.professional.professionalProfile?.rating || 4.5,
-          views: product.viewCount,
-          likes: product._count.wishlistItems
-        }));
-        setTrendingProducts(transformedTrending);
+        setFeaturedProducts(featuredData.products.map(transformProduct));
+        setTrendingProducts(trendingData.products.map(transformProduct));
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -268,180 +235,153 @@ const Page = () => {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-gray-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Page</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="h-screen bg-stone-50 flex items-center justify-center font-serif italic text-2xl animate-pulse">Loading Curated Pieces...</div>;
+  if (error) return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <div className="relative bg-gray-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            {/* Logo */}
-            <div className="flex justify-center mb-8">
-              <img src="/navlogo.png" alt="Trendizip" className="w-16 h-16" />
-            </div>
-
-            {/* Main Heading */}
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Discover Curated Fashion
+    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 selection:bg-black selection:text-white">
+      {/* HERO SECTION */}
+      <header className="relative pt-10 pb-20 lg:pt-15 lg:pb-32 px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            className="flex-1 max-w-4xl"
+          >
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif font-medium leading-[0.9] tracking-tighter mb-8">
+              Refined <br />
+              <span className="italic font-light text-stone-500">Aesthetics.</span>
             </h1>
-
-            {/* Subtitle */}
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Professional designers and tailors showcasing their finest collections
+            <p className="text-lg md:text-xl text-stone-600 max-w-md font-light leading-relaxed mb-10">
+              Professional designers and tailors showcasing their finest collections for the modern individual.
             </p>
 
-            {/* CTA Button */}
-            <button className="bg-gray-900 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
-              Shop Collection
-            </button>
-
-            {/* Social Proof */}
-            <div className="mt-12 flex items-center justify-center gap-8 text-sm text-gray-600">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {featuredProducts.length > 0 ? `${featuredProducts.reduce((sum, p) => sum + p._count.reviews, 0)}+` : '50K+'}
-                </div>
-                <div>Happy Customers</div>
-              </div>
-              <div className="w-px h-12 bg-gray-300"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {featuredProducts.length + trendingProducts.length > 0 ? `${featuredProducts.length + trendingProducts.length}K+` : '10K+'}
-                </div>
-                <div>Premium Items</div>
-              </div>
-              <div className="w-px h-12 bg-gray-300"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {featuredProducts.length > 0
-                    ? `${(featuredProducts.reduce((sum, p) => sum + (p.professional.professionalProfile?.rating || 4.5), 0) / featuredProducts.length).toFixed(1)}★`
-                    : '4.9★'
-                  }
-                </div>
-                <div>Average Rating</div>
+            <div className="flex flex-wrap gap-6">
+              <button className="bg-black text-white px-8 py-4 rounded-full text-sm font-medium tracking-wide hover:bg-stone-800 transition-colors">
+                Shop Collection
+              </button>
+              <div className="flex items-center gap-6 text-xs font-medium uppercase tracking-widest text-stone-500">
+                <span>{featuredProducts.length + trendingProducts.length}+ Items</span>
+                <span className="w-1 h-1 bg-stone-400 rounded-full"></span>
+                <span>Exclusive Designers</span>
               </div>
             </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="flex-1 relative"
+          >
+            <Image
+              src="/woman.png"
+              alt="Woman holding shopping bags"
+              width={600}
+              height={800}
+              className="w-full h-auto object-cover rounded-lg"
+            />
+          </motion.div>
+        </div>
+      </header>
+
+      <InfiniteScrollText text="DISCOVER • CRAFT • WEAR • CURATE • STYLE • DISCOVER •" />
+
+      {/* CATEGORIES - Compact Grid */}
+      <section className="py-24 px-4 md:px-8 bg-white">
+        <div className="max-w-[1600px] mx-auto mb-16 px-4">
+          <div>
+            <span className="text-orange-600 text-xs font-bold uppercase tracking-widest mb-2 block">Directory</span>
+            <h2 className="text-4xl md:text-5xl font-serif">Shop by Category</h2>
           </div>
         </div>
-      </div>
 
-      <div className="px-4 md:px-8 lg:px-12 py-16">
-        {/* Categories Section */}
-        <section className="mb-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Shop by Category
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Discover your perfect style across our curated collections
-              </p>
-            </div>
+        <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+          {categories.map((category) => (
+            <CategoryBlock key={category.id} category={category} />
+          ))}
+        </div>
+      </section>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/shopping/categories/${category.id}`}
-                  className="group cursor-pointer flex flex-col items-center"
-                >
-                  <div className="relative overflow-hidden rounded-full bg-gray-100 hover:bg-gray-200 transition-colors shadow-lg">
-                    <div className="aspect-square w-32 h-32 md:w-40 md:h-40">
-                      <img
-                        src={category.imageUrl || "/placeholder-category.jpg"}
-                        alt={category.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-full" />
-                  </div>
-                  <div className="mt-4 text-center">
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {category.name}
-                    </h3>
-                  </div>
-                </Link>
-              ))}
-            </div>
+      {/* FEATURED PRODUCTS - Editorial Grid */}
+      <section className="py-24 px-4 md:px-8">
+        <div className="max-w-[1600px] mx-auto mb-16 px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+             <div>
+               <span className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-2 block">Selection</span>
+               <h2 className="text-4xl md:text-6xl font-serif">Curated by Professionals</h2>
+             </div>
+             <p className="max-w-sm text-stone-500 leading-relaxed">
+               Handpicked items representing the pinnacle of craftsmanship and contemporary design.
+             </p>
           </div>
-        </section>
+        </div>
 
-        {/* Featured Products */}
-        <section className="mb-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-6 h-6 text-gray-600" />
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Curated by Professionals
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product, index) => (
-                <ProductCard key={product.id} item={product} index={index} />
-              ))}
-            </div>
-          </div>
-        </section>
+        <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 px-4">
+          {featuredProducts.map((product, index) => (
+            <ProductCard key={product.id} item={product} index={index} />
+          ))}
+        </div>
+      </section>
 
-        {/* Trending Products */}
-        <section className="mb-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-8">
-              <TrendingUp className="w-6 h-6 text-gray-600" />
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Popular Items
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {trendingProducts.map((product, index) => (
-                <ProductCard key={product.id} item={product} index={index} />
-              ))}
-            </div>
+      {/* TRENDING PRODUCTS - Dark Mode Block for Contrast */}
+      <section className="py-24 bg-stone-900 text-white">
+        <div className="max-w-[1600px] mx-auto mb-16 px-4">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-[1px] bg-white/20"></div>
+            <span className="text-orange-500 text-xs font-bold uppercase tracking-widest">Trending Now</span>
           </div>
-        </section>
-      </div>
+          <h2 className="text-4xl md:text-6xl font-serif">Most Popular</h2>
+        </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <img src="/navlogo.png" alt="Trendizip" className="w-8 h-8" />
-              <h3 className="text-xl font-bold">Trendizip</h3>
+        <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 px-4">
+          {trendingProducts.map((product, index) => (
+             // Note: We pass a light theme override or let the card adapt. 
+             // For this design, let's reuse the card but ensure text contrasts if we were changing backgrounds.
+             // Since ProductCard is white/light, we wrap it or adjust styles. 
+             // To keep it simple and robust, we will render the standard card but the section background is dark.
+             // Ideally, we pass a 'theme' prop, but let's stick to the structure.
+            <div key={product.id} className="text-stone-900">
+               <ProductCard item={product} index={index} />
             </div>
-            <p className="text-gray-400 mb-6">Connecting professional designers with fashion enthusiasts</p>
-            <div className="text-sm text-gray-500">
-              &copy; 2024 Trendizip. All rights reserved.
-            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#EAEAEA] pt-24 pb-12 px-6 border-t border-stone-300">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+          <div className="max-w-sm">
+            <h3 className="text-3xl font-serif italic font-bold mb-6">Trendizip.</h3>
+             <p className="text-stone-500 leading-relaxed">
+               Connecting the world&apos;s most talented creators with discerning fashion enthusiasts.
+             </p>
           </div>
+          
+          <div className="flex gap-16">
+             <div className="flex flex-col gap-4">
+               <h4 className="text-xs font-bold uppercase tracking-widest text-stone-900">Shop</h4>
+               <ul className="flex flex-col gap-2 text-sm text-stone-600">
+                 <li className="hover:text-black cursor-pointer">New Arrivals</li>
+                 <li className="hover:text-black cursor-pointer">Best Sellers</li>
+                 <li className="hover:text-black cursor-pointer">Designers</li>
+               </ul>
+             </div>
+             <div className="flex flex-col gap-4">
+               <h4 className="text-xs font-bold uppercase tracking-widest text-stone-900">Support</h4>
+               <ul className="flex flex-col gap-2 text-sm text-stone-600">
+                 <li className="hover:text-black cursor-pointer">FAQ</li>
+                 <li className="hover:text-black cursor-pointer">Shipping</li>
+                 <li className="hover:text-black cursor-pointer">Returns</li>
+               </ul>
+             </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-stone-300 flex justify-between text-xs text-stone-400 uppercase tracking-wider">
+          <span>&copy; 2024 Trendizip</span>
+          <span>Designed for Excellence</span>
         </div>
       </footer>
-
     </div>
   );
 };

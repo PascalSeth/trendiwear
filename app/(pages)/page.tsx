@@ -15,7 +15,12 @@ const Page: React.FC = () => {
       {/* Fashion Inspiration - Educational Content */}
       <section className="relative">
         <FashionInspo />
-      </section>    
+      </section>   
+        {/* New Arrivals - Fresh Content */}
+      <section className="relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-slate-50/50 -z-10" />
+        <NewArrivals />
+      </section> 
       {/* Top Sellers - Social Proof */}
       <section className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-white -z-10" />
@@ -23,11 +28,7 @@ const Page: React.FC = () => {
       </section>
 
 
-  {/* New Arrivals - Fresh Content */}
-      <section className="relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-white to-slate-50/50 -z-10" />
-        <NewArrivals />
-      </section>
+
 
       {/* Blog Content - Additional Insights */}
       <section className="relative">
