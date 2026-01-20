@@ -66,7 +66,7 @@ const PRODUCTS: Product[] = [
     id: '4',
     name: "Silk Blouse",
     price: 199,
-    image: "https://images.unsplash.com/photo-1551193622-b7a47e6b1a8e?w=1200&h=1600&auto=format&fit=crop&q=80",
+    image: "https://i.pinimg.com/736x/a3/bf/76/a3bf764e76f451d454006928ffeb49a2.jpg",
     category: "Tops",
     rating: 4.7,
     reviews: 543,
