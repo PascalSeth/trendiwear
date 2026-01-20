@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
 import Image from 'next/image';
-import { ArrowUpRight, Heart, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const fashionCategories = [
@@ -160,7 +160,6 @@ function FashionInspo() {
           {/* Left: Text */}
           <div className="lg:col-span-7 space-y-8">
             <div className="flex items-center gap-4">
-               <Sparkles size={20} className="text-stone-400" />
                <span className="font-mono text-xs uppercase tracking-widest text-stone-500">Personal Styling</span>
             </div>
             <h2 className="text-5xl md:text-7xl font-serif text-stone-900 leading-tight">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowUpRight, Store, Sparkles } from 'lucide-react';
+import { Star, ArrowUpRight, Store } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -317,9 +317,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
                  />
                </div>
              </div>
-             <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
-               <Sparkles className="w-5 h-5 text-indigo-500 fill-indigo-500" />
-             </div>
+
           </motion.div>
 
           <motion.h1 

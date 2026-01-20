@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react';
-import { Star, MapPin, Mail, Eye, Heart, Sparkles, TrendingUp } from 'lucide-react';
+import { Star, MapPin, Mail, Eye, Heart,  TrendingUp } from 'lucide-react';
 
 // Enhanced dummy data for fashion professionals
 const professionals = [
@@ -109,7 +109,6 @@ function Page() {
         {/* Header Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-medium mb-6 shadow-lg">
-            <Sparkles className="w-4 h-4" />
             Fashion Professionals
           </div>
           <h1 className="text-6xl font-black bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-4">
@@ -152,9 +151,7 @@ function Page() {
           {/* No Results Message */}
           {filteredProfessionals.length === 0 && (
             <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-gray-400" />
-              </div>
+     
               <h3 className="text-2xl font-bold text-gray-700 mb-2">No professionals found</h3>
               <p className="text-gray-500">Try selecting a different category to explore more options.</p>
             </div>
