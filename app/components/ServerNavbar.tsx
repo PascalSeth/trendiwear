@@ -1,5 +1,6 @@
 // app/dashboard/components/ServerNavbar.tsx
-import { getKindeServerSession } from '@kinde-oss/kinde-auth-nextjs/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 import { getCurrentUser } from '@/lib/auth'; // Import the auth helper
 import { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -7,8 +8,7 @@ import Navbar from './Navbar';
 
 const ServerNavbar = async () => {
   const user = await getCurrentUser(); // Get the complete user data
-  const { getUser } = getKindeServerSession();
-  const kindeUser = await getUser();
+  const session = await getServerSession(authOptions);
 
   // Extract role from user data
   const role: Role = user?.role || Role.CUSTOMER;
@@ -31,19 +31,21 @@ const ServerNavbar = async () => {
         }
       }
       // Fallback to name-based slug for all users
-      if (!profileSlug && kindeUser?.given_name && kindeUser?.family_name) {
-        profileSlug = `${kindeUser.given_name.toLowerCase()}-${kindeUser.family_name.toLowerCase()}`;
+      if (!profileSlug && session?.user?.name) {
+        const nameParts = session.user.name.split(' ');
+        profileSlug = `${nameParts[0].toLowerCase()}-${nameParts.slice(1).join('-').toLowerCase()}`;
       }
     } catch (error) {
       console.error('Error fetching profile slug:', error);
       // Fallback to name-based slug
-      if (kindeUser?.given_name && kindeUser?.family_name) {
-        profileSlug = `${kindeUser.given_name.toLowerCase()}-${kindeUser.family_name.toLowerCase()}`;
+      if (session?.user?.name) {
+        const nameParts = session.user.name.split(' ');
+        profileSlug = `${nameParts[0].toLowerCase()}-${nameParts.slice(1).join('-').toLowerCase()}`;
       }
     }
   }
 
-  return <Navbar role={role} user={kindeUser} profileSlug={profileSlug} />;
+  return <Navbar role={role} user={session?.user || null} profileSlug={profileSlug} />;
 };
 
 export default ServerNavbar;

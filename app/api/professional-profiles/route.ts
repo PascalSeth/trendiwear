@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -52,11 +53,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Private endpoint for authenticated user
-    const { getUser } = getKindeServerSession()
-    const user = await getUser()
+    const session = await getServerSession(authOptions)
 
-    if (!user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get user from database using email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const profile = await prisma.professionalProfile.findUnique({

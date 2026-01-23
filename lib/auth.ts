@@ -1,16 +1,16 @@
 // lib/auth.ts
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { prisma } from "./prisma"
 import type { Role } from "@prisma/client"
 
 export async function getCurrentUser() {
-  const { getUser } = getKindeServerSession()
-  const kindeUser = await getUser()
-  
-  if (!kindeUser || !kindeUser.email) return null
+  const session = await getServerSession(authOptions)
+
+  if (!session || !session.user?.email) return null
 
   let user = await prisma.user.findUnique({
-    where: { email: kindeUser.email },
+    where: { email: session.user.email },
     include: {
       professionalProfile: {
         include: {
@@ -75,13 +75,15 @@ export async function getCurrentUser() {
   })
 
   if (!user) {
-    // Create new user with data from Kinde
+    // Create new user with data from NextAuth session
     user = await prisma.user.create({
       data: {
-        email: kindeUser.email,
-        firstName: kindeUser.given_name || "",
-        lastName: kindeUser.family_name || "",
-        profileImage: kindeUser.picture || null,
+        email: session.user.email!,
+        name: session.user.name || null,
+        image: session.user.image || null,
+        firstName: session.user.name?.split(' ')[0] || "",
+        lastName: session.user.name?.split(' ').slice(1).join(' ') || "",
+        profileImage: session.user.image || null,
         role: 'CUSTOMER', // Default role
         isActive: true,
       },

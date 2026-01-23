@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LoginLink, LogoutLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import {  signOut } from "next-auth/react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,9 +12,10 @@ import { Search, Bell, User, LogOut, Package, Heart, MapPin, Ruler, Settings, He
 import { cn } from "@/lib/utils";
 
 type User = {
-  picture?: string | null;
-  given_name: string | null;
-  family_name: string | null;
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
 };
 
 type NavbarProps = {
@@ -114,7 +115,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 <button className="flex items-center gap-3 group">
                   <div className="w-9 h-9 rounded-full overflow-hidden border border-stone-200 group-hover:border-stone-900 transition-colors">
                     <Image
-                      src={user.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                      src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                       alt="User"
                       width={36}
                       height={36}
@@ -128,7 +129,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               <DropdownMenuContent align="end" className="w-72 p-0 bg-white border border-stone-200 shadow-xl rounded-none">
                 <div className="p-6 border-b border-stone-100">
                   <p className="font-serif text-lg text-red-900 leading-tight">
-                    {user.given_name} {user.family_name}
+                    {user.name}
                   </p>
                   <p className="text-xs font-mono uppercase tracking-widest text-stone-400 mt-1">
                     Member
@@ -196,21 +197,21 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 <div className="p-2 border-t border-stone-100">
                   <DropdownMenuItem className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
                     <LogOut size={16} className="mr-3 text-red-500 group-hover/item:text-red-700 transition-colors" />
-                    <LogoutLink className="flex-1 text-sm font-medium text-red-600">
+                    <button onClick={() => signOut()} className="flex-1 text-sm font-medium text-red-600 text-left">
                       Logout
-                    </LogoutLink>
+                    </button>
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <div className="hidden md:flex items-center gap-3">
-              <LoginLink className="text-xs font-mono uppercase tracking-[0.2em] text-stone-500 hover:text-red-900 transition-colors">
+              <button onClick={() => window.location.href = '/auth/signin'} className="text-xs font-mono uppercase tracking-[0.2em] text-stone-500 hover:text-red-900 transition-colors">
                 Login
-              </LoginLink>
-              <RegisterLink className="px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors">
+              </button>
+              <button onClick={() => window.location.href = '/auth/signin'} className="px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors">
                 Sign up
-              </RegisterLink>
+              </button>
             </div>
           )}
 
@@ -267,29 +268,29 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
                          <Image
-                            src={user.picture ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                            src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                             alt="User"
                             width={40}
                             height={40}
                             className="w-10 h-10 rounded-full"
                           />
                           <div>
-                            <p className="font-serif font-medium text-red-900">{user.given_name}</p>
+                            <p className="font-serif font-medium text-red-900">{user.name}</p>
                             <p className="text-xs font-mono text-stone-500">Member</p>
                           </div>
                       </div>
-                      <LogoutLink className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-600 hover:text-red-700">
+                      <button onClick={() => signOut()} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-600 hover:text-red-700">
                         Logout
-                      </LogoutLink>
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <LoginLink className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-900 border border-stone-300 hover:border-stone-900 transition-colors">
+                      <button onClick={() => window.location.href = '/auth/signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-900 border border-stone-300 hover:border-stone-900 transition-colors">
                         Login
-                      </LoginLink>
-                      <RegisterLink className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-white bg-stone-900 hover:bg-stone-800 transition-colors">
+                      </button>
+                      <button onClick={() => window.location.href = '/auth/signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-white bg-stone-900 hover:bg-stone-800 transition-colors">
                         Sign up
-                      </RegisterLink>
+                      </button>
                     </div>
                   )}
                 </div>

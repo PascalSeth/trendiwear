@@ -8,7 +8,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // First try to find by exact slug match
     let profile = await prisma.professionalProfile.findUnique({
       where: { slug },
-      include: {
+      select: {
+        id: true,
+        businessName: true,
+        businessImage: true,
+        bio: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        slug: true,
+        userId: true,
         user: {
           select: {
             firstName: true,
@@ -90,7 +99,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             mode: 'insensitive'
           }
         },
-        include: {
+        select: {
+          id: true,
+          businessName: true,
+          businessImage: true,
+          bio: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          slug: true,
+          userId: true,
           user: {
             select: {
               id: true,
@@ -182,7 +200,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
           }
         },
-        include: {
+        select: {
+          id: true,
+          businessName: true,
+          businessImage: true,
+          bio: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          slug: true,
+          userId: true,
           user: {
             select: {
               id: true,

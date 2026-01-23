@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 import Image from "next/image";
 import Link from "next/link";
 import { Role, ProfessionalProfile } from "@prisma/client";
@@ -273,20 +274,23 @@ function ProfessionalBusinessDashboard({
 }
 
 async function Home() {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const session = await getServerSession(authOptions);
 
-  // Check if user exists and has a valid ID
-  if (!user || !user.id) {
-    // Return an error or redirect the user if the ID is not found
-    return <div>User not authenticated or user ID not found.</div>;
+  // Check if user exists and has a valid email
+  if (!session || !session.user?.email) {
+    // Return an error or redirect the user if not authenticated
+    return <div>User not authenticated.</div>;
   }
 
   // Fetch user from database to get role information
   const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true }
+    where: { email: session.user.email },
+    select: { role: true, id: true }
   });
+
+  if (!dbUser) {
+    return <div>User not found in database.</div>;
+  }
 
   const userRole = dbUser?.role;
 
@@ -298,7 +302,7 @@ async function Home() {
   // For professionals, fetch dashboard data and show business dashboard
   if (userRole === Role.PROFESSIONAL) {
     const professionalProfile = await prisma.professionalProfile.findUnique({
-      where: { userId: user.id },
+      where: { userId: dbUser.id },
       include: { specialization: true }
     });
 
