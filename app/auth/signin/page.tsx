@@ -67,26 +67,68 @@ function AuthPage() {
     const newErrors: Record<string, string> = {}
     if (!formData.email) newErrors.email = 'Email is required'
     if (!isLogin && !formData.name) newErrors.name = 'Name is required'
+    if (!isLogin && !formData.password) newErrors.password = 'Password is required'
+    if (!isLogin && formData.password && formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters'
+    if (isLogin && !formData.password) newErrors.password = 'Password is required'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleEmailAuth = async () => {
+  const handleCredentialsAuth = async () => {
     if (!validateForm()) return
 
     setLoading(true)
     try {
-      const result = await signIn('email', {
+      const result = await signIn('credentials', {
         email: formData.email,
+        password: formData.password,
         redirect: false,
         callbackUrl: '/dashboard',
       })
 
       if (result?.ok) {
-        window.location.href = '/auth/verify-request'
+        window.location.href = '/dashboard'
+      } else {
+        setErrors({ general: 'Invalid email or password' })
       }
     } catch (error) {
       console.error('Auth error:', error)
+      setErrors({ general: 'An error occurred during sign in' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegistration = async () => {
+    if (!validateForm()) return
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/creation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          phone: formData.phone,
+        }),
+      })
+
+      if (response.ok) {
+        // Registration successful, switch to login mode
+        setIsLogin(true)
+        setFormData(prev => ({ ...prev, password: '' })) // Clear password for security
+        setErrors({ general: 'Account created successfully! Please sign in.' })
+      } else {
+        const errorData = await response.json()
+        setErrors({ general: errorData.message || 'Registration failed' })
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      setErrors({ general: 'An error occurred during registration' })
     } finally {
       setLoading(false)
     }
@@ -187,7 +229,7 @@ function AuthPage() {
               </p>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleEmailAuth(); }}>
+            <form onSubmit={(e) => { e.preventDefault(); isLogin ? handleCredentialsAuth() : handleRegistration(); }}>
               
               {/* Name Field - Floating Label */}
               <AnimatePresence mode="wait">
@@ -234,33 +276,34 @@ function AuthPage() {
                 {errors.email && <p className="text-[10px] text-red-500 mt-1 uppercase tracking-wider">{errors.email}</p>}
               </div>
 
+              {errors.general && <p className={`text-[10px] mb-4 uppercase tracking-wider ${errors.general.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>{errors.general}</p>}
+
               {/* Password Field - Floating Label */}
-              {isLogin && (
-                <div className="relative group z-0 w-full mb-8">
-                  <input
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block py-2.5 px-0 w-full text-lg text-gray-900 bg-transparent border-0 border-b-2 border-gray-200 appearance-none focus:outline-none focus:ring-0 focus:border-black peer transition-colors duration-300 placeholder-transparent"
-                    placeholder="••••••••"
-                    id="password_field"
-                  />
-                  <label 
-                    htmlFor="password_field"
-                    className={`peer-focus:font-medium absolute text-xs text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 uppercase tracking-[0.15em] ${formData.password ? '-translate-y-6 scale-75' : ''}`}
-                  >
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 top-2 text-gray-400 hover:text-black transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              )}
+              <div className="relative group z-0 w-full mb-8">
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="block py-2.5 px-0 w-full text-lg text-gray-900 bg-transparent border-0 border-b-2 border-gray-200 appearance-none focus:outline-none focus:ring-0 focus:border-black peer transition-colors duration-300 placeholder-transparent"
+                  placeholder="••••••••"
+                  id="password_field"
+                />
+                <label
+                  htmlFor="password_field"
+                  className={`peer-focus:font-medium absolute text-xs text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 uppercase tracking-[0.15em] ${formData.password ? '-translate-y-6 scale-75' : ''}`}
+                >
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-2 text-gray-400 hover:text-black transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                {errors.password && <p className="text-[10px] text-red-500 mt-1 uppercase tracking-wider">{errors.password}</p>}
+              </div>
 
               {/* Submit Button */}
               <button
@@ -288,7 +331,7 @@ function AuthPage() {
                 </>
               ) : (
                 providers && Object.values(providers).map((provider) => {
-                  if (provider.id === 'email') return null
+                  if (provider.id === 'credentials') return null
 
                   return (
                     <button
