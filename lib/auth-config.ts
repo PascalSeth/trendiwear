@@ -14,6 +14,9 @@ declare module "next-auth" {
       image?: string
     }
   }
+  interface JWT {
+    id: string
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -114,11 +117,11 @@ export const authOptions: NextAuthOptions = {
       // Credentials provider handles its own validation
       return true
     },
-    async session({ session, user }) {
-      console.log('Session callback:', { session, user })
+    async session({ session, token }) {
+      console.log('Session callback:', { session, token })
       // Send properties to the client, like the user id from database
-      if (session.user && user.id) {
-        session.user.id = user.id
+      if (session.user && token.id) {
+        session.user.id = token.id as string
       }
       return session
     },

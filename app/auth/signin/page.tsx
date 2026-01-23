@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { getProviders, signIn } from 'next-auth/react'
 import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 type Provider = {
   id: string
@@ -153,10 +154,11 @@ function AuthPage() {
       {/* --- Left Panel: Full Height Image (60% width) --- */}
       <div className="hidden lg:flex lg:w-[60%] h-full relative bg-neutral-900">
         <div className="absolute inset-0 w-full h-full">
-          <img 
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
-            alt="Fashion Background" 
-            className="w-full h-full object-cover opacity-90"
+          <Image
+            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
+            alt="Fashion Background"
+            fill
+            className="object-cover opacity-90"
           />
         </div>
 
@@ -229,7 +231,14 @@ function AuthPage() {
               </p>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); isLogin ? handleCredentialsAuth() : handleRegistration(); }}>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (isLogin) {
+                handleCredentialsAuth();
+              } else {
+                handleRegistration();
+              }
+            }}>
               
               {/* Name Field - Floating Label */}
               <AnimatePresence mode="wait">

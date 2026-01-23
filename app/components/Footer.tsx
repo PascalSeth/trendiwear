@@ -2,8 +2,7 @@
 'use client';
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, MapPin, Instagram, Twitter, Linkedin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowRight, MapPin, Instagram, Twitter, Linkedin, type LucideIcon } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -42,7 +41,7 @@ export default function Footer() {
               Crafted for the <br /> discerning.
             </h2>
             <p className="font-serif text-lg text-stone-500 max-w-md leading-relaxed">
-              Connecting the world's most talented creators with fashion enthusiasts who value detail and quality.
+              Connecting the world&apos;s most talented creators with fashion enthusiasts who value detail and quality.
             </p>
           </div>
 
@@ -151,7 +150,7 @@ function FooterColumn({ title, links }: { title: string; links: { label: string;
 }
 
 // Sub-component for Social Icons
-function SocialIcon({ Icon }: { Icon: any }) {
+function SocialIcon({ Icon }: { Icon: LucideIcon }) {
   return (
     <button className="p-2 rounded-full border border-stone-200 text-stone-500 hover:text-red-900 hover:border-stone-900 transition-all duration-300">
       <Icon size={16} />
