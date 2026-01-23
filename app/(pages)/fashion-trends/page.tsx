@@ -208,19 +208,6 @@ function ModernFashionTrends() {
         </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="border-t border-neutral-900 mt-20 py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-neutral-500">
-            © 2024 Trendizip Fashion Index
-          </p>
-          <div className="flex gap-6">
-             <div className="h-px w-20 bg-neutral-900"></div>
-             <span className="font-serif text-lg italic">Curated for the bold.</span>
-          </div>
-        </div>
-      </div>
-      
       <style jsx global>{`
         @keyframes marquee {
           0% { transform: translateX(0); }

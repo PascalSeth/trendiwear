@@ -293,10 +293,7 @@ function Blog() {
         </motion.div>
       </div>
 
-      {/* Simple Footer */}
-      <footer className="py-12 px-6 text-center font-mono text-xs uppercase tracking-widest text-neutral-500">
-        © 2024 TrendiZip Inc. All rights reserved.
-      </footer>
+
     </div>
   );
 }

@@ -4,6 +4,7 @@ import "../globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import ServerNavbar from "../components/ServerNavbar";
+import Footer from "../components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/lib/cart-context";
 import { Providers } from "../providers";
@@ -41,6 +42,7 @@ export default function RootLayout({
           <CartProvider>
             <ServerNavbar/>
             {children}
+            <Footer />
             <Toaster />
           </CartProvider>
         </Providers>

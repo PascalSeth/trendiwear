@@ -141,7 +141,7 @@ function AuthPage() {
           <div className="flex items-center gap-4 text-xs tracking-widest uppercase text-gray-400">
             <span>Est. 2024</span>
             <span className="w-8 h-px bg-gray-600"></span>
-            <span>New York</span>
+            <span>Greater Accra</span>
           </div>
         </div>
       </div>
@@ -294,7 +294,7 @@ function AuthPage() {
                     <button
                       key={provider.id}
                       onClick={() => handleProviderAuth(provider.id)}
-                      className="flex items-center justify-center gap-3 py-3.5 border border-gray-200 rounded-sm hover:border-black hover:bg-white transition-all duration-300 group shadow-sm hover:shadow-md"
+                      className="flex items-center justify-center gap-3 py-3.5 border border-gray-200 rounded-[12px] hover:border-black hover:bg-white transition-all duration-300 group shadow-sm hover:shadow-md w-full"
                     >
                       {renderProviderIcon(provider.id)}
                       <span className="text-xs font-bold uppercase tracking-wider text-gray-600 group-hover:text-black transition-colors">{provider.name}</span>
