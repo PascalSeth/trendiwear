@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="max-w-sm">
           <h3 className="text-3xl font-serif italic font-bold mb-6">Trendizip.</h3>
           <p className="text-stone-500 leading-relaxed">
-            Connecting the world's most talented creators with discerning fashion enthusiasts.
+            Connecting the world&apos;s most talented creators with discerning fashion enthusiasts.
           </p>
         </div>
 
