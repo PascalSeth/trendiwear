@@ -65,7 +65,8 @@ interface ApiProfessional {
   businessName: string;
   isVerified: boolean;
   rating: number;
-  user: {
+  accountBalance?: number;
+  user?: {
     firstName: string;
     lastName: string;
     _count?: {
@@ -121,12 +122,13 @@ const SuperAdminDashboard = () => {
         const professionalsResponse = await fetch('/api/professional-profiles?limit=5');
         if (!professionalsResponse.ok) throw new Error('Failed to fetch professionals');
         const professionalsData = await professionalsResponse.json();
-        const formattedProfessionals: Professional[] = professionalsData.profiles.map((profile: ApiProfessional) => ({
+        const profilesArray = Array.isArray(professionalsData) ? professionalsData : [];
+        const formattedProfessionals: Professional[] = profilesArray.map((profile: ApiProfessional) => ({
           id: profile.id,
           name: profile.businessName,
-          owner: `${profile.user.firstName} ${profile.user.lastName}`,
-          revenue: 0, // This would need to be calculated from orders
-          orders: profile.user._count?.professionalServices || 0,
+          owner: profile.user ? `${profile.user.firstName} ${profile.user.lastName}` : 'Unknown',
+          revenue: profile.accountBalance || 0,
+          orders: profile.user?._count?.professionalServices || 0,
           rating: profile.rating || 0,
           status: profile.isVerified ? 'verified' : 'pending'
         }));

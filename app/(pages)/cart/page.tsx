@@ -170,7 +170,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Tax</span>
-                <span className="font-medium">16%</span>
+                <span className="font-medium">4.5%</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-lg font-semibold">

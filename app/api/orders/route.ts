@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const tax = (subtotal - discount) * 0.16
+    const tax = (subtotal - discount) * 0.045
     const totalPrice = subtotal + shippingCost + tax - discount
 
     const order = await prisma.$transaction(async (tx) => {

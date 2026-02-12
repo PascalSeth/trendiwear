@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const isPublic = searchParams.get("public") === "true"
+    const limit = searchParams.get("limit")
 
     if (isPublic) {
       // Public endpoint to fetch all professional profiles
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
           deliveryZones: true,
         },
         orderBy: { createdAt: "desc" },
+        ...(limit && { take: parseInt(limit) }),
       })
 
       return NextResponse.json(profiles)
@@ -62,13 +64,101 @@ export async function GET(request: NextRequest) {
     // Get user from database using email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true }
+      select: { id: true, role: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Allow SUPER_ADMIN and ADMIN to fetch all professional profiles
+    if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") {
+      const profiles = await prisma.professionalProfile.findMany({
+        where: {},
+        select: {
+          id: true,
+          userId: true,
+          businessName: true,
+          businessImage: true,
+          specializationId: true,
+          experience: true,
+          bio: true,
+          portfolioUrl: true,
+          spotlightVideoUrl: true,
+          latitude: true,
+          longitude: true,
+          location: true,
+          availability: true,
+          freeDeliveryThreshold: true,
+          isVerified: true,
+          rating: true,
+          totalReviews: true,
+          completedOrders: true,
+          accountBalance: true,
+          creditScore: true,
+          createdAt: true,
+          updatedAt: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profileImage: true,
+              email: true,
+              role: true,
+              products: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                  images: true,
+                  isActive: true,
+                },
+                where: { isActive: true },
+              },
+              professionalServices: {
+                select: {
+                  id: true,
+                  price: true,
+                  isActive: true,
+                  service: {
+                    select: {
+                      id: true,
+                      name: true,
+                      description: true,
+                      duration: true,
+                      imageUrl: true,
+                    },
+                  },
+                },
+                where: { isActive: true },
+              },
+              _count: {
+                select: {
+                  products: true,
+                  professionalServices: true,
+                },
+              },
+            },
+          },
+          specialization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          socialMedia: true,
+          store: true,
+          deliveryZones: true,
+        },
+        orderBy: { createdAt: "desc" },
+        ...(limit && { take: parseInt(limit) }),
+      })
+      console.log("Fetched professional profiles for admin:", profiles)
+      return NextResponse.json(profiles)
+    }
+
+    // For regular users, return only their own profile
     const profile = await prisma.professionalProfile.findUnique({
       where: { userId: user.id },
       include: {
@@ -102,7 +192,7 @@ export async function GET(request: NextRequest) {
         deliveryZones: true,
       },
     })
-
+    console.log("Fetched professional profile:", profile)
     if (!profile) {
       return NextResponse.json({ error: "Professional profile not found" }, { status: 404 })
     }

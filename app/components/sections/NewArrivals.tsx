@@ -110,7 +110,7 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="group relative w-full cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02]"
+      className={`group relative w-full cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-500 ${!isMobile && 'hover:shadow-xl hover:scale-[1.02]'}`}
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
     >
@@ -122,14 +122,14 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
           src={item.images[0] || "/placeholder-product.jpg"}
           alt={item.name}
           className="w-full h-full object-cover"
-          animate={{ scale: isHovered ? 1.05 : 1 }}
+          animate={{ scale: !isMobile && isHovered ? 1.05 : 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
         />
 
         {/* Overlay Gradient */}
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
-          isHovered && "opacity-100"
+          (isMobile || isHovered) && "opacity-100"
         )} />
 
         {/* Seller Info Overlay - Top Left */}
@@ -158,7 +158,7 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
         {/* Floating Actions (Replaces the old centered buttons) */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
-          animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
+          animate={{ y: isMobile || isHovered ? 0 : 20, opacity: isMobile || isHovered ? 1 : 0 }}
           transition={{ duration: 0.4 }}
           className="absolute bottom-6 left-6 right-6 flex justify-between items-end z-20"
         >
@@ -183,10 +183,10 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
       </div>
 
       {/* Product Info - Editorial Layout */}
-      <div className="mt-6 flex justify-between items-start border-b border-stone-200 pb-4 group-hover:border-black transition-colors px-6">
+      <div className={`mt-6 flex justify-between items-start border-b border-stone-200 pb-4 px-6 ${!isMobile && 'group-hover:border-black'} transition-colors`}>
         <div>
           <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">{item.category}</p>
-          <h3 className="text-xl font-serif font-medium text-stone-900 leading-tight group-hover:italic transition-all">
+          <h3 className={`text-xl font-serif font-medium text-stone-900 leading-tight ${!isMobile && 'group-hover:italic'} transition-all`}>
             {item.name}
           </h3>
         </div>
@@ -200,7 +200,7 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
       </div>
 
       {/* Hover Effect Ring */}
-      <div className={`absolute inset-0 rounded-2xl border-2 border-blue-500/30 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100`}></div>
+      <div className={`absolute inset-0 rounded-2xl border-2 border-blue-500/30 opacity-0 ${!isMobile && 'group-hover:opacity-100'} transition-all duration-300 scale-95 ${!isMobile && 'group-hover:scale-100'}`}></div>
     </motion.div>
   );
 }

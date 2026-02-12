@@ -37,7 +37,7 @@ export async function GET() {
       summary: {
         itemCount,
         subtotal,
-        estimatedTotal: subtotal * 1.16,
+        estimatedTotal: subtotal * 1.045,
       },
     })
   } catch (error) {

@@ -171,8 +171,8 @@ export function CartSheetTrigger() {
                   <span className="font-medium">{summary?.subtotal.toFixed(2)} GHS</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax (16%)</span>
-                  <span className="font-medium">{((summary?.subtotal || 0) * 0.16).toFixed(2)} GHS</span>
+                  <span className="text-gray-600">Tax (4.5%)</span>
+                  <span className="font-medium">{((summary?.subtotal || 0) * 0.045).toFixed(2)} GHS</span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold border-t pt-2">
                   <span>Total</span>

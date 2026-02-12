@@ -47,7 +47,7 @@ const ProfessionalsPage = () => {
       const response = await fetch('/api/professional-profiles?limit=1000'); // Get all for dashboard
       if (response.ok) {
         const data = await response.json();
-        setProfessionals(data.profiles || []);
+        setProfessionals(Array.isArray(data) ? data : []);
       } else {
         setError('Failed to load professionals');
       }

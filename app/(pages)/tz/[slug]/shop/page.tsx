@@ -108,7 +108,7 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.05 }}
-      className="group relative w-full cursor-pointer bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden border border-white/50 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500"
+      className={`group relative w-full cursor-pointer bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden border border-white/50 shadow-sm transition-all duration-500 ${!isMobile && 'hover:shadow-2xl hover:shadow-indigo-500/10'}`}
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
     >
@@ -120,14 +120,14 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
           src={item.images[0] || "/placeholder-product.jpg"}
           alt={item.name}
           className="w-full h-full object-cover"
-          animate={{ scale: isHovered ? 1.08 : 1 }}
+          animate={{ scale: !isMobile && isHovered ? 1.08 : 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         />
 
         {/* Beautiful Gradient Overlay on Hover */}
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-indigo-900/80 via-purple-900/40 to-transparent opacity-0 transition-opacity duration-700 mix-blend-multiply",
-          isHovered && "opacity-100"
+          (isMobile || isHovered) && "opacity-100"
         )} />
 
         {/* Seller Info */}
@@ -152,7 +152,7 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
         {/* Floating Actions */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
-          animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
+          animate={{ y: isMobile || isHovered ? 0 : 20, opacity: isMobile || isHovered ? 1 : 0 }}
           transition={{ duration: 0.4 }}
           className="absolute bottom-6 left-6 right-6 flex justify-between items-end z-20"
         >
@@ -183,10 +183,10 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
       </div>
 
       {/* Product Info - Minimalist */}
-      <div className="mt-4 px-6 pb-6 pt-2 flex justify-between items-start border-b border-transparent group-hover:border-indigo-100 transition-colors">
+      <div className={`mt-4 px-6 pb-6 pt-2 flex justify-between items-start border-b border-transparent ${!isMobile && 'group-hover:border-indigo-100'} transition-colors`}>
         <div>
           <p className="text-[10px] text-indigo-400 uppercase tracking-[0.2em] font-semibold mb-1.5">{categoryName}</p>
-          <h3 className="text-lg font-serif font-medium text-stone-900 leading-tight group-hover:text-indigo-900 transition-all">
+          <h3 className={`text-lg font-serif font-medium text-stone-900 leading-tight ${!isMobile && 'group-hover:text-indigo-900'} transition-all`}>
             {item.name}
           </h3>
         </div>

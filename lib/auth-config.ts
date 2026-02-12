@@ -21,6 +21,9 @@ declare module "next-auth" {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: 'jwt', // Use JWT strategy to ensure JWT callback is called
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -118,15 +121,15 @@ export const authOptions: NextAuthOptions = {
       return true
     },
     async session({ session, token }) {
-      console.log('Session callback:', { session, token })
+      // console.log('Session callback:', { session, token })
       // Send properties to the client, like the user id from database
-      if (session.user && token.id) {
+      if (session.user && token && token.id) {
         session.user.id = token.id as string
       }
       return session
     },
-    async jwt({ token, user, account }) {
-      console.log('JWT callback:', { token, user, account })
+    async jwt({ token, user,  }) {
+      // console.log('JWT callback:', { token, user, account })
       if (user) {
         token.id = user.id
       }

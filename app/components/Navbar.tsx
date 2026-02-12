@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import { CartSheetTrigger } from "@/components/ui/cart-sheet-trigger";
-import { Search, Bell, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, ChevronRight, Menu, X } from "lucide-react";
+import { Search, Bell, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, ChevronRight, Menu} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type User = {
@@ -228,9 +228,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between p-6 border-b border-stone-200">
                   <img src="/navlogo.png" alt="BeliBeli" className="h-8 w-8" />
-                  <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-stone-500 hover:text-red-900">
-                    <X size={24} />
-                  </button>
+
                 </div>
 
                 {/* Mobile Search */}
