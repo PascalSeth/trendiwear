@@ -12,14 +12,16 @@ export async function PUT(
     const body = await request.json()
     const { name, description, imageUrl, isActive } = body
 
+    // Build update data dynamically to only update provided fields
+    const updateData: Record<string, unknown> = {}
+    if (name !== undefined) updateData.name = name
+    if (description !== undefined) updateData.description = description
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl
+    if (isActive !== undefined) updateData.isActive = isActive
+
     const category = await prisma.serviceCategory.update({
       where: { id },
-      data: {
-        name,
-        description,
-        imageUrl,
-        isActive,
-      },
+      data: updateData,
       include: {
         _count: {
           select: { services: true },

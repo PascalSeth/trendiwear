@@ -1,10 +1,11 @@
 'use client'
 
 import React from 'react'
-import { useCart } from '@/lib/cart-context'
+import { useCartStore, selectCartSummary, selectCartLoading } from '@/lib/stores'
 
 export function CartCountBadge() {
-  const { summary, isLoading } = useCart()
+  const summary = useCartStore(selectCartSummary)
+  const isLoading = useCartStore(selectCartLoading)
   const itemCount = summary?.itemCount || 0
 
   // Don't show badge if no items or still loading

@@ -45,12 +45,14 @@ export async function POST(request: NextRequest) {
 
     // Validate bucket - only allow images, documents, videos
     const allowedBuckets = ['images', 'documents', 'videos']
-    const targetBucket = bucket || "images" // Default to images if not specified
+    let targetBucket = bucket || "images" // Default to images if not specified
+    let targetFolder = folder || "uploads"
 
+    // If bucket is not a valid storage bucket, treat it as a folder and use 'images' as bucket
     if (!allowedBuckets.includes(targetBucket)) {
-      return NextResponse.json({
-        error: `Invalid bucket. Allowed buckets: ${allowedBuckets.join(', ')}`
-      }, { status: 400 })
+      console.log(`Bucket '${targetBucket}' not valid, treating as folder path`)
+      targetFolder = targetBucket // Use the provided bucket as folder
+      targetBucket = "images" // Default to images bucket
     }
 
     // Validate file type based on bucket
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     const fileExt = file.name.split(".").pop()
     const timestamp = Date.now()
-    const fileName = `${folder}/${user.id}/${timestamp}.${fileExt}`
+    const fileName = `${targetFolder}/${user.id}/${timestamp}.${fileExt}`
 
     console.log("Generated filename:", fileName)
     console.log("Using Supabase for bucket:", targetBucket)

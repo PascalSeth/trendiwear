@@ -11,10 +11,70 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get("categoryId")
     const isHomeService = searchParams.get("isHomeService")
     const search = searchParams.get("search")
+    const forDashboard = searchParams.get("dashboard") === "true"
+
+    // For dashboard view, get professional's services with their pricing
+    if (forDashboard) {
+      try {
+        const user = await requireAuth()
+        
+        const professionalServices = await prisma.professionalService.findMany({
+          where: {
+            professionalId: user.id,
+            isActive: true,
+          },
+          include: {
+            service: {
+              include: {
+                category: true,
+                _count: {
+                  select: { bookings: true },
+                },
+              },
+            },
+            professional: {
+              select: {
+                firstName: true,
+                lastName: true,
+                professionalProfile: {
+                  select: { businessName: true },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+
+        // Transform to expected format
+        const services = professionalServices.map(ps => ({
+          id: ps.service.id,
+          name: ps.service.name,
+          description: ps.service.description,
+          duration: ps.service.duration,
+          imageUrl: ps.service.imageUrl,
+          categoryId: ps.service.categoryId,
+          isHomeService: ps.service.isHomeService,
+          requirements: ps.service.requirements,
+          isActive: ps.service.isActive,
+          createdAt: ps.service.createdAt,
+          updatedAt: ps.service.updatedAt,
+          price: ps.price,
+          professionalId: ps.professionalId,
+          category: ps.service.category,
+          professional: ps.professional,
+          _count: ps.service._count,
+        }))
+
+        return NextResponse.json({
+          services,
+          pagination: { page: 1, limit: services.length, total: services.length, pages: 1 },
+        })
+      } catch {
+        // User not authenticated, fall through to public services
+      }
+    }
 
     const where: Prisma.ServiceWhereInput = { isActive: true }
-    // Note: Filtering by professionalId, price, etc. would require joining with ProfessionalService
-    // For now, keeping basic filters
     if (categoryId) where.categoryId = categoryId
     if (isHomeService !== null) where.isHomeService = isHomeService === "true"
 
@@ -30,6 +90,10 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           category: true,
+          professionalServices: {
+            take: 1,
+            select: { price: true },
+          },
           _count: {
             select: { bookings: true },
           },
@@ -41,8 +105,14 @@ export async function GET(request: NextRequest) {
       prisma.service.count({ where }),
     ])
 
+    // Add price from first professional service (for display purposes)
+    const servicesWithPrice = services.map(s => ({
+      ...s,
+      price: s.professionalServices[0]?.price || 0,
+    }))
+
     return NextResponse.json({
-      services,
+      services: servicesWithPrice,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {

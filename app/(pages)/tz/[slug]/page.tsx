@@ -7,7 +7,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Star, MapPin, Phone, Clock,
   ArrowRight, ShoppingBag, MessageSquare,
-  Globe, Instagram, Facebook,  Settings
+  Globe, Instagram, Facebook, Settings, BadgeCheck
 } from 'lucide-react';
 import { WishlistButton } from '@/components/ui/wishlist-button';
 import { AddToCartButton } from '@/components/ui/add-to-cart-button';
@@ -41,6 +41,7 @@ interface ProductPreview {
     professionalProfile?: {
       businessName?: string;
       businessImage?: string;
+      isVerified?: boolean;
     };
   };
   _count: {
@@ -72,6 +73,7 @@ interface RawProduct {
     professionalProfile?: {
       businessName?: string;
       businessImage?: string;
+      isVerified?: boolean;
     };
   };
   _count: {
@@ -441,6 +443,8 @@ const Profile = ({ params }: { params: Promise<{ slug: string }> }) => {
               {profile.featuredProducts?.map((product) => {
                 const sellerName = product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`;
                 const sellerImage = product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+                const isVerified = product.professional.professionalProfile?.isVerified || false;
+                const isTrendiZip = sellerName === 'TrendiZip';
                 return (
                   <Link key={product.id} href={`/shopping/products/${product.id}`} className="group relative w-full cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02]">
                     <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-t-2xl">
@@ -452,13 +456,20 @@ const Profile = ({ params }: { params: Promise<{ slug: string }> }) => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-                        <Image
-                          src={sellerImage}
-                          alt={sellerName}
-                          width={24}
-                          height={24}
-                          className="rounded-full border border-white/50"
-                        />
+                        <div className="relative">
+                          <Image
+                            src={sellerImage}
+                            alt={sellerName}
+                            width={24}
+                            height={24}
+                            className="rounded-full border border-white/50"
+                          />
+                          {(isTrendiZip || isVerified) && (
+                            <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                              <BadgeCheck size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
                         <div className="text-white text-xs font-medium drop-shadow-lg">
                           {sellerName}
                         </div>

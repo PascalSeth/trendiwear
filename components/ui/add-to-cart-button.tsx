@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { ShoppingBag, Plus, Check } from 'lucide-react'
 import { toast } from 'sonner'
-import { useCart } from '@/lib/cart-context'
+import { useCartStore } from '@/lib/stores'
 
 interface AddToCartButtonProps {
   productId: string
@@ -22,7 +22,10 @@ export function AddToCartButton({
   onCartChange,
   quantity = 1
 }: AddToCartButtonProps) {
-  const { isInCart, addToCart, removeFromCart, isLoading: cartLoading } = useCart()
+  const isInCart = useCartStore(state => state.isInCart)
+  const addToCart = useCartStore(state => state.addToCart)
+  const removeFromCart = useCartStore(state => state.removeFromCart)
+  const cartLoading = useCartStore(state => state.isLoading)
   const [isAdding, setIsAdding] = useState(false)
 
   const productInCart = isInCart(productId)

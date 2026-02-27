@@ -1,5 +1,5 @@
 import { NextAuthOptions } from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
+import GoogleProvider, { GoogleProfile } from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
@@ -12,10 +12,18 @@ declare module "next-auth" {
       email: string
       name: string
       image?: string
+      firstName?: string
+      lastName?: string
     }
   }
   interface JWT {
     id: string
+    firstName?: string
+    lastName?: string
+  }
+  interface User {
+    firstName?: string
+    lastName?: string
   }
 }
 
@@ -110,6 +118,17 @@ export const authOptions: NextAuthOptions = {
             }
           } else {
             console.log('New user, creating account')
+            // Add firstName and lastName to the user object for database creation
+            const googleProfile = profile as GoogleProfile
+            if (googleProfile?.given_name && googleProfile?.family_name) {
+              user.firstName = googleProfile.given_name
+              user.lastName = googleProfile.family_name
+            } else {
+              // Fallback: split the name if given_name/family_name are not available
+              const nameParts = user.name?.split(' ') || []
+              user.firstName = nameParts[0] || ''
+              user.lastName = nameParts.slice(1).join(' ') || ''
+            }
             return true
           }
         } catch (error) {

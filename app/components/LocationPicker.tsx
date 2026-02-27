@@ -104,7 +104,7 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
             onChange={handleInputChange}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             placeholder="Type any location (e.g., Nairobi, New York, London, shopping mall name)..."
-            className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl"
+            className="bg-white/10 border-white/20 text-black placeholder-gray-400 focus:border-pink-400 focus:ring-pink-400/20 rounded-xl"
             required
           />
           {isSearching && (

@@ -176,7 +176,7 @@ export default function RegisterProfessionalForm() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-stone-900 selection:text-white overflow-hidden">
+    <div className="min-h-screen pt-20 bg-stone-50 text-stone-900 font-sans selection:bg-stone-900 selection:text-white overflow-hidden">
       
       {/* Subtle Grid Pattern */}
       <div className="fixed inset-0 z-0 opacity-30 pointer-events-none" 

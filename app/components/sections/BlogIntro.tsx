@@ -1,5 +1,5 @@
-'use client'
-import React from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,7 +7,8 @@ import { Calendar, Clock, ArrowUpRight } from 'lucide-react';
 
 // --- Types (Preserved) ---
 interface BlogPost {
-  id: number;
+  id: string;
+  slug: string;
   category: string;
   date: string;
   readTime: string;
@@ -18,53 +19,104 @@ interface BlogPost {
   featured: boolean;
 }
 
-interface SideCard {
-  id: number;
+interface QuickRead {
+  id: string;
+  slug: string;
   category: string;
   title: string;
   description: string;
-  link: string;
-  bgColor: string;
-  icon: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
-// --- Data (Preserved) ---
-const featuredPost: BlogPost = {
-  id: 1,
-  category: "Fashion",
-  date: "Nov 08, 2023",
-  readTime: "5 min read",
-  title: "Discover Latest Trends in Fall Fashion",
-  description: "Explore season's most captivating styles, from cozy textures to bold statement pieces that define autumn elegance.",
-  imageUrl: "https://plus.unsplash.com/premium_photo-1683121263622-664434494177?q=80&w=1376&auto=format&fit=crop",
-  tags: ["trending", "fall-fashion", "style-guide"],
-  featured: true
-};
-
-const sideCards: SideCard[] = [
-  {
-    id: 2,
-    category: "STYLE TIPS",
-    title: "Become a Style Insider",
-    description: "Get exclusive tips and tricks from top fashion experts and transform your wardrobe.",
-    link: "/membership",
-    bgColor: "from-purple-600 to-pink-600", // Ignored in favor of monochrome
-    icon: "tips"
-  },
-  {
-    id: 3,
-    category: "COLLECTION",
-    imageUrl: "https://images.unsplash.com/photo-1548191265-cc70d3d45ba1?w=400&fit=crop&q=60",
-    title: "See all fashion picks",
-    description: "Curated selections from our fashion editors featuring season's must-have pieces.",
-    link: "/picks",
-    bgColor: "from-blue-600 to-cyan-600",
-    icon: "collection"
-  },
-];
-
 function BlogIntro() {
+
+  const [featuredPost, setFeaturedPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [quickReads, setQuickReads] = useState<QuickRead[]>([]);
+
+  useEffect(() => {
+    const fetchIntroBlogs = async () => {
+      try {
+        // Fetch a small set of published blogs just like the main blog page,
+        // but limited for this intro section.
+        const response = await fetch('/api/blogs?published=true&limit=4');
+        if (!response.ok) {
+          throw new Error('Failed to fetch blogs for intro');
+        }
+
+        const data: {
+          blogs: Array<{
+            id: string;
+            title: string;
+            slug: string;
+            excerpt: string | null;
+            content: string;
+            imageUrl: string | null;
+            tags: string[];
+            category: string | null;
+            isFeatured: boolean;
+            createdAt: string;
+            readTime?: string | null;
+          }>;
+        } = await response.json();
+
+        const blogs = data.blogs || [];
+
+        // Hero: only use a blog that is actually marked featured
+        const featuredBlog = blogs.find((b) => b.isFeatured);
+        if (featuredBlog) {
+          const createdAt = new Date(featuredBlog.createdAt);
+          const formattedDate = createdAt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+          });
+
+          setFeaturedPost({
+            id: featuredBlog.id,
+            slug: featuredBlog.slug,
+            category: featuredBlog.category || 'Fashion',
+            date: formattedDate,
+            readTime: featuredBlog.readTime || '5 min read',
+            title: featuredBlog.title,
+            description: featuredBlog.excerpt || featuredBlog.content || '',
+            imageUrl:
+              featuredBlog.imageUrl ||
+              'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
+            tags: featuredBlog.tags || [],
+            featured: featuredBlog.isFeatured,
+          });
+        } else {
+          setFeaturedPost(null);
+        }
+
+        // Quick reads: a small list derived from the same fetch.
+        // If we had a featured hero, exclude it here; otherwise use all.
+        const quickSource = featuredBlog
+          ? blogs.filter((b) => b.id !== featuredBlog.id)
+          : blogs;
+
+        const quick = quickSource.slice(0, 3).map((blog) => ({
+          id: blog.id,
+          slug: blog.slug,
+          category: blog.category || 'Fashion',
+          title: blog.title,
+          description: blog.excerpt || blog.content.substring(0, 120) + '...',
+          imageUrl: blog.imageUrl,
+        }));
+
+        setQuickReads(quick);
+      } catch (error) {
+        console.error(error);
+        setFeaturedPost(null);
+        setQuickReads([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIntroBlogs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-stone-900 font-sans selection:bg-black selection:text-white pb-24">
@@ -96,63 +148,80 @@ function BlogIntro() {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
-          {/* Left: Featured Hero Post (Takes 8 cols) */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="lg:col-span-8 group cursor-pointer"
-          >
-            <div className="relative w-full aspect-[16/9] overflow-hidden border border-stone-200">
-              {/* Main Image */}
-              <Image
-                src={featuredPost.imageUrl}
-                alt={featuredPost.title}
-                fill
-                className="object-cover transition-transform duration-[1000ms] ease-out grayscale group-hover:grayscale-0 group-hover:scale-105"
-              />
+          {/* Left: Featured Hero Post (Takes 8 cols) - Only when a featured blog exists */}
+          {featuredPost && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-8 group cursor-pointer"
+            >
+              <div className="relative w-full aspect-[16/9] overflow-hidden border border-stone-200">
+                {/* Main Image */}
+                <Image
+                  src={featuredPost.imageUrl}
+                  alt={featuredPost.title}
+                  fill
+                  className="object-cover transition-transform duration-[1000ms] ease-out grayscale group-hover:grayscale-0 group-hover:scale-105"
+                />
 
-              {/* Gradient Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-70 transition-opacity duration-500" />
+                {/* Gradient Overlay for Text Readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-70 transition-opacity duration-500" />
 
-              {/* Content Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
-                <div className="flex items-center gap-4 mb-4 font-mono text-xs uppercase tracking-widest text-stone-300">
-                  <span className="flex items-center gap-2">
-                    <Calendar size={12} /> {featuredPost.date}
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-2">
-                    <Clock size={12} /> {featuredPost.readTime}
-                  </span>
-                  <span>•</span>
-                  <span className="bg-white/20 px-2 py-0.5 rounded-sm backdrop-blur-sm">{featuredPost.category}</span>
-                </div>
+                {/* Content Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
+                  <div className="flex items-center gap-4 mb-4 font-mono text-xs uppercase tracking-widest text-stone-300">
+                    <span className="flex items-center gap-2">
+                      <Calendar size={12} /> {featuredPost.date}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-2">
+                      <Clock size={12} /> {featuredPost.readTime}
+                    </span>
+                    <span>•</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded-sm backdrop-blur-sm">{featuredPost.category}</span>
+                  </div>
 
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-[0.95] mb-4 group-hover:italic transition-all duration-300">
-                  {featuredPost.title}
-                </h2>
-                
-                <p className="text-stone-200 text-lg md:text-xl font-light max-w-2xl leading-relaxed mb-6 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                  {featuredPost.description}
-                </p>
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-[0.95] mb-4 group-hover:italic transition-all duration-300">
+                    {featuredPost.title}
+                  </h2>
+                  
+                  <p className="text-stone-200 text-lg md:text-xl font-light max-w-2xl leading-relaxed mb-6 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                    {featuredPost.description}
+                  </p>
 
-                <div className="flex items-center gap-3 text-sm font-medium">
-                  <span>Read Story</span>
-                  <div className="w-8 h-[1px] bg-white transition-all duration-300 group-hover:w-12" />
+                  <div className="flex items-center gap-3 text-sm font-medium">
+                    <span>Read Story</span>
+                    <div className="w-8 h-[1px] bg-white transition-all duration-300 group-hover:w-12" />
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
 
-          {/* Right: Side List (Takes 4 cols) */}
-          <div className="lg:col-span-4 flex flex-col justify-between">
+          {/* Right: Side List (Takes 4 cols when featured exists, full width otherwise) */}
+          <div className={`${featuredPost ? 'lg:col-span-4' : 'lg:col-span-12'} flex flex-col justify-between`}>
             <div className="space-y-8">
-              <h3 className="font-mono text-xs uppercase tracking-widest text-stone-400 border-b border-stone-200 pb-4">
-                Quick Reads
+              <h3 className="font-mono text-xs uppercase tracking-widest text-stone-400 border-b border-stone-200 pb-4 flex items-center justify-between">
+                <span>Quick Reads</span>
+                {!loading && quickReads.length > 0 && (
+                  <span className="text-[10px] text-stone-400">{quickReads.length} articles</span>
+                )}
               </h3>
 
-              {sideCards.map((card, index) => (
+              {loading && (
+                <p className="text-xs font-mono text-stone-400 uppercase tracking-widest">
+                  Loading articles...
+                </p>
+              )}
+
+              {!loading && quickReads.length === 0 && (
+                <p className="text-sm text-stone-500 font-light">
+                  No articles yet. New stories will appear here as they are published.
+                </p>
+              )}
+
+              {!loading && quickReads.map((card, index) => (
                 <motion.div
                   key={card.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -160,7 +229,7 @@ function BlogIntro() {
                   transition={{ delay: index * 0.1 }}
                   className="group cursor-pointer"
                 >
-                  <Link href={card.link} className="block">
+                  <Link href={`/blog/${card.slug}`} className="block">
                     {card.imageUrl ? (
                       <div className="flex gap-4">
                         {/* Small Thumbnail */}
@@ -204,7 +273,7 @@ function BlogIntro() {
                     )}
                   </Link>
                 </motion.div>
-              ))}
+                ))}
             </div>
 
             {/* Decorative Footer in Sidebar */}

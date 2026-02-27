@@ -5,10 +5,13 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { useCart } from '@/lib/cart-context'
+import { useCartStore, selectCartItems, selectCartSummary } from '@/lib/stores'
 
 export default function CartPage() {
-  const { items: cartItems, summary, updateQuantity, removeItem } = useCart()
+  const cartItems = useCartStore(selectCartItems)
+  const summary = useCartStore(selectCartSummary)
+  const updateQuantity = useCartStore(state => state.updateQuantity)
+  const removeItem = useCartStore(state => state.removeItem)
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {

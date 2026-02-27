@@ -147,6 +147,13 @@ model ProfessionalProfile {
   slug             String?               @unique  // For direct URL access
   spotlightVideoUrl String?              // Promotional video/content
   creditScore      Float                 @default(0)  // Calculated from reviews
+  
+  // Paystack Payment Integration
+  paystackSubaccountCode String?         // Paystack subaccount for split payments
+  momoNumber       String?               // Mobile Money phone number
+  momoProvider     String?               // mtn, vod, tgo
+  paymentSetupComplete Boolean           @default(false)
+  
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -431,9 +438,18 @@ model Order {
   shippingCost    Float        @default(0)
   tax             Float        @default(0)
   totalPrice      Float
+  platformFee     Float        @default(0)  // 3% platform handling fee
   status          OrderStatus  @default(PENDING)
   paymentStatus   PaymentStatus @default(PENDING)
   paymentMethod   String?
+  
+  // Paystack Payment Fields
+  paystackReference String?    @unique  // Unique payment reference
+  paystackAccessCode String?   // Access code for payment page
+  paystackPaidAt  DateTime?    // When payment was confirmed
+  paystackChannel String?      // Payment channel used (card, mobile_money, etc)
+  paystackFees    Float?       // Paystack transaction fees
+  
   trackingNumber  String?
   estimatedDelivery DateTime?
   actualDelivery  DateTime?
@@ -579,7 +595,7 @@ model Blog {
   imageUrl    String?
   tags        String[]
   authorId    String
-  categoryId  String?  // Blog categories
+  category    BlogCategory? // Blog categories
   isPublished Boolean  @default(false)
   isFeatured  Boolean  @default(false)
   viewCount   Int      @default(0)
@@ -587,6 +603,15 @@ model Blog {
   updatedAt   DateTime @updatedAt
 
   author      User     @relation(fields: [authorId], references: [id])
+}
+
+enum BlogCategory {
+  STREET_STYLE
+  SUSTAINABLE_FASHION
+  DESIGNER_SPOTLIGHT
+  ACCESSORIES
+  FASHION_TECH
+  VINTAGE_REVIVAL
 }
 
 // ================================

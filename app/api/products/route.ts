@@ -4,6 +4,49 @@ import { requireAuth } from "@/lib/auth"
 import { AnalyticsTracker } from "@/lib/analytics"
 import type { Prisma, ProductTag } from "@prisma/client"
 
+// Helper function to calculate effective price with discount
+function calculateEffectivePrice(product: {
+  price: number
+  discountPercentage?: number | null
+  discountPrice?: number | null
+  discountStartDate?: Date | null
+  discountEndDate?: Date | null
+  isOnSale?: boolean
+}): { effectivePrice: number; isDiscountActive: boolean; discountAmount: number } {
+  const now = new Date()
+  
+  // Check if discount is currently active
+  const isWithinDateRange = 
+    (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+    (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+  
+  const hasDiscount = product.discountPercentage || product.discountPrice
+  const isDiscountActive = Boolean(product.isOnSale && hasDiscount && isWithinDateRange)
+  
+  if (!isDiscountActive) {
+    return { effectivePrice: product.price, isDiscountActive: false, discountAmount: 0 }
+  }
+  
+  // Calculate effective price
+  let effectivePrice = product.price
+  
+  if (product.discountPrice && product.discountPrice > 0) {
+    // Fixed discount price takes priority
+    effectivePrice = product.discountPrice
+  } else if (product.discountPercentage && product.discountPercentage > 0) {
+    // Calculate percentage discount
+    effectivePrice = product.price * (1 - product.discountPercentage / 100)
+  }
+  
+  const discountAmount = product.price - effectivePrice
+  
+  return { 
+    effectivePrice: Math.round(effectivePrice * 100) / 100, // Round to 2 decimal places
+    isDiscountActive, 
+    discountAmount: Math.round(discountAmount * 100) / 100 
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -110,12 +153,14 @@ export async function GET(request: NextRequest) {
               id: true,
               firstName: true,
               lastName: true,
+              role: true,
               professionalProfile: {
                 select: {
                   businessName: true,
                   businessImage: true,
                   rating: true,
                   totalReviews: true,
+                  isVerified: true,
                 },
               },
             },
@@ -146,8 +191,29 @@ export async function GET(request: NextRequest) {
           },
         })
 
+        // Calculate effective price with discount
+        const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
+
+        // For SUPER_ADMIN created products, show TrendiZip as the business
+        const professional = product.professional.role === 'SUPER_ADMIN'
+          ? {
+              ...product.professional,
+              professionalProfile: {
+                businessName: 'TrendiZip',
+                businessImage: '/logo3d.jpg',
+                rating: 5,
+                totalReviews: 0,
+                isVerified: true,
+              },
+            }
+          : product.professional
+
         return {
           ...product,
+          professional,
+          effectivePrice,
+          isDiscountActive,
+          discountAmount,
           _count: {
             ...product._count,
             reviews: reviewCount,
@@ -199,8 +265,9 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth()
     const body = await request.json()
 
-    if (user.role !== "PROFESSIONAL") {
-      return NextResponse.json({ error: "Only professionals can create products" }, { status: 403 })
+    // Allow both professionals and super admins to create products
+    if (user.role !== "PROFESSIONAL" && user.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Only professionals and admins can create products" }, { status: 403 })
     }
 
     const {
@@ -221,6 +288,12 @@ export async function POST(request: NextRequest) {
       tags,
       isUnisex,
       submittedForShowcase,
+      // Discount fields
+      discountPercentage,
+      discountPrice,
+      discountStartDate,
+      discountEndDate,
+      isOnSale,
     } = body
 
     const finalTags = ['NEW' as ProductTag, ...(tags || [])]
@@ -229,7 +302,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         price: Number.parseFloat(price),
-        stockQuantity: Number.parseInt(stockQuantity),
+        stockQuantity: Number.parseInt(stockQuantity || '0'),
         images,
         videoUrl,
         categoryId,
@@ -245,6 +318,12 @@ export async function POST(request: NextRequest) {
         isUnisex: Boolean(isUnisex),
         submittedForShowcase: Boolean(submittedForShowcase),
         submittedAt: submittedForShowcase ? new Date() : null,
+        // Discount fields
+        discountPercentage: discountPercentage ? Number.parseFloat(discountPercentage) : null,
+        discountPrice: discountPrice ? Number.parseFloat(discountPrice) : null,
+        discountStartDate: discountStartDate ? new Date(discountStartDate) : null,
+        discountEndDate: discountEndDate ? new Date(discountEndDate) : null,
+        isOnSale: Boolean(isOnSale),
       },
       include: {
         category: true,
@@ -253,15 +332,27 @@ export async function POST(request: NextRequest) {
           select: {
             firstName: true,
             lastName: true,
+            role: true,
             professionalProfile: {
-              select: { businessName: true },
+              select: { businessName: true, businessImage: true },
             },
           },
         },
       },
     })
 
-    return NextResponse.json(product, { status: 201 })
+    // For SUPER_ADMIN, override business info to show TrendiZip
+    const responseProduct = {
+      ...product,
+      professional: {
+        ...product.professional,
+        professionalProfile: user.role === 'SUPER_ADMIN' 
+          ? { businessName: 'TrendiZip', businessImage: '/logo3d.jpg', isVerified: true }
+          : product.professional.professionalProfile,
+      },
+    }
+
+    return NextResponse.json(responseProduct, { status: 201 })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })

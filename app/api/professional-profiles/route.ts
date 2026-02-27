@@ -15,21 +15,23 @@ export async function GET(request: NextRequest) {
       // Public endpoint to fetch all professional profiles
       const profiles = await prisma.professionalProfile.findMany({
         where: {},
-        include: {
+        select: {
+          id: true,
+          businessName: true,
+          businessImage: true,
+          experience: true,
+          bio: true,
+          location: true,
+          completedOrders: true,
+          rating: true,
+          totalReviews: true,
+          slug: true,
           user: {
             select: {
               firstName: true,
               lastName: true,
               profileImage: true,
               email: true,
-            },
-            include: {
-              products: {
-                where: { isActive: true },
-              },
-              professionalServices: {
-                where: { isActive: true },
-              },
               _count: {
                 select: {
                   products: true,
@@ -43,9 +45,6 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
-          socialMedia: true,
-          store: true,
-          deliveryZones: true,
         },
         orderBy: { createdAt: "desc" },
         ...(limit && { take: parseInt(limit) }),

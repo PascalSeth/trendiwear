@@ -41,12 +41,31 @@ function AddProductPage() {
   const [isUnisex, setIsUnisex] = useState<boolean>(true);
   const [submittedForShowcase, setSubmittedForShowcase] = useState<boolean>(false);
   const [isShipped, setIsShipped] = useState<boolean>(false);
+  const [price, setPrice] = useState<string>("");
   const [discountPercentage, setDiscountPercentage] = useState<string>("");
   const [discountPrice, setDiscountPrice] = useState<string>("");
   const [discountStartDate, setDiscountStartDate] = useState<string>("");
   const [discountEndDate, setDiscountEndDate] = useState<string>("");
   const [isOnSale, setIsOnSale] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Calculate effective price for preview
+  const calculateEffectivePrice = () => {
+    const originalPrice = parseFloat(price) || 0;
+    if (!isOnSale || originalPrice === 0) return originalPrice;
+    
+    if (discountPrice && parseFloat(discountPrice) > 0) {
+      return parseFloat(discountPrice);
+    }
+    if (discountPercentage && parseFloat(discountPercentage) > 0) {
+      return originalPrice * (1 - parseFloat(discountPercentage) / 100);
+    }
+    return originalPrice;
+  };
+
+  const effectivePrice = calculateEffectivePrice();
+  const hasActiveDiscount = isOnSale && (parseFloat(discountPercentage) > 0 || parseFloat(discountPrice) > 0);
+  const savings = parseFloat(price) - effectivePrice;
 
   const sizeOptions = {
     US: ["US 2", "US 4", "US 6", "US 8", "US 10", "US 12", "US 14", "US 16"] as SizeOption[],
@@ -171,7 +190,7 @@ function AddProductPage() {
       const data = {
         name: formData.get('name') as string,
         description: formData.get('description') as string,
-        price: formData.get('price') as string,
+        price: price,
         currency,
         stockQuantity: isShipped ? undefined : formData.get('stockQuantity') as string,
         images: uploadedUrls,
@@ -218,6 +237,7 @@ function AddProductPage() {
         setSubmittedForShowcase(false);
         setIsShipped(false);
         setDiscountPercentage("");
+        setPrice("");
         setDiscountPrice("");
         setDiscountStartDate("");
         setDiscountEndDate("");
@@ -318,12 +338,21 @@ function AddProductPage() {
                         <input
                           type="number"
                           name="price"
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
                           placeholder="0.00"
                           step="0.01"
                           required
                           className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
                         />
                       </div>
+                      {hasActiveDiscount && parseFloat(price) > 0 && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                          <span className="text-neutral-500 line-through">{currency} {parseFloat(price).toFixed(2)}</span>
+                          <span className="ml-2 text-green-700 font-semibold">{currency} {effectivePrice.toFixed(2)}</span>
+                          <span className="ml-2 text-green-600 text-xs">Save {currency} {savings.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
 
                     {!isShipped && (
@@ -522,6 +551,12 @@ function AddProductPage() {
                     </label>
                   ))}
                 </div>
+                
+                {selectedSizes.length > 0 && (
+                  <p className="mt-2 text-sm text-neutral-600">
+                    Selected: {selectedSizes.join(', ')}
+                  </p>
+                )}
               </div>
 
               <div className="border-t border-neutral-200" />
@@ -531,77 +566,117 @@ function AddProductPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-3">Discount & Promotions</label>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Discount Percentage (%)</label>
-                      <input
-                        type="number"
-                        value={discountPercentage}
-                        onChange={(e) => setDiscountPercentage(e.target.value)}
-                        placeholder="20"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
+                    <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                      <Checkbox 
+                        checked={isOnSale} 
+                        onCheckedChange={() => setIsOnSale((prev) => !prev)} 
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Fixed Discount Price</label>
-                      <div className="flex gap-2">
-                        <Select value={currency} onValueChange={() => {}}>
-                          <SelectTrigger className="w-20">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </Select>
-                        <input
-                          type="number"
-                          value={discountPrice}
-                          onChange={(e) => setDiscountPrice(e.target.value)}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Start Date</label>
-                        <input
-                          type="datetime-local"
-                          value={discountStartDate}
-                          onChange={(e) => setDiscountStartDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">End Date</label>
-                        <input
-                          type="datetime-local"
-                          value={discountEndDate}
-                          onChange={(e) => setDiscountEndDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={isOnSale} onCheckedChange={() => setIsOnSale((prev) => !prev)} />
-                      <span className="text-sm text-neutral-700">Mark as On Sale</span>
+                      <span className={`text-sm font-medium ${isOnSale ? 'text-green-700' : 'text-neutral-700'}`}>
+                        {isOnSale ? '✓ On Sale - Discount Active' : 'Mark as On Sale'}
+                      </span>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <button type="button" className="inline-flex">
+                          <button type="button" className="inline-flex ml-auto">
                             <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80">
                           <p className="text-sm text-neutral-600">
-                            <strong>On Sale:</strong> This product will be prominently displayed as on sale. You can set either a percentage discount or a fixed discounted price.
+                            <strong>On Sale:</strong> Enable this to apply the discount. Fixed price takes priority over percentage if both are set.
                           </p>
                         </PopoverContent>
                       </Popover>
+                    </div>
+
+                    <div className={!isOnSale ? 'opacity-50' : ''}>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Discount Percentage (%)</label>
+                      <input
+                        type="number"
+                        value={discountPercentage}
+                        onChange={(e) => {
+                          setDiscountPercentage(e.target.value);
+                          if (e.target.value && discountPrice) {
+                            setDiscountPrice(''); // Clear fixed price when percentage is set
+                          }
+                        }}
+                        placeholder="e.g. 20 for 20% off"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        disabled={!isOnSale}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
+                      />
+                      {discountPercentage && parseFloat(discountPercentage) > 0 && parseFloat(price) > 0 && (
+                        <p className="mt-1 text-xs text-green-600">
+                          Customers save {currency} {(parseFloat(price) * parseFloat(discountPercentage) / 100).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-neutral-200" />
+                      <span className="text-xs text-neutral-400">OR</span>
+                      <div className="h-px flex-1 bg-neutral-200" />
+                    </div>
+
+                    <div className={!isOnSale ? 'opacity-50' : ''}>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Fixed Sale Price</label>
+                      <div className="flex gap-2">
+                        <span className="inline-flex items-center px-3 py-2 border border-neutral-300 rounded text-sm bg-neutral-100 text-neutral-600">
+                          {currency}
+                        </span>
+                        <input
+                          type="number"
+                          value={discountPrice}
+                          onChange={(e) => {
+                            setDiscountPrice(e.target.value);
+                            if (e.target.value && discountPercentage) {
+                              setDiscountPercentage(''); // Clear percentage when fixed price is set
+                            }
+                          }}
+                          placeholder="Sale price"
+                          step="0.01"
+                          min="0"
+                          max={price || undefined}
+                          disabled={!isOnSale}
+                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
+                        />
+                      </div>
+                      {discountPrice && parseFloat(discountPrice) >= parseFloat(price) && parseFloat(price) > 0 && (
+                        <p className="mt-1 text-xs text-red-600">
+                          Sale price should be less than original price
+                        </p>
+                      )}
+                      {discountPrice && parseFloat(discountPrice) < parseFloat(price) && parseFloat(price) > 0 && (
+                        <p className="mt-1 text-xs text-green-600">
+                          Customers save {currency} {(parseFloat(price) - parseFloat(discountPrice)).toFixed(2)} ({((1 - parseFloat(discountPrice) / parseFloat(price)) * 100).toFixed(0)}% off)
+                        </p>
+                      )}
+                    </div>
+
+                    <div className={`grid grid-cols-2 gap-4 ${!isOnSale ? 'opacity-50' : ''}`}>
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">Start Date (optional)</label>
+                        <input
+                          type="datetime-local"
+                          value={discountStartDate}
+                          onChange={(e) => setDiscountStartDate(e.target.value)}
+                          disabled={!isOnSale}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">End Date (optional)</label>
+                        <input
+                          type="datetime-local"
+                          value={discountEndDate}
+                          onChange={(e) => setDiscountEndDate(e.target.value)}
+                          min={discountStartDate || undefined}
+                          disabled={!isOnSale}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

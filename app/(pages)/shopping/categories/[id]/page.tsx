@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Star, ShoppingBag, Filter, SlidersHorizontal, X, ArrowUpRight } from 'lucide-react';
+import { Star, ShoppingBag, Filter, SlidersHorizontal, X, ArrowUpRight, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -72,6 +72,7 @@ interface Product {
       businessImage?: string;
       rating?: number;
       totalReviews?: number;
+      isVerified?: boolean;
     };
   };
   _count: {
@@ -97,6 +98,8 @@ function ProductCard({ item, index }: { item: Product, index: number }) {
 
   const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
   const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+  const isVerified = item.professional.professionalProfile?.isVerified || false;
+  const isTrendiZip = sellerName === 'TrendiZip';
 
   return (
     <motion.div
@@ -128,11 +131,18 @@ function ProductCard({ item, index }: { item: Product, index: number }) {
 
         {/* Seller Info Overlay - Top Left */}
         <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-          <img
-            src={sellerProfilePicUrl}
-            alt={sellerName}
-            className="w-6 h-6 rounded-full border border-white/50"
-          />
+          <div className="relative">
+            <img
+              src={sellerProfilePicUrl}
+              alt={sellerName}
+              className="w-6 h-6 rounded-full border border-white/50"
+            />
+            {(isTrendiZip || isVerified) && (
+              <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                <BadgeCheck size={10} className="text-white" />
+              </div>
+            )}
+          </div>
           <div className="text-white text-xs font-medium drop-shadow-lg">
             {sellerName}
           </div>

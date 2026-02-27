@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowUpRight } from 'lucide-react';
+import { Star, ArrowUpRight, Clock, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -38,6 +38,7 @@ interface Product {
       businessName?: string;
       businessImage?: string;
       rating?: number;
+      isVerified?: boolean;
     };
   };
   _count: {
@@ -46,6 +47,44 @@ interface Product {
   };
   viewCount: number;
   isNew?: boolean;
+  // Discount fields from API
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number | null;
+  isOnSale?: boolean;
+  discountEndDate?: string | null;
+}
+
+// Countdown hook for discount timer
+function useCountdown(endDate: string | null | undefined) {
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  useEffect(() => {
+    if (!endDate) return;
+    
+    const calculateTimeLeft = () => {
+      const end = new Date(endDate).getTime();
+      const now = Date.now();
+      const diff = end - now;
+      
+      if (diff <= 0) return '';
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+    
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+  
+  return timeLeft;
 }
 
 // --- Components ---
@@ -70,6 +109,7 @@ const InfiniteScrollText = ({ text }: { text: string }) => {
 const ProductCard = ({ item, index }: { item: Product, index: number }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -82,6 +122,8 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
 
   const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
   const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+  const isVerified = item.professional.professionalProfile?.isVerified || false;
+  const isTrendiZip = sellerName === 'TrendiZip';
 
   return (
     <motion.div
@@ -138,24 +180,40 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
 
         {/* Seller Info Overlay - Top Left */}
         <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-          <img
-            src={sellerProfilePicUrl}
-            alt={sellerName}
-            className="w-6 h-6 rounded-full border border-white/50"
-          />
+          <div className="relative">
+            <img
+              src={sellerProfilePicUrl}
+              alt={sellerName}
+              className="w-6 h-6 rounded-full border border-white/50"
+            />
+            {(isTrendiZip || isVerified) && (
+              <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                <BadgeCheck size={10} className="text-white" />
+              </div>
+            )}
+          </div>
           <div className="text-white text-xs font-medium drop-shadow-lg">
             {sellerName}
           </div>
         </div>
 
-        {/* Top Badges - Minimalist */}
-        {/* <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-           {item.isNew && (
-             <span className="bg-white/90 backdrop-blur text-black text-[10px] font-bold tracking-widest px-2 py-1 uppercase">
-               New Arrival
-             </span>
-           )}
-        </div> */}
+        {/* Top Badges - Discount */}
+        {item.isDiscountActive && (
+          <div className="absolute top-4 right-4 z-20">
+            <div className="bg-black/80 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-1 rounded">
+              {item.discountPercentage ? (
+                <span>{Math.round(item.discountPercentage)}% OFF</span>
+              ) : item.discountAmount ? (
+                <span>{item.currency} {item.discountAmount.toFixed(0)} OFF</span>
+              ) : null}
+              {timeLeft && (
+                <span className="ml-1.5 text-white/70 inline-flex items-center gap-0.5">
+                  <Clock size={8} />{timeLeft}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Product Info - Editorial Layout */}
@@ -167,7 +225,14 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          {item.isDiscountActive ? (
+            <>
+              <p className="text-sm text-stone-400 line-through">{item.currency} {item.price.toFixed(2)}</p>
+              <p className="text-lg font-medium text-red-600">{item.currency} {(item.effectivePrice || item.price).toFixed(2)}</p>
+            </>
+          ) : (
+            <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          )}
           <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
              <Star size={10} className="fill-current text-stone-400" />
              {item.professional.professionalProfile?.rating || '4.5'}

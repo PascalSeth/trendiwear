@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -22,7 +23,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, Upload, X } from "lucide-react";
+import { Plus, Upload, X, Clock, DollarSign, Home, FileText, Sparkles, ImageIcon } from "lucide-react";
 import Image from "next/image";
 
 type ServiceCategory = {
@@ -254,27 +255,35 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30">
           <Plus className="h-4 w-4" />
           Add Service
         </Button>
       </SheetTrigger>
-      <SheetContent className="sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{serviceToEdit ? 'Edit Service' : 'Add Service'}</SheetTitle>
-          <SheetDescription>
-            {serviceToEdit ? 'Update the service details.' : 'Create a new service offering.'}
-          </SheetDescription>
+      <SheetContent className="sm:max-w-xl overflow-y-auto">
+        <SheetHeader className="pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <SheetTitle className="text-xl">{serviceToEdit ? 'Edit Service' : 'Create New Service'}</SheetTitle>
+              <SheetDescription className="text-sm">
+                {serviceToEdit ? 'Update the service details below.' : 'Fill in the details to create a new service.'}
+              </SheetDescription>
+            </div>
+          </div>
         </SheetHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-6">
+          {/* Category Selection */}
           <div className="space-y-2">
-            <Label>Category *</Label>
+            <Label className="text-sm font-medium text-slate-700">Category *</Label>
             <Select
               value={formData.categoryId}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, categoryId: value }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 bg-slate-50 border-slate-200 focus:bg-white">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
@@ -287,31 +296,42 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
             </Select>
           </div>
 
+          {/* Service Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Service Name *</Label>
+            <Label htmlFor="name" className="text-sm font-medium text-slate-700">Service Name *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Custom Suit Tailoring"
+              className="h-11 bg-slate-50 border-slate-200 focus:bg-white"
               required
             />
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <FileText size={14} className="text-slate-400" />
+              Description
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe this service..."
+              placeholder="Describe what this service includes..."
+              className="bg-slate-50 border-slate-200 focus:bg-white resize-none"
               rows={3}
             />
           </div>
 
+          {/* Price & Duration Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price ($) *</Label>
+              <Label htmlFor="price" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <DollarSign size={14} className="text-emerald-500" />
+                Price ($) *
+              </Label>
               <Input
                 id="price"
                 type="number"
@@ -320,12 +340,16 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
                 value={formData.price}
                 onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
                 placeholder="0.00"
+                className="h-11 bg-slate-50 border-slate-200 focus:bg-white"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration (minutes) *</Label>
+              <Label htmlFor="duration" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Clock size={14} className="text-blue-500" />
+                Duration (min) *
+              </Label>
               <Input
                 id="duration"
                 type="number"
@@ -333,101 +357,132 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
                 value={formData.duration}
                 onChange={(e) => setFormData((prev) => ({ ...prev, duration: e.target.value }))}
                 placeholder="60"
+                className="h-11 bg-slate-50 border-slate-200 focus:bg-white"
                 required
               />
             </div>
           </div>
 
+          {/* Service Image */}
           <div className="space-y-2">
-            <Label>Service Image</Label>
+            <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <ImageIcon size={14} className="text-purple-500" />
+              Service Image
+            </Label>
             {imagePreview ? (
-              <div className="relative w-full h-48">
+              <div className="relative w-full h-48 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                 <Image
                   src={imagePreview}
                   alt="Service preview"
                   fill
-                  className="object-cover rounded-lg border"
+                  className="object-cover"
                 />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 z-10"
-                  onClick={removeImage}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                  <div className="mt-2">
-                    <Label htmlFor="image" className="cursor-pointer">
-                      <span className="text-sm text-blue-600 hover:text-blue-500">
-                        Click to upload
-                      </span>
-                      <span className="text-sm text-gray-500"> or drag and drop</span>
-                    </Label>
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    PNG, JPG, GIF up to 5MB
-                  </p>
+                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={removeImage}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Remove
+                  </Button>
                 </div>
               </div>
+            ) : (
+              <label htmlFor="image" className="block cursor-pointer">
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Upload className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium">
+                      Click to upload an image
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      PNG, JPG or WebP up to 5MB
+                    </p>
+                  </div>
+                </div>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
             )}
           </div>
 
+          {/* Requirements */}
           <div className="space-y-2">
-            <Label htmlFor="requirements">Requirements</Label>
+            <Label htmlFor="requirements" className="text-sm font-medium text-slate-700">Requirements</Label>
             <Textarea
               id="requirements"
               value={formData.requirements}
               onChange={(e) => setFormData((prev) => ({ ...prev, requirements: e.target.value }))}
-              placeholder="What does the customer need to bring/prepare?"
+              placeholder="What does the customer need to bring or prepare?"
+              className="bg-slate-50 border-slate-200 focus:bg-white resize-none"
               rows={2}
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="isHomeService"
-              checked={formData.isHomeService}
-              onChange={(e) => setFormData((prev) => ({ ...prev, isHomeService: e.target.checked }))}
-              className="rounded"
-            />
-            <Label htmlFor="isHomeService">Home service available</Label>
-          </div>
+          {/* Toggle Options */}
+          <div className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Home size={16} className="text-purple-600" />
+                </div>
+                <div>
+                  <Label htmlFor="isHomeService" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Home Service
+                  </Label>
+                  <p className="text-xs text-slate-500">Service can be provided at customer&apos;s location</p>
+                </div>
+              </div>
+              <Switch
+                id="isHomeService"
+                checked={formData.isHomeService}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isHomeService: checked }))}
+              />
+            </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))}
-              className="rounded"
-            />
-            <Label htmlFor="isActive">Active</Label>
+            <div className="border-t border-slate-200"></div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${formData.isActive ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                  <Sparkles size={16} className={formData.isActive ? 'text-emerald-600' : 'text-slate-400'} />
+                </div>
+                <div>
+                  <Label htmlFor="isActive" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Active Status
+                  </Label>
+                  <p className="text-xs text-slate-500">{formData.isActive ? 'Service is visible to customers' : 'Service is hidden from customers'}</p>
+                </div>
+              </div>
+              <Switch
+                id="isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: checked }))}
+              />
+            </div>
           </div>
         </div>
 
-        <SheetFooter className="gap-2">
+        <SheetFooter className="pt-6 border-t border-slate-100 gap-3">
           <SheetClose asChild>
-            <Button type="button" variant="outline" disabled={isLoading}>
+            <Button type="button" variant="outline" disabled={isLoading} className="flex-1">
               Cancel
             </Button>
           </SheetClose>
           <Button
             onClick={handleSubmit}
             disabled={isLoading || !formData.name.trim() || !formData.categoryId || !formData.price || !formData.duration}
+            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
           >
             {isLoading ? (serviceToEdit ? "Updating..." : "Creating...") : (serviceToEdit ? "Update Service" : "Create Service")}
           </Button>

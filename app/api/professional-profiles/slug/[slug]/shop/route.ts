@@ -1,6 +1,45 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+// Helper function to calculate effective price with discount
+function calculateEffectivePrice(product: {
+  price: number
+  discountPercentage?: number | null
+  discountPrice?: number | null
+  discountStartDate?: Date | null
+  discountEndDate?: Date | null
+  isOnSale?: boolean
+}): { effectivePrice: number; isDiscountActive: boolean; discountAmount: number } {
+  const now = new Date()
+  
+  const isWithinDateRange = 
+    (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+    (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+  
+  const hasDiscount = product.discountPercentage || product.discountPrice
+  const isDiscountActive = Boolean(product.isOnSale && hasDiscount && isWithinDateRange)
+  
+  if (!isDiscountActive) {
+    return { effectivePrice: product.price, isDiscountActive: false, discountAmount: 0 }
+  }
+  
+  let effectivePrice = product.price
+  
+  if (product.discountPrice && product.discountPrice > 0) {
+    effectivePrice = product.discountPrice
+  } else if (product.discountPercentage && product.discountPercentage > 0) {
+    effectivePrice = product.price * (1 - product.discountPercentage / 100)
+  }
+  
+  const discountAmount = product.price - effectivePrice
+  
+  return { 
+    effectivePrice: Math.round(effectivePrice * 100) / 100,
+    isDiscountActive, 
+    discountAmount: Math.round(discountAmount * 100) / 100 
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -43,6 +82,7 @@ export async function GET(
                 businessImage: true,
                 rating: true,
                 totalReviews: true,
+                isVerified: true,
               },
             },
           },
@@ -58,6 +98,17 @@ export async function GET(
       orderBy: {
         createdAt: 'desc',
       },
+    })
+
+    // Calculate discount fields for each product
+    const productsWithDiscount = products.map((product) => {
+      const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
+      return {
+        ...product,
+        effectivePrice,
+        isDiscountActive,
+        discountAmount,
+      }
     })
 
     // Get unique categories from products
@@ -78,7 +129,7 @@ export async function GET(
 
     return NextResponse.json({
       profile,
-      products,
+      products: productsWithDiscount,
       categories: resolvedCategories,
       stats: {
         totalProducts: products.length,

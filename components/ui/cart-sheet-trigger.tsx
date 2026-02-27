@@ -7,10 +7,13 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { CartCountBadge } from '@/components/ui/cart-count-badge'
-import { useCart } from '@/lib/cart-context'
+import { useCartStore, selectCartItems, selectCartSummary } from '@/lib/stores'
 
 export function CartSheetTrigger() {
-  const { items: cartItems, summary, updateQuantity, removeItem } = useCart()
+  const cartItems = useCartStore(selectCartItems)
+  const summary = useCartStore(selectCartSummary)
+  const updateQuantity = useCartStore(state => state.updateQuantity)
+  const removeItem = useCartStore(state => state.removeItem)
   const [open, setOpen] = useState(false)
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
 

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only professionals and admins can create blogs" }, { status: 403 })
     }
 
-    const { title, slug, content, excerpt, imageUrl, tags, categoryId, isPublished, isFeatured } = body
+    const { title, slug, content, excerpt, imageUrl, tags, category, isPublished, isFeatured } = body
 
     const blog = await prisma.blog.create({
       data: {
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         imageUrl,
         tags: tags || [],
         authorId: user.id,
-        categoryId,
+        category,
         isPublished: Boolean(isPublished),
         isFeatured: Boolean(isFeatured),
       },

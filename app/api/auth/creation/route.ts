@@ -23,9 +23,9 @@ export async function GET(){
         dbUser=await prisma.user.create({
             data :{
                 email: session.user.email,
-                firstName: session.user.name?.split(' ')[0] ?? '',
-                lastName: session.user.name?.split(' ').slice(1).join(' ') ?? '',
-                profileImage: session.user.image ?? null,
+                firstName: session.user.firstName || session.user.name?.split(' ')[0] || '',
+                lastName: session.user.lastName || session.user.name?.split(' ').slice(1).join(' ') || '',
+                profileImage: session.user.image || null,
             }
         })
     }

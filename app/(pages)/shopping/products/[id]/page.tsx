@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ShoppingBag, Star, Eye, ArrowLeft, Share2, MessageCircle, Truck, Shield, RotateCcw, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
+import { ShoppingBag, Star, Eye, ArrowLeft, Share2, MessageCircle, Truck, Shield, RotateCcw, ChevronLeft, ChevronRight, Maximize2, Clock, BadgeCheck } from 'lucide-react'
 import { WishlistButton } from '@/components/ui/wishlist-button'
 import { AddToCartButton } from '@/components/ui/add-to-cart-button'
 import Link from 'next/link'
@@ -43,6 +43,7 @@ interface Product {
       businessImage: string
       rating: number
       totalReviews: number
+      isVerified?: boolean
     }
   }
   _count: {
@@ -51,6 +52,44 @@ interface Product {
     orderItems: number
     reviews: number
   }
+  // Discount fields from API
+  effectivePrice?: number
+  isDiscountActive?: boolean
+  discountAmount?: number
+  discountPercentage?: number | null
+  discountEndDate?: string | null
+  isOnSale?: boolean
+}
+
+// Countdown hook for discount timer
+function useCountdown(endDate: string | null | undefined) {
+  const [timeLeft, setTimeLeft] = useState('')
+  
+  useEffect(() => {
+    if (!endDate) return
+    
+    const calculateTimeLeft = () => {
+      const end = new Date(endDate).getTime()
+      const now = Date.now()
+      const diff = end - now
+      
+      if (diff <= 0) return ''
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      
+      if (days > 0) return `${days}d ${hours}h`
+      if (hours > 0) return `${hours}h ${minutes}m`
+      return `${minutes}m`
+    }
+    
+    setTimeLeft(calculateTimeLeft())
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000)
+    return () => clearInterval(timer)
+  }, [endDate])
+  
+  return timeLeft
 }
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,6 +97,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const timeLeft = useCountdown(product?.discountEndDate)
 
   // --- LOGIC (Preserved) ---
   useEffect(() => {
@@ -201,11 +241,22 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           {/* RIGHT: Product Details (Takes 5 cols) */}
           <div className="lg:col-span-5 lg:pt-4">
             
-            {/* Breadcrumb / Category */}
-            <div className="mb-4">
+            {/* Breadcrumb / Category & Sale Badge */}
+            <div className="mb-4 flex items-center gap-3">
               <span className="font-mono text-xs uppercase tracking-widest text-stone-500">
                 {product.category.name}
               </span>
+              {product.isDiscountActive && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 flex items-center gap-1">
+                  {product.discountPercentage ? `${product.discountPercentage}% OFF` : 'SALE'}
+                  {timeLeft && (
+                    <span className="flex items-center gap-0.5 ml-1 opacity-90">
+                      <Clock size={8} />
+                      {timeLeft}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
 
             {/* Title */}
@@ -217,9 +268,25 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div className="flex items-end justify-between mb-8 pb-8 border-b border-stone-200">
               <div>
                 <span className="block font-mono text-xs uppercase tracking-widest text-stone-500 mb-1">Price</span>
-                <span className="text-3xl font-medium text-stone-900">
-                  {product.currency} {product.price.toFixed(2)}
-                </span>
+                {product.isDiscountActive ? (
+                  <div>
+                    <span className="text-lg text-stone-400 line-through mr-2">
+                      {product.currency} {product.price.toFixed(2)}
+                    </span>
+                    <span className="text-3xl font-medium text-red-600">
+                      {product.currency} {(product.effectivePrice || product.price).toFixed(2)}
+                    </span>
+                    {product.discountAmount && product.discountAmount > 0 && (
+                      <span className="ml-2 text-sm text-green-600 font-medium">
+                        Save {product.currency} {product.discountAmount.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-3xl font-medium text-stone-900">
+                    {product.currency} {product.price.toFixed(2)}
+                  </span>
+                )}
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-1 justify-end text-stone-900">
@@ -378,7 +445,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-stone-100 overflow-hidden">
+                 <div className="relative w-12 h-12 bg-stone-100 overflow-hidden">
                     <Image
                       src={product.professional.professionalProfile?.businessImage || "/placeholder-avatar.jpg"}
                       alt={product.professional.firstName}
@@ -386,6 +453,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                       height={48}
                       className="w-full h-full object-cover"
                     />
+                    {(product.professional.professionalProfile?.businessName === 'TrendiZip' || product.professional.professionalProfile?.isVerified) && (
+                      <div className={`absolute -bottom-1 -right-1 rounded-full p-0.5 ${product.professional.professionalProfile?.businessName === 'TrendiZip' ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                        <BadgeCheck size={12} className="text-white" />
+                      </div>
+                    )}
                  </div>
                  <div>
                     <p className="font-serif text-lg text-stone-900">

@@ -6,7 +6,6 @@ import "slick-carousel/slick/slick-theme.css";
 import ServerNavbar from "../components/ServerNavbar";
 import Footer from "../components/Footer";
 import { Toaster } from "@/components/ui/sonner";
-import { CartProvider } from "@/lib/cart-context";
 import { Providers } from "../providers";
 
 const geistSans = localFont({
@@ -39,12 +38,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <CartProvider>
-            <ServerNavbar/>
-            {children}
-            <Footer />
-            <Toaster />
-          </CartProvider>
+          <ServerNavbar/>
+          {children}
+          <Footer />
+          <Toaster />
         </Providers>
       </body>
     </html>

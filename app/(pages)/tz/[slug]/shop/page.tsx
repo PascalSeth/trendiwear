@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowUpRight, Store, ArrowUpDown} from 'lucide-react';
+import { Star, ArrowUpRight, Store, ArrowUpDown, Clock, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -50,6 +50,7 @@ interface Product {
       businessImage?: string;
       rating?: number;
       totalReviews?: number;
+      isVerified?: boolean;
     };
   };
   _count: {
@@ -62,6 +63,12 @@ interface Product {
   rating?: number;
   views?: number;
   likes?: number;
+  // Discount fields from API
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number;
+  discountEndDate?: string;
 }
 
 interface ProfessionalProfile {
@@ -84,10 +91,42 @@ interface ProfessionalProfile {
 
 // --- COMPONENTS ---
 
+// Countdown hook for discount timer
+function useCountdown(endDate: string | null | undefined) {
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  useEffect(() => {
+    if (!endDate) return;
+    
+    const calculateTimeLeft = () => {
+      const end = new Date(endDate).getTime();
+      const now = Date.now();
+      const diff = end - now;
+      
+      if (diff <= 0) return '';
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+    
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+  
+  return timeLeft;
+}
+
 // 1. ORIGINAL PRODUCT CARD (Restored)
 function ProductCard({ item, index }: { item: Product; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -100,6 +139,8 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
 
   const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
   const sellerImage = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+  const isVerified = item.professional.professionalProfile?.isVerified || false;
+  const isTrendiZip = sellerName === 'TrendiZip';
   const categoryName = item.category.name;
 
   return (
@@ -134,6 +175,11 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
         <div className="absolute top-5 left-5 z-20 flex items-center gap-2">
           <div className="relative w-7 h-7 rounded-full border-2 border-white/30 overflow-hidden bg-white shadow-sm">
              <img src={sellerImage} alt={sellerName} className="w-full h-full object-cover" />
+             {(isTrendiZip || isVerified) && (
+               <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                 <BadgeCheck size={10} className="text-white" />
+               </div>
+             )}
           </div>
           <div className="text-white/90 text-xs font-semibold tracking-wide drop-shadow-md">
             {sellerName}
@@ -142,6 +188,17 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
 
         {/* Badges */}
         <div className="absolute top-5 right-5 z-20 flex flex-col gap-2">
+           {item.isDiscountActive && (
+             <span className="bg-red-500 text-white text-[10px] font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+               {item.discountPercentage ? `${item.discountPercentage}% OFF` : 'SALE'}
+               {timeLeft && (
+                 <span className="flex items-center gap-0.5 ml-1 opacity-90">
+                   <Clock size={8} />
+                   {timeLeft}
+                 </span>
+               )}
+             </span>
+           )}
            {item.isNew && (
              <span className="bg-white text-indigo-600 text-[10px] font-semibold tracking-widest px-3 py-1.5 uppercase rounded-full shadow-lg">
                New
@@ -191,7 +248,14 @@ function ProductCard({ item, index }: { item: Product; index: number }) {
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-base font-semibold text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          {item.isDiscountActive ? (
+            <>
+              <p className="text-xs text-stone-400 line-through">{item.currency} {item.price.toFixed(2)}</p>
+              <p className="text-base font-semibold text-red-600">{item.currency} {(item.effectivePrice || item.price).toFixed(2)}</p>
+            </>
+          ) : (
+            <p className="text-base font-semibold text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          )}
           <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-stone-400">
              <Star size={8} className="fill-current text-amber-400" />
              {(item.rating ?? item.professional.professionalProfile?.rating ?? 0).toFixed(1)}

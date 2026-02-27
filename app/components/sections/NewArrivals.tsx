@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowUpRight } from 'lucide-react';
+import { Star, ArrowUpRight, Clock, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -17,11 +17,50 @@ type ClothingItem = {
   isNew: boolean;
   sellerName: string;
   sellerProfilePicUrl: string;
+  isVerified: boolean;
+  isTrendiZip: boolean;
   category: string;
   rating?: number;
   views?: number;
   likes?: number;
+  // Discount fields
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number;
+  discountEndDate?: string;
 };
+
+// Countdown hook for discount timer
+function useCountdown(endDate: string | null | undefined) {
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  useEffect(() => {
+    if (!endDate) return;
+    
+    const calculateTimeLeft = () => {
+      const end = new Date(endDate).getTime();
+      const now = Date.now();
+      const diff = end - now;
+      
+      if (diff <= 0) return '';
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+    
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+  
+  return timeLeft;
+}
 
 function NewArrivals() {
   const [newArrivals, setNewArrivals] = useState<ClothingItem[]>([]);
@@ -56,6 +95,7 @@ function NewArrivals() {
                 businessImage: string;
                 rating: number;
                 totalReviews: number;
+                isVerified?: boolean;
               };
             };
             _count: {
@@ -64,20 +104,36 @@ function NewArrivals() {
               orderItems: number;
               reviews: number;
             };
-          }) => ({
+            // Discount fields from API
+            effectivePrice?: number;
+            isDiscountActive?: boolean;
+            discountAmount?: number;
+            discountPercentage?: number;
+            discountEndDate?: string;
+          }) => {
+            const sellerName = product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`;
+            return {
             id: product.id,
             name: product.name,
             images: product.images,
             price: product.price,
             currency: product.currency || 'GHS',
             isNew: product.tags?.includes('NEW') || false,
-            sellerName: product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`,
+            sellerName,
             sellerProfilePicUrl: product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg',
+            isVerified: product.professional.professionalProfile?.isVerified || false,
+            isTrendiZip: sellerName === 'TrendiZip',
             category: product.category.name,
             rating: product.professional.professionalProfile?.rating || 4.5,
             views: product.viewCount,
-            likes: product._count.wishlistItems
-          }));
+            likes: product._count.wishlistItems,
+            // Discount fields
+            effectivePrice: product.effectivePrice,
+            isDiscountActive: product.isDiscountActive,
+            discountAmount: product.discountAmount,
+            discountPercentage: product.discountPercentage,
+            discountEndDate: product.discountEndDate,
+          }});
           setNewArrivals(transformedProducts);
         }
       } catch (error) {
@@ -93,6 +149,7 @@ function NewArrivals() {
 function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -134,20 +191,38 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
 
         {/* Seller Info Overlay - Top Left */}
         <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-          <Image
-            src={item.sellerProfilePicUrl}
-            alt={item.sellerName}
-            width={24}
-            height={24}
-            className="rounded-full border border-white/50"
-          />
+          <div className="relative">
+            <Image
+              src={item.sellerProfilePicUrl}
+              alt={item.sellerName}
+              width={24}
+              height={24}
+              className="rounded-full border border-white/50"
+            />
+            {(item.isTrendiZip || item.isVerified) && (
+              <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${item.isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                <BadgeCheck size={10} className="text-white" />
+              </div>
+            )}
+          </div>
           <div className="text-white text-xs font-medium drop-shadow-lg">
             {item.sellerName}
           </div>
         </div>
 
-        {/* Top Badges - Minimalist */}
+        {/* Top Badges - Discount & New */}
         <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+           {item.isDiscountActive && (
+             <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 flex items-center gap-1">
+               {item.discountPercentage ? `${item.discountPercentage}% OFF` : 'SALE'}
+               {timeLeft && (
+                 <span className="flex items-center gap-0.5 ml-1 opacity-90">
+                   <Clock size={8} />
+                   {timeLeft}
+                 </span>
+               )}
+             </span>
+           )}
            {item.isNew && (
              <span className="bg-white/90 backdrop-blur text-black text-[10px] font-bold tracking-widest px-2 py-1 uppercase">
                New Arrival
@@ -191,7 +266,14 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          {item.isDiscountActive ? (
+            <>
+              <p className="text-sm text-stone-400 line-through">{item.currency} {item.price.toFixed(2)}</p>
+              <p className="text-lg font-medium text-red-600">{item.currency} {(item.effectivePrice || item.price).toFixed(2)}</p>
+            </>
+          ) : (
+            <p className="text-lg font-medium text-stone-900">{item.currency} {item.price.toFixed(2)}</p>
+          )}
           <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
              <Star size={10} className="fill-current text-stone-400" />
              {item.rating}

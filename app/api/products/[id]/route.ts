@@ -3,6 +3,49 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import type { Prisma } from "@prisma/client"
 
+// Helper function to calculate effective price with discount
+function calculateEffectivePrice(product: {
+  price: number
+  discountPercentage?: number | null
+  discountPrice?: number | null
+  discountStartDate?: Date | null
+  discountEndDate?: Date | null
+  isOnSale?: boolean
+}): { effectivePrice: number; isDiscountActive: boolean; discountAmount: number } {
+  const now = new Date()
+  
+  // Check if discount is currently active
+  const isWithinDateRange = 
+    (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+    (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+  
+  const hasDiscount = product.discountPercentage || product.discountPrice
+  const isDiscountActive = Boolean(product.isOnSale && hasDiscount && isWithinDateRange)
+  
+  if (!isDiscountActive) {
+    return { effectivePrice: product.price, isDiscountActive: false, discountAmount: 0 }
+  }
+  
+  // Calculate effective price
+  let effectivePrice = product.price
+  
+  if (product.discountPrice && product.discountPrice > 0) {
+    // Fixed discount price takes priority
+    effectivePrice = product.discountPrice
+  } else if (product.discountPercentage && product.discountPercentage > 0) {
+    // Calculate percentage discount
+    effectivePrice = product.price * (1 - product.discountPercentage / 100)
+  }
+  
+  const discountAmount = product.price - effectivePrice
+  
+  return { 
+    effectivePrice: Math.round(effectivePrice * 100) / 100,
+    isDiscountActive, 
+    discountAmount: Math.round(discountAmount * 100) / 100 
+  }
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -22,6 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             id: true,
             firstName: true,
             lastName: true,
+            role: true,
             professionalProfile: {
               select: {
                 businessName: true,
@@ -30,6 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 totalReviews: true,
                 location: true,
                 deliveryZones: true,
+                isVerified: true,
               },
             },
           },
@@ -47,7 +92,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    return NextResponse.json(product)
+    // Calculate effective price with discount
+    const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
+
+    // For SUPER_ADMIN created products, show TrendiZip as the business
+    const professional = product.professional.role === 'SUPER_ADMIN'
+      ? {
+          ...product.professional,
+          professionalProfile: {
+            businessName: 'TrendiZip',
+            businessImage: '/logo3d.jpg',
+            rating: 5,
+            totalReviews: 0,
+            location: null,
+            deliveryZones: [],
+            isVerified: true,
+          },
+        }
+      : product.professional
+
+    return NextResponse.json({
+      ...product,
+      professional,
+      effectivePrice,
+      isDiscountActive,
+      discountAmount,
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })

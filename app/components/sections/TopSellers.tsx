@@ -1,11 +1,11 @@
-'use client'
-import React from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Crown, Medal, Award } from 'lucide-react';
 import Image from 'next/image';
 
 type TopSeller = {
-  id: number;
+  id: string;
   rank: number;
   name: string;
   profession: string;
@@ -13,46 +13,6 @@ type TopSeller = {
   color: string;
   totalSales: number;
 };
-
-// KEPT ORIGINAL DATA
-const topSellers: TopSeller[] = [
-  {
-    id: 1,
-    rank: 1,
-    name: 'Sarah Chen',
-    profession: 'Fashion Designer',
-    imageUrl: 'https://randomuser.me/api/portraits/women/32.jpg',
-    color: 'from-emerald-400 to-teal-600',
-    totalSales: 1247
-  },
-  {
-    id: 2,
-    rank: 2,
-    name: 'Marcus Rodriguez',
-    profession: 'Style Consultant',
-    imageUrl: 'https://randomuser.me/api/portraits/men/45.jpg',
-    color: 'from-pink-400 to-rose-600',
-    totalSales: 892
-  },
-  {
-    id: 3,
-    rank: 3,
-    name: 'Emma Thompson',
-    profession: 'Vintage Specialist',
-    imageUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
-    color: 'from-purple-400 to-indigo-600',
-    totalSales: 756
-  },
-  {
-    id: 4,
-    rank: 4,
-    name: 'David Kim',
-    profession: 'Tailor & Couturier',
-    imageUrl: 'https://randomuser.me/api/portraits/men/51.jpg',
-    color: 'from-orange-400 to-red-600',
-    totalSales: 543
-  }
-];
 
 function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
   // Determine rank icon
@@ -123,6 +83,87 @@ function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
 }
 
 function TopSellers() {
+  const [topSellers, setTopSellers] = useState<TopSeller[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTopSellers = async () => {
+      try {
+        const response = await fetch('/api/professional-profiles?public=true');
+        if (!response.ok) {
+          throw new Error('Failed to load top sellers');
+        }
+
+        type ApiProfessional = {
+          id: string;
+          businessName: string;
+          businessImage?: string | null;
+          experience: number;
+          bio?: string | null;
+          location?: string | null;
+          completedOrders?: number | null;
+          rating?: number | null;
+          totalReviews?: number | null;
+          slug?: string | null;
+          user: {
+            firstName: string;
+            lastName: string;
+            profileImage?: string | null;
+            _count: {
+              products: number;
+              professionalServices: number;
+            };
+          };
+          specialization?: {
+            name: string;
+          } | null;
+        };
+
+        const data: ApiProfessional[] = await response.json();
+
+        const gradients = [
+          'from-emerald-400 to-teal-600',
+          'from-pink-400 to-rose-600',
+          'from-purple-400 to-indigo-600',
+          'from-orange-400 to-red-600',
+        ];
+
+        const sorted = data
+          .slice()
+          .sort((a, b) => {
+            const aSales = a.completedOrders ?? a.totalReviews ?? a.user._count.products ?? 0;
+            const bSales = b.completedOrders ?? b.totalReviews ?? b.user._count.products ?? 0;
+            if (bSales !== aSales) return bSales - aSales;
+            const aRating = a.rating ?? 0;
+            const bRating = b.rating ?? 0;
+            return bRating - aRating;
+          })
+          .slice(0, 4);
+
+        const transformed: TopSeller[] = sorted.map((prof, index) => ({
+          id: prof.id,
+          rank: index + 1,
+          name: prof.businessName || `${prof.user.firstName} ${prof.user.lastName}`,
+          profession: prof.specialization?.name || 'Fashion Professional',
+          imageUrl:
+            prof.businessImage ||
+            prof.user.profileImage ||
+            'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
+          color: gradients[index % gradients.length],
+          totalSales: prof.completedOrders ?? prof.totalReviews ?? prof.user._count.products ?? 0,
+        }));
+
+        setTopSellers(transformed);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTopSellers();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] py-24 px-6 md:px-12">
       <div className="max-w-4xl mx-auto">
@@ -150,11 +191,24 @@ function TopSellers() {
         <div className="relative">
            {/* Subtle decorative line */}
            <div className="absolute left-[3.5rem] top-0 bottom-0 w-px bg-stone-200 hidden md:block"></div>
-           
+
            <div className="space-y-0">
-              {topSellers.map((seller, index) => (
-                <SellerRow key={seller.id} seller={seller} index={index} />
-              ))}
+              {loading && (
+                <div className="py-8 text-sm font-mono text-stone-400 tracking-widest uppercase">
+                  Loading top sellers...
+                </div>
+              )}
+
+              {!loading && topSellers.length === 0 && (
+                <div className="py-8 text-sm font-mono text-stone-400 tracking-widest uppercase">
+                  No top sellers yet. Check back soon.
+                </div>
+              )}
+
+              {!loading &&
+                topSellers.map((seller, index) => (
+                  <SellerRow key={seller.id} seller={seller} index={index} />
+                ))}
            </div>
         </div>
 
