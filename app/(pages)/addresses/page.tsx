@@ -1,15 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import React, { useState, useEffect, useRef } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { MapPin, Plus, Edit2, Trash2, Home, Building } from 'lucide-react'
+import { MapPin, Edit2, Trash2, Home, Building2, Check, X, Plus, ChevronRight } from 'lucide-react'
 
 interface Address {
   id: string
@@ -28,22 +21,202 @@ interface AddressesResponse {
   addresses: Address[]
 }
 
+const EMPTY_FORM = {
+  type: 'HOME' as 'HOME' | 'WORK',
+  firstName: '',
+  lastName: '',
+  street: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: 'Kenya',
+  isDefault: false,
+}
+
+function Field({
+  label,
+  id,
+  value,
+  onChange,
+  required,
+  placeholder,
+}: {
+  label: string
+  id: string
+  value: string
+  onChange: (v: string) => void
+  required?: boolean
+  placeholder?: string
+}) {
+  return (
+    <div className="field-group">
+      <label htmlFor={id} className="field-label">{label}</label>
+      <input
+        id={id}
+        className="field-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+    </div>
+  )
+}
+
+function AddressCard({
+  address,
+  onEdit,
+  onDelete,
+}: {
+  address: Address
+  onEdit: (a: Address) => void
+  onDelete: (id: string) => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+
+  return (
+    <div className={`address-card ${address.isDefault ? 'is-default' : ''}`}>
+      {address.isDefault && <span className="default-ribbon">Default</span>}
+
+      <div className="card-type-row">
+        <span className="card-type-icon">
+          {address.type === 'HOME' ? <Home size={14} /> : <Building2 size={14} />}
+        </span>
+        <span className="card-type-label">{address.type}</span>
+      </div>
+
+      <div className="card-name">
+        {address.firstName} {address.lastName}
+      </div>
+
+      <div className="card-address">
+        <span>{address.street}</span>
+        <span>{address.city}, {address.state} {address.zipCode}</span>
+        <span>{address.country}</span>
+      </div>
+
+      <div className="card-actions">
+        <button className="card-btn edit-btn" onClick={() => onEdit(address)}>
+          <Edit2 size={13} />
+          Edit
+        </button>
+
+        {confirming ? (
+          <div className="confirm-row">
+            <span className="confirm-text">Remove?</span>
+            <button className="card-btn danger-btn" onClick={() => { onDelete(address.id); setConfirming(false) }}>
+              <Check size={13} /> Yes
+            </button>
+            <button className="card-btn ghost-btn" onClick={() => setConfirming(false)}>
+              <X size={13} /> No
+            </button>
+          </div>
+        ) : (
+          <button className="card-btn ghost-btn" onClick={() => setConfirming(true)}>
+            <Trash2 size={13} />
+            Remove
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AddressForm({
+  initial,
+  onSave,
+  onCancel,
+  isEditing,
+}: {
+  initial: typeof EMPTY_FORM
+  onSave: (data: typeof EMPTY_FORM) => Promise<void>
+  onCancel: () => void
+  isEditing: boolean
+}) {
+  const [form, setForm] = useState(initial)
+  const [saving, setSaving] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [])
+
+  const set = (key: keyof typeof form) => (val: string | boolean) =>
+    setForm((f) => ({ ...f, [key]: val }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    await onSave(form)
+    setSaving(false)
+  }
+
+  return (
+    <div className="form-card" ref={ref}>
+      <div className="form-header">
+        <span className="form-title">{isEditing ? 'Edit address' : 'New address'}</span>
+        <button className="form-close" onClick={onCancel}><X size={16} /></button>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="type-toggle">
+          {(['HOME', 'WORK'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`type-option ${form.type === t ? 'active' : ''}`}
+              onClick={() => set('type')(t)}
+            >
+              {t === 'HOME' ? <Home size={13} /> : <Building2 size={13} />}
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="form-grid two-col">
+          <Field label="First name" id="fn" value={form.firstName} onChange={set('firstName')} required placeholder="Jane" />
+          <Field label="Last name" id="ln" value={form.lastName} onChange={set('lastName')} required placeholder="Doe" />
+        </div>
+
+        <Field label="Street address" id="st" value={form.street} onChange={set('street')} required placeholder="123 Moi Avenue" />
+
+        <div className="form-grid two-col">
+          <Field label="City" id="ci" value={form.city} onChange={set('city')} required placeholder="Nairobi" />
+          <Field label="State / Province" id="stt" value={form.state} onChange={set('state')} required placeholder="Nairobi County" />
+        </div>
+
+        <div className="form-grid two-col">
+          <Field label="ZIP / Postal code" id="zp" value={form.zipCode} onChange={set('zipCode')} required placeholder="00100" />
+          <Field label="Country" id="co" value={form.country} onChange={set('country')} required placeholder="Kenya" />
+        </div>
+
+        <label className="default-check">
+          <Checkbox
+            id="def"
+            checked={form.isDefault}
+            onCheckedChange={(c) => set('isDefault')(c as boolean)}
+          />
+          <span>Set as default address</span>
+        </label>
+
+        <div className="form-footer">
+          <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
+          <button type="submit" className="btn-save" disabled={saving}>
+            {saving ? 'Saving…' : isEditing ? 'Update address' : 'Save address'}
+            {!saving && <ChevronRight size={15} />}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 export default function AddressesPage() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [editingAddress, setEditingAddress] = useState<Address | null>(null)
-  const [formData, setFormData] = useState({
-    type: 'HOME' as 'HOME' | 'WORK',
-    firstName: '',
-    lastName: '',
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'Kenya',
-    isDefault: false,
-  })
 
   const fetchAddresses = async () => {
     try {
@@ -59,291 +232,504 @@ export default function AddressesPage() {
     }
   }
 
-  useEffect(() => {
-    fetchAddresses()
-  }, [])
+  useEffect(() => { fetchAddresses() }, [])
 
-  const resetForm = () => {
-    setFormData({
-      type: 'HOME',
-      firstName: '',
-      lastName: '',
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'Kenya',
-      isDefault: false,
+  const handleSave = async (formData: typeof EMPTY_FORM) => {
+    const url = editingAddress ? `/api/addresses/${editingAddress.id}` : '/api/addresses'
+    const method = editingAddress ? 'PUT' : 'POST'
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
     })
-    setEditingAddress(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const url = editingAddress ? `/api/addresses/${editingAddress.id}` : '/api/addresses'
-      const method = editingAddress ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (response.ok) {
-        fetchAddresses()
-        setIsDialogOpen(false)
-        resetForm()
-      }
-    } catch (error) {
-      console.error('Error saving address:', error)
+    if (response.ok) {
+      await fetchAddresses()
+      setShowForm(false)
+      setEditingAddress(null)
     }
   }
 
   const handleEdit = (address: Address) => {
     setEditingAddress(address)
-    setFormData({
-      type: address.type as 'HOME' | 'WORK',
-      firstName: address.firstName,
-      lastName: address.lastName,
-      street: address.street,
-      city: address.city,
-      state: address.state,
-      zipCode: address.zipCode,
-      country: address.country,
-      isDefault: address.isDefault,
-    })
-    setIsDialogOpen(true)
+    setShowForm(true)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) return
+    const response = await fetch(`/api/addresses/${id}`, { method: 'DELETE' })
+    if (response.ok) fetchAddresses()
+  }
 
-    try {
-      const response = await fetch(`/api/addresses/${id}`, {
-        method: 'DELETE',
-      })
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingAddress(null)
+  }
 
-      if (response.ok) {
-        fetchAddresses()
+  const formInitial = editingAddress
+    ? {
+        type: editingAddress.type as 'HOME' | 'WORK',
+        firstName: editingAddress.firstName,
+        lastName: editingAddress.lastName,
+        street: editingAddress.street,
+        city: editingAddress.city,
+        state: editingAddress.state,
+        zipCode: editingAddress.zipCode,
+        country: editingAddress.country,
+        isDefault: editingAddress.isDefault,
       }
-    } catch (error) {
-      console.error('Error deleting address:', error)
-    }
-  }
-
-  const getAddressIcon = (type: string) => {
-    return type === 'HOME' ? <Home className="w-5 h-5" /> : <Building className="w-5 h-5" />
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+    : EMPTY_FORM
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Addresses</h1>
-            <p className="text-gray-600">Manage your delivery addresses</p>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .page-root {
+          min-height: 100vh;
+          background: #f5f0ea;
+          font-family: 'DM Sans', sans-serif;
+          padding: 48px 24px 80px;
+          color: #1a1612;
+        }
+
+        /* ── Header ── */
+        .page-header {
+          max-width: 840px;
+          margin: 0 auto 40px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          border-bottom: 1.5px solid #d8cfc4;
+          padding-bottom: 20px;
+        }
+        .header-left h1 {
+          font-family: 'Playfair Display', serif;
+          font-size: 2.4rem;
+          font-weight: 500;
+          letter-spacing: -0.5px;
+          line-height: 1;
+          color: #1a1612;
+        }
+        .header-left p {
+          font-size: 0.82rem;
+          color: #7a6f62;
+          margin-top: 6px;
+          font-weight: 300;
+          letter-spacing: 0.3px;
+        }
+        .add-new-btn {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          background: #1a1612;
+          color: #f5f0ea;
+          border: none;
+          border-radius: 6px;
+          padding: 10px 18px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.83rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          letter-spacing: 0.3px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .add-new-btn:hover { background: #3b2f24; transform: translateY(-1px); }
+        .add-new-btn.active { background: #5c4a38; }
+
+        /* ── Grid ── */
+        .grid {
+          max-width: 840px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+          align-items: start;
+        }
+
+        /* ── Address card ── */
+        .address-card {
+          background: #fffdf9;
+          border: 1.5px solid #e2d9cc;
+          border-radius: 12px;
+          padding: 22px 22px 16px;
+          position: relative;
+          transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .address-card:hover {
+          box-shadow: 0 4px 20px rgba(60,40,20,0.08);
+          border-color: #c8bfb2;
+        }
+        .address-card.is-default {
+          border-color: #b59a78;
+          background: #fffef7;
+        }
+
+        .default-ribbon {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          font-size: 0.68rem;
+          font-weight: 500;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          background: #f0e6d3;
+          color: #7a5c38;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+
+        .card-type-row {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-bottom: 10px;
+        }
+        .card-type-icon { color: #9c8a76; display: flex; }
+        .card-type-label {
+          font-size: 0.7rem;
+          font-weight: 500;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          color: #9c8a76;
+        }
+
+        .card-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.08rem;
+          font-weight: 500;
+          margin-bottom: 8px;
+          color: #1a1612;
+        }
+
+        .card-address {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 0.82rem;
+          color: #6b5f52;
+          font-weight: 300;
+          line-height: 1.5;
+          margin-bottom: 16px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid #ece5dc;
+        }
+
+        .card-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .card-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.75rem;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 500;
+          border-radius: 5px;
+          padding: 5px 10px;
+          border: 1px solid transparent;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .edit-btn {
+          background: transparent;
+          border-color: #d0c5b8;
+          color: #4a3f34;
+        }
+        .edit-btn:hover { background: #f0e8de; border-color: #b8a898; }
+        .ghost-btn {
+          background: transparent;
+          color: #9c8a76;
+          border-color: transparent;
+        }
+        .ghost-btn:hover { color: #5c4a38; background: #f0e8de; }
+        .danger-btn {
+          background: #fdf0ef;
+          color: #b04040;
+          border-color: #f5c5c0;
+        }
+        .danger-btn:hover { background: #f9dfdd; }
+        .confirm-row { display: flex; align-items: center; gap: 5px; }
+        .confirm-text { font-size: 0.75rem; color: #7a6f62; }
+
+        /* ── Empty state ── */
+        .empty-state {
+          max-width: 840px;
+          margin: 0 auto;
+          text-align: center;
+          padding: 64px 24px;
+          background: #fffdf9;
+          border: 1.5px dashed #d0c5b8;
+          border-radius: 16px;
+        }
+        .empty-icon {
+          width: 52px;
+          height: 52px;
+          background: #f0e8de;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
+          color: #9c8a76;
+        }
+        .empty-state h3 {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.4rem;
+          font-weight: 500;
+          margin-bottom: 8px;
+          color: #1a1612;
+        }
+        .empty-state p {
+          font-size: 0.83rem;
+          color: #7a6f62;
+          font-weight: 300;
+          max-width: 300px;
+          margin: 0 auto;
+          line-height: 1.6;
+        }
+
+        /* ── Inline form card ── */
+        .form-card {
+          background: #fffdf9;
+          border: 1.5px solid #b59a78;
+          border-radius: 12px;
+          padding: 22px;
+          grid-column: 1 / -1;
+          box-shadow: 0 8px 32px rgba(60,40,20,0.1);
+          animation: slideDown 0.2s ease;
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .form-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.1rem;
+          font-weight: 500;
+          color: #1a1612;
+        }
+        .form-close {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #9c8a76;
+          display: flex;
+          padding: 4px;
+          border-radius: 4px;
+          transition: color 0.15s, background 0.15s;
+        }
+        .form-close:hover { color: #1a1612; background: #f0e8de; }
+
+        /* type toggle */
+        .type-toggle {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 18px;
+        }
+        .type-option {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 16px;
+          border: 1.5px solid #d0c5b8;
+          border-radius: 6px;
+          background: transparent;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.8rem;
+          font-weight: 500;
+          color: #7a6f62;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+          transition: all 0.15s;
+        }
+        .type-option.active {
+          border-color: #1a1612;
+          background: #1a1612;
+          color: #f5f0ea;
+        }
+        .type-option:not(.active):hover {
+          border-color: #9c8a76;
+          color: #3b2f24;
+        }
+
+        /* fields */
+        .form-grid { display: grid; gap: 12px; margin-bottom: 12px; }
+        .form-grid.two-col { grid-template-columns: 1fr 1fr; }
+        .field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+        .field-label {
+          font-size: 0.72rem;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          color: #7a6f62;
+        }
+        .field-input {
+          background: #f7f3ef;
+          border: 1.5px solid #e2d9cc;
+          border-radius: 6px;
+          padding: 9px 12px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.88rem;
+          color: #1a1612;
+          outline: none;
+          transition: border-color 0.15s, background 0.15s;
+          width: 100%;
+        }
+        .field-input::placeholder { color: #b8a898; }
+        .field-input:focus {
+          border-color: #9c8a76;
+          background: #fffdf9;
+        }
+
+        /* default checkbox row */
+        .default-check {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin: 14px 0 20px;
+          cursor: pointer;
+          font-size: 0.83rem;
+          color: #4a3f34;
+          font-weight: 400;
+          user-select: none;
+        }
+
+        /* form footer */
+        .form-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          padding-top: 8px;
+          border-top: 1px solid #ece5dc;
+        }
+        .btn-cancel {
+          padding: 9px 18px;
+          border: 1.5px solid #d0c5b8;
+          border-radius: 6px;
+          background: transparent;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.83rem;
+          color: #7a6f62;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .btn-cancel:hover { border-color: #9c8a76; color: #3b2f24; }
+        .btn-save {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 9px 20px;
+          border: none;
+          border-radius: 6px;
+          background: #1a1612;
+          color: #f5f0ea;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.83rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .btn-save:hover { background: #3b2f24; }
+        .btn-save:disabled { background: #9c8a76; cursor: not-allowed; }
+
+        /* loading */
+        .spinner-wrap {
+          min-height: 60vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .spinner {
+          width: 32px; height: 32px;
+          border: 2px solid #e2d9cc;
+          border-top-color: #9c8a76;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 540px) {
+          .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .form-grid.two-col { grid-template-columns: 1fr; }
+          .header-left h1 { font-size: 1.8rem; }
+        }
+      `}</style>
+
+      <div className="page-root">
+        <div className="page-header">
+          <div className="header-left">
+            <h1>Address Book</h1>
+            <p>Manage your delivery locations</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Address
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingAddress ? 'Edit Address' : 'Add New Address'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="type">Address Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value: 'HOME' | 'WORK') => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HOME">Home</SelectItem>
-                      <SelectItem value="WORK">Work</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="street">Street Address</Label>
-                  <Input
-                    id="street"
-                    value={formData.street}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state">State/Province</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="zipCode">ZIP Code</Label>
-                    <Input
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isDefault"
-                    checked={formData.isDefault}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked as boolean })}
-                  />
-                  <Label htmlFor="isDefault">Set as default address</Label>
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingAddress ? 'Update' : 'Add'} Address
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {!showForm && (
+            <button
+              className={`add-new-btn ${showForm ? 'active' : ''}`}
+              onClick={() => { setEditingAddress(null); setShowForm(true) }}
+            >
+              <Plus size={15} />
+              New address
+            </button>
+          )}
         </div>
 
-        {addresses.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <MapPin className="w-16 h-16 text-gray-400 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No addresses yet</h3>
-              <p className="text-gray-500 text-center mb-6">
-                Add your first address to make checkout faster and easier.
-              </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Address
-              </Button>
-            </CardContent>
-          </Card>
+        {loading ? (
+          <div className="spinner-wrap"><div className="spinner" /></div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {addresses.map((address) => (
-              <Card key={address.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {getAddressIcon(address.type)}
-                      <CardTitle className="text-lg capitalize">{address.type.toLowerCase()}</CardTitle>
-                      {address.isDefault && (
-                        <Badge variant="secondary">Default</Badge>
-                      )}
-                    </div>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(address)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(address.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium">
-                      {address.firstName} {address.lastName}
-                    </p>
-                    <p className="text-gray-600">{address.street}</p>
-                    <p className="text-gray-600">
-                      {address.city}, {address.state} {address.zipCode}
-                    </p>
-                    <p className="text-gray-600">{address.country}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid">
+            {/* Inline form — appears at top when adding new */}
+            {showForm && !editingAddress && (
+              <AddressForm
+                key="new"
+                initial={EMPTY_FORM}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                isEditing={false}
+              />
+            )}
+
+            {addresses.length === 0 && !showForm ? (
+              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                <div className="empty-icon"><MapPin size={22} /></div>
+                <h3>No saved addresses</h3>
+                <p>Add a delivery address to make checkout quicker next time.</p>
+              </div>
+            ) : (
+              addresses.map((address) =>
+                showForm && editingAddress?.id === address.id ? (
+                  <AddressForm
+                    key={`edit-${address.id}`}
+                    initial={formInitial}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                    isEditing={true}
+                  />
+                ) : (
+                  <AddressCard
+                    key={address.id}
+                    address={address}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                )
+              )
+            )}
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }

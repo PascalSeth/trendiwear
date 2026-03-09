@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ArrowUpRight, Clock, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { WishlistButton } from '@/components/ui/wishlist-button';
@@ -85,6 +85,7 @@ function NewArrivals() {
             soldCount: number;
             createdAt: string;
             tags?: string[];
+            avgRating?: number;
             category: { name: string };
             collection?: { name: string };
             professional: {
@@ -124,7 +125,7 @@ function NewArrivals() {
             isVerified: product.professional.professionalProfile?.isVerified || false,
             isTrendiZip: sellerName === 'TrendiZip',
             category: product.category.name,
-            rating: product.professional.professionalProfile?.rating || 4.5,
+            rating: product.avgRating || 0,
             views: product.viewCount,
             likes: product._count.wishlistItems,
             // Discount fields
@@ -149,6 +150,7 @@ function NewArrivals() {
 function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
@@ -160,6 +162,20 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Cycle through images on hover
+  useEffect(() => {
+    if (!isHovered || item.images.length <= 1 || isMobile) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % item.images.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isHovered, item.images.length, isMobile]);
+
+  // Reset image index when not hovered
+  useEffect(() => {
+    if (!isHovered) setCurrentImageIndex(0);
+  }, [isHovered]);
 
   return (
     <motion.div
@@ -174,14 +190,40 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
       {/* Image Container - Full Bleed */}
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-t-2xl">
 
-        {/* Image with Parallax-like Scale */}
-        <motion.img
-          src={item.images[0] || "/placeholder-product.jpg"}
-          alt={item.name}
-          className="w-full h-full object-cover"
-          animate={{ scale: !isMobile && isHovered ? 1.05 : 1 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        />
+        {/* Images with crossfade */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentImageIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0"
+          >
+            <motion.img
+              src={item.images[currentImageIndex] || "/placeholder-product.jpg"}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              animate={{ scale: !isMobile && isHovered ? 1.05 : 1 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Image Indicators */}
+        {item.images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            {item.images.slice(0, 4).map((_, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                  idx === currentImageIndex ? "bg-white w-4" : "bg-white/50"
+                )}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Overlay Gradient */}
         <div className={cn(
@@ -276,7 +318,7 @@ function ProductCard({ item, index }: { item: ClothingItem; index: number }) {
           )}
           <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
              <Star size={10} className="fill-current text-stone-400" />
-             {item.rating}
+             {item.rating && item.rating > 0 ? item.rating.toFixed(1) : 'New'}
           </div>
         </div>
       </div>

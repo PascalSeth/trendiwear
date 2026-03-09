@@ -30,7 +30,8 @@ model User {
 
   // Customer Relations
   orders                Order[]
-  reviews               Review[]
+  reviews               Review[]       @relation("ReviewAuthor")
+  reviewReplies         Review[]       @relation("ReviewReplier")
   wishlist              WishlistItem[]
   cart                  CartItem[]
   addresses             Address[]
@@ -129,7 +130,8 @@ model ProfessionalProfile {
   id               String                @id @default(uuid())
   userId           String                @unique
   businessName     String
-  businessImage    String?
+  businessImage    String?               // Profile/logo image
+  coverImage       String?               // Cover/banner image
   specializationId String
   experience       Int
   bio              String?
@@ -151,7 +153,7 @@ model ProfessionalProfile {
   // Paystack Payment Integration
   paystackSubaccountCode String?         // Paystack subaccount for split payments
   momoNumber       String?               // Mobile Money phone number
-  momoProvider     String?               // mtn, vod, tgo
+  momoProvider     String?               // mtn, tel, tgo
   paymentSetupComplete Boolean           @default(false)
   
   createdAt        DateTime              @default(now())
@@ -578,10 +580,17 @@ model Review {
   images      String[]
   isVerified  Boolean    @default(false)  // Verified purchase
   helpfulCount Int       @default(0)      // How many found it helpful
+  
+  // Reply from seller/professional
+  replyText      String?
+  replyUserId    String?
+  repliedAt      DateTime?
+  
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  user        User       @relation(fields: [userId], references: [id])
+  user        User       @relation("ReviewAuthor", fields: [userId], references: [id])
+  replyUser   User?      @relation("ReviewReplier", fields: [replyUserId], references: [id])
 
   @@unique([userId, targetId, targetType])
 }

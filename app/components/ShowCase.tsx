@@ -1,12 +1,17 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, ChevronLeft, ChevronRight, Play, Pause, ShoppingBag, Star, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, Star,  Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import Image from 'next/image';
+import { WishlistButton } from '@/components/ui/wishlist-button';
+import { AddToCartButton } from '@/components/ui/add-to-cart-button';
 
 interface Product {
   id: string;
   name: string;
   price: number;
+  currency: string;
   image: string;
   category: string;
   rating: number;
@@ -16,93 +21,147 @@ interface Product {
   seller: string;
   seller_url: string;
   seller_image: string;
+  isTrendiZip: boolean;
 }
 
-// --- Data (Preserved) ---
-const PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: "Cashmere",
-    price: 299,
-    image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=1200&h=1600&auto=format&fit=crop&q=80",
-    category: "Knitwear",
-    rating: 4.9,
-    reviews: 1247,
-    badge: "Bestseller",
-    description: "Mongolian highlands",
-    seller: "Luxe Knitwear Co.",
-    seller_url: "https://luxe-knitwear.example.com",
-    seller_image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&auto=format&fit=crop&q=80"
-  },
-  {
-    id: '2',
-    name: "Silk Midi",
-    price: 450,
-    image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1200&h=1600&auto=format&fit=crop&q=80",
-    category: "Dresses",
-    rating: 4.8,
-    reviews: 892,
-    badge: "New",
-    description: "Flowing elegance",
-    seller: "Atelier Élegance",
-    seller_url: "https://atelier-elegance.example.com",
-    seller_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&auto=format&fit=crop&q=80"
-  },
-  {
-    id: '3',
-    name: "Leather",
-    price: 599,
-    image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1200&h=1600&auto=format&fit=crop&q=80",
-    category: "Outerwear",
-    rating: 4.9,
-    reviews: 2156,
-    badge: "Limited",
-    description: "Italian craft",
-    seller: "Bellafiora Milano",
-    seller_url: "https://bellafiora-milano.example.com",
-    seller_image: "https://images.unsplash.com/photo-1517841905240-8cc0dbb12e97?w=150&h=150&auto=format&fit=crop&q=80"
-  },
-  {
-    id: '4',
-    name: "Silk Blouse",
-    price: 199,
-    image: "https://i.pinimg.com/736x/a3/bf/76/a3bf764e76f451d454006928ffeb49a2.jpg",
-    category: "Tops",
-    rating: 4.7,
-    reviews: 543,
-    badge: "Trending",
-    description: "Italian blend",
-    seller: "Silkwood Studios",
-    seller_url: "https://silkwood-studios.example.com",
-    seller_image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&auto=format&fit=crop&q=80"
-  }
-];
+interface APIProduct {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  images: string[];
+  description: string | null;
+  tags: string[];
+  isTrendiZip: boolean;
+  category: {
+    id: string;
+    name: string;
+  };
+  professional: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    professionalProfile?: {
+      businessName?: string;
+      businessImage?: string;
+      rating?: number;
+      totalReviews?: number;
+      slug?: string;
+    };
+  };
+  _count: {
+    wishlistItems: number;
+    orderItems: number;
+    reviews: number;
+  };
+  averageRating: number;
+}
 
 function LuxuryShowcase() {
-  // --- Logic (Preserved) ---
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [autoPlay, setAutoPlay] = useState(true);
   const autoplayRef = useRef<NodeJS.Timeout>();
 
+  // Fetch showcase products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/showcase-products');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data: APIProduct[] = await response.json();
+        
+        const mappedProducts: Product[] = data.map((p) => {
+          const isTrendiZip = p.isTrendiZip || p.professional?.role === 'SUPER_ADMIN';
+          const sellerName = isTrendiZip 
+            ? 'TrendiZip'
+            : p.professional?.professionalProfile?.businessName || 
+              `${p.professional?.firstName || ''} ${p.professional?.lastName || ''}`.trim() || 
+              'Artisan';
+          const sellerImage = isTrendiZip
+            ? '/logo3d.jpg'
+            : p.professional?.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+          const sellerUrl = isTrendiZip
+            ? '/'
+            : p.professional?.professionalProfile?.slug 
+              ? `/tz/${p.professional.professionalProfile.slug}`
+              : `/tz/${p.professional?.id}`;
+
+          return {
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            currency: p.currency || 'GHS',
+            image: p.images?.[0] || '/placeholder.jpg',
+            category: p.category?.name || 'Fashion',
+            rating: p.averageRating || 0,
+            reviews: p._count?.reviews || 0,
+            badge: p.tags?.[0] || undefined,
+            description: p.description || '',
+            seller: sellerName,
+            seller_url: sellerUrl,
+            seller_image: sellerImage,
+            isTrendiZip,
+          };
+        });
+        
+        setProducts(mappedProducts);
+      } catch (error) {
+        console.error('Error fetching showcase products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const moveSlide = useCallback((newDirection: 'left' | 'right') => {
+    if (products.length === 0) return;
     setDirection(newDirection);
     setCurrentIndex(prev => 
       newDirection === 'right' 
-        ? (prev + 1) % PRODUCTS.length 
-        : (prev - 1 + PRODUCTS.length) % PRODUCTS.length
+        ? (prev + 1) % products.length 
+        : (prev - 1 + products.length) % products.length
     );
-  }, []);
+  }, [products.length]);
 
   useEffect(() => {
-    if (!autoPlay) return;
+    if (!autoPlay || products.length === 0) return;
     autoplayRef.current = setInterval(() => moveSlide('right'), 6000);
     return () => clearInterval(autoplayRef.current);
-  }, [autoPlay, moveSlide]);
+  }, [autoPlay, moveSlide, products.length]);
 
-  const product = PRODUCTS[currentIndex];
-  const nextProduct = PRODUCTS[(currentIndex + 1) % PRODUCTS.length];
+  // Loading state
+  if (loading) {
+    return (
+      <div className="relative min-h-screen pt-20 bg-[#FAFAF9] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
+          <span className="font-mono text-xs uppercase tracking-widest text-stone-500">Loading Showcase</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (products.length === 0) {
+    return (
+      <div className="relative min-h-screen pt-20 bg-[#FAFAF9] flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400 block mb-4">Showcase</span>
+          <h2 className="text-2xl font-serif text-stone-900 mb-2">Coming Soon</h2>
+          <p className="text-stone-500 text-sm">Curated pieces from our finest artisans will appear here.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const product = products[currentIndex];
+  const nextProduct = products[(currentIndex + 1) % products.length];
 
   return (
     <div className="relative min-h-screen pt-20 bg-[#FAFAF9] text-stone-900 font-sans selection:bg-stone-900 selection:text-stone-50 overflow-hidden">
@@ -127,16 +186,23 @@ function LuxuryShowcase() {
         {/* Full Screen Background Image */}
         <div className="absolute inset-0 z-0 bg-stone-100">
            <AnimatePresence mode="wait">
-              <motion.img
+              <motion.div
                 key={product.id}
-                src={product.image}
-                alt={product.name}
                 initial={{ opacity: 0, scale: 1.05 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="w-full h-full object-cover"
-              />
+                className="w-full h-full relative"
+              >
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="100vw"
+                />
+              </motion.div>
             </AnimatePresence>
         </div>
 
@@ -154,12 +220,11 @@ function LuxuryShowcase() {
               {product.badge}
            </div>
         )}
-        <button
-           onClick={() => setIsWishlisted(!isWishlisted)}
-           className="absolute top-20 right-6 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 rounded-full transition-all text-white z-40"
-        >
-           <Heart size={16} className={isWishlisted ? "fill-current text-red-500" : "text-white"} />
-        </button>
+        <WishlistButton
+           productId={product.id}
+           variant="overlay"
+           className="absolute top-20 right-6 p-2 bg-white/20 hover:bg-white/40 backdrop-blur-md border border-white/30 rounded-full transition-all z-40"
+        />
 
         {/* BOTTOM OVERLAY SHEET (Info) */}
         <div className="absolute bottom-0 inset-x-0 z-50 bg-gradient-to-t from-[#FAFAF9] via-[#FAFAF9]/95 to-transparent pt-8 pb-12 px-6 animate-fade-in-up">
@@ -170,7 +235,7 @@ function LuxuryShowcase() {
                     <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 leading-none">{product.name}</h1>
                  </div>
                  <div className="text-right">
-                    <span className="text-2xl sm:text-3xl font-serif text-stone-900 block">${product.price}</span>
+                    <span className="text-2xl sm:text-3xl font-serif text-stone-900 block">{product.currency} {product.price.toFixed(2)}</span>
                     <div className="flex items-center gap-1 justify-end text-stone-600 mt-1">
                        <Star size={12} className="fill-current" />
                        <span className="text-xs font-mono">({product.reviews})</span>
@@ -178,23 +243,27 @@ function LuxuryShowcase() {
                  </div>
               </div>
             
-              <button className="w-full bg-stone-900 text-stone-50 py-4 font-mono text-xs uppercase tracking-widest flex items-center justify-center gap-2">
-                 <ShoppingBag size={14} /> Add to Bag
-              </button>
+              <AddToCartButton
+                 productId={product.id}
+                 variant="primary"
+                 className="w-full bg-stone-900 text-stone-50 py-4 font-mono text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-stone-800 transition-colors"
+              />
 
               <div className="flex justify-between items-center border-t border-stone-100 pt-4">
                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-stone-200 rounded-full overflow-hidden border border-stone-200">
-                       <img src={product.seller_image} alt={product.seller} className="w-full h-full object-cover" />
+                    <div className="w-10 h-10 bg-stone-200 rounded-full overflow-hidden border border-stone-200 relative">
+                       <Image src={product.seller_image} alt={product.seller} fill className="object-cover" sizes="40px" />
                     </div>
                     <div className="overflow-hidden">
                        <p className="font-serif text-sm text-stone-900 leading-none truncate">{product.seller}</p>
-                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">Artisan</p>
+                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">{product.isTrendiZip ? 'Official Store' : 'Artisan'}</p>
                     </div>
                  </div>
-                 <a href={product.seller_url} target="_blank" className="text-xs font-mono uppercase tracking-widest text-stone-900 border-b border-stone-300">
-                    Visit
-                 </a>
+                 {!product.isTrendiZip && (
+                   <Link href={product.seller_url} className="text-xs font-mono uppercase tracking-widest text-stone-900 border-b border-stone-300">
+                      Visit
+                   </Link>
+                 )}
               </div>
            </div>
         </div>
@@ -209,16 +278,23 @@ function LuxuryShowcase() {
                
               {/* Main Image */}
               <AnimatePresence mode="wait">
-                <motion.img
+                <motion.div
                   key={product.id}
-                  src={product.image}
-                  alt={product.name}
                   initial={{ opacity: 0, x: direction === 'right' ? 30 : -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: direction === 'right' ? -30 : 30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="w-full h-full object-cover"
-                />
+                  className="w-full h-full relative"
+                >
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 60vw"
+                  />
+                </motion.div>
               </AnimatePresence>
 
               {/* Navigation */}
@@ -229,31 +305,31 @@ function LuxuryShowcase() {
                  <ChevronRight size={18} />
               </button>
 
-              {/* Badge & Wishlist */}
               {product.badge && (
                  <div className="absolute top-4 left-4 bg-stone-900 text-white px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest border border-stone-800">
                     {product.badge}
                  </div>
               )}
-              <button
-                 onClick={() => setIsWishlisted(!isWishlisted)}
+              <WishlistButton
+                 productId={product.id}
+                 variant="overlay"
                  className="absolute top-4 right-4 p-2 bg-white/40 hover:bg-white border border-white/20 rounded-full backdrop-blur-md transition-all"
-              >
-                 <Heart size={14} className={isWishlisted ? "fill-current text-red-500" : "text-stone-800"} />
-              </button>
+              />
 
               {/* Next Preview */}
               <div 
                  className="absolute bottom-4 right-4 w-24 h-32 overflow-hidden border border-white/50 shadow-lg cursor-pointer"
                  onClick={() => moveSlide('right')}
               >
-                 <img src={nextProduct.image} alt="Next" className="w-full h-full object-cover opacity-80" />
+                 <div className="relative w-full h-full">
+                   <Image src={nextProduct.image} alt="Next" fill className="object-cover opacity-80" sizes="96px" />
+                 </div>
               </div>
             </div>
 
             {/* Pagination Dots */}
             <div className="flex gap-2 justify-center mt-4">
-              {PRODUCTS.map((_, idx) => (
+              {products.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => {
@@ -284,15 +360,15 @@ function LuxuryShowcase() {
               <div>
                 <span className="block font-mono text-[10px] uppercase tracking-widest text-stone-500 mb-2">Price</span>
                 <span className="text-3xl font-serif text-stone-900">
-                  ${product.price}
+                  {product.currency} {product.price.toFixed(2)}
                 </span>
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-1 justify-end text-stone-900 mb-1">
                   <Star size={16} className="fill-current" />
-                  <span className="font-medium">{product.rating}</span>
+                  <span className="font-medium">{product.rating > 0 ? product.rating.toFixed(1) : 'New'}</span>
                 </div>
-                <span className="text-xs font-mono text-stone-500">({product.reviews})</span>
+                <span className="text-xs font-mono text-stone-500">({product.reviews} reviews)</span>
               </div>
             </div>
 
@@ -304,42 +380,44 @@ function LuxuryShowcase() {
             {/* Seller Card */}
             <div className="border border-stone-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                 <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400">The Artisan</span>
-                 <a 
-                    href={product.seller_url} 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono uppercase tracking-widest text-stone-900 border-b border-transparent hover:border-stone-900 transition-colors"
-                  >
-                    Visit
-                  </a>
+                 <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400">{product.isTrendiZip ? 'Official Store' : 'The Artisan'}</span>
+                 {!product.isTrendiZip && (
+                   <Link 
+                      href={product.seller_url} 
+                      className="text-xs font-mono uppercase tracking-widest text-stone-900 border-b border-transparent hover:border-stone-900 transition-colors"
+                    >
+                      Visit
+                    </Link>
+                 )}
               </div>
               <div className="flex items-center gap-4">
-                 <div className="w-14 h-14 bg-stone-100 overflow-hidden border border-stone-200">
-                    <img 
+                 <div className="w-14 h-14 bg-stone-100 overflow-hidden border border-stone-200 relative">
+                    <Image 
                       src={product.seller_image} 
                       alt={product.seller} 
-                      className="w-full h-full object-cover" 
+                      fill
+                      className="object-cover" 
+                      sizes="56px"
                     />
                  </div>
                  <div>
                     <h3 className="font-serif text-xl text-stone-900">{product.seller}</h3>
-                    <p className="text-xs font-mono uppercase tracking-widest text-stone-500">Verified Seller</p>
+                    <p className="text-xs font-mono uppercase tracking-widest text-stone-500">{product.isTrendiZip ? 'TrendiZip Collection' : 'Verified Seller'}</p>
                  </div>
               </div>
             </div>
 
             {/* CTA Button */}
-            <button className="w-full bg-stone-900 text-stone-50 py-5 font-mono text-sm uppercase tracking-widest hover:bg-stone-800 transition-colors flex items-center justify-center gap-3 group">
-              <ShoppingBag size={18} />
-              Add to Bag
-              <ArrowUpRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            <AddToCartButton
+              productId={product.id}
+              variant="primary"
+              className="w-full bg-stone-900 text-stone-50 py-5 font-mono text-sm uppercase tracking-widest hover:bg-stone-800 transition-colors flex items-center justify-center gap-3"
+            />
 
             {/* Footer Stats */}
             <div className="text-center pt-6">
                <p className="font-mono text-[10px] uppercase tracking-widest text-stone-400">
-                 {String(currentIndex + 1).padStart(2, '0')} / {String(PRODUCTS.length).padStart(2, '0')}
+                 {String(currentIndex + 1).padStart(2, '0')} / {String(products.length).padStart(2, '0')}
                </p>
             </div>
 

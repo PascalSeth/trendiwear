@@ -20,7 +20,7 @@ export async function GET() {
       // Also include static fallback providers
       fallbackProviders: [
         { code: 'mtn', name: 'MTN', displayName: 'MTN Mobile Money' },
-        { code: 'vod', name: 'Vodafone', displayName: 'Vodafone Cash' },
+        { code: 'tel', name: 'Telecel', displayName: 'Telecel Mobile Money' },
         { code: 'tgo', name: 'AirtelTigo', displayName: 'AirtelTigo Money' },
       ],
     })
@@ -31,7 +31,7 @@ export async function GET() {
     return NextResponse.json({
       providers: [
         { code: 'mtn', name: 'MTN', displayName: 'MTN Mobile Money', active: true },
-        { code: 'vod', name: 'Vodafone', displayName: 'Vodafone Cash', active: true },
+        { code: 'tel', name: 'Telecel', displayName: 'Telecel Mobile Money', active: true },
         { code: 'tgo', name: 'AirtelTigo', displayName: 'AirtelTigo Money', active: true },
       ],
       fallback: true,

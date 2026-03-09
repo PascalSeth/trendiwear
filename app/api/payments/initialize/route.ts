@@ -116,8 +116,15 @@ export async function POST(request: NextRequest) {
       profData.items.push(item)
     }
 
-    // Generate unique reference
-    const reference = generateReference('TZ')
+    // Use client-provided reference if supplied, otherwise generate unique reference
+    interface InitBody {
+      orderId: string
+      callbackUrl?: string
+      reference?: string
+    }
+
+    const parsed = body as InitBody
+    const reference = parsed.reference || generateReference('TZ')
     
     // Calculate platform fee
     const { platformFee, platformFeePercent } = calculateSplit(order.totalPrice)
@@ -130,7 +137,12 @@ export async function POST(request: NextRequest) {
     let transactionPayload: Parameters<typeof initializeTransaction>[0]
 
     if (professionals.length === 1 && professionals[0].subaccountCode) {
-      // Single seller with subaccount - use direct subaccount split
+      // Single seller with subaccount - use percentage split so platform fee
+      // is deducted from the seller's share rather than giving the full
+      // amount to the subaccount.
+      const prof = professionals[0]
+      const sharePercent = Math.round((prof.amount / order.totalPrice) * (100 - platformFeePercent))
+
       transactionPayload = {
         email: order.customer.email,
         amount: toPesewas(order.totalPrice),
@@ -158,8 +170,16 @@ export async function POST(request: NextRequest) {
             },
           ],
         },
-        subaccount: professionals[0].subaccountCode,
-        bearer: 'account', // Platform bears transaction charges
+        split: {
+          type: 'percentage',
+          bearer_type: 'account',
+          subaccounts: [
+            {
+              subaccount: prof.subaccountCode!,
+              share: sharePercent,
+            },
+          ],
+        },
         channels: ['card', 'mobile_money', 'bank_transfer'],
       }
     } else if (professionals.some(p => p.subaccountCode)) {

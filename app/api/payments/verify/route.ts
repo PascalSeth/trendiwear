@@ -43,11 +43,28 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // If no order exists yet, verify the payment and return success
+    // The order will be created by the client after verification
     if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found for this payment reference' },
-        { status: 404 }
-      )
+      // Still verify with Paystack to ensure payment was successful
+      const paystackResponse = await verifyTransaction(reference)
+      const { data } = paystackResponse
+
+      if (data.status === 'success') {
+        return NextResponse.json({
+          success: true,
+          status: 'success',
+          message: 'Payment verified. Ready to create order.',
+          verifiedAmount: data.amount,
+          needsOrderCreation: true,
+        })
+      } else {
+        return NextResponse.json({
+          success: false,
+          status: 'failed',
+          error: 'Payment verification failed',
+        })
+      }
     }
 
     // Verify the order belongs to the user

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ArrowUpRight, Clock, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { cn } from '@/lib/utils'; // Assuming you have a utility for merging classes, otherwise use clsx/tailwind-merge
 import { WishlistButton } from '@/components/ui/wishlist-button';
@@ -109,6 +109,7 @@ const InfiniteScrollText = ({ text }: { text: string }) => {
 const ProductCard = ({ item, index }: { item: Product, index: number }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
@@ -119,6 +120,20 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Cycle through images on hover
+  useEffect(() => {
+    if (!isHovered || item.images.length <= 1 || isMobile) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % item.images.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isHovered, item.images.length, isMobile]);
+
+  // Reset image index when not hovered
+  useEffect(() => {
+    if (!isHovered) setCurrentImageIndex(0);
+  }, [isHovered]);
 
   const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
   const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
@@ -138,16 +153,46 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
       {/* Image Container - Full Bleed */}
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-sm">
         
-        {/* Image with Parallax-like Scale */}
-        <motion.img
-          src={item.images[0] || "/placeholder-product.jpg"}
-          alt={item.name}
-          className="w-full h-full object-cover"
-          animate={{ scale: isHovered ? 1.05 : 1 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        />
+        {/* Images with crossfade */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentImageIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0"
+          >
+            <motion.img
+              src={item.images[currentImageIndex] || "/placeholder-product.jpg"}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              animate={{ scale: isHovered ? 1.05 : 1 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Image Indicators */}
+        {item.images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            {item.images.slice(0, 4).map((_, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                  idx === currentImageIndex ? "bg-white w-4" : "bg-white/50"
+                )}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Overlay Gradient */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
+          isHovered && "opacity-100"
+        )} />
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
           isHovered && "opacity-100"
@@ -235,7 +280,7 @@ const ProductCard = ({ item, index }: { item: Product, index: number }) => {
           )}
           <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
              <Star size={10} className="fill-current text-stone-400" />
-             {item.professional.professionalProfile?.rating || '4.5'}
+             {item.professional.professionalProfile?.rating ? item.professional.professionalProfile.rating.toFixed(1) : 'New'}
           </div>
         </div>
       </div>

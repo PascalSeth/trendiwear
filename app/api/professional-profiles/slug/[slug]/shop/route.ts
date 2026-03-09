@@ -111,16 +111,19 @@ export async function GET(
       }
     })
 
-    // Get unique categories from products
+    // Get unique categories from products with images
     const categories = Array.from(
       new Set(products.map(product => product.categoryId))
     ).map(async (categoryId) => {
       const category = await prisma.category.findUnique({
         where: { id: categoryId },
-        select: { name: true }
+        select: { id: true, name: true, slug: true, imageUrl: true }
       });
       return {
+        id: category?.id || categoryId,
         name: category?.name || 'Unknown',
+        slug: category?.slug || 'unknown',
+        imageUrl: category?.imageUrl || null,
         productCount: products.filter(p => p.categoryId === categoryId).length,
       };
     });

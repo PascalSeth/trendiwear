@@ -34,6 +34,8 @@ export default function RegisterProfessionalForm() {
     spotlightVideoUrl: "",
     availability: "",
     freeDeliveryThreshold: 0,
+    momoNumber: "",
+    momoProvider: "",
   });
 
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
@@ -43,6 +45,7 @@ export default function RegisterProfessionalForm() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [professionalTypes, setProfessionalTypes] = useState<ProfessionalType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
+  const [momoProviders, setMomoProviders] = useState<{ code: string; displayName: string }[]>([])
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState<string>("");
@@ -64,6 +67,23 @@ export default function RegisterProfessionalForm() {
     };
 
     fetchProfessionalTypes();
+
+    const fetchMomoProviders = async () => {
+      try {
+        const res = await fetch('/api/payments/momo-providers')
+        if (res.ok) {
+          const data = await res.json()
+          const list = (data.providers || data.fallbackProviders || []).map((p: { code?: string; displayName?: string; name?: string }) => ({ code: p.code || '', displayName: p.displayName || p.name || '' }))
+          setMomoProviders(list)
+        }
+      } catch (err) {
+        console.error('Failed to fetch momo providers', err)
+      } finally {
+        // finished
+      }
+    }
+
+    fetchMomoProviders()
   }, []);
 
   // --- Form Logic (Preserved) ---
@@ -135,6 +155,10 @@ export default function RegisterProfessionalForm() {
           platform: sm.platform.toUpperCase(),
           url: sm.url
         }))
+        ,
+        // Optional payment setup info - will trigger automated subaccount creation
+        ...(formData.momoNumber ? { momoNumber: formData.momoNumber } : {}),
+        ...(formData.momoProvider ? { momoProvider: formData.momoProvider } : {}),
       };
 
       const response = await fetch('/api/professional-profiles', {
@@ -401,6 +425,33 @@ export default function RegisterProfessionalForm() {
                                 className="bg-transparent border-b border-stone-300 rounded-none px-0 py-3 text-stone-900 placeholder-stone-300 focus:border-stone-900 focus:ring-0"
                               />
                            </div>
+                           
+                             <div className="group">
+                                <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Mobile Money Provider</Label>
+                                <div className="bg-transparent border-b border-stone-300 rounded-none px-0 py-3">
+                                  <select
+                                    value={formData.momoProvider}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, momoProvider: e.target.value }))}
+                                    className="w-full bg-transparent text-stone-900 outline-none"
+                                  >
+                                    <option value="">Select provider (optional)</option>
+                                    {momoProviders.map(p => (
+                                      <option key={p.code} value={p.code}>{p.displayName}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                             </div>
+
+                             <div className="group">
+                                <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Mobile Money Number</Label>
+                                <Input
+                                  type="tel"
+                                  value={formData.momoNumber}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, momoNumber: e.target.value }))}
+                                  placeholder="e.g. 0241234567 (optional)"
+                                  className="bg-transparent border-b border-stone-300 rounded-none px-0 py-3 text-stone-900 placeholder-stone-300 focus:border-stone-900 focus:ring-0"
+                                />
+                             </div>
                         </div>
 
                         {/* Advanced Toggle */}

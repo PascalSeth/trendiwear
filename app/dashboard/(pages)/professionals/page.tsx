@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 // import Link from 'next/link';
-import { Eye, Edit, Trash2, Star, MapPin, Calendar, DollarSign } from 'lucide-react';
+import { Eye, Edit, Trash2, Star, MapPin, Calendar, DollarSign, ShieldCheck, ShieldX, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Professional {
   id: string;
@@ -37,6 +38,7 @@ const ProfessionalsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfessionals();
@@ -55,6 +57,34 @@ const ProfessionalsPage = () => {
       setError('Failed to load professionals');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleVerification = async (professional: Professional) => {
+    setVerifyingId(professional.id);
+    
+    try {
+      const response = await fetch(`/api/professional-profiles/${professional.id}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVerified: !professional.isVerified }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update local state
+        setProfessionals(prev => 
+          prev.map(p => p.id === professional.id ? { ...p, isVerified: data.isVerified } : p)
+        );
+        toast.success(data.isVerified ? `${professional.businessName} has been verified!` : `Verification removed from ${professional.businessName}`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update verification');
+      }
+    } catch {
+      toast.error('Failed to update verification status');
+    } finally {
+      setVerifyingId(null);
     }
   };
 
@@ -273,11 +303,35 @@ const ProfessionalsPage = () => {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {professional.isVerified ? 'Verified' : 'Pending'}
+                        {professional.isVerified ? (
+                          <>
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Verified
+                          </>
+                        ) : 'Pending'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
+                        {/* Verify/Unverify Button */}
+                        <button
+                          onClick={() => handleToggleVerification(professional)}
+                          disabled={verifyingId === professional.id}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            professional.isVerified
+                              ? 'text-orange-600 hover:bg-orange-50 hover:text-orange-700'
+                              : 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
+                          } disabled:opacity-50`}
+                          title={professional.isVerified ? 'Remove verification' : 'Verify professional'}
+                        >
+                          {verifyingId === professional.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : professional.isVerified ? (
+                            <ShieldX className="h-4 w-4" />
+                          ) : (
+                            <ShieldCheck className="h-4 w-4" />
+                          )}
+                        </button>
                         <button className="text-indigo-600 hover:text-indigo-900">
                           <Eye className="h-4 w-4" />
                         </button>

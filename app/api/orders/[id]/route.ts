@@ -123,6 +123,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
+    // Send notification to customer about status change
+    if (status) {
+      const statusMessages: Record<OrderStatus, { title: string; message: string; type: 'ORDER_UPDATE' | 'SHIPPING_UPDATE' | 'DELIVERY_ARRIVAL' }> = {
+        PENDING: { title: 'Order Pending', message: 'Your order is pending confirmation.', type: 'ORDER_UPDATE' },
+        CONFIRMED: { title: 'Order Confirmed!', message: 'Great news! Your order has been confirmed and is being prepared.', type: 'ORDER_UPDATE' },
+        PROCESSING: { title: 'Order Processing', message: 'Your order is being processed and will ship soon.', type: 'ORDER_UPDATE' },
+        SHIPPED: { title: 'Order Shipped!', message: `Your order is on its way!${trackingNumber ? ` Tracking: ${trackingNumber}` : ''}`, type: 'SHIPPING_UPDATE' },
+        DELIVERED: { title: 'Order Delivered!', message: 'Your order has been delivered. Please confirm receipt within 48 hours.', type: 'DELIVERY_ARRIVAL' },
+        CANCELLED: { title: 'Order Cancelled', message: 'Your order has been cancelled. Contact support if you have questions.', type: 'ORDER_UPDATE' },
+        REFUNDED: { title: 'Refund Processed', message: 'Your refund has been processed. It may take 3-5 business days to reflect.', type: 'ORDER_UPDATE' },
+        PARTIALLY_REFUNDED: { title: 'Partial Refund', message: 'A partial refund has been issued for your order. Check your account for details.', type: 'ORDER_UPDATE' },
+      }
+
+      const notificationContent = statusMessages[status]
+      if (notificationContent) {
+        await prisma.notification.create({
+          data: {
+            userId: order.customerId,
+            type: notificationContent.type,
+            title: notificationContent.title,
+            message: `Order #${id.slice(-8).toUpperCase()}: ${notificationContent.message}`,
+            data: JSON.stringify({ orderId: id, status, trackingNumber }),
+          },
+        })
+      }
+    }
+
     return NextResponse.json(updatedOrder)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"

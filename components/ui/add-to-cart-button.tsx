@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ShoppingBag, Plus, Check } from 'lucide-react'
+import React, { useRef } from 'react'
+import { ShoppingBag, Check } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useCartStore } from '@/lib/stores'
 
@@ -25,40 +26,27 @@ export function AddToCartButton({
   const isInCart = useCartStore(state => state.isInCart)
   const addToCart = useCartStore(state => state.addToCart)
   const removeFromCart = useCartStore(state => state.removeFromCart)
-  const cartLoading = useCartStore(state => state.isLoading)
-  const [isAdding, setIsAdding] = useState(false)
+  const pendingRef = useRef(false)
 
   const productInCart = isInCart(productId)
 
-  const handleCartAction = async () => {
-    if (cartLoading || isAdding) return
+  const handleCartAction = () => {
+    if (pendingRef.current) return
+    pendingRef.current = true
 
-    setIsAdding(true)
-
-    try {
-      let success = false
-      if (productInCart) {
-        success = await removeFromCart(productId)
-        if (success) {
-          onCartChange?.(false)
-          toast.success("Removed from cart", { duration: 2000 })
-        }
-      } else {
-        success = await addToCart(productId, quantity)
-        if (success) {
-          onCartChange?.(true)
-          toast.success(`Added to cart!`, { duration: 2000 })
-        }
-      }
-
-      if (!success) {
-        toast.error("Failed to update cart. Please try again.", { duration: 3000 })
-      }
-    } catch (error) {
-      console.error('Cart operation failed:', error)
-      toast.error("Failed to update cart. Please try again.", { duration: 3000 })
-    } finally {
-      setIsAdding(false)
+    // Fire and forget - don't await, let optimistic update show immediately
+    if (productInCart) {
+      onCartChange?.(false)
+      toast.success("Removed from bag", { duration: 1500 })
+      removeFromCart(productId).finally(() => {
+        pendingRef.current = false
+      })
+    } else {
+      onCartChange?.(true)
+      toast.success("Added to bag!", { duration: 1500 })
+      addToCart(productId, quantity).finally(() => {
+        pendingRef.current = false
+      })
     }
   }
 
@@ -68,50 +56,74 @@ export function AddToCartButton({
     lg: 'w-6 h-6'
   }
 
+  const buttonSizeClasses = {
+    sm: 'p-2',
+    md: 'p-2.5',
+    lg: 'p-3'
+  }
+
+  // Bold & Modern variant styles
   const variantClasses = {
-    default: 'p-2 rounded-full !text-white hover:bg-gray-100 transition-colors',
-    overlay: 'bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200',
-    inline: 'hover:text-blue-500 transition-colors',
-    primary: 'w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2'
+    default: `${buttonSizeClasses[size]} bg-stone-900 text-white rounded-full shadow-md hover:bg-black hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200`,
+    overlay: `${buttonSizeClasses[size]} bg-black/80 backdrop-blur-md text-white rounded-full shadow-2xl hover:bg-black hover:scale-110 active:scale-95 transition-all duration-300 ring-2 ring-white/20`,
+    inline: 'text-stone-600 hover:text-black transition-colors duration-200',
+    primary: 'w-full bg-black hover:bg-stone-800 text-white py-4 px-8 rounded-full font-semibold tracking-wide flex items-center justify-center gap-3 shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300'
+  }
+
+  // In-cart state styles
+  const inCartClasses = {
+    default: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+    overlay: 'bg-emerald-500 hover:bg-emerald-600 text-white ring-emerald-300/50',
+    inline: 'text-emerald-500',
+    primary: 'bg-emerald-500 hover:bg-emerald-600'
   }
 
   return (
-    <button
+    <motion.button
       onClick={handleCartAction}
-      disabled={cartLoading || isAdding}
-      className={`relative ${variantClasses[variant]} ${className} ${(cartLoading || isAdding) ? 'opacity-50 cursor-not-allowed !text-white' : ''} ${productInCart ? 'bg-green-600 text-white hover:bg-green-500 cursor-default' : ''}`}
-      aria-label={productInCart ? 'Remove from cart' : 'Add to cart'}
+      whileTap={{ scale: 0.9 }}
+      className={`relative overflow-hidden ${variantClasses[variant]} ${className} ${productInCart ? inCartClasses[variant] : ''}`}
+      aria-label={productInCart ? 'Remove from bag' : 'Add to bag'}
     >
-      {productInCart ? (
-        variant === 'primary' ? (
-          <span className="flex items-center gap-2">
-            <Check className={`${sizeClasses[size]} !text-white`} />
-            Added to Cart
-          </span>
+      <AnimatePresence mode="wait">
+        {productInCart ? (
+          <motion.span
+            key="in-cart"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className={variant === 'primary' ? 'flex items-center gap-3' : ''}
+          >
+            {variant === 'primary' ? (
+              <>
+                <Check className={sizeClasses[size]} strokeWidth={2.5} />
+                <span>In Your Bag</span>
+              </>
+            ) : (
+              <Check className={sizeClasses[size]} strokeWidth={2.5} />
+            )}
+          </motion.span>
         ) : (
-          <Check className={`${sizeClasses[size]} text-green-600`} />
-        )
-      ) : isAdding ? (
-        variant === 'primary' ? (
-          <span className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-            Adding...
-          </span>
-        ) : (
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
-        )
-      ) : (
-        variant === 'primary' ? (
-          <span className="flex items-center gap-2">
-            <ShoppingBag className={sizeClasses[size]} />
-            Add to Cart
-          </span>
-        ) : variant === 'overlay' ? (
-          <ShoppingBag className={sizeClasses[size]} />
-        ) : (
-          <Plus className={sizeClasses[size]} />
-        )
-      )}
-    </button>
+          <motion.span
+            key="add"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className={variant === 'primary' ? 'flex items-center gap-3' : ''}
+          >
+            {variant === 'primary' ? (
+              <>
+                <ShoppingBag className={sizeClasses[size]} strokeWidth={2} />
+                <span>Add to Bag</span>
+              </>
+            ) : (
+              <ShoppingBag className={sizeClasses[size]} strokeWidth={2} />
+            )}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
   )
 }

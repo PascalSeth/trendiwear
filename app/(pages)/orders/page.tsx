@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Package, Truck, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 
 interface OrderItem {
@@ -48,10 +48,13 @@ interface OrdersResponse {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
   const fetchOrders = async (pageNum: number = 1) => {
+    setLoading(true)
+    setError(null)
     try {
       const response = await fetch(`/api/orders?page=${pageNum}&limit=10`)
       if (response.ok) {
@@ -59,9 +62,13 @@ export default function OrdersPage() {
         setOrders(data.orders)
         setTotalPages(data.pagination.pages)
         setPage(data.pagination.page)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || `Failed to load orders (${response.status})`)
       }
-    } catch (error) {
-      console.error('Error fetching orders:', error)
+    } catch (err) {
+      console.error('Error fetching orders:', err)
+      setError('Failed to load orders. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -125,7 +132,20 @@ export default function OrdersPage() {
           <p className="text-gray-600">Track and manage your fashion purchases</p>
         </div>
 
-        {orders.length === 0 ? (
+        {error && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Orders</h3>
+              <p className="text-red-600 text-center mb-4">{error}</p>
+              <Button onClick={() => fetchOrders()} variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {!error && orders.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Package className="w-16 h-16 text-gray-400 mb-4" />

@@ -28,6 +28,13 @@ export async function GET(request: NextRequest) {
               profileImage: true,
             },
           },
+          replyUser: {
+            select: {
+              firstName: true,
+              lastName: true,
+              profileImage: true,
+            },
+          },
         },
         skip: (page - 1) * limit,
         take: limit,

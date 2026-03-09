@@ -11,7 +11,7 @@ export const PAYSTACK_CONFIG = {
   // Supported MoMo providers in Ghana
   momoProviders: {
     MTN: 'mtn',
-    VODAFONE: 'vod', 
+    TELECEL: 'tel',
     AIRTELTIGO: 'tgo',
   },
   
@@ -387,9 +387,10 @@ export function validateGhanaPhone(phone: string): { valid: boolean; formatted: 
   if (['024', '054', '055', '059'].includes(prefix)) {
     provider = 'mtn'
   }
-  // Vodafone prefixes
+  // Telecel prefixes (some deployments map common Vodafone prefixes to Telecel)
   else if (['020', '050'].includes(prefix)) {
-    provider = 'vod'
+    // Map common 020/050 prefixes to Telecel for this deployment
+    provider = 'tel'
   }
   // AirtelTigo prefixes
   else if (['026', '027', '056', '057'].includes(prefix)) {
@@ -405,8 +406,8 @@ export function validateGhanaPhone(phone: string): { valid: boolean; formatted: 
 export function getMomoProviderName(code: string): string {
   const providers: Record<string, string> = {
     mtn: 'MTN Mobile Money',
-    vod: 'Vodafone Cash',
-    tgo: 'AirtelTigo Money',
+    tel: 'Telecel Mobile Money',
+    tgo: 'AirtelTigo Money'
   }
   return providers[code] || code
 }

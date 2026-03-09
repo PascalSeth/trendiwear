@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ShoppingBag, Star, Eye, ArrowLeft, Share2, MessageCircle, Truck, Shield, RotateCcw, ChevronLeft, ChevronRight, Maximize2, Clock, BadgeCheck } from 'lucide-react'
+import { ShoppingBag, Star, Eye, ArrowLeft, Share2, MessageCircle, Truck, Shield, RotateCcw, ChevronLeft, ChevronRight, Maximize2, Clock, BadgeCheck, Send, Loader2, Reply } from 'lucide-react'
 import { WishlistButton } from '@/components/ui/wishlist-button'
 import { AddToCartButton } from '@/components/ui/add-to-cart-button'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 
 // --- TYPES (Preserved) ---
 interface Product {
@@ -61,6 +63,29 @@ interface Product {
   isOnSale?: boolean
 }
 
+interface Review {
+  id: string
+  rating: number
+  title?: string
+  comment?: string
+  images: string[]
+  isVerified: boolean
+  createdAt: string
+  user: {
+    firstName: string
+    lastName: string
+    profileImage?: string
+  }
+  // Reply fields
+  replyText?: string
+  repliedAt?: string
+  replyUser?: {
+    firstName: string
+    lastName: string
+    profileImage?: string
+  }
+}
+
 // Countdown hook for discount timer
 function useCountdown(endDate: string | null | undefined) {
   const [timeLeft, setTimeLeft] = useState('')
@@ -94,10 +119,24 @@ function useCountdown(endDate: string | null | undefined) {
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   // --- STATE (Preserved) ---
+  const { data: session } = useSession()
   const [product, setProduct] = useState<Product | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const timeLeft = useCountdown(product?.discountEndDate)
+  
+  // Review form state
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewTitle, setReviewTitle] = useState('')
+  const [reviewComment, setReviewComment] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [hasReviewed, setHasReviewed] = useState(false)
+  
+  // Reply form state
+  const [replyingToId, setReplyingToId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [submittingReply, setSubmittingReply] = useState(false)
 
   // --- LOGIC (Preserved) ---
   useEffect(() => {
@@ -108,6 +147,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         if (response.ok) {
           const productData = await response.json()
           setProduct(productData)
+          
+          // Fetch reviews for this product
+          const reviewsResponse = await fetch(`/api/reviews?targetId=${resolvedParams.id}&targetType=PRODUCT&limit=10`)
+          if (reviewsResponse.ok) {
+            const reviewsData = await reviewsResponse.json()
+            setReviews(reviewsData.reviews || [])
+          }
         }
       } catch (error) {
         console.error('Failed to fetch product:', error)
@@ -118,6 +164,97 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
     fetchProduct()
   }, [params])
+
+  // Check if user has already reviewed this product
+  useEffect(() => {
+    if (session?.user && reviews.length > 0) {
+      const userReview = reviews.find(
+        (r) => r.user.firstName === session.user?.name?.split(' ')[0]
+      )
+      setHasReviewed(!!userReview)
+    }
+  }, [session, reviews])
+
+  const handleSubmitReview = async () => {
+    if (!session) {
+      toast.error('Please sign in to submit a review')
+      return
+    }
+
+    if (!product) return
+
+    setSubmittingReview(true)
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetId: product.id,
+          targetType: 'PRODUCT',
+          rating: reviewRating,
+          title: reviewTitle || undefined,
+          comment: reviewComment || undefined,
+        }),
+      })
+
+      if (response.ok) {
+        const newReview = await response.json()
+        setReviews((prev) => [newReview, ...prev])
+        setReviewRating(5)
+        setReviewTitle('')
+        setReviewComment('')
+        setHasReviewed(true)
+        toast.success('Review submitted successfully!')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to submit review')
+      }
+    } catch (error) {
+      console.error('Failed to submit review:', error)
+      toast.error('Failed to submit review')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const handleSubmitReply = async (reviewId: string) => {
+    if (!session) {
+      toast.error('Please sign in to reply')
+      return
+    }
+
+    if (!replyText.trim()) {
+      toast.error('Please enter a reply')
+      return
+    }
+
+    setSubmittingReply(true)
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ replyText: replyText.trim() }),
+      })
+
+      if (response.ok) {
+        const updatedReview = await response.json()
+        setReviews((prev) =>
+          prev.map((r) => (r.id === reviewId ? updatedReview : r))
+        )
+        setReplyingToId(null)
+        setReplyText('')
+        toast.success('Reply submitted successfully!')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to submit reply')
+      }
+    } catch (error) {
+      console.error('Failed to submit reply:', error)
+      toast.error('Failed to submit reply')
+    } finally {
+      setSubmittingReply(false)
+    }
+  }
 
   const nextImage = () => {
     if (product && currentImageIndex < product.images.length - 1) {
@@ -291,7 +428,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="text-right">
                 <div className="flex items-center gap-1 justify-end text-stone-900">
                   <Star size={14} className="fill-current text-stone-900" />
-                  <span className="font-medium">{product.professional.professionalProfile?.rating || 4.5}</span>
+                  <span className="font-medium">{product.professional.professionalProfile?.rating ? product.professional.professionalProfile.rating.toFixed(1) : 'New'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs font-mono text-stone-500 mt-1">
                   <span className="flex items-center gap-1"><Eye size={12} /> {product.viewCount}</span>
@@ -496,25 +633,219 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <h3 className="text-2xl font-serif text-stone-900">Reviews ({product._count.reviews})</h3>
           </div>
 
-          {product._count.reviews === 0 ? (
-            <p className="text-stone-500 font-light">No reviews yet.</p>
+          {/* Review Form - Only for logged in users */}
+          {session ? (
+            !hasReviewed ? (
+              <div className="mb-10 p-6 bg-stone-50 border border-stone-200">
+                <h4 className="font-mono text-xs uppercase tracking-widest text-stone-500 mb-4">Write a Review</h4>
+                
+                {/* Rating Selection */}
+                <div className="mb-4">
+                  <span className="block text-sm text-stone-600 mb-2">Your Rating</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="text-2xl transition-colors"
+                      >
+                        <Star
+                          size={24}
+                          className={star <= reviewRating ? 'fill-amber-500 text-amber-500' : 'text-stone-300'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Review title (optional)"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    className="w-full px-4 py-3 border border-stone-200 bg-white text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
+                  />
+                </div>
+
+                {/* Comment */}
+                <div className="mb-4">
+                  <textarea
+                    placeholder="Share your experience with this product..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-stone-200 bg-white text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={submittingReview}
+                  className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 font-mono text-sm uppercase tracking-widest hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submittingReview ? (
+                    <><Loader2 size={16} className="animate-spin" /> Submitting...</>
+                  ) : (
+                    <><Send size={16} /> Submit Review</>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="mb-10 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+                You have already submitted a review for this product.
+              </div>
+            )
+          ) : (
+            <div className="mb-10 p-6 bg-stone-50 border border-stone-200 text-center">
+              <p className="text-stone-600 mb-3">Sign in to share your experience</p>
+              <Link
+                href="/auth/signin"
+                className="inline-block bg-stone-900 text-white px-6 py-2 font-mono text-xs uppercase tracking-widest hover:bg-stone-800 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
+
+          {reviews.length === 0 ? (
+            <p className="text-stone-500 font-light">No reviews yet. Be the first to review!</p>
           ) : (
             <div className="space-y-8">
-              {/* Placeholders for reviews as original logic didn't fetch them */}
-               {[1, 2].map((i) => (
-                 <div key={i} className="py-6 border-b border-stone-100">
-                    <div className="flex justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 bg-stone-200 rounded-full"></div>
-                         <span className="font-mono text-xs uppercase">Customer {i}</span>
+              {reviews.map((review) => (
+                <div key={review.id} className="py-6 border-b border-stone-100">
+                  <div className="flex justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-10 h-10 bg-stone-200 rounded-full overflow-hidden">
+                        {review.user.profileImage ? (
+                          <Image
+                            src={review.user.profileImage}
+                            alt={review.user.firstName}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-stone-500 font-medium">
+                            {review.user.firstName.charAt(0)}{review.user.lastName.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex text-amber-500 text-xs">
-                         {'★'.repeat(5)}
+                      <div>
+                        <span className="font-medium text-stone-900">
+                          {review.user.firstName} {review.user.lastName}
+                        </span>
+                        {review.isVerified && (
+                          <span className="ml-2 text-xs text-emerald-600 font-mono uppercase">Verified Purchase</span>
+                        )}
+                        <span className="block text-xs text-stone-400">
+                          {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
                     </div>
-                    <p className="text-stone-600 italic text-sm">&apos;This product exceeded my expectations. The quality is amazing.&apos;</p>
-                 </div>
-               ))}
+                    <div className="flex text-amber-500 text-sm">
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    </div>
+                  </div>
+                  {review.title && (
+                    <h4 className="font-medium text-stone-900 mb-1">{review.title}</h4>
+                  )}
+                  {review.comment && (
+                    <p className="text-stone-600 text-sm leading-relaxed">{review.comment}</p>
+                  )}
+                  {review.images && review.images.length > 0 && (
+                    <div className="flex gap-2 mt-3">
+                      {review.images.map((img, idx) => (
+                        <div key={idx} className="relative w-16 h-16 bg-stone-100 overflow-hidden border border-stone-200">
+                          <Image src={img} alt={`Review image ${idx + 1}`} fill className="object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reply Section */}
+                  {review.replyText && review.replyUser && (
+                    <div className="mt-4 ml-6 pl-4 border-l-2 border-stone-200 bg-stone-50 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="relative w-8 h-8 bg-stone-200 rounded-full overflow-hidden">
+                          {review.replyUser.profileImage ? (
+                            <Image
+                              src={review.replyUser.profileImage}
+                              alt={review.replyUser.firstName}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-500 text-xs font-medium">
+                              {review.replyUser.firstName.charAt(0)}{review.replyUser.lastName.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-medium text-stone-900 text-sm">
+                            {review.replyUser.firstName} {review.replyUser.lastName}
+                          </span>
+                          <span className="ml-2 text-xs text-blue-600 font-mono uppercase">Seller</span>
+                          {review.repliedAt && (
+                            <span className="block text-xs text-stone-400">
+                              {new Date(review.repliedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-stone-600 text-sm">{review.replyText}</p>
+                    </div>
+                  )}
+
+                  {/* Reply Button & Form */}
+                  {session && !review.replyText && (
+                    <>
+                      {replyingToId === review.id ? (
+                        <div className="mt-4 ml-6 pl-4 border-l-2 border-stone-300">
+                          <textarea
+                            placeholder="Write your reply..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-stone-200 bg-white text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors resize-none text-sm"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleSubmitReply(review.id)}
+                              disabled={submittingReply || !replyText.trim()}
+                              className="flex items-center gap-1 bg-stone-900 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submittingReply ? (
+                                <><Loader2 size={12} className="animate-spin" /> Sending...</>
+                              ) : (
+                                <><Send size={12} /> Reply</>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setReplyingToId(null)
+                                setReplyText('')
+                              }}
+                              className="px-4 py-2 text-xs font-mono uppercase tracking-widest text-stone-600 hover:text-stone-900 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setReplyingToId(review.id)}
+                          className="mt-3 flex items-center gap-1 text-xs text-stone-500 hover:text-stone-900 transition-colors"
+                        >
+                          <Reply size={14} /> Reply
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

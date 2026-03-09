@@ -1,10 +1,15 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ShoppingBag, Minus, Plus, Trash2, ArrowRight } from 'lucide-react'
+import { ShoppingCart, Minus, Plus, X, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { usePaystackPayment } from 'react-paystack'
+import { PAYSTACK_CONFIG } from '@/lib/paystack'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { CartCountBadge } from '@/components/ui/cart-count-badge'
 import { useCartStore, selectCartItems, selectCartSummary } from '@/lib/stores'
@@ -16,6 +21,31 @@ export function CartSheetTrigger() {
   const removeItem = useCartStore(state => state.removeItem)
   const [open, setOpen] = useState(false)
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
+  const [isProcessing, setIsProcessing] = useState(false)
+  const router = useRouter()
+  interface PayConfig {
+    reference: string
+    email: string
+    amount: number
+    publicKey: string
+    currency: string
+  }
+
+  const [payConfig, setPayConfig] = useState<PayConfig>({
+    reference: '',
+    email: '',
+    amount: 0,
+    publicKey: PAYSTACK_CONFIG.publicKey,
+    currency: 'GHS',
+  })
+
+  const initializePayment = usePaystackPayment(payConfig)
+
+  function generateReference(prefix = 'TZ') {
+    const timestamp = Date.now().toString(36)
+    const random = Math.random().toString(36).substring(2, 8)
+    return `${prefix}_${timestamp}_${random}`.toUpperCase()
+  }
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -54,145 +84,274 @@ export function CartSheetTrigger() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="relative hover:text-blue-600 transition-colors">
-          <ShoppingBag className="h-5 w-5" />
-          <div className="absolute -top-1 -right-1">
+        <button className="relative p-2 rounded-full hover:bg-stone-100 transition-all duration-200 group">
+          <ShoppingCart className="h-5 w-5 text-stone-700 group-hover:text-black transition-colors" strokeWidth={2} />
+          <div className="absolute -top-0.5 -right-0.5">
             <CartCountBadge />
           </div>
         </button>
       </SheetTrigger>
 
-      <SheetContent className="w-full sm:max-w-lg z-[10000]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5" />
-            Shopping Cart ({summary?.itemCount || 0})
+      <SheetContent className="w-full sm:max-w-md z-[10000] bg-white p-0 flex flex-col">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-stone-100">
+          <SheetTitle className="flex items-center gap-3 text-xl font-bold tracking-tight">
+            <div className="p-2 bg-black rounded-full">
+              <ShoppingCart className="h-4 w-4 text-white" strokeWidth={2.5} />
+            </div>
+            Your Bag
+            <span className="text-stone-400 font-normal text-base">({summary?.itemCount || 0})</span>
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col flex-1 overflow-hidden">
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
             {cartItems.length === 0 ? (
-              <div className="text-center py-8">
-                <ShoppingBag className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500">Your cart is empty</p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-12"
+              >
+                <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <ShoppingCart className="h-8 w-8 text-stone-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-900 mb-2">Your bag is empty</h3>
+                <p className="text-stone-500 mb-6">Discover our collection and add items to your bag</p>
                 <Button
-                  variant="outline"
-                  className="mt-4"
                   onClick={() => setOpen(false)}
+                  className="bg-black hover:bg-stone-800 text-white rounded-full px-8 py-3 font-medium"
                 >
-                  Continue Shopping
+                  Start Shopping
                 </Button>
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                    {/* Product Image */}
-                    <div className="relative w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                      <Image
-                        src={item.product.images[0] || "/placeholder-product.jpg"}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-
-                    {/* Product Details */}
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/shopping/products/${item.product.id}`}
-                        onClick={() => setOpen(false)}
-                        className="block"
-                      >
-                        <h4 className="font-medium text-sm text-gray-900 hover:text-blue-600 line-clamp-2">
-                          {item.product.name}
-                        </h4>
-                      </Link>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.product.currency} {item.product.price.toFixed(2)}
-                      </p>
-
-                      {/* Size/Color */}
-                      <div className="flex items-center space-x-2 mt-1 text-xs text-gray-400">
-                        {item.size && <span>Size: {item.size}</span>}
-                        {item.color && <span>Color: {item.color}</span>}
-                      </div>
-                    </div>
-
-                    {/* Quantity Controls */}
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        disabled={updatingItems.has(item.id) || item.quantity <= 1}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-
-                      <span className="w-8 text-center text-sm font-medium">
-                        {updatingItems.has(item.id) ? '...' : item.quantity}
-                      </span>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        disabled={updatingItems.has(item.id) || item.quantity >= item.product.stockQuantity}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-
-                    {/* Remove Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={updatingItems.has(item.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+              <AnimatePresence mode="popLayout">
+                <div className="space-y-4">
+                  {cartItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20, height: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group relative bg-stone-50 rounded-2xl p-3 hover:bg-stone-100 transition-colors duration-200"
                     >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                      <div className="flex gap-4">
+                        {/* Product Image */}
+                        <Link
+                          href={`/shopping/products/${item.product.id}`}
+                          onClick={() => setOpen(false)}
+                          className="relative w-24 h-24 rounded-xl overflow-hidden bg-white flex-shrink-0 shadow-sm"
+                        >
+                          <Image
+                            src={item.product.images[0] || "/placeholder-product.jpg"}
+                            alt={item.product.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </Link>
+
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0 py-1">
+                          <Link
+                            href={`/shopping/products/${item.product.id}`}
+                            onClick={() => setOpen(false)}
+                          >
+                            <h4 className="font-semibold text-stone-900 hover:text-black line-clamp-2 leading-snug">
+                              {item.product.name}
+                            </h4>
+                          </Link>
+
+                          {/* Size/Color */}
+                          {(item.size || item.color) && (
+                            <div className="flex items-center gap-2 mt-1.5 text-xs text-stone-500">
+                              {item.size && <span className="bg-white px-2 py-0.5 rounded-md">{item.size}</span>}
+                              {item.color && <span className="bg-white px-2 py-0.5 rounded-md">{item.color}</span>}
+                            </div>
+                          )}
+
+                          {/* Price */}
+                          <div className="mt-2">
+                            {item.product.isDiscountActive ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-black">
+                                  {item.product.currency} {(item.product.effectivePrice || item.product.price).toFixed(0)}
+                                </span>
+                                <span className="text-xs text-stone-400 line-through">
+                                  {item.product.price.toFixed(0)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm font-bold text-black">
+                                {item.product.currency} {item.product.price.toFixed(0)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center bg-white rounded-full shadow-sm border border-stone-200">
+                              <button
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                disabled={updatingItems.has(item.id) || item.quantity <= 1}
+                                className="h-8 w-8 flex items-center justify-center hover:bg-stone-50 rounded-l-full disabled:opacity-40 transition-colors"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+
+                              <span className="w-8 text-center text-sm font-semibold">
+                                {updatingItems.has(item.id) ? (
+                                  <span className="inline-block w-3 h-3 border-2 border-stone-300 border-t-black rounded-full animate-spin" />
+                                ) : (
+                                  item.quantity
+                                )}
+                              </span>
+
+                              <button
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                disabled={updatingItems.has(item.id) || item.quantity >= item.product.stockQuantity}
+                                className="h-8 w-8 flex items-center justify-center hover:bg-stone-50 rounded-r-full disabled:opacity-40 transition-colors"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Remove Button */}
+                            <button
+                              onClick={() => handleRemoveItem(item.id)}
+                              disabled={updatingItems.has(item.id)}
+                              className="h-8 w-8 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200"
+                            >
+                              <X className="w-4 h-4" strokeWidth={2} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </AnimatePresence>
             )}
           </div>
 
           {/* Cart Summary & Actions */}
           {cartItems.length > 0 && (
-            <div className="border-t pt-4 space-y-4">
+            <div className="border-t border-stone-200 bg-stone-50 px-6 py-5 space-y-4">
               {/* Summary */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal ({summary?.itemCount} items)</span>
-                  <span className="font-medium">{summary?.subtotal.toFixed(2)} GHS</span>
+                  <span className="text-stone-500">Subtotal</span>
+                  <span className="font-medium text-stone-900">{summary?.subtotal.toFixed(0)} GHS</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax (4.5%)</span>
-                  <span className="font-medium">{((summary?.subtotal || 0) * 0.045).toFixed(2)} GHS</span>
+                  <span className="text-stone-500">Tax</span>
+                  <span className="font-medium text-stone-900">{((summary?.subtotal || 0) * 0.03).toFixed(0)} GHS</span>
                 </div>
-                <div className="flex justify-between text-lg font-semibold border-t pt-2">
-                  <span>Total</span>
-                  <span>{summary?.estimatedTotal.toFixed(2)} GHS</span>
+                <div className="flex justify-between text-lg font-bold pt-2 border-t border-stone-200">
+                  <span className="text-stone-900">Total</span>
+                  <span className="text-black">{summary?.estimatedTotal.toFixed(0)} GHS</span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="space-y-2">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Checkout
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+              <div className="space-y-3">
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    onClick={async () => {
+                      if (isProcessing) return
+                      setIsProcessing(true)
 
-                <Link href="/cart" onClick={() => setOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    View Full Cart
+                      try {
+                        // Fetch default address
+                        const addrRes = await fetch('/api/addresses')
+                        const addrData = await addrRes.json()
+
+                        if (!addrRes.ok || !addrData.addresses || addrData.addresses.length === 0) {
+                          toast.error('Please add a delivery address before checking out')
+                          router.push('/addresses')
+                          return
+                        }
+
+                        const addressId = addrData.addresses[0].id
+
+                        // Get user email - order created AFTER payment
+                        const meRes = await fetch('/api/me')
+                        const meData = await meRes.json()
+                        const email = meData?.user?.email || ''
+
+                        // Generate client-side reference
+                        const clientRef = generateReference('TZ')
+                        const amountPesewas = Math.round((summary?.estimatedTotal || 0) * 100)
+
+                        // Store checkout data for recovery
+                        localStorage.setItem('pendingCheckout', JSON.stringify({
+                          addressId,
+                          items: cartItems.map(i => ({ productId: i.product.id, quantity: i.quantity, size: i.size, color: i.color })),
+                          reference: clientRef,
+                          total: summary?.estimatedTotal || 0,
+                        }))
+
+                        setPayConfig({
+                          reference: clientRef,
+                          email,
+                          amount: amountPesewas,
+                          publicKey: PAYSTACK_CONFIG.publicKey,
+                          currency: 'GHS',
+                        })
+
+                        // Open Paystack - order created AFTER payment
+                        setTimeout(() => {
+                          initializePayment({
+                            onSuccess: async (ref: { reference: string }) => {
+                              try {
+                                const verifyRes = await fetch(`/api/payments/verify?reference=${encodeURIComponent(ref.reference)}`)
+                                const verifyData = await verifyRes.json()
+                                if (!verifyRes.ok || !verifyData.success) throw new Error(verifyData.error || 'Payment verification failed')
+
+                                const orderRes = await fetch('/api/orders', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ addressId, items: cartItems.map(i => ({ productId: i.product.id, quantity: i.quantity, size: i.size, color: i.color })), paystackReference: ref.reference, paymentStatus: 'PAID' }),
+                                })
+                                const order = await orderRes.json()
+                                if (!orderRes.ok) throw new Error(order.error || 'Failed to create order')
+
+                                localStorage.removeItem('pendingCheckout')
+                                toast.success('Payment successful! Order placed.')
+                                router.push(`/orders/${order.id}/payment-complete?reference=${ref.reference}`)
+                              } catch (orderError) {
+                                console.error('Order creation error:', orderError)
+                                toast.error('Payment successful but order creation failed. Contact support.')
+                                router.push('/orders')
+                              }
+                            },
+                            onClose: () => { toast('Payment closed. Items still in cart.'); localStorage.removeItem('pendingCheckout') },
+                          })
+                        }, 50)
+                      } catch (err) {
+                        console.error('Checkout error:', err)
+                        toast.error(err instanceof Error ? err.message : 'Checkout failed')
+                      } finally {
+                        setIsProcessing(false)
+                        setOpen(false)
+                      }
+                    }}
+                    disabled={isProcessing}
+                    className="w-full bg-black hover:bg-stone-800 text-white py-6 rounded-full font-semibold text-base shadow-lg hover:shadow-xl transition-all"
+                  >
+                    {isProcessing ? 'Processing…' : (
+                      <>
+                        Checkout
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+
+                <Link href="/cart" onClick={() => setOpen(false)} className="block">
+                  <Button variant="outline" className="w-full border-stone-300 hover:border-black hover:bg-black hover:text-white rounded-full py-5 font-medium transition-all duration-200">
+                    View Full Bag
                   </Button>
                 </Link>
               </div>

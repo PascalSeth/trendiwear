@@ -115,12 +115,23 @@ export async function POST(request: NextRequest) {
         data: { wishlistCount: { increment: 1 } },
       })
 
+      // Create notification for user
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          type: 'WISHLIST_SALE',
+          title: 'Added to Wishlist',
+          message: `"${product.name}" has been added to your wishlist. We'll notify you of any price drops!`,
+          data: JSON.stringify({ productId, productName: product.name }),
+        },
+      })
+
       return wishlistItem
     })
 
     console.log(`Successfully added product ${productId} to user ${user.id}'s wishlist`)
 
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json({ item: result }, { status: 201 })
   } catch (error) {
     console.error('Error adding to wishlist:', error)
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"

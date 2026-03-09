@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Mail, ArrowUpRight, Heart, Filter, MapPin, Briefcase, Package } from 'lucide-react';
+import { Star, Mail, ArrowUpRight, Heart, Filter, MapPin, Briefcase, Package, BadgeCheck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -16,6 +16,7 @@ interface Professional {
   rating?: number | null;
   totalReviews?: number | null;
   slug?: string | null;
+  isVerified?: boolean;
   user: {
     firstName: string;
     lastName: string;
@@ -103,8 +104,12 @@ function ProfessionalCard({ professional, liked, onToggleLike }: {
                 {professional.user.firstName.charAt(0)}
               </div>
             )}
-            {/* Online indicator */}
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" />
+            {/* Verified badge */}
+            {professional.isVerified && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                <BadgeCheck className="w-3 h-3 text-white" />
+              </span>
+            )}
           </div>
           <div className="min-w-0">
             <h3 className="text-base font-semibold text-stone-900 leading-tight truncate font-serif">
@@ -130,7 +135,7 @@ function ProfessionalCard({ professional, liked, onToggleLike }: {
           </span>
           <span className="flex items-center gap-1">
             <Star size={11} className="fill-amber-400 text-amber-400" />
-            {professional.rating?.toFixed(1) || '4.8'}
+            {professional.rating && professional.rating > 0 ? professional.rating.toFixed(1) : 'New'}
             <span className="text-stone-300 ml-0.5">
               ({professional.totalReviews || 0})
             </span>

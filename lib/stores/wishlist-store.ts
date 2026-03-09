@@ -115,7 +115,7 @@ export const useWishlistStore = create<WishlistState>()(
       }
     },
 
-    // Add item to wishlist
+    // Add item to wishlist (optimistic - no refetch)
     addToWishlist: async (productId) => {
       const { items, productIds } = get()
 
@@ -124,7 +124,7 @@ export const useWishlistStore = create<WishlistState>()(
         return true
       }
 
-      // Optimistic update
+      // Optimistic update - add immediately for fast UI
       const optimisticProductIds = new Set(productIds)
       optimisticProductIds.add(productId)
       set({ productIds: optimisticProductIds })
@@ -136,9 +136,18 @@ export const useWishlistStore = create<WishlistState>()(
           body: JSON.stringify({ productId }),
         })
 
-        if (response.ok || response.status === 409) {
-          // 409 means already in wishlist, which is fine
-          await get().fetchWishlist()
+        if (response.ok) {
+          const data = await response.json()
+          // Add the new item to state directly instead of refetching
+          if (data.item) {
+            set({ 
+              items: [...items, data.item],
+              productIds: optimisticProductIds
+            })
+          }
+          return true
+        } else if (response.status === 409) {
+          // Already in wishlist, keep optimistic state
           return true
         } else {
           // Revert optimistic update
@@ -154,7 +163,7 @@ export const useWishlistStore = create<WishlistState>()(
       }
     },
 
-    // Remove item from wishlist
+    // Remove item from wishlist (optimistic - no refetch)
     removeFromWishlist: async (productId) => {
       const { items, productIds } = get()
 
@@ -163,7 +172,7 @@ export const useWishlistStore = create<WishlistState>()(
         return true
       }
 
-      // Optimistic update
+      // Optimistic update - remove immediately for fast UI
       const optimisticProductIds = new Set(productIds)
       optimisticProductIds.delete(productId)
       const optimisticItems = items.filter(item => item.productId !== productId)
@@ -175,8 +184,7 @@ export const useWishlistStore = create<WishlistState>()(
         })
 
         if (response.ok || response.status === 404) {
-          // 404 means not found, which is fine (already removed)
-          await get().fetchWishlist()
+          // Success or already removed - keep optimistic state
           return true
         } else {
           // Revert optimistic update

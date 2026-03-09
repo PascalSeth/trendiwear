@@ -14,6 +14,10 @@ export interface CartProduct {
   stockQuantity: number
   isActive: boolean
   isInStock: boolean
+  // Discount fields
+  effectivePrice?: number
+  isDiscountActive?: boolean
+  discountAmount?: number
   professional: {
     firstName: string
     lastName: string
@@ -117,10 +121,59 @@ export const useCartStore = create<CartState>()(
       }
     },
 
-    // Add item to cart
+    // Add item to cart (optimistic)
     addToCart: async (productId, quantity = 1, size, color) => {
-      const previousItems = get().items
-      const previousSummary = get().summary
+      const { items, summary } = get()
+      
+      // Check if already in cart - update quantity instead
+      const existingItem = items.find(item => item.productId === productId)
+      
+      // ALWAYS do optimistic update immediately for instant UI feedback
+      if (existingItem) {
+        // Existing item - update quantity
+        const optimisticItems = items.map(item => 
+          item.productId === productId 
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
+        const newSubtotal = (summary?.subtotal || 0) + (existingItem.product.effectivePrice || existingItem.product.price) * quantity
+        set({ 
+          items: optimisticItems,
+          summary: summary ? { 
+            ...summary, 
+            itemCount: summary.itemCount + quantity,
+            subtotal: newSubtotal,
+            estimatedTotal: newSubtotal * 1.03
+          } : null
+        })
+      } else {
+        // New item - create placeholder for instant feedback
+        const placeholderItem: CartItem = {
+          id: `temp-${productId}-${Date.now()}`,
+          quantity,
+          size: size || undefined,
+          color: color || undefined,
+          productId,
+          product: {
+            id: productId,
+            name: 'Loading...',
+            price: 0,
+            currency: 'GHS',
+            images: [],
+            stockQuantity: 99,
+            isActive: true,
+            isInStock: true,
+            professional: { firstName: '', lastName: '' }
+          }
+        }
+        set({ 
+          items: [...items, placeholderItem],
+          summary: summary ? { 
+            ...summary, 
+            itemCount: summary.itemCount + quantity
+          } : { itemCount: quantity, subtotal: 0, estimatedTotal: 0 }
+        })
+      }
 
       try {
         const response = await fetch('/api/cart', {
@@ -130,54 +183,89 @@ export const useCartStore = create<CartState>()(
         })
 
         if (response.ok) {
-          // Refresh cart to get updated data
-          await get().fetchCart()
+          const data = await response.json()
+          // Update with server data (includes full item details)
+          if (data.item) {
+            // Get current state (may have changed)
+            const currentItems = get().items
+            const updatedItems = currentItems.map(item => 
+              (item.productId === productId || item.id.startsWith('temp-')) && item.productId === productId
+                ? data.item 
+                : item
+            ).filter(item => !item.id.startsWith('temp-') || item.productId !== productId)
+            
+            // If item wasn't in list (edge case), add it
+            if (!updatedItems.find(i => i.productId === productId)) {
+              updatedItems.push(data.item)
+            }
+            
+            const newSubtotal = updatedItems.reduce((sum, item) => 
+              sum + (item.product.effectivePrice || item.product.price) * item.quantity, 0
+            )
+            set({ 
+              items: updatedItems,
+              summary: {
+                itemCount: updatedItems.reduce((count, item) => count + item.quantity, 0),
+                subtotal: newSubtotal,
+                estimatedTotal: newSubtotal * 1.03
+              }
+            })
+          }
           return true
         } else {
+          // Revert on failure
+          set({ items, summary })
           const error = await response.json()
-          console.error('Failed to add to cart:', error.error)
+          console.error('Failed to add to bag:', error.error)
           return false
         }
       } catch (error) {
-        console.error('Add to cart failed:', error)
-        // Restore previous state on error
-        set({ items: previousItems, summary: previousSummary })
+        console.error('Add to bag failed:', error)
+        set({ items, summary })
         return false
       }
     },
 
-    // Remove item from cart by product ID
+    // Remove item from cart by product ID (optimistic)
     removeFromCart: async (productId) => {
-      const { items } = get()
+      const { items, summary } = get()
       const cartItem = items.find(item => item.productId === productId)
       
       if (!cartItem) return false
 
-      // Optimistic update
+      // Optimistic update - remove immediately for fast UI
       const optimisticItems = items.filter(item => item.productId !== productId)
-      set({ items: optimisticItems })
+      const removedValue = (cartItem.product.effectivePrice || cartItem.product.price) * cartItem.quantity
+      const newSubtotal = Math.max(0, (summary?.subtotal || 0) - removedValue)
+      
+      set({ 
+        items: optimisticItems,
+        summary: summary ? {
+          itemCount: Math.max(0, summary.itemCount - cartItem.quantity),
+          subtotal: newSubtotal,
+          estimatedTotal: newSubtotal * 1.03
+        } : null
+      })
 
       try {
         const response = await fetch(`/api/cart/${cartItem.id}`, {
           method: 'DELETE',
         })
 
-        if (response.ok) {
-          await get().fetchCart()
-          return true
-        } else {
+        if (!response.ok) {
           // Revert on failure
-          set({ items })
+          set({ items, summary })
           return false
         }
+        return true
       } catch (error) {
-        console.error('Remove from cart failed:', error)
-        set({ items })
+        console.error('Remove from bag failed:', error)
+        set({ items, summary })
         return false
       }
     },
 
-    // Update item quantity
+    // Update item quantity (optimistic)
     updateQuantity: async (itemId, quantity) => {
       if (quantity < 1) return false
 
@@ -186,10 +274,23 @@ export const useCartStore = create<CartState>()(
       
       if (itemIndex === -1) return false
 
+      const oldItem = items[itemIndex]
+      const quantityDiff = quantity - oldItem.quantity
+      const priceDiff = (oldItem.product.effectivePrice || oldItem.product.price) * quantityDiff
+
       // Optimistic update
       const optimisticItems = [...items]
-      optimisticItems[itemIndex] = { ...optimisticItems[itemIndex], quantity }
-      set({ items: optimisticItems })
+      optimisticItems[itemIndex] = { ...oldItem, quantity }
+      const newSubtotal = (summary?.subtotal || 0) + priceDiff
+      
+      set({ 
+        items: optimisticItems,
+        summary: summary ? {
+          itemCount: summary.itemCount + quantityDiff,
+          subtotal: newSubtotal,
+          estimatedTotal: newSubtotal * 1.03
+        } : null
+      })
 
       try {
         const response = await fetch(`/api/cart/${itemId}`, {
@@ -198,14 +299,12 @@ export const useCartStore = create<CartState>()(
           body: JSON.stringify({ quantity }),
         })
 
-        if (response.ok) {
-          await get().fetchCart()
-          return true
-        } else {
+        if (!response.ok) {
           // Revert on failure
           set({ items, summary })
           return false
         }
+        return true
       } catch (error) {
         console.error('Update quantity failed:', error)
         set({ items, summary })
@@ -213,29 +312,40 @@ export const useCartStore = create<CartState>()(
       }
     },
 
-    // Remove item by cart item ID
+    // Remove item by cart item ID (optimistic)
     removeItem: async (itemId) => {
-      const { items } = get()
+      const { items, summary } = get()
+      const item = items.find(i => i.id === itemId)
       
+      if (!item) return false
+
       // Optimistic update
-      const optimisticItems = items.filter(item => item.id !== itemId)
-      set({ items: optimisticItems })
+      const optimisticItems = items.filter(i => i.id !== itemId)
+      const removedValue = (item.product.effectivePrice || item.product.price) * item.quantity
+      const newSubtotal = Math.max(0, (summary?.subtotal || 0) - removedValue)
+      
+      set({ 
+        items: optimisticItems,
+        summary: summary ? {
+          itemCount: Math.max(0, summary.itemCount - item.quantity),
+          subtotal: newSubtotal,
+          estimatedTotal: newSubtotal * 1.03
+        } : null
+      })
 
       try {
         const response = await fetch(`/api/cart/${itemId}`, {
           method: 'DELETE',
         })
 
-        if (response.ok) {
-          await get().fetchCart()
-          return true
-        } else {
-          set({ items })
+        if (!response.ok) {
+          set({ items, summary })
           return false
         }
+        return true
       } catch (error) {
         console.error('Remove item failed:', error)
-        set({ items })
+        set({ items, summary })
         return false
       }
     },

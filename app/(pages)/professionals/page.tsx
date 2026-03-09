@@ -223,7 +223,7 @@ function Page() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold text-gray-900">{professional.rating}</span>
+                      <span className="font-semibold text-gray-900">{professional.rating > 0 ? professional.rating.toFixed(1) : 'New'}</span>
                       <span className="text-sm text-gray-500">({professional.reviews})</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-600">

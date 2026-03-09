@@ -65,14 +65,64 @@ function ProfessionalBusinessDashboard({
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden">
       <div className="relative w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+        
+        {/* Verification Banner - Show if not verified */}
+        {!professionalProfile.isVerified && (
+          <div className="mb-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-lg">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 p-3 bg-amber-100 rounded-xl">
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-amber-800">Get Verified to Build Trust</h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Verified sellers get a badge on their profile and products, increasing customer trust and sales. 
+                    Contact us to start the verification process.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <a 
+                      href="mailto:verify@trendiwear.com?subject=Business Verification Request&body=Business Name: {professionalProfile.businessName}%0AProfile ID: {professionalProfile.id}"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Request Verification
+                    </a>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Verified businesses see 40% more sales
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="mb-12 animate-fade-in">
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-6 md:space-y-0">
               <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                  Business Dashboard
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
+                    Business Dashboard
+                  </h1>
+                  {professionalProfile.isVerified && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Verified
+                    </span>
+                  )}
+                </div>
                 <p className="text-lg md:text-xl text-gray-700 font-medium">
                   {professionalProfile.specialization ? formatSpecialization(professionalProfile.specialization.name) : 'Professional Services'}
                 </p>
@@ -310,31 +360,182 @@ async function Home() {
       return <div>No professional profile found for this user.</div>;
     }
 
-    // Fetch dashboard data from API
-    try {
-      const dashboardResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/dashboard`, {
-        headers: {
-          // In server components, we need to handle auth differently
-          // For now, we'll pass the data directly since we're already authenticated
-        }
-      });
+    // Fetch dashboard data directly using Prisma (not via API)
+    const dashboardData = await getDashboardData(dbUser.id, professionalProfile.id);
 
-      if (dashboardResponse.ok) {
-        const dashboardData = await dashboardResponse.json();
-        return <ProfessionalBusinessDashboard
-          professionalProfile={professionalProfile}
-          dashboardData={dashboardData}
-        />;
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    }
-
-    // Fallback to original behavior if API fails
-    return <ProfessionalBusinessDashboard professionalProfile={professionalProfile} />;
+    return <ProfessionalBusinessDashboard
+      professionalProfile={professionalProfile}
+      dashboardData={dashboardData}
+    />;
   }
 
   return <div>Access denied. Invalid user role.</div>;
+}
+
+// Helper function to get dashboard data directly
+async function getDashboardData(userId: string, professionalProfileId: string): Promise<DashboardData> {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+    // Get products count and recent activity
+    const products = await prisma.product.findMany({
+      where: {
+        professionalId: userId,
+        isActive: true
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        soldCount: true,
+        viewCount: true,
+        isOnSale: true,
+        discountPercentage: true,
+        discountPrice: true
+      }
+    });
+
+    // Get orders and revenue data
+    const orders = await prisma.orderItem.findMany({
+      where: {
+        professionalId: userId,
+        order: {
+          createdAt: {
+            gte: thirtyDaysAgo
+          }
+        }
+      },
+      include: {
+        order: {
+          select: {
+            customerId: true,
+            totalPrice: true,
+            createdAt: true,
+            status: true
+          }
+        },
+        product: {
+          select: {
+            name: true,
+            price: true
+          }
+        }
+      }
+    });
+
+    // Calculate business metrics
+    const totalRevenue = orders.reduce((sum, item) => sum + item.order.totalPrice, 0);
+    const completedOrders = orders.filter(item => item.order.status === 'DELIVERED').length;
+    const totalOrders = orders.length;
+
+    // Calculate average rating from reviews
+    const reviews = await prisma.review.findMany({
+      where: {
+        targetType: 'PROFESSIONAL',
+        targetId: professionalProfileId
+      },
+      select: {
+        rating: true
+      }
+    });
+
+    const avgRating = reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0;
+
+    const totalReviews = reviews.length;
+
+    // Get active customers (unique customers who ordered in last 30 days)
+    const activeCustomers = new Set(
+      orders.map(item => item.order.customerId)
+    ).size;
+
+    // Calculate top performing services/products
+    const productPerformance = orders.reduce((acc, item) => {
+      const productId = item.productId;
+      if (!acc[productId]) {
+        acc[productId] = {
+          name: item.product.name,
+          revenue: 0,
+          orders: 0
+        };
+      }
+      acc[productId].revenue += item.order.totalPrice;
+      acc[productId].orders += 1;
+      return acc;
+    }, {} as Record<string, { name: string; revenue: number; orders: number }>);
+
+    const topServices = Object.values(productPerformance)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 3);
+
+    // Calculate analytics insights
+    const totalViews = products.reduce((sum, p) => sum + p.viewCount, 0);
+    const totalSold = products.reduce((sum, p) => sum + p.soldCount, 0);
+    const conversionRate = totalViews > 0 ? (totalSold / totalViews) * 100 : 0;
+
+    // Products on sale
+    const productsOnSale = products.filter(p => p.isOnSale || p.discountPercentage || p.discountPrice).length;
+
+    // Calculate period comparison
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(now.getDate() - 60);
+
+    const previousOrders = await prisma.orderItem.count({
+      where: {
+        professionalId: userId,
+        order: {
+          createdAt: {
+            gte: sixtyDaysAgo,
+            lt: thirtyDaysAgo
+          }
+        }
+      }
+    });
+
+    const orderChange = previousOrders > 0 ? ((totalOrders - previousOrders) / previousOrders) * 100 : 0;
+
+    return {
+      metrics: {
+        totalRevenue,
+        completedOrders,
+        avgRating: Math.round(avgRating * 10) / 10,
+        totalReviews,
+        activeCustomers
+      },
+      analytics: {
+        periodComparison: {
+          change: Math.round(orderChange * 100) / 100
+        },
+        insights: [
+          {
+            title: "Conversion Rate",
+            description: `${conversionRate.toFixed(1)}% of views convert to sales`,
+            change: conversionRate,
+            period: "overall"
+          },
+          {
+            title: "Active Promotions",
+            description: `${productsOnSale} products currently on sale`,
+            change: productsOnSale,
+            period: "active"
+          },
+          {
+            title: "Order Growth",
+            description: orderChange >= 0 ? "Orders increased this month" : "Orders decreased this month",
+            change: Math.round(orderChange * 100) / 100,
+            period: "vs last month"
+          }
+        ]
+      },
+      topServices
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    return {};
+  }
 }
 
 export default Home;

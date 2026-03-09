@@ -142,9 +142,17 @@ export async function GET(request: NextRequest) {
       orderBy[sortBy] = sortOrder as "asc" | "desc"
     }
 
+    // For public requests, exclude products whose professional has not completed
+    // payment setup (no MoMo number / subaccount). Dashboard/admin requests
+    // should still be able to see their products — the `dashboard` flag above
+    // controls that behavior.
+    const publicFilter = dashboard ? {} : { professional: { professionalProfile: { momoNumber: { not: null } } } }
+
+    const effectiveWhere = { ...where, ...publicFilter }
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where,
+        where: effectiveWhere,
         include: {
           category: true,
           collection: true,
@@ -161,6 +169,7 @@ export async function GET(request: NextRequest) {
                   rating: true,
                   totalReviews: true,
                   isVerified: true,
+                  momoNumber: true,
                 },
               },
             },
@@ -177,19 +186,26 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy,
       }),
-      prisma.product.count({ where }),
+      prisma.product.count({ where: effectiveWhere }),
     ])
 
     // If you need review counts, you'll need to fetch them separately
     // since there's no direct relation in your schema
     const productsWithReviewCounts = await Promise.all(
       products.map(async (product) => {
-        const reviewCount = await prisma.review.count({
+        // Get reviews for the product to calculate average rating
+        const reviews = await prisma.review.findMany({
           where: {
             targetId: product.id,
             targetType: "PRODUCT",
           },
+          select: { rating: true },
         })
+        
+        const reviewCount = reviews.length
+        const avgRating = reviewCount > 0 
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount 
+          : 0
 
         // Calculate effective price with discount
         const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
@@ -211,6 +227,7 @@ export async function GET(request: NextRequest) {
         return {
           ...product,
           professional,
+          avgRating,
           effectivePrice,
           isDiscountActive,
           discountAmount,

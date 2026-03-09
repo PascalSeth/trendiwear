@@ -74,6 +74,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 totalReviews: true,
                 location: true,
                 deliveryZones: true,
+                momoNumber: true,
+                paymentSetupComplete: true,
                 isVerified: true,
               },
             },
@@ -90,6 +92,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
+    }
+
+    // If the professional hasn't set up mobile money (momoNumber), treat the
+    // product as unavailable to public users. Allow owners and admins to view it.
+    let viewer = null
+    try {
+      viewer = await requireAuth()
+    } catch {
+      // unauthenticated viewer
+    }
+
+    const profProfile = product.professional.professionalProfile
+    const sellerHasMomo = Boolean(profProfile?.momoNumber)
+    const viewerIsOwner = viewer && viewer.id === product.professionalId
+    const viewerIsAdmin = viewer && ["ADMIN", "SUPER_ADMIN"].includes(viewer.role)
+
+    if (!sellerHasMomo && !viewerIsOwner && !viewerIsAdmin && product.professional.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: "Product not available" }, { status: 404 })
     }
 
     // Calculate effective price with discount

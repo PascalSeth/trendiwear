@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef } from 'react'
 import { Heart } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useWishlistStore } from '@/lib/stores'
 
@@ -28,38 +29,27 @@ export function WishlistButton({
   const addToWishlist = useWishlistStore(state => state.addToWishlist)
   const removeFromWishlist = useWishlistStore(state => state.removeFromWishlist)
   const isHydrated = useWishlistStore(state => state.isHydrated)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const pendingRef = useRef(false)
 
   const inWishlist = isInWishlist(productId)
 
-  const handleToggle = async () => {
-    if (!isHydrated || isProcessing) return
+  const handleToggle = () => {
+    if (!isHydrated || pendingRef.current) return
+    pendingRef.current = true
 
-    setIsProcessing(true)
-
-    try {
-      if (inWishlist) {
-        const success = await removeFromWishlist(productId)
-        if (success) {
-          onWishlistChange?.(false)
-          toast.success("Removed from wishlist", { duration: 2000 })
-        } else {
-          toast.error("Failed to remove from wishlist", { duration: 3000 })
-        }
-      } else {
-        const success = await addToWishlist(productId)
-        if (success) {
-          onWishlistChange?.(true)
-          toast.success("Added to wishlist", { duration: 2000 })
-        } else {
-          toast.error("Failed to add to wishlist", { duration: 3000 })
-        }
-      }
-    } catch (error) {
-      console.error('Wishlist operation failed:', error)
-      toast.error("Failed to update wishlist. Please try again.", { duration: 3000 })
-    } finally {
-      setIsProcessing(false)
+    // Fire and forget - don't await, optimistic update shows immediately
+    if (inWishlist) {
+      onWishlistChange?.(false)
+      toast.success("Removed from wishlist", { duration: 1500 })
+      removeFromWishlist(productId).finally(() => {
+        pendingRef.current = false
+      })
+    } else {
+      onWishlistChange?.(true)
+      toast.success("Added to wishlist!", { duration: 1500 })
+      addToWishlist(productId).finally(() => {
+        pendingRef.current = false
+      })
     }
   }
 
@@ -69,27 +59,54 @@ export function WishlistButton({
     lg: 'w-6 h-6'
   }
 
+  const buttonSizeClasses = {
+    sm: 'p-2',
+    md: 'p-2.5',
+    lg: 'p-3'
+  }
+
+  // Bold & Modern variant styles
   const variantClasses = {
-    default: 'p-2 rounded-full hover:bg-gray-100 transition-colors',
-    overlay: 'bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200',
-    inline: 'hover:text-red-500 transition-colors'
+    default: `${buttonSizeClasses[size]} bg-white rounded-full shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 border border-stone-100`,
+    overlay: `${buttonSizeClasses[size]} bg-white/90 backdrop-blur-md rounded-full shadow-2xl hover:bg-white hover:scale-110 active:scale-95 transition-all duration-300`,
+    inline: 'hover:scale-110 transition-all duration-200'
   }
 
   return (
-    <button
+    <motion.button
       onClick={handleToggle}
-      disabled={!isHydrated || isProcessing}
-      className={`relative ${variantClasses[variant]} ${className} ${(!isHydrated || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+      whileTap={{ scale: 0.85 }}
+      className={`relative ${variantClasses[variant]} ${className}`}
       aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
     >
-      <Heart
-        className={`${sizeClasses[size]} ${inWishlist ? 'fill-current text-red-500' : ''}`}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={inWishlist ? 'filled' : 'empty'}
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.5, opacity: 0 }}
+          transition={{ duration: 0.12 }}
+        >
+          <Heart
+            className={`${sizeClasses[size]} transition-colors duration-150 ${
+              inWishlist 
+                ? 'fill-red-500 text-red-500' 
+                : 'text-stone-400 hover:text-red-400'
+            }`}
+            strokeWidth={inWishlist ? 0 : 2}
+          />
+        </motion.div>
+      </AnimatePresence>
+      
       {showCount && count > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+        <motion.span 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center ring-2 ring-white"
+        >
           {count > 99 ? '99+' : count}
-        </span>
+        </motion.span>
       )}
-    </button>
+    </motion.button>
   )
 }

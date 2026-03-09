@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
+            role: true,
             professionalProfile: {
               select: {
                 businessName: true,
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
                 experience: true,
                 location: true,
                 businessImage: true,
+                slug: true,
               },
             },
           },
@@ -86,9 +88,30 @@ export async function GET(request: NextRequest) {
             reviews: reviewCount,
           },
           averageRating: avgRating,
+          // Override seller info for SUPER_ADMIN products to show TrendiZip
+          isTrendiZip: product.professional.role === 'SUPER_ADMIN',
         }
       })
     )
+
+    // Transform products to override TrendiZip seller info
+    const transformedProducts = productsWithReviews.map((product) => {
+      if (product.isTrendiZip) {
+        return {
+          ...product,
+          professional: {
+            ...product.professional,
+            professionalProfile: {
+              ...product.professional.professionalProfile,
+              businessName: 'TrendiZip',
+              businessImage: '/logo3d.jpg',
+              slug: null,
+            },
+          },
+        }
+      }
+      return product
+    })
 
     if (dashboard) {
       const total = await prisma.product.count({
@@ -100,12 +123,12 @@ export async function GET(request: NextRequest) {
       })
 
       return NextResponse.json({
-        products: productsWithReviews,
+        products: transformedProducts,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       })
     }
 
-    return NextResponse.json(productsWithReviews)
+    return NextResponse.json(transformedProducts)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })

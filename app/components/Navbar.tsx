@@ -8,7 +8,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import { CartSheetTrigger } from "@/components/ui/cart-sheet-trigger";
-import { Search, Bell, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, ChevronRight, Menu} from "lucide-react";
+import { NotificationBell } from "@/components/ui/notification-bell";
+import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type User = {
@@ -101,10 +102,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
 
           {/* Icons */}
           <div className="hidden md:flex items-center gap-4">
-             <button className="relative hover:text-red-900 text-stone-400 transition-colors">
-               <Bell size={18} />
-               <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-stone-900 rounded-full"></span>
-             </button>
+             <NotificationBell />
              <CartSheetTrigger />
           </div>
 
@@ -113,7 +111,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 group">
-                  <div className="w-9 h-9 rounded-full overflow-hidden border border-stone-200 group-hover:border-stone-900 transition-colors">
+                  <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-2 group-hover:ring-stone-400 transition-all duration-300">
                     <Image
                       src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                       alt="User"
@@ -125,80 +123,85 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 </button>
               </DropdownMenuTrigger>
               
-              {/* Clean Editorial Dropdown */}
-              <DropdownMenuContent align="end" className="w-72 p-0 bg-white border border-stone-200 shadow-xl rounded-none">
-                <div className="p-6 border-b border-stone-100">
-                  <p className="font-serif text-lg text-red-900 leading-tight">
-                    {user.name}
-                  </p>
-                  <p className="text-xs font-mono uppercase tracking-widest text-stone-400 mt-1">
-                    Member
-                  </p>
+              {/* Minimal Awwards-worthy Dropdown */}
+              <DropdownMenuContent 
+                align="end" 
+                sideOffset={8}
+                className="w-64 p-0 bg-white border-0 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden"
+              >
+                {/* User Header */}
+                <div className="px-5 py-4 border-b border-stone-100">
+                  <p className="text-sm font-medium text-stone-900 truncate">{user.name}</p>
+                  <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
                 </div>
 
-                <div className="p-2">
+                {/* Scrollable Menu */}
+                <div className="max-h-[50vh] overflow-y-auto overscroll-contain py-2">
                   {[
-                    { icon: User, label: 'My Profile', href: getProfileUrl() },
-                    { icon: Package, label: 'My Orders', href: '/orders' },
+                    { icon: User, label: 'Profile', href: getProfileUrl() },
+                    { icon: Package, label: 'Orders', href: '/orders' },
                     { icon: Heart, label: 'Wishlist', href: '/wishlist' },
                   ].map((item, idx) => (
-                    <DropdownMenuItem key={idx} className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
-                      <item.icon size={16} className="mr-3 text-stone-400 group-hover/item:text-red-900 transition-colors" />
-                      <Link href={item.href} className="flex-1 text-sm font-medium text-stone-700">
-                        {item.label}
+                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50">
+                      <Link href={item.href} className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
+                        <item.icon size={16} strokeWidth={1.5} />
+                        <span className="text-sm">{item.label}</span>
                       </Link>
-                      <ChevronRight size={12} className="text-stone-300 group-hover/item:text-red-900 transition-colors" />
                     </DropdownMenuItem>
                   ))}
-                </div>
 
-                {/* Professional Section */}
-                {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                  <div className="p-2 border-t border-stone-100">
-                    <DropdownMenuItem className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
-                      <Settings size={16} className="mr-3 text-stone-400 group-hover/item:text-red-900" />
-                      <Link href="/dashboard" className="flex-1 text-sm font-medium text-red-900 font-semibold">
-                        Professional Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                  </div>
-                )}
+                  {/* Dashboard for Professionals */}
+                  {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                    <>
+                      <div className="h-px bg-stone-100 my-2 mx-5" />
+                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50">
+                        <Link href="/dashboard" className="flex items-center gap-3 px-5 py-2.5 text-stone-900 font-medium transition-colors">
+                          <Settings size={16} strokeWidth={1.5} />
+                          <span className="text-sm">Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
 
-                {/* Become Professional */}
-                {role === "CUSTOMER" && (
-                  <div className="p-2 border-t border-stone-100">
-                    <DropdownMenuItem className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
-                      <DollarSign size={16} className="mr-3 text-stone-400 group-hover/item:text-red-900" />
-                      <Link href="/register-as-professional" className="flex-1 text-sm font-medium text-stone-700">
-                        Become a Professional
-                      </Link>
-                    </DropdownMenuItem>
-                  </div>
-                )}
+                  {/* Become Professional */}
+                  {role === "CUSTOMER" && (
+                    <>
+                      <div className="h-px bg-stone-100 my-2 mx-5" />
+                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50">
+                        <Link href="/register-as-professional" className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
+                          <DollarSign size={16} strokeWidth={1.5} />
+                          <span className="text-sm">Become a Pro</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
 
-                {/* Settings & Support */}
-                <div className="p-2 border-t border-stone-100">
-                   {[
+                  <div className="h-px bg-stone-100 my-2 mx-5" />
+
+                  {[
                     { icon: MapPin, label: 'Addresses', href: '/addresses' },
                     { icon: Ruler, label: 'Measurements', href: '/measurements' },
-                    { icon: Settings, label: 'Account Settings', href: '/settings' },
-                    { icon: HelpCircle, label: 'Help & Support', href: '/help' },
+                    { icon: Settings, label: 'Settings', href: '/settings' },
+                    { icon: HelpCircle, label: 'Help', href: '/help' },
                   ].map((item, idx) => (
-                    <DropdownMenuItem key={idx} className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
-                      <item.icon size={16} className="mr-3 text-stone-400 group-hover/item:text-red-900 transition-colors" />
-                      <Link href={item.href} className="flex-1 text-sm font-medium text-stone-700">
-                        {item.label}
+                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50">
+                      <Link href={item.href} className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
+                        <item.icon size={16} strokeWidth={1.5} />
+                        <span className="text-sm">{item.label}</span>
                       </Link>
                     </DropdownMenuItem>
                   ))}
                 </div>
 
                 {/* Logout */}
-                <div className="p-2 border-t border-stone-100">
-                  <DropdownMenuItem className="group/item cursor-pointer py-3 px-4 hover:bg-stone-50 transition-colors">
-                    <LogOut size={16} className="mr-3 text-red-500 group-hover/item:text-red-700 transition-colors" />
-                    <button onClick={() => signOut()} className="flex-1 text-sm font-medium text-red-600 text-left">
-                      Logout
+                <div className="border-t border-stone-100 p-2">
+                  <DropdownMenuItem asChild className="cursor-pointer focus:bg-red-50 rounded-lg">
+                    <button 
+                      onClick={() => signOut()} 
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <LogOut size={16} strokeWidth={1.5} />
+                      <span className="text-sm">Sign out</span>
                     </button>
                   </DropdownMenuItem>
                 </div>

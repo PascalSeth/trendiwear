@@ -7,6 +7,7 @@ import { Loader2, CreditCard, Smartphone, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { PAYSTACK_CONFIG } from '@/lib/paystack'
+import { generateReference } from '@/lib/paystack'
 
 interface PaystackCheckoutButtonProps {
   orderId: string
@@ -21,23 +22,55 @@ interface PaystackCheckoutButtonProps {
 
 export function PaystackCheckoutButton({
   orderId,
+  email,
   amount,
   disabled = false,
   className = '',
   children,
 }: PaystackCheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  interface PayConfig {
+    reference: string
+    email: string
+    amount: number
+    publicKey: string
+    currency: string
+  }
+
+  const [payConfig, setPayConfig] = useState<PayConfig>({
+    reference: '',
+    email: '',
+    amount: 0,
+    publicKey: PAYSTACK_CONFIG.publicKey,
+    currency: 'GHS',
+  })
+  const initializePayment = usePaystackPayment(payConfig)
+  const router = useRouter()
 
   const handlePayment = async () => {
     setIsLoading(true)
 
     try {
-      // Initialize payment with our API
+      // Generate client reference and prepare inline config
+      const reference = generateReference('TZ')
+      const emailForCustomer = email
+      const amountPesewas = Math.round(amount * 100)
+
+      setPayConfig({
+        reference,
+        email: emailForCustomer,
+        amount: amountPesewas,
+        publicKey: PAYSTACK_CONFIG.publicKey,
+        currency: 'GHS',
+      })
+
+      // Initialize payment on server with same reference
       const response = await fetch('/api/payments/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
+          reference,
           callbackUrl: `${window.location.origin}/orders/${orderId}/payment-complete`,
         }),
       })
@@ -48,8 +81,18 @@ export function PaystackCheckoutButton({
         throw new Error(data.error || 'Failed to initialize payment')
       }
 
-      // Redirect to Paystack checkout page
-      window.location.href = data.authorizationUrl
+      // Open Paystack inline popup
+      setTimeout(() => {
+        initializePayment({
+          onSuccess: (ref: { reference: string }) => {
+            toast.success('Payment successful!')
+            router.push(`/orders/${orderId}/payment-complete?reference=${ref.reference}`)
+          },
+          onClose: () => {
+            toast('Payment window closed')
+          },
+        })
+      }, 50)
     } catch (error) {
       console.error('Payment initialization error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to start payment')
@@ -143,7 +186,7 @@ export function PaymentMethodSelector({ selectedMethod, onMethodChange }: Paymen
     {
       id: 'mobile_money',
       name: 'Mobile Money',
-      description: 'Pay with MTN, Vodafone, or AirtelTigo',
+      description: 'Pay with MTN, Telecel, or AirtelTigo',
       icon: Smartphone,
     },
     {

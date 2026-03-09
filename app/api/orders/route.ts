@@ -1,7 +1,40 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
-import type { Prisma, OrderStatus } from "@prisma/client"
+import type { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
+
+// Helper function to calculate effective price with discount
+function calculateEffectivePrice(product: {
+  price: number
+  discountPercentage?: number | null
+  discountPrice?: number | null
+  discountStartDate?: Date | null
+  discountEndDate?: Date | null
+  isOnSale?: boolean
+}): { effectivePrice: number; isDiscountActive: boolean } {
+  const now = new Date()
+  
+  const isWithinDateRange = 
+    (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+    (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+  
+  const hasDiscount = product.discountPercentage || product.discountPrice
+  const isDiscountActive = Boolean(product.isOnSale && hasDiscount && isWithinDateRange)
+  
+  if (!isDiscountActive) {
+    return { effectivePrice: product.price, isDiscountActive: false }
+  }
+  
+  let effectivePrice = product.price
+  
+  if (product.discountPrice && product.discountPrice > 0) {
+    effectivePrice = product.discountPrice
+  } else if (product.discountPercentage && product.discountPercentage > 0) {
+    effectivePrice = product.price * (1 - product.discountPercentage / 100)
+  }
+  
+  return { effectivePrice: Math.round(effectivePrice * 100) / 100, isDiscountActive }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,11 +120,15 @@ export async function POST(request: NextRequest) {
       items,
       deliveryZone,
       couponCode,
+      paystackReference,
+      paymentStatus,
     }: {
       addressId: string
       items: OrderItemInput[]
       deliveryZone?: string
       couponCode?: string
+      paystackReference?: string
+      paymentStatus?: string
     } = body
 
     const address = await prisma.address.findFirst({
@@ -128,7 +165,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 })
       }
 
-      const itemTotal = product.price * item.quantity
+      // Calculate effective price with any active discounts
+      const { effectivePrice } = calculateEffectivePrice(product)
+      const itemTotal = effectivePrice * item.quantity
       subtotal += itemTotal
 
       if (deliveryZone && product.professional.professionalProfile?.deliveryZones) {
@@ -148,7 +187,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         size: item.size,
         color: item.color,
-        price: product.price,
+        price: effectivePrice,
         notes: item.notes,
       })
     }
@@ -175,7 +214,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const tax = (subtotal - discount) * 0.045
+    const tax = (subtotal - discount) * 0.03
     const totalPrice = subtotal + shippingCost + tax - discount
 
     const order = await prisma.$transaction(async (tx) => {
@@ -189,6 +228,9 @@ export async function POST(request: NextRequest) {
           totalPrice,
           deliveryZone,
           items: { create: orderItems },
+          // Set payment info if provided (after successful payment)
+          ...(paystackReference && { paystackReference }),
+          ...(paymentStatus && { paymentStatus: paymentStatus as PaymentStatus }),
         },
         include: {
           items: { include: { product: true } },
@@ -229,7 +271,29 @@ export async function POST(request: NextRequest) {
             releaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
           },
         })
+
+        // Notify the professional about the new order
+        await tx.notification.create({
+          data: {
+            userId: professionalId,
+            type: 'ORDER_UPDATE',
+            title: 'New Order Received!',
+            message: `You have a new order worth GHS ${amount.toFixed(2)}. Check your dashboard to process it.`,
+            data: JSON.stringify({ orderId: newOrder.id, amount }),
+          },
+        })
       }
+
+      // Notify the customer about successful order
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          type: 'ORDER_UPDATE',
+          title: 'Order Placed Successfully!',
+          message: `Your order #${newOrder.id.slice(-8).toUpperCase()} has been placed. Total: GHS ${newOrder.totalPrice.toFixed(2)}`,
+          data: JSON.stringify({ orderId: newOrder.id, totalPrice: newOrder.totalPrice }),
+        },
+      })
 
       return newOrder
     })

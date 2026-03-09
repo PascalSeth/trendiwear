@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
+import { createSubaccount, updateSubaccount, validateGhanaPhone, PAYSTACK_CONFIG } from '@/lib/paystack'
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
           rating: true,
           totalReviews: true,
           slug: true,
+          isVerified: true,
           user: {
             select: {
               firstName: true,
@@ -243,6 +245,9 @@ export async function POST(request: NextRequest) {
       socialMedia?: Prisma.SocialMediaCreateWithoutProfessionalInput[]
     } = body
 
+    // Optional payment setup fields (automated flow)
+    const { momoNumber, momoProvider } = body as { momoNumber?: string; momoProvider?: string }
+
     let profile;
 
     if (existingProfile) {
@@ -308,6 +313,74 @@ export async function POST(request: NextRequest) {
         where: { id: user.id },
         data: { role: "PROFESSIONAL" },
       })
+    }
+
+    // If momoNumber and momoProvider were provided as part of the profile
+    // creation/update, attempt to create/update a Paystack subaccount
+    if (momoNumber && momoProvider) {
+      // Validate provider
+      const validProviders = Object.values(PAYSTACK_CONFIG.momoProviders)
+      if (!validProviders.includes(momoProvider)) {
+        return NextResponse.json({ error: 'Invalid mobile money provider. Use: mtn, tel, or tgo' }, { status: 400 })
+      }
+
+      // Validate phone
+      const phoneValidation = validateGhanaPhone(momoNumber)
+      if (!phoneValidation.valid) {
+        return NextResponse.json({ error: 'Invalid Ghana phone number format' }, { status: 400 })
+      }
+
+      const formattedPhone = phoneValidation.formatted
+
+      // Re-fetch profile to ensure we have latest data (and any existing subaccount code)
+      const freshProfile = await prisma.professionalProfile.findUnique({
+        where: { userId: user.id },
+        include: { user: { select: { firstName: true, lastName: true, email: true, phone: true } } },
+      })
+
+      if (!freshProfile) {
+        return NextResponse.json({ error: 'Professional profile not found after update' }, { status: 500 })
+      }
+
+      const subaccountPayload = {
+        business_name: freshProfile.businessName,
+        settlement_bank: momoProvider,
+        account_number: formattedPhone,
+        percentage_charge: PAYSTACK_CONFIG.platformFeePercent,
+        description: `TrendiWear seller account for ${freshProfile.businessName}`,
+        primary_contact_email: freshProfile.user.email,
+        primary_contact_name: `${freshProfile.user.firstName} ${freshProfile.user.lastName}`,
+        primary_contact_phone: freshProfile.user.phone || formattedPhone,
+        metadata: {
+          professionalId: freshProfile.id,
+          userId: user.id,
+        },
+      }
+
+      try {
+        let subaccountCode: string | undefined
+        if (freshProfile.paystackSubaccountCode) {
+          const res = await updateSubaccount(freshProfile.paystackSubaccountCode, subaccountPayload)
+          subaccountCode = res.data.subaccount_code
+        } else {
+          const res = await createSubaccount(subaccountPayload)
+          subaccountCode = res.data.subaccount_code
+        }
+
+        // Persist payment setup info
+        await prisma.professionalProfile.update({
+          where: { id: freshProfile.id },
+          data: {
+            momoNumber: formattedPhone,
+            momoProvider,
+            paystackSubaccountCode: subaccountCode,
+            paymentSetupComplete: true,
+          },
+        })
+      } catch (payErr) {
+        console.error('Automated subaccount creation failed:', payErr)
+        return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack subaccount' }, { status: 500 })
+      }
     }
 
     return NextResponse.json(profile, { status: existingProfile ? 200 : 201 })

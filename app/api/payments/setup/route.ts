@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const validProviders = Object.values(PAYSTACK_CONFIG.momoProviders)
     if (!validProviders.includes(momoProvider)) {
       return NextResponse.json(
-        { error: 'Invalid mobile money provider. Use: mtn, vod, or tgo' },
+        { error: 'Invalid mobile money provider. Use: mtn, tel, or tgo' },
         { status: 400 }
       )
     }
