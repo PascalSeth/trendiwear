@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,20 +21,24 @@ interface SystemSetting {
   updatedAt?: string
 }
 
+interface UserProfileSummary {
+  firstName?: string
+  lastName?: string
+  email?: string
+  role?: string
+}
+
 export default function DashboardSettingsPage() {
-  const { data: session } = useSession()
-  const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<SystemSetting[]>([])
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({})
   const [savingKey, setSavingKey] = useState<string | null>(null)
-  const [profileSummary, setProfileSummary] = useState<any>(null)
+  const [profileSummary, setProfileSummary] = useState<UserProfileSummary | null>(null)
 
   useEffect(() => {
     fetchAll()
   }, [])
 
   const fetchAll = async () => {
-    setLoading(true)
     try {
       const [meRes, sysRes] = await Promise.all([fetch('/api/me'), fetch('/api/system-settings')])
       if (meRes.ok) {
@@ -49,14 +52,14 @@ export default function DashboardSettingsPage() {
       if (sysRes.ok) {
         const sys = await sysRes.json()
         setSettings(sys.settings || [])
-        const form: Record<string, string> = {}
+        const form: Record<string, string> = {};
         (sys.settings || []).forEach((s: SystemSetting) => (form[s.key] = s.value))
         setSettingsForm(form)
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to load dashboard settings')
     } finally {
-      setLoading(false)
+      // Loading complete
     }
   }
 
