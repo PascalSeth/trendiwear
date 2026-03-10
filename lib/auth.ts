@@ -2,6 +2,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "./prisma"
+import { HttpError } from './errors'
 import type { Role } from "@prisma/client"
 
 export async function getCurrentUser() {
@@ -157,7 +158,7 @@ export async function getCurrentUser() {
 export async function requireAuth() {
   const user = await getCurrentUser()
   if (!user) {
-    throw new Error("Unauthorized")
+    throw new HttpError("Unauthorized", 401)
   }
   return user
 }
@@ -165,7 +166,7 @@ export async function requireAuth() {
 export async function requireRole(allowedRoles: Role[]) {
   const user = await requireAuth()
   if (!allowedRoles.includes(user.role)) {
-    throw new Error("Forbidden")
+    throw new HttpError("Forbidden", 403)
   }
   return user
 }

@@ -35,7 +35,10 @@ export async function GET() {
     
     return NextResponse.json({
       isSetup: profile.paymentSetupComplete,
+      // masked number for general display
       momoNumber: profile.momoNumber ? `${profile.momoNumber.substring(0, 3)}****${profile.momoNumber.substring(7)}` : null,
+      // raw number from DB so the UI can prefill the input when editing (kept internal)
+      momoNumberRaw: profile.momoNumber || null,
       momoProvider: profile.momoProvider,
       momoProviderName: profile.momoProvider ? getMomoProviderName(profile.momoProvider) : null,
       hasSubaccount: !!profile.paystackSubaccountCode,
@@ -53,8 +56,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { momoNumber, momoProvider } = body
     
+    // Normalize provider to lower-case to accept case-insensitive codes
+    const provider = typeof momoProvider === 'string' ? momoProvider.toLowerCase() : momoProvider
+
     // Validate inputs
-    if (!momoNumber || !momoProvider) {
+    if (!momoNumber || !provider) {
       return NextResponse.json(
         { error: 'Mobile money number and provider are required' },
         { status: 400 }
@@ -63,7 +69,7 @@ export async function POST(request: NextRequest) {
     
     // Validate provider
     const validProviders = Object.values(PAYSTACK_CONFIG.momoProviders)
-    if (!validProviders.includes(momoProvider)) {
+    if (!validProviders.includes(provider)) {
       return NextResponse.json(
         { error: 'Invalid mobile money provider. Use: mtn, tel, or tgo' },
         { status: 400 }
@@ -144,7 +150,7 @@ export async function POST(request: NextRequest) {
       where: { id: profile.id },
       data: {
         momoNumber: formattedPhone,
-        momoProvider,
+        momoProvider: provider,
         paystackSubaccountCode: subaccountCode,
         paymentSetupComplete: true,
       },
@@ -156,8 +162,8 @@ export async function POST(request: NextRequest) {
       data: {
         isSetup: true,
         momoNumber: `${formattedPhone.substring(0, 3)}****${formattedPhone.substring(7)}`,
-        momoProvider,
-        momoProviderName: getMomoProviderName(momoProvider),
+        momoProvider: provider,
+        momoProviderName: getMomoProviderName(provider),
       },
     })
   } catch (error) {

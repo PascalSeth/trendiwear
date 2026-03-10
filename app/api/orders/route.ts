@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 import type { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
 
 // Helper function to calculate effective price with discount
@@ -97,8 +98,9 @@ export async function GET(request: NextRequest) {
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'orders' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 

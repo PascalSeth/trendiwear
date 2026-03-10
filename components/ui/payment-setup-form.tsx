@@ -45,6 +45,9 @@ export function PaymentSetupForm() {
         if (statusRes.ok) {
           const statusData = await statusRes.json()
           setStatus(statusData)
+          // Prefill the provider and number inputs with DB values for a smoother UX
+          if (statusData.momoProvider) setMomoProvider(statusData.momoProvider)
+          if (statusData.momoNumberRaw) setMomoNumber(statusData.momoNumberRaw)
         }
 
         if (providersRes.ok) {

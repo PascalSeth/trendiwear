@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 export async function PUT(
   request: NextRequest,
@@ -42,7 +43,8 @@ export async function PUT(
 
     return NextResponse.json(product)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'products.[id].showcase.PUT' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

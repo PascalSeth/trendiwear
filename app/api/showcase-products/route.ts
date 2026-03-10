@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -130,8 +131,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transformedProducts)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'showcase-products.GET' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -198,8 +200,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(updatedProduct, { status: 201 })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'showcase-products.POST' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -255,7 +258,8 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json(updatedProduct)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'showcase-products.DELETE' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

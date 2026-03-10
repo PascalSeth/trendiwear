@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 import type { Prisma } from "@prisma/client"
 
 // Helper function to calculate effective price with discount
@@ -139,8 +140,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       discountAmount,
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'products.[id].GET' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -192,8 +194,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(product)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'products.[id].PUT' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -217,7 +220,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.product.delete({ where: { id } })
     return NextResponse.json({ message: "Product deleted successfully" })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'products.[id].DELETE' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

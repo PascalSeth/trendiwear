@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, requireRole } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -42,8 +43,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(user)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'users.[id].GET' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -76,8 +78,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(user)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'users.[id].PUT' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -89,7 +92,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.user.delete({ where: { id } })
     return NextResponse.json({ message: "User deleted successfully" })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'users.[id].DELETE' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { mapErrorToResponse } from '@/lib/api-utils'
 import { verifyTransaction, toCedis } from '@/lib/paystack'
 
 // GET: Verify a payment by reference
@@ -185,8 +186,8 @@ export async function GET(request: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('Payment verification error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to verify payment'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'payments.verify' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

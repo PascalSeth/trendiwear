@@ -49,6 +49,7 @@ export default function RegisterProfessionalForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Fetch Logic (Preserved) ---
   useEffect(() => {
@@ -121,6 +122,7 @@ export default function RegisterProfessionalForm() {
   };
 
   const handleSubmit = async () => {
+    setIsSubmitting(true)
     try {
       if (!formData.businessName.trim()) {
         alert('Business name is required');
@@ -175,6 +177,8 @@ export default function RegisterProfessionalForm() {
     } catch (error) {
       console.error('Registration error:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+    } finally {
+      setIsSubmitting(false)
     }
   };
 
@@ -542,9 +546,19 @@ export default function RegisterProfessionalForm() {
                 ) : (
                   <Button
                     onClick={handleSubmit}
+                    disabled={isSubmitting}
                     className="bg-stone-900 text-white hover:bg-stone-800 px-8 py-6 rounded-none font-mono text-sm uppercase tracking-widest transition-colors group"
                   >
-                    Create Profile <Check className="ml-2 w-4 h-4" />
+                    {isSubmitting ? (
+                      <span className="flex items-center">
+                        <span className="inline-block w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Processing…
+                      </span>
+                    ) : (
+                      <>
+                        Create Profile <Check className="ml-2 w-4 h-4" />
+                      </>
+                    )}
                   </Button>
                 )}
               </div>

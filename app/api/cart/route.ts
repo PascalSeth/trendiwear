@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 // Helper function to calculate effective price with discount
 function calculateEffectivePrice(product: {
@@ -98,8 +99,11 @@ export async function GET() {
       },
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'cart.GET' })
+    if (status === 401) {
+      return NextResponse.json({ error: message, toast: 'You must be logged in to view your cart.' }, { status })
+    }
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -199,7 +203,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ item: itemWithDiscount }, { status: 201 })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'cart.POST' })
+    if (status === 401) {
+      return NextResponse.json({ error: message, toast: 'You must be logged in to add items to your cart.' }, { status })
+    }
+    return NextResponse.json({ error: message }, { status })
   }
 }

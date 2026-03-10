@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 // POST - Toggle verification status (Admin only)
 export async function POST(
@@ -66,8 +67,8 @@ export async function POST(
       message: updatedProfile.isVerified ? 'Professional verified successfully' : 'Verification removed'
     })
   } catch (error) {
-    console.error('Error toggling verification:', error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'professional-profiles.[id].verify' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 export async function GET() {
   try {
@@ -36,8 +37,11 @@ export async function GET() {
 
     return NextResponse.json({ items: wishlistItems })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'wishlist.GET' })
+    if (status === 401) {
+      return NextResponse.json({ error: message, toast: 'You must be logged in to view your wishlist.' }, { status })
+    }
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -133,8 +137,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ item: result }, { status: 201 })
   } catch (error) {
-    console.error('Error adding to wishlist:', error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'wishlist.POST' })
+    if (status === 401) {
+      return NextResponse.json({ error: message, toast: 'You must be logged in to add items to your wishlist.' }, { status })
+    }
+    return NextResponse.json({ error: message }, { status })
   }
 }

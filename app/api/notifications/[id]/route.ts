@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 
 export async function GET(
   request: NextRequest,
@@ -20,8 +21,8 @@ export async function GET(
 
     return NextResponse.json(notification)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.[id].GET' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -50,8 +51,8 @@ export async function PUT(
 
     return NextResponse.json(updatedNotification)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.[id].PUT' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -75,7 +76,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Notification deleted" })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.[id].DELETE' })
+    return NextResponse.json({ error: message }, { status })
   }
 }

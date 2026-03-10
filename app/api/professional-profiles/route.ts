@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { createSubaccount, updateSubaccount, validateGhanaPhone, PAYSTACK_CONFIG } from '@/lib/paystack'
+import { createSubaccount, updateSubaccount, validateGhanaPhone, PAYSTACK_CONFIG, listBanks } from '@/lib/paystack'
+import { mapErrorToResponse } from '@/lib/api-utils'
+import type { CreateSubaccountPayload } from '@/lib/paystack'
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -200,9 +202,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(profile)
   } catch (error) {
-    console.error("Error in professional-profiles GET:", error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'professional-profiles.GET' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -318,9 +319,30 @@ export async function POST(request: NextRequest) {
     // If momoNumber and momoProvider were provided as part of the profile
     // creation/update, attempt to create/update a Paystack subaccount
     if (momoNumber && momoProvider) {
-      // Validate provider
+      // Normalize and map provider values (accept different casings and common names)
+      const normalize = (v: string) => v.trim().toLowerCase()
+      const providerMap: Record<string, string> = {
+        mtn: 'mtn',
+        'mtn mobile money': 'mtn',
+        telecel: 'tel',
+        tel: 'tel',
+        vod: 'tel',
+        vodafone: 'tel',
+        'vodafone mobile money': 'tel',
+        tgo: 'tgo',
+        airteltigo: 'tgo',
+        'airtel tigo': 'tgo',
+        'airteltigo money': 'tgo',
+        airtel: 'tgo',
+        tigo: 'tgo',
+      }
+
+      const normalized = normalize(momoProvider)
+      const mappedProvider = providerMap[normalized] || normalized
+
+      // Validate provider against allowed codes
       const validProviders = Object.values(PAYSTACK_CONFIG.momoProviders)
-      if (!validProviders.includes(momoProvider)) {
+      if (!validProviders.includes(mappedProvider)) {
         return NextResponse.json({ error: 'Invalid mobile money provider. Use: mtn, tel, or tgo' }, { status: 400 })
       }
 
@@ -342,9 +364,39 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Professional profile not found after update' }, { status: 500 })
       }
 
-      const subaccountPayload = {
+      // Step 1: fetch Paystack mobile_money banks and resolve bank code
+      type PaystackBank = { code?: string; name?: string; slug?: string; id?: number; active?: boolean }
+      let bankCandidate: PaystackBank | undefined
+      try {
+        const banksRes = await listBanks('ghana', 'mobile_money')
+        const banks: PaystackBank[] = (banksRes.data as PaystackBank[]) || []
+
+        const keywordsMap: Record<string, string[]> = {
+          mtn: ['mtn', 'mtn mobile money'],
+          tel: ['vodafone', 'vod', 'telecel', 'vodafone cash'],
+          tgo: ['airteltigo', 'airtel', 'tigo', 'airteltigo money'],
+        }
+
+        const keywords = keywordsMap[mappedProvider] || [mappedProvider]
+
+        bankCandidate = banks.find((b) => {
+          const name = (b.name || '').toLowerCase()
+          const slug = (b.slug || '').toLowerCase()
+          const code = String(b.code || '').toLowerCase()
+          return keywords.some(k => name.includes(k) || slug.includes(k) || code === k)
+        })
+      } catch (bankErr) {
+        console.warn('Failed to fetch Paystack banks:', bankErr)
+      }
+
+      if (!bankCandidate) {
+        return NextResponse.json({ error: 'Could not resolve Paystack bank code for the selected MoMo provider. Please choose from the provider list.' }, { status: 400 })
+      }
+
+      // Build payload using Paystack settlement_bank (bank code) as per documentation
+      const subaccountPayload: CreateSubaccountPayload = {
         business_name: freshProfile.businessName,
-        settlement_bank: momoProvider,
+        settlement_bank: (bankCandidate?.code || String(bankCandidate?.id || '')).toString(),
         account_number: formattedPhone,
         percentage_charge: PAYSTACK_CONFIG.platformFeePercent,
         description: `TrendiWear seller account for ${freshProfile.businessName}`,
@@ -367,12 +419,12 @@ export async function POST(request: NextRequest) {
           subaccountCode = res.data.subaccount_code
         }
 
-        // Persist payment setup info
+        // Persist payment setup info only after successful Paystack response
         await prisma.professionalProfile.update({
           where: { id: freshProfile.id },
           data: {
             momoNumber: formattedPhone,
-            momoProvider,
+            momoProvider: mappedProvider,
             paystackSubaccountCode: subaccountCode,
             paymentSetupComplete: true,
           },
@@ -385,8 +437,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(profile, { status: existingProfile ? 200 : 201 })
   } catch (error) {
-    console.error("Error in professional-profiles POST:", error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'professional-profiles.POST' })
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 import { createClient } from "@supabase/supabase-js"
 
 // Validate environment variables
@@ -156,9 +157,8 @@ export async function POST(request: NextRequest) {
       success: true
     })
   } catch (error) {
-    console.error("Upload API error:", error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    console.log("Returning error response:", errorMessage)
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'upload.POST' })
+    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
+    return NextResponse.json({ error: message }, { status })
   }
 }

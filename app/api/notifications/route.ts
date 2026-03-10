@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { mapErrorToResponse } from '@/lib/api-utils'
 import type { NotificationType } from "@prisma/client"
 import type { Prisma } from "@prisma/client"
 
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.GET' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(notification, { status: 201 })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.POST' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -90,7 +91,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400 })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+    const { status, message } = mapErrorToResponse(error, { route: 'notifications.PUT' })
+    return NextResponse.json({ error: message }, { status })
   }
 }
