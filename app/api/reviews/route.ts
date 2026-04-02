@@ -95,24 +95,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "You have already reviewed this item" }, { status: 400 })
     }
 
+    let targetOrderId = orderId
     let isVerified = false
-    if (orderId) {
-      const order = await prisma.order.findFirst({
+
+    // ENFORCE PURCHASE VERIFICATION FOR PRODUCTS
+    if (targetType === "PRODUCT") {
+      const purchase = await prisma.order.findFirst({
         where: {
-          id: orderId,
           customerId: user.id,
           status: "DELIVERED",
+          items: {
+            some: { productId: targetId }
+          }
         },
-        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true }
       })
 
-      if (order) {
-        if (targetType === "PRODUCT") {
-          isVerified = order.items.some((item) => item.productId === targetId)
-        } else if (targetType === "PROFESSIONAL") {
-          isVerified = order.items.some((item) => item.professionalId === targetId)
-        }
+      if (!purchase) {
+        return NextResponse.json({ 
+          error: "You must purchase and receive this product before leaving a review." 
+        }, { status: 403 })
       }
+      
+      targetOrderId = purchase.id
+      isVerified = true
     }
 
     const review = await prisma.review.create({
@@ -120,7 +127,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         targetId,
         targetType,
-        orderId,
+        orderId: targetOrderId,
         rating,
         title,
         comment,
@@ -138,6 +145,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // UPDATE RATINGS
     if (targetType === "PROFESSIONAL") {
       const professionalReviews = await prisma.review.findMany({
         where: { targetId, targetType: "PROFESSIONAL" },
@@ -146,10 +154,8 @@ export async function POST(request: NextRequest) {
       const sumOfRatings = professionalReviews.reduce((sum, r) => sum + r.rating, 0)
       const totalReviews = professionalReviews.length
       
-      // Inject the base default seed of 4.0 algorithm
-      const baselineRating = 4.0;
-      const baselineWeight = 1;
-      const avgRating = (baselineRating * baselineWeight + sumOfRatings) / (baselineWeight + totalReviews)
+      // Calculate a true average for more accuracy
+      const avgRating = sumOfRatings / totalReviews
 
       await prisma.professionalProfile.update({
         where: { userId: targetId },
@@ -159,17 +165,21 @@ export async function POST(request: NextRequest) {
         },
       })
     } else if (targetType === "PRODUCT") {
+      // Find the professional ID for this product to update their overall Artisan rating
+      const product = await prisma.product.findUnique({
+        where: { id: targetId },
+        select: { professionalId: true }
+      })
+
       const productReviews = await prisma.review.findMany({
         where: { targetId, targetType: "PRODUCT" },
       })
 
       const sumOfRatings = productReviews.reduce((sum, r) => sum + r.rating, 0)
       const totalReviews = productReviews.length
-      
-      const baselineRating = 4.0;
-      const baselineWeight = 1;
-      const avgRating = (baselineRating * baselineWeight + sumOfRatings) / (baselineWeight + totalReviews)
+      const avgRating = sumOfRatings / totalReviews
 
+      // Update product analytics
       await prisma.productAnalytics.upsert({
         where: { productId: targetId },
         create: {
@@ -179,7 +189,37 @@ export async function POST(request: NextRequest) {
         update: {
           avgRating,
         }
-      }).catch(e => console.error("Could not update missing product analytics", e))
+      })
+
+      // Update the Professional's overall rating too (Arisan Rating)
+      if (product?.professionalId) {
+        // Average of ALL reviews related to this professional (Product + Service + Professional)
+        const allReviews = await prisma.review.findMany({
+          where: { 
+            OR: [
+              { targetId: product.professionalId, targetType: "PROFESSIONAL" },
+              { 
+                targetType: "PRODUCT", 
+                targetId: { in: (await prisma.product.findMany({ 
+                  where: { professionalId: product.professionalId }, 
+                  select: { id: true } 
+                })).map(p => p.id) } 
+              }
+            ]
+          }
+        })
+
+        const totalSum = allReviews.reduce((sum, r) => sum + r.rating, 0)
+        const totalCount = allReviews.length
+        
+        await prisma.professionalProfile.update({
+          where: { userId: product.professionalId },
+          data: {
+            rating: totalSum / totalCount,
+            totalReviews: totalCount
+          }
+        })
+      }
     }
 
     return NextResponse.json(review, { status: 201 })

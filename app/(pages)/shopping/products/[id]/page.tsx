@@ -1,12 +1,15 @@
+// Product Detail Page - Community Edition
 import { prisma } from '@/lib/prisma';
 import ProductClient from './ProductClient';
 import { notFound } from 'next/navigation';
+import { getAuthSession } from '@/lib/auth';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await getAuthSession();
 
-  // Fetch product and reviews in parallel directly from the database
-  const [product, reviews] = await Promise.all([
+  // Fetch product, reviews and user eligibility in parallel
+  const [product, reviews, purchase, hasReviewed] = await Promise.all([
     prisma.product.findUnique({
       where: { id, isActive: true },
       include: {
@@ -26,6 +29,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 rating: true,
                 totalReviews: true,
                 isVerified: true,
+                bio: true,
+                location: true,
               },
             },
           },
@@ -47,6 +52,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       include: {
         user: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             profileImage: true,
@@ -54,15 +60,48 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         },
         replyUser: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             profileImage: true,
           },
         },
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 10,
     }),
+    session?.user?.id ? prisma.order.findFirst({
+      where: {
+        customerId: session.user.id,
+        status: "DELIVERED",
+        items: {
+          some: { productId: id }
+        }
+      },
+      select: { id: true }
+    }) : null,
+    session?.user?.id ? prisma.review.findUnique({
+      where: {
+        userId_targetId_targetType: {
+          userId: session.user.id,
+          targetId: id,
+          targetType: 'PRODUCT'
+        }
+      }
+    }) : null,
   ]);
 
   if (!product) {
@@ -76,5 +115,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const initialData = JSON.parse(JSON.stringify(product));
   const initialReviews = JSON.parse(JSON.stringify(reviews));
 
-  return <ProductClient initialProduct={initialData} initialReviews={initialReviews} />;
+  return (
+    <ProductClient 
+      initialProduct={initialData} 
+      initialReviews={initialReviews}
+      isLoggedIn={!!session?.user}
+      hasPurchased={!!purchase}
+      hasReviewed={!!hasReviewed}
+    />
+  );
+
 }

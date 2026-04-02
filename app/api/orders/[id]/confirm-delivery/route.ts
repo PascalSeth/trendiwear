@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             userId: profId,
             type: 'DELIVERY_ARRIVAL',
             title: 'Delivery Confirmed!',
-            message: `Customer has confirmed receipt of Order #${id.slice(-8).toUpperCase()}. Payout of GHS ${sellerTotal.toFixed(2)} has been initiated.`,
+            message: `Customer has confirmed receipt of Order #${id.slice(-8).toUpperCase()}. Payout of GHS ${sellerTotal.toFixed(2)} has been initiated. Add funds will show in your account in 24 to 48 hours.`,
             data: JSON.stringify({ orderId: id, amount: sellerTotal }),
           },
         })

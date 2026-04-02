@@ -1,8 +1,7 @@
 
-'use client';
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, MapPin, Instagram, Twitter, Linkedin, type LucideIcon } from "lucide-react";
+import { ArrowRight, MapPin, Instagram, Twitter, Linkedin, Facebook, type LucideIcon } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -78,14 +77,23 @@ export default function Footer() {
               <div className="flex items-start gap-3 text-stone-600 hover:text-stone-900 transition-colors cursor-pointer group">
                 <MapPin size={18} className="mt-1 text-stone-400 group-hover:text-red-900 transition-colors" />
                 <span className="text-sm leading-relaxed">
-                  123 Fashion District<br />
-                  New York, NY 10012
+                  Shalom Estate, Shalom Jct Rd,<br />
+                  Adenta Municipality, Ghana
                 </span>
               </div>
-              <div className="flex items-center gap-4">
-                <SocialIcon Icon={Instagram} />
-                <SocialIcon Icon={Twitter} />
-                <SocialIcon Icon={Linkedin} />
+              <div className="flex items-center gap-3">
+                <SocialIcon Icon={Instagram} href="https://www.instagram.com/_trendizip?igsh=MTNlN2t0aTR0cjI5OA==" />
+                <SocialIcon Icon={Twitter} href="https://x.com/TrendiZip" />
+                <SocialIcon Icon={Facebook} href="https://www.facebook.com/share/1HURhta5zP/" />
+                <Link 
+                  href="https://www.tiktok.com/@trendizip_?_r=1&_t=ZS-95CfXvUKWm7" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-full border border-stone-200 text-stone-500 hover:text-red-900 hover:border-stone-900 transition-all duration-300"
+                >
+                   <TikTokIcon />
+                </Link>
+                <SocialIcon Icon={Linkedin} href="https://linkedin.com" />
               </div>
             </div>
           </div>
@@ -116,6 +124,10 @@ export default function Footer() {
               <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
               Systems Operational
             </div>
+            <div className="hidden md:block h-4 w-px bg-stone-200 mx-2"></div>
+            <p className="text-[9px] font-mono text-stone-400 uppercase tracking-[0.3em]">
+              Built by <span className="text-stone-950 font-serif italic font-bold tracking-normal text-[11px] normal-case">Stan Paraclete</span>
+            </p>
           </div>
         </div>
 
@@ -139,7 +151,6 @@ function FooterColumn({ title, links }: { title: string; links: { label: string;
               className="group relative inline-block text-stone-500 hover:text-red-900 transition-colors duration-300 text-sm font-medium"
             >
               {link.label}
-              {/* Navbar-style hover underline */}
               <span className="absolute -bottom-1 left-0 w-full h-[1px] bg-stone-900 transition-transform duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
             </Link>
           </li>
@@ -149,11 +160,34 @@ function FooterColumn({ title, links }: { title: string; links: { label: string;
   );
 }
 
-// Sub-component for Social Icons
-function SocialIcon({ Icon }: { Icon: LucideIcon }) {
+// Custom TikTok Icon SVG
+function TikTokIcon({ size = 16 }: { size?: number }) {
   return (
-    <button className="p-2 rounded-full border border-stone-200 text-stone-500 hover:text-red-900 hover:border-stone-900 transition-all duration-300">
-      <Icon size={16} />
-    </button>
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+    </svg>
   );
 }
+
+// Sub-component for Social Icons
+function SocialIcon({ Icon, href }: { Icon: LucideIcon; href: string }) {
+  return (
+    <Link 
+      href={href} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="p-2 rounded-full border border-stone-200 text-stone-500 hover:text-red-900 hover:border-stone-900 transition-all duration-300"
+    >
+      <Icon size={16} />
+    </Link>
+  );
+}

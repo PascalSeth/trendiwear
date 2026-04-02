@@ -59,6 +59,7 @@ model User {
   searches                   UserSearch[]
   wishlist                   WishlistItem[]
   servicePackages            ServicePackage[]
+  reviewComments             ReviewReply[]
 }
 
 model Address {
@@ -695,8 +696,20 @@ model Review {
   updatedAt    DateTime   @updatedAt
   replyUser    User?      @relation("ReviewReplier", fields: [replyUserId], references: [id])
   user         User       @relation("ReviewAuthor", fields: [userId], references: [id])
+  replies      ReviewReply[]
 
   @@unique([userId, targetId, targetType])
+}
+
+model ReviewReply {
+  id        String   @id @default(uuid())
+  reviewId  String
+  userId    String
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Blog {

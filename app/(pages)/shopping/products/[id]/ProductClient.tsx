@@ -7,8 +7,12 @@ import {
   Clock, BadgeCheck,
   Info,
   Check,
-  Plus, Minus
+  Plus, Minus,
+  Reply,
+  ArrowRight,
+  MapPin
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { WishlistButton } from '@/components/ui/wishlist-button'
 import { AddToCartButton } from '@/components/ui/add-to-cart-button'
 import Link from 'next/link'
@@ -47,6 +51,7 @@ interface Product {
   }
   professional: {
     id: string
+    userId: string
     firstName: string
     lastName: string
     role: string
@@ -57,6 +62,8 @@ interface Product {
       rating: number
       totalReviews: number
       isVerified?: boolean
+      bio?: string
+      location?: string
     }
   }
   _count: {
@@ -73,6 +80,18 @@ interface Product {
   isOnSale?: boolean
   allowPickup: boolean
   allowDelivery: boolean
+}
+
+interface ReviewReply {
+  id: string
+  comment: string
+  createdAt: string
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    profileImage?: string
+  }
 }
 
 interface Review {
@@ -95,16 +114,67 @@ interface Review {
     lastName: string
     profileImage?: string
   }
+  replies: ReviewReply[]
 }
+
+import ProductReviewForm from '@/components/reviews/ProductReviewForm'
 
 interface ProductClientProps {
   initialProduct: Product;
   initialReviews: Review[];
+  isLoggedIn: boolean;
+  hasPurchased: boolean;
+  hasReviewed: boolean;
 }
 
-export default function ProductClient({ initialProduct, initialReviews }: ProductClientProps) {
+export default function ProductClient({ 
+  initialProduct, 
+  initialReviews,
+  isLoggedIn,
+  hasPurchased,
+  hasReviewed
+}: ProductClientProps) {
   const [product] = useState<Product>(initialProduct)
-  const [reviews] = useState<Review[]>(initialReviews)
+  const [reviews, setReviews] = useState<Review[]>(initialReviews)
+  const [userHasReviewed, setUserHasReviewed] = useState(hasReviewed)
+  
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState('')
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+
+  const handleReplySubmit = async (reviewId: string) => {
+    if (!replyContent.trim()) return
+    if (!isLoggedIn) {
+      toast.error('Please sign in to reply.')
+      return
+    }
+
+    setIsSubmittingReply(true)
+    try {
+      const res = await fetch('/api/reviews/replies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, comment: replyContent })
+      })
+      const newReply = await res.json()
+      if (res.ok) {
+        setReviews(prev => prev.map(rev => 
+          rev.id === reviewId 
+            ? { ...rev, replies: [...rev.replies, newReply] } 
+            : rev
+        ))
+        setReplyContent('')
+        setReplyingTo(null)
+        toast.success('Reply shared!')
+      } else {
+        toast.error('Failed to post reply')
+      }
+    } catch (error) {
+      toast.error('Something went wrong')
+    } finally {
+      setIsSubmittingReply(false)
+    }
+  }
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [quantity, setQuantity] = useState(1)
@@ -112,6 +182,11 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const AUTO_PLAY_INTERVAL = 5000 
   const containerRef = useRef<HTMLDivElement>(null)
+  const reviewsRef = useRef<HTMLDivElement>(null)
+
+  const scrollToReviews = () => {
+    reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     if (!product || !isAutoPlaying || product.images.length <= 1) return
@@ -148,9 +223,9 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
   return (
     <div className="relative bg-white text-[#111111] font-sans selection:bg-black selection:text-white pt-24" ref={containerRef}>
       
-      <div className="max-w-7xl mx-auto lg:flex">
+      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 px-4 md:px-8 lg:px-12 pb-24 border-b border-stone-100">
          
-         <div className="w-full lg:w-[60%] h-[70vh] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-24 bg-[#F2F2F2] rounded-[2.5rem] overflow-hidden relative group shadow-xl">
+         <div className="lg:col-span-7 h-[65vh] lg:h-[min(80vh,850px)] lg:sticky lg:top-32 bg-[#F2F2F2] rounded-[2rem] overflow-hidden relative group shadow-2xl ring-1 ring-black/5">
             <AnimatePresence mode="wait">
                <motion.div 
                  key={activeImage}
@@ -180,7 +255,7 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
                        <div className="w-8 h-[1px] bg-white/20" />
                        Code: {product.id.slice(0, 8)}
                      </div>
-                     <h1 className="text-6xl sm:text-7xl font-serif italic text-white tracking-tighter drop-shadow-lg">
+                     <h1 className="text-4xl sm:text-5xl font-serif italic text-white tracking-tighter drop-shadow-lg">
                         {product.name}
                      </h1>
                   </div>
@@ -216,7 +291,7 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
             </div>
          </div>
 
-         <div className="w-full lg:w-[40%] px-8 lg:px-20 py-20 lg:py-32 space-y-24">
+         <div className="lg:col-span-5 py-8 lg:py-12 space-y-16">
             
             <div className="space-y-12">
                <div className="flex items-center justify-between">
@@ -235,6 +310,23 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
                   <div className="flex items-end gap-4 mt-2">
                      <p className="text-4xl font-serif italic">GH₵ {product.price}</p>
                      <span className="text-xs font-mono text-neutral-400 pb-1">Price includes VAT</span>
+                  </div>
+
+                  {/* Rating Summary added for visibility */}
+                  <div className="flex items-center gap-6 mt-4">
+                     <div className="flex items-center gap-1 group cursor-pointer" onClick={scrollToReviews}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                           <Star 
+                             key={s} 
+                             size={12} 
+                             fill={s <= (product.professional.professionalProfile?.rating || 5) ? "currentColor" : "none"} 
+                             className={cn(s <= (product.professional.professionalProfile?.rating || 5) ? "text-amber-500" : "text-stone-200")} 
+                           />
+                        ))}
+                        <span className="text-[10px] font-black uppercase tracking-widest ml-2 border-b border-black/10 group-hover:border-black transition-all">
+                           {reviews.length} Buyer Tales
+                        </span>
+                     </div>
                   </div>
                   {product.isPreorder && product.estimatedDelivery && (
                     <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3">
@@ -350,66 +442,22 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
                </div>
             </div>
 
-            {product.professional?.professionalProfile && (
-              <div className="relative p-12 bg-[#FAFAF9] rounded-[3.5rem] space-y-12 overflow-hidden ring-1 ring-stone-900/5">
-                 <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
-                    {product.professional.professionalProfile.businessImage && (
-                      <div className="relative h-24 w-24 rounded-[2rem] overflow-hidden shadow-2xl ring-8 ring-white">
-                         <Image src={product.professional.professionalProfile.businessImage} alt="Seller" fill className="object-cover" />
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                       <p className="text-[8px] font-black text-red-950 uppercase tracking-widest font-mono">Verified Artisan</p>
-                       <h4 className="text-3xl font-serif italic">{product.professional.professionalProfile.businessName}</h4>
-                       <div className="flex items-center gap-2 justify-center sm:justify-start">
-                          <Star size={12} fill="currentColor" className="text-amber-500" />
-                          <span className="text-xs font-black uppercase tracking-widest">{product.professional.professionalProfile.rating || "5.0"} Stars</span>
-                       </div>
-                    </div>
-                 </div>
-                 <Link href={`/tz/${getProfileSlug()}`} className="block w-full h-16 bg-stone-950 text-white rounded-[2rem] text-[10px] font-mono uppercase tracking-widest hover:bg-black transition-all text-center leading-[64px]">
-                    Enter Atelier
-                 </Link>
-              </div>
-            )}
 
-            {reviews.length > 0 && (
-              <div className="space-y-20 border-t border-stone-100 pt-20">
-                 <h3 className="text-5xl font-serif italic tracking-tighter">Buyer Tales</h3>
-                 <div className="space-y-16">
-                    {reviews.map(r => (
-                       <motion.div key={r.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="space-y-6 border-b border-stone-50 pb-16 last:border-0">
-                          <div className="flex items-center justify-between">
-                             <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center font-mono text-[10px] text-stone-500 uppercase">
-                                   {r.user.firstName[0]}
-                                </div>
-                                <p className="text-[10px] font-mono uppercase tracking-wider text-stone-400">{r.user.firstName} {r.user.lastName.slice(0, 1)}.</p>
-                             </div>
-                             <div className="text-amber-500 text-[10px] italic font-mono font-bold tracking-widest">
-                                ★ {r.rating} / Verified
-                             </div>
-                          </div>
-                          <p className="text-xl font-serif italic text-stone-700 leading-relaxed max-w-lg">
-                             &ldquo;{r.comment}&rdquo;
-                          </p>
-                       </motion.div>
-                    ))}
-                 </div>
-              </div>
-            )}
          </div>
       </div>
 
+      {/* 1. In Motion - Video Showcase */}
       {product.videoUrl && (
-         <div className="w-full bg-white mt-12 py-20 border-t border-stone-100 text-center">
-            <div className="max-w-7xl mx-auto px-8 lg:px-20 flex flex-col items-center gap-10">
-                 
+         <div className="w-full bg-[#FAFAF9] py-16 md:py-24 border-b border-stone-100 text-center relative overflow-hidden">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 flex flex-col items-center gap-8 relative z-10">
                  <div className="space-y-4 max-w-2xl mx-auto">
-                     <h3 className="text-4xl md:text-5xl font-serif italic tracking-tighter text-stone-800">In Motion</h3>
+                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400 font-mono">The Showcase</p>
+                     <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-stone-900">In Motion</h3>
                  </div>
-                 
-                 <div className="w-full max-w-3xl aspect-[3/4] md:aspect-video rounded-3xl overflow-hidden shadow-sm ring-1 ring-stone-900/5 bg-[#F2F2F2]">
+                 <motion.div 
+                    initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
+                    className="w-full max-w-[900px] aspect-video rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-stone-900/10 bg-[#E8E8E8]"
+                 >
                     <video 
                        src={product.videoUrl} 
                        autoPlay 
@@ -417,13 +465,207 @@ export default function ProductClient({ initialProduct, initialReviews }: Produc
                        muted 
                        controls
                        playsInline 
-                       className="w-full h-full object-contain md:object-cover" 
+                       className="w-full h-full object-cover transition-transform hover:scale-105 duration-1000" 
                     />
-                 </div>
-                 
+                 </motion.div>
             </div>
          </div>
       )}
+
+      {/* 2. Sleek Artisan / Designer Banner */}
+      {product.professional?.professionalProfile && (
+         <section className="w-full py-16 md:py-24 bg-white border-b border-stone-100 relative">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+               <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="lg:col-span-5 relative group">
+                  <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-lg ring-1 ring-black/5">
+                     {product.professional.professionalProfile?.businessImage ? (
+                        <Image 
+                           src={product.professional.professionalProfile.businessImage} 
+                           alt="Atelier" 
+                           fill 
+                           className="object-cover grayscale hover:grayscale-0 transition-all duration-700 hover:scale-105" 
+                        />
+                     ) : (
+                        <div className="w-full h-full bg-stone-50 flex items-center justify-center text-stone-300 italic serif text-2xl">Atelier</div>
+                     )}
+                  </div>
+               </motion.div>
+
+               <div className="lg:col-span-7 space-y-8">
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-red-900/40 font-mono">Designed By</p>
+                     <h3 className="text-4xl md:text-5xl font-serif italic tracking-tighter text-stone-900">
+                        {product.professional.professionalProfile?.businessName}
+                     </h3>
+                  </div>
+                  <p className="text-lg md:text-xl font-serif text-stone-600 leading-relaxed italic border-l-2 border-stone-100 pl-6 max-w-2xl">
+                     &ldquo;{product.professional.professionalProfile?.bio || "Every piece tells a story of heritage, precision, and the pursuit of timeless elegance."}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-8 pt-4">
+                     <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400">Provenance</p>
+                        <div className="flex items-center gap-1.5 text-stone-950 font-mono text-xs uppercase tracking-widest mt-1">
+                           <MapPin size={12} className="text-red-900" />
+                           {product.professional.professionalProfile?.location || "Accra"}
+                        </div>
+                     </div>
+                     <div className="h-8 w-px bg-stone-200" />
+                     <Link 
+                        href={`/tz/${product.professional.professionalProfile?.slug}`} 
+                        className="group inline-flex h-12 px-8 bg-stone-950 text-white rounded-full items-center justify-center transition-all hover:bg-black hover:scale-[1.02] active:scale-95 shadow-lg shadow-stone-900/10"
+                     >
+                        <span className="text-[10px] font-black uppercase tracking-widest">Visit Atelier</span>
+                        <ArrowRight size={14} className="ml-3 group-hover:translate-x-1 transition-transform" />
+                     </Link>
+                  </div>
+               </div>
+            </div>
+         </section>
+      )}
+
+      {/* 3. Review Section (Last) */}
+      <div className="w-full bg-[#FAFAF9] py-20 md:py-28" ref={reviewsRef}>
+         <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-12 gap-16">
+            <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-32 h-fit">
+               <ProductReviewForm 
+                 productId={product.id}
+                 isLoggedIn={isLoggedIn}
+                 hasPurchased={hasPurchased}
+                 hasReviewed={userHasReviewed}
+                 onSuccess={async () => {
+                    const res = await fetch(`/api/reviews?targetId=${product.id}&targetType=PRODUCT`)
+                    const data = await res.json()
+                    if (res.ok) {
+                       setReviews(data.reviews)
+                       setUserHasReviewed(true)
+                    }
+                 }}
+               />
+               <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 px-6 border-l border-stone-200">
+                  Sharing your experience helps artisans improve and helps buyers decide.
+               </p>
+            </div>
+            
+            <div className="lg:col-span-8 space-y-12">
+               <div className="flex items-end justify-between border-b border-stone-200 pb-6">
+                  <h3 className="text-4xl font-serif italic tracking-tighter">Buyer Tales</h3>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-500">{reviews.length} Experiences</span>
+                  </div>
+               </div>
+               
+               <div className="space-y-8">
+                  {reviews.length > 0 ? (
+                    reviews.map(r => (
+                       <motion.div key={r.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="space-y-5 border-b border-stone-100 pb-10 last:border-0">
+                          <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[10px] text-stone-400 uppercase shadow-sm">
+                                   {r.user.firstName[0]}{r.user.lastName[0]}
+                                </div>
+                                <div>
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-900">{r.user.firstName} {r.user.lastName.slice(0, 1)}.</p>
+                                   <p className="text-[8px] font-mono uppercase tracking-widest text-stone-400">
+                                      {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                   </p>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-2 text-[9px] font-bold tracking-widest uppercase">
+                                <div className="flex items-center gap-0.5">
+                                   {[1, 2, 3, 4, 5].map((s) => (
+                                      <Star key={s} size={10} fill={s <= r.rating ? "currentColor" : "none"} className={s <= r.rating ? "text-amber-500" : "text-stone-200"} />
+                                   ))}
+                                </div>
+                                {r.isVerified && <span className="text-[8px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/50">Verified</span>}
+                             </div>
+                          </div>
+                          <p className="text-lg font-serif italic text-stone-700 leading-relaxed max-w-2xl">
+                             &ldquo;{r.comment}&rdquo;
+                          </p>
+
+                          <div className="flex items-center gap-6 pt-2">
+                             <button
+                               onClick={() => setReplyingTo(replyingTo === r.id ? null : r.id)}
+                               className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-stone-400 hover:text-stone-950 transition-colors"
+                             >
+                                <Reply size={12} />
+                                {replyingTo === r.id ? 'Cancel' : 'Reply'}
+                             </button>
+                          </div>
+
+                          <div className="space-y-4 mt-4">
+                             <AnimatePresence>
+                                {replyingTo === r.id && (
+                                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="ml-6 lg:ml-12 overflow-hidden">
+                                      <div className="flex flex-col gap-4 p-5 bg-white rounded-2xl border border-stone-200 shadow-sm">
+                                         <textarea
+                                            value={replyContent}
+                                            onChange={(e) => setReplyContent(e.target.value)}
+                                            placeholder="Join the conversation..."
+                                            className="w-full bg-transparent border-none p-0 text-sm font-serif italic text-stone-700 focus:ring-0 resize-none min-h-[60px]"
+                                         />
+                                         <div className="flex justify-end gap-3">
+                                            <button
+                                               onClick={() => setReplyingTo(null)}
+                                               className="px-4 py-1.5 text-[9px] font-black uppercase tracking-widest text-stone-400 hover:text-stone-600"
+                                            >
+                                               Discard
+                                            </button>
+                                            <button
+                                               disabled={isSubmittingReply || !replyContent.trim()}
+                                               onClick={() => handleReplySubmit(r.id)}
+                                               className="px-6 py-2 bg-stone-950 text-white text-[9px] font-black uppercase tracking-widest rounded-full hover:bg-black transition-all disabled:opacity-30"
+                                            >
+                                               {isSubmittingReply ? 'Posting...' : 'Share Reply'}
+                                            </button>
+                                         </div>
+                                      </div>
+                                   </motion.div>
+                                )}
+                             </AnimatePresence>
+
+                             {r.replies?.map(reply => {
+                                const isSeller = reply.user.id === product.professional.id;
+                                return (
+                                   <motion.div key={reply.id} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="ml-6 lg:ml-12 p-5 bg-stone-50/50 rounded-2xl border-l border-stone-200 space-y-3">
+                                      <div className="flex items-center justify-between">
+                                         <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[9px] text-stone-400 uppercase shadow-sm">
+                                               {reply.user.firstName[0]}{reply.user.lastName[0]}
+                                            </div>
+                                            <div>
+                                               <div className="flex items-center gap-2">
+                                                  <p className="text-[10px] font-black uppercase tracking-widest text-stone-900">{reply.user.firstName} {reply.user.lastName.slice(0, 1)}.</p>
+                                                  {isSeller && (
+                                                     <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/50">Seller</span>
+                                                  )}
+                                               </div>
+                                               <p className="text-[8px] font-mono uppercase tracking-widest text-stone-400">
+                                                  {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                               </p>
+                                            </div>
+                                         </div>
+                                      </div>
+                                      <p className="text-[15px] font-serif italic text-stone-600 leading-relaxed">
+                                         &ldquo;{reply.comment}&rdquo;
+                                      </p>
+                                   </motion.div>
+                                )
+                             })}
+                          </div>
+                       </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-16 text-center space-y-3 bg-white rounded-[2rem] border border-stone-100 shadow-sm">
+                      <p className="text-stone-300 text-4xl font-serif italic">No tales yet...</p>
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Be the first to share your experience with this piece.</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      </div>
+
     </div>
   )
 }
