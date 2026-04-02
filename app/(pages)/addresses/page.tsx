@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Edit2, Trash2, Home, Building2, Check, X, Plus, ChevronRight } from 'lucide-react'
+import AddressAutocomplete, { AddressResult } from '@/app/components/AddressAutocomplete'
 
 interface Address {
   id: string
@@ -14,6 +16,8 @@ interface Address {
   state: string
   zipCode: string
   country: string
+  latitude?: number
+  longitude?: number
   isDefault: boolean
 }
 
@@ -30,6 +34,8 @@ const EMPTY_FORM = {
   state: '',
   zipCode: '',
   country: 'Kenya',
+  latitude: null as number | null,
+  longitude: null as number | null,
   isDefault: false,
 }
 
@@ -142,6 +148,8 @@ function AddressForm({
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [])
 
+// Geolocation handled by AddressAutocomplete component
+
   const set = (key: keyof typeof form) => (val: string | boolean) =>
     setForm((f) => ({ ...f, [key]: val }))
 
@@ -179,7 +187,25 @@ function AddressForm({
           <Field label="Last name" id="ln" value={form.lastName} onChange={set('lastName')} required placeholder="Doe" />
         </div>
 
-        <Field label="Street address" id="st" value={form.street} onChange={set('street')} required placeholder="123 Moi Avenue" />
+        <div className="field-group">
+          <label className="field-label">Street address</label>
+          <AddressAutocomplete
+            value={form.street}
+            onChange={set('street')}
+            onAddressSelect={(res: AddressResult) => {
+              setForm(f => ({
+                ...f,
+                street: res.street,
+                city: res.city || f.city,
+                state: res.state || f.state,
+                zipCode: res.zipCode || f.zipCode,
+                country: res.country || f.country,
+                latitude: res.latitude,
+                longitude: res.longitude
+              }))
+            }}
+          />
+        </div>
 
         <div className="form-grid two-col">
           <Field label="City" id="ci" value={form.city} onChange={set('city')} required placeholder="Nairobi" />
@@ -190,6 +216,19 @@ function AddressForm({
           <Field label="ZIP / Postal code" id="zp" value={form.zipCode} onChange={set('zipCode')} required placeholder="00100" />
           <Field label="Country" id="co" value={form.country} onChange={set('country')} required placeholder="Kenya" />
         </div>
+
+        <AnimatePresence>
+          {form.latitude !== null && form.longitude !== null && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-2 flex items-center gap-2 text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100"
+            >
+              <Check size={12} />
+              GPS Locked: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <label className="default-check">
           <Checkbox
@@ -274,6 +313,8 @@ export default function AddressesPage() {
         state: editingAddress.state,
         zipCode: editingAddress.zipCode,
         country: editingAddress.country,
+        latitude: editingAddress.latitude || null,
+        longitude: editingAddress.longitude || null,
         isDefault: editingAddress.isDefault,
       }
     : EMPTY_FORM
@@ -312,6 +353,55 @@ export default function AddressesPage() {
           line-height: 1;
           color: #1a1612;
         }
+        
+        /* ── Location Box ── */
+        .location-box {
+          background: #f7f3ef;
+          border: 1.5px solid #e2d9cc;
+          border-radius: 6px;
+          padding: 12px;
+          margin-bottom: 16px;
+        }
+        .location-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        .location-label {
+          font-size: 0.68rem;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          color: #7a6f62;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .location-label .text-active { color: #8b7355; }
+        .detect-btn {
+          background: #1a1612;
+          color: #f5f0ea;
+          border: none;
+          border-radius: 4px;
+          padding: 5px 10px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.7rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .detect-btn:hover { background: #3b2f24; }
+        .detect-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .location-status {
+          font-size: 0.72rem;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .location-status.success { color: #5a7a5a; font-weight: 500; }
+        .location-status.hint { color: #9c8a76; font-style: italic; }
+
         .header-left p {
           font-size: 0.82rem;
           color: #7a6f62;

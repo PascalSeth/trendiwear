@@ -9,7 +9,7 @@ export async function GET() {
     const user = await requireAuth()
 
     const addresses = await prisma.address.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, isDeleted: false },
       orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
     })
 
@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
       state,
       zipCode,
       country = "Kenya",
+      latitude,
+      longitude,
       isDefault = false,
     }: {
       type: AddressType
@@ -45,6 +47,8 @@ export async function POST(request: NextRequest) {
       state: string
       zipCode: string
       country?: string
+      latitude?: number
+      longitude?: number
       isDefault?: boolean
     } = body
 
@@ -67,6 +71,8 @@ export async function POST(request: NextRequest) {
         state,
         zipCode,
         country,
+        latitude,
+        longitude,
         isDefault,
       },
     })

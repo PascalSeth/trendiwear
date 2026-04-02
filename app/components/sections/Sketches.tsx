@@ -1,11 +1,13 @@
 'use client'
 import React from 'react';
+import Image from 'next/image';
 
 type ClothingItem = {
   id: number;
   name: string;
   imageUrl: string;
   price: number;
+  currency: string;
   isNew: boolean;
   sellerName: string;
   sellerProfilePicUrl: string;
@@ -17,6 +19,7 @@ const newArrivals: ClothingItem[] = [
     name: 'Long Sleeve Sweater, Cream and Black Stripe',
     imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
     price: 72.00,
+    currency: 'GHS',
     isNew: true,
     sellerName: 'Sophia Turner',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -26,6 +29,7 @@ const newArrivals: ClothingItem[] = [
     name: 'Tatum Turtleneck, Olive',
     imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
     price: 54.00,
+    currency: 'GHS',
     isNew: true,
     sellerName: 'Emma Brown',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/45.jpg',
@@ -35,6 +39,7 @@ const newArrivals: ClothingItem[] = [
     name: 'Sabrina Ribbed Pullover, Dusty Rose',
     imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
     price: 54.00,
+    currency: 'GHS',
     isNew: true,
     sellerName: 'Olivia White',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/46.jpg',
@@ -44,6 +49,7 @@ const newArrivals: ClothingItem[] = [
     name: 'Sabrina Ribbed Turtleneck, White',
     imageUrl: 'https://images.unsplash.com/photo-1600328784656-83c7bc673061?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2xvdGhpbmclMjBtb2RlbHxlbnwwfHwwfHx8MA%3D%3D',
     price: 54.00,
+    currency: 'GHS',
     isNew: true,
     sellerName: 'Amelia Johnson',
     sellerProfilePicUrl: 'https://randomuser.me/api/portraits/women/47.jpg',
@@ -72,20 +78,28 @@ function Sketches() {
                   NEW
                 </span>
               )}
-              <img
-                src={item.imageUrl}
-                alt={item.name}
-                className="w-full h-80 object-cover rounded-t-xl"
-              />
+              <div className="relative w-full h-80">
+                <Image
+                  src={item.imageUrl}
+                  alt={item.name}
+                  fill
+                  className="object-cover rounded-t-xl"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+              </div>
 
               {/* Seller Information Overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-transparent to-transparent">
                 <div className="flex items-center">
-                  <img
-                    src={item.sellerProfilePicUrl}
-                    alt={item.sellerName}
-                    className="w-12 h-12 rounded-full border-2 border-white mr-3"
-                  />
+                  <div className="relative w-12 h-12 rounded-full border-2 border-white mr-3 overflow-hidden">
+                    <Image
+                      src={item.sellerProfilePicUrl}
+                      alt={item.sellerName}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </div>
                   <div>
                     <p className="text-white text-sm font-medium">{item.sellerName}</p>
                     <p className="text-xs text-gray-300">Verified Seller</p>
@@ -97,7 +111,7 @@ function Sketches() {
             {/* Product Information */}
             <div className="p-3 ">
               <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600">{item.name}</h3>
-              <p className="text-lg font-medium text-gray-600 mt-2">${item.price.toFixed(2)}</p>
+              <p className="text-lg font-medium text-gray-600 mt-2">{item.currency} {item.price.toFixed(2)}</p>
             </div>
           </div>
         ))}

@@ -12,11 +12,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign, Zap } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
 import ServiceSheet, { type Service } from "@/app/dashboard/components/sheet/Service/ServiceSheet";
+import { VariantSheet } from "@/app/components/services/VariantSheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,8 @@ type ServiceCategory = {
 
 const getColumns = (
   setData: React.Dispatch<React.SetStateAction<Service[]>>,
-  setEditingService: React.Dispatch<React.SetStateAction<Service | null>>
+  setEditingService: React.Dispatch<React.SetStateAction<Service | null>>,
+  setVariantsService: React.Dispatch<React.SetStateAction<Service | null>>
 ): ColumnDef<Service>[] => [
   {
     id: "select",
@@ -90,7 +92,7 @@ const getColumns = (
     cell: ({ row }) => (
       <div className="font-medium flex items-center">
         <DollarSign className="w-4 h-4 mr-1" />
-        {row.getValue("price")}
+        GHS {row.getValue("price")}
       </div>
     ),
   },
@@ -103,6 +105,19 @@ const getColumns = (
         {row.getValue("duration")} min
       </div>
     ),
+  },
+  {
+    id: "variants",
+    header: "Variants",
+    cell: ({ row }) => {
+      const variants = row.original.variants || [];
+      return (
+        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+          <Zap className="w-3 h-3" />
+          {variants.length} tier{variants.length !== 1 ? 's' : ''}
+        </Badge>
+      );
+    },
   },
   {
     id: "serviceType",
@@ -159,7 +174,6 @@ const getColumns = (
             throw new Error(error.error || "Failed to delete service");
           }
 
-          // Remove from local state
           setData((prev: Service[]) => prev.filter((s: Service) => s.id !== service.id));
         } catch (error) {
           console.error("Error deleting service:", error);
@@ -185,6 +199,10 @@ const getColumns = (
               <Edit className="mr-2 h-4 w-4" />
               Edit Service
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setVariantsService(service)}>
+              <Zap className="mr-2 h-4 w-4" />
+              Manage Variants
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleDelete}
@@ -200,6 +218,7 @@ const getColumns = (
   },
 ];
 
+
 type ServicesDataTableProps = {
   initialData?: Service[];
 };
@@ -209,12 +228,12 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(!initialData);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [variantsService, setVariantsService] = useState<Service | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  // Fetch services and categories data
   useEffect(() => {
     if (!initialData) {
       fetchServices();
@@ -225,7 +244,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/services?page=1&limit=50');
+      const response = await fetch('/api/services?page=1&limit=50&dashboard=true');
       if (response.ok) {
         const result = await response.json();
         setData(result.services || []);
@@ -249,7 +268,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
     }
   };
 
-  const columns = getColumns(setData, setEditingService);
+  const columns = getColumns(setData, setEditingService, setVariantsService);
 
   const table = useReactTable({
     data,
@@ -492,6 +511,21 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
           </Button>
         </div>
       </div>
+
+      {/* Variant Management Sheet */}
+      {variantsService && (
+        <VariantSheet
+          isOpen={!!variantsService}
+          serviceId={variantsService.id}
+          serviceName={variantsService.name}
+          existingVariants={variantsService.variants || []}
+          onClose={() => setVariantsService(null)}
+          onSuccess={() => {
+            // Refresh the service data
+            fetchServices();
+          }}
+        />
+      )}
     </div>
   );
 }

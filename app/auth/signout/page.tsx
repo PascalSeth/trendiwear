@@ -9,7 +9,7 @@ export default function SignOut() {
 
   useEffect(() => {
     const handleSignOut = async () => {
-      await signOut({ callbackUrl: '/' })
+      await signOut({ callbackUrl: '/auth/signin' })
     }
 
     handleSignOut()

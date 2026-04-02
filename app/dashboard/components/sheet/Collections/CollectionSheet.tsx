@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -379,11 +380,12 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
           <div className="space-y-2">
             <Label>Collection Image</Label>
             {imagePreview ? (
-              <div className="relative">
-                <img
+              <div className="relative h-32 w-full overflow-hidden rounded-lg border">
+                <Image
                   src={imagePreview}
                   alt="Collection preview"
-                  className="w-full h-32 object-cover rounded-lg border"
+                  fill
+                  className="object-cover"
                 />
                 <Button
                   type="button"

@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Save, Settings, User } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Save, Settings, User, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
 
@@ -33,6 +34,8 @@ export default function DashboardSettingsPage() {
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({})
   const [savingKey, setSavingKey] = useState<string | null>(null)
   const [profileSummary, setProfileSummary] = useState<UserProfileSummary | null>(null)
+  const [superAdminRequireSubscription, setSuperAdminRequireSubscription] = useState(false)
+  const [savingSubscription, setSavingSubscription] = useState(false)
 
   useEffect(() => {
     fetchAll()
@@ -53,7 +56,13 @@ export default function DashboardSettingsPage() {
         const sys = await sysRes.json()
         setSettings(sys.settings || [])
         const form: Record<string, string> = {};
-        (sys.settings || []).forEach((s: SystemSetting) => (form[s.key] = s.value))
+        (sys.settings || []).forEach((s: SystemSetting) => {
+          form[s.key] = s.value
+          // Load the super admin subscription requirement setting
+          if (s.key === 'superAdminRequireSubscription') {
+            setSuperAdminRequireSubscription(s.value === 'true')
+          }
+        })
         setSettingsForm(form)
       }
     } catch {
@@ -81,6 +90,29 @@ export default function DashboardSettingsPage() {
     }
   }
 
+  const handleSuperAdminSubscriptionToggle = async (value: boolean) => {
+    setSavingSubscription(true)
+    try {
+      const res = await fetch('/api/system-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'superAdminRequireSubscription',
+          value: value.toString(),
+          description: 'Whether super admin users need an active subscription to access dashboard features',
+          category: 'subscription'
+        }),
+      })
+      if (!res.ok) throw new Error('failed')
+      setSuperAdminRequireSubscription(value)
+      toast.success(value ? 'Super admins now require subscription' : 'Super admins no longer require subscription')
+    } catch {
+      toast.error('Failed to update subscription requirement')
+    } finally {
+      setSavingSubscription(false)
+    }
+  }
+
   const settingsByCategory = settings.reduce((acc: Record<string, SystemSetting[]>, s) => {
     acc[s.category] = acc[s.category] || []
     acc[s.category].push(s)
@@ -88,7 +120,7 @@ export default function DashboardSettingsPage() {
   }, {})
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard Settings</h1>
@@ -105,6 +137,9 @@ export default function DashboardSettingsPage() {
         <TabsList>
           <TabsTrigger value="account" className="flex items-center gap-2"><User className="h-4 w-4"/>Account</TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2"><Settings className="h-4 w-4"/>Platform</TabsTrigger>
+          {profileSummary?.role === 'SUPER_ADMIN' && (
+            <TabsTrigger value="subscription" className="flex items-center gap-2"><Lock className="h-4 w-4"/>Subscriptions</TabsTrigger>
+          )}
           {/* Payments tab mirrors /settings payments (MoMo setup) */}
           <TabsTrigger value="payments" className="flex items-center gap-2"><User className="h-4 w-4"/>Payments</TabsTrigger>
         </TabsList>
@@ -174,6 +209,48 @@ export default function DashboardSettingsPage() {
         <TabsContent value="payments">
           <PaymentSetupForm />
         </TabsContent>
+
+        {/* Subscription settings - only for super admin */}
+        {profileSummary?.role === 'SUPER_ADMIN' && (
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Requirements</CardTitle>
+                <CardDescription>Configure subscription settings for your platform</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="border rounded-lg p-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-base font-medium">Require Subscription for Super Admins</Label>
+                        <p className="text-sm text-muted-foreground">
+                          When disabled, super admins will have full access without subscription requirements
+                        </p>
+                      </div>
+                      <Switch
+                        checked={superAdminRequireSubscription}
+                        onCheckedChange={handleSuperAdminSubscriptionToggle}
+                        disabled={savingSubscription}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
+                    <p className="font-medium mb-1">Current Status:</p>
+                    <p>
+                      Super admins are currently <strong>{superAdminRequireSubscription ? 'required' : 'not required'}</strong> to have an active subscription to access dashboard features.
+                    </p>
+                  </div>
+
+                  {savingSubscription && (
+                    <div className="text-sm text-muted-foreground">Saving...</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

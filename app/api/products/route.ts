@@ -171,6 +171,7 @@ export async function GET(request: NextRequest) {
                   totalReviews: true,
                   isVerified: true,
                   momoNumber: true,
+                  slug: true,
                 },
               },
             },
@@ -190,55 +191,59 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where: effectiveWhere }),
     ])
 
-    // If you need review counts, you'll need to fetch them separately
-    // since there's no direct relation in your schema
-    const productsWithReviewCounts = await Promise.all(
-      products.map(async (product) => {
-        // Get reviews for the product to calculate average rating
-        const reviews = await prisma.review.findMany({
-          where: {
-            targetId: product.id,
-            targetType: "PRODUCT",
-          },
-          select: { rating: true },
-        })
-        
-        const reviewCount = reviews.length
-        const avgRating = reviewCount > 0 
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount 
-          : 0
+    // OPTIMIZATION: Batch fetch reviews for all products in ONE query instead of per-product waterfalls
+    const productIds = products.map(p => p.id)
+    const allReviews = await prisma.review.findMany({
+      where: {
+        targetId: { in: productIds },
+        targetType: "PRODUCT",
+      },
+      select: { targetId: true, rating: true },
+    })
 
-        // Calculate effective price with discount
-        const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
+    // Group reviews by product ID for constant-time lookup
+    const reviewMap = allReviews.reduce((acc, rev) => {
+      if (!acc[rev.targetId]) acc[rev.targetId] = { count: 0, sum: 0 }
+      acc[rev.targetId].count++
+      acc[rev.targetId].sum += rev.rating
+      return acc
+    }, {} as Record<string, { count: number; sum: number }>)
 
-        // For SUPER_ADMIN created products, show TrendiZip as the business
-        const professional = product.professional.role === 'SUPER_ADMIN'
-          ? {
-              ...product.professional,
-              professionalProfile: {
-                businessName: 'TrendiZip',
-                businessImage: '/logo3d.jpg',
-                rating: 5,
-                totalReviews: 0,
-                isVerified: true,
-              },
-            }
-          : product.professional
+    const productsWithReviewCounts = products.map((product) => {
+      const stats = reviewMap[product.id] || { count: 0, sum: 0 }
+      const reviewCount = stats.count
+      const avgRating = reviewCount > 0 ? stats.sum / reviewCount : 0
 
-        return {
-          ...product,
-          professional,
-          avgRating,
-          effectivePrice,
-          isDiscountActive,
-          discountAmount,
-          _count: {
-            ...product._count,
-            reviews: reviewCount,
-          },
-        }
-      })
-    )
+      // Calculate effective price with discount
+      const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(product)
+
+      // For SUPER_ADMIN created products, show TrendiZip as the business
+      const professional = product.professional.role === 'SUPER_ADMIN'
+        ? {
+            ...product.professional,
+            professionalProfile: {
+              businessName: 'TrendiZip',
+              businessImage: '/logo3d.jpg',
+              rating: 5,
+              totalReviews: 0,
+              isVerified: true,
+            },
+          }
+        : product.professional
+
+      return {
+        ...product,
+        professional,
+        avgRating,
+        effectivePrice,
+        isDiscountActive,
+        discountAmount,
+        _count: {
+          ...product._count,
+          reviews: reviewCount,
+        },
+      }
+    })
 
     // Track search analytics if search was performed
     if (search && !dashboard) {
@@ -252,8 +257,8 @@ export async function GET(request: NextRequest) {
           // User not authenticated, track as anonymous
         }
 
-        // Track the search
-        await AnalyticsTracker.trackSearch(
+        // Background tracking (SPEED UP)
+        AnalyticsTracker.trackSearch(
           userId,
           search,
           categoryId || undefined,
@@ -261,7 +266,7 @@ export async function GET(request: NextRequest) {
           undefined, // sessionId
           request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
           request.headers.get('user-agent') || undefined
-        );
+        ).catch(e => console.error('Search tracking failed:', e))
       } catch (error) {
         console.error('Error tracking search analytics:', error);
         // Don't fail the request if analytics tracking fails
@@ -289,6 +294,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only professionals and admins can create products" }, { status: 403 })
     }
 
+    // Check subscription permission for professionals
+    if (user.role === "PROFESSIONAL") {
+      try {
+        const profile = await prisma.professionalProfile.findUnique({
+          where: { userId: user.id },
+          include: { subscription: { include: { tier: true } } }
+        });
+
+        if (!profile) {
+          return NextResponse.json(
+            { error: "Professional profile not found." },
+            { status: 404 }
+          );
+        }
+
+        const now = new Date();
+
+        // Check if trial is active OR subscription is active
+        const hasActiveTrial = profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate;
+        const hasActiveSubscription = profile.subscription && 
+          profile.subscription.status === "ACTIVE" && 
+          profile.subscription.nextRenewalDate && 
+          profile.subscription.nextRenewalDate > now;
+
+        if (!hasActiveTrial && !hasActiveSubscription) {
+          return NextResponse.json(
+            { error: "Subscription expired. Please renew your subscription to add products." },
+            { status: 403 }
+          );
+        }
+
+        // Check product limit from tier
+        if (profile.subscription?.tier?.monthlyListings) {
+          const productCount = await prisma.product.count({
+            where: { professionalId: user.id }
+          });
+
+          if (productCount >= profile.subscription.tier.monthlyListings) {
+            return NextResponse.json(
+              {
+                error: `You've reached the product limit (${profile.subscription.tier.monthlyListings}) for your tier. Please upgrade your subscription.`,
+              },
+              { status: 403 }
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Subscription check error:", error);
+        // Continue anyway to avoid blocking legitimate cases
+      }
+    } else if (user.role === "SUPER_ADMIN") {
+      // Check if super admin requires subscription
+      try {
+        const requireSubscriptionSetting = await prisma.systemSetting.findUnique({
+          where: { key: 'superAdminRequireSubscription' }
+        });
+
+        if (requireSubscriptionSetting?.value === 'true') {
+          // Super admin doesn't need subscription - skip checks
+          // They have full access
+        }
+      } catch (error) {
+        console.error("Super admin setting check error:", error);
+      }
+    }
+
     const {
       name,
       description,
@@ -313,6 +384,9 @@ export async function POST(request: NextRequest) {
       discountStartDate,
       discountEndDate,
       isOnSale,
+      allowPickup,
+      allowDelivery,
+      isPreorder,
     } = body
 
     const finalTags = ['NEW' as ProductTag, ...(tags || [])]
@@ -343,6 +417,9 @@ export async function POST(request: NextRequest) {
         discountStartDate: discountStartDate ? new Date(discountStartDate) : null,
         discountEndDate: discountEndDate ? new Date(discountEndDate) : null,
         isOnSale: Boolean(isOnSale),
+        allowPickup: allowPickup !== undefined ? Boolean(allowPickup) : true,
+        allowDelivery: allowDelivery !== undefined ? Boolean(allowDelivery) : true,
+        isPreorder: Boolean(isPreorder),
       },
       include: {
         category: true,

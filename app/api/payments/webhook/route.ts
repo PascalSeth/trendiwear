@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 import { PAYSTACK_CONFIG, toCedis, verifyTransaction } from '@/lib/paystack'
+import { fulfillOrder } from '@/lib/orders'
 import crypto from 'crypto'
+import { format } from 'date-fns'
 
 // Disable body parsing for webhook signature verification
 export const runtime = 'nodejs'
@@ -67,117 +69,113 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle successful charge/payment
-async function handleChargeSuccess(data: {
+interface ChargeSuccessData {
   reference: string
   amount: number
   paid_at: string
   channel: string
-  fees: number
-  metadata?: {
-    orderId?: string
-    customerId?: string
-  }
-}) {
-  const { reference, amount, paid_at, channel, fees } = data
+  fees?: number
+  metadata?: Record<string, unknown>
+}
 
-  // Find order by reference
+// Handle successful charge/payment
+async function handleChargeSuccess(data: ChargeSuccessData) {
+  const { reference, paid_at, channel, fees } = data
+  
+  // 1. Try to find if this is a Booking payment
+  const booking = await prisma.booking.findUnique({
+    where: { paystackReference: reference }
+  })
+
+  if (booking) {
+    // 2. Check for race condition (Did someone else secure the slot while this user was paying?)
+    const conflict = await prisma.booking.findFirst({
+      where: {
+        professionalId: booking.professionalId,
+        id: { not: booking.id },
+        OR: [
+          { paymentStatus: 'PAID' },
+          { paymentMethod: 'IN_PERSON', status: 'CONFIRMED' }
+        ],
+        AND: [
+          { bookingDate: { lt: booking.endTime || new Date() } },
+          { endTime: { gt: booking.bookingDate } },
+        ],
+      },
+    })
+
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: 'PAID',
+        paystackPaidAt: new Date(paid_at),
+        paystackFees: fees ? toCedis(fees) : null,
+      },
+    })
+
+    // Notify Customer & Pro
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: booking.customerId,
+          type: 'BOOKING_UPDATE',
+          title: conflict ? 'Booking Success (Conflict Alert)' : 'Appointment Secured',
+          message: conflict 
+            ? `Your payment was successful, but the slot was secured by another customer just moments before. Please contact the professional for a reschedule or refund.`
+            : `Your payment for the session with ${booking.id.slice(-6)} was successful. Your slot is now locked.`,
+          data: { bookingId: booking.id, hasConflict: !!conflict },
+        },
+        {
+          userId: booking.professionalId,
+          type: 'BOOKING_UPDATE',
+          title: conflict ? 'URGENT: Booking Conflict' : 'Session Paid & Locked',
+          message: conflict
+            ? `A customer paid for a slot on ${format(new Date(booking.bookingDate), 'MMM dd')} that was just secured by another session. You must resolve this manually.`
+            : `The customer has paid for their appointment on ${format(new Date(booking.bookingDate), 'MMM dd')}.`,
+          data: { bookingId: booking.id, hasConflict: !!conflict },
+        }
+      ]
+    })
+    
+    console.log('Successfully processed payment for booking:', booking.id)
+    return
+  }
+
+  // 2. Fallback to Order payment
   const order = await prisma.order.findUnique({
     where: { paystackReference: reference },
-    include: {
-      items: true,
-    },
+    include: { items: true },
   })
 
-  if (!order) {
-    console.error('Order not found for reference:', reference)
-    return
-  }
+  if (order) {
+    if (order.paymentStatus === 'PAID') return
 
-  // Skip if already processed
-  if (order.paymentStatus === 'PAID') {
-    console.log('Order already processed:', order.id)
-    return
-  }
-
-  // Verify with Paystack API to be extra safe
-  try {
-    const verification = await verifyTransaction(reference)
-    if (verification.data.status !== 'success') {
-      console.error('Verification failed for reference:', reference)
+    // Verify with Paystack API
+    try {
+      const verification = await verifyTransaction(reference)
+      if (verification.data.status !== 'success') return
+    } catch (error) {
+      console.error('Failed to verify transaction:', error)
       return
     }
-  } catch (error) {
-    console.error('Failed to verify transaction:', error)
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: 'PAID',
+        status: 'PROCESSING',
+        paystackPaidAt: new Date(paid_at),
+        paystackChannel: channel,
+        paystackFees: fees ? toCedis(fees) : null,
+      },
+    })
+
+    await fulfillOrder(order.id)
+    console.log('Successfully processed payment for order:', order.id)
     return
   }
 
-  // Update order
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      paymentStatus: 'PAID',
-      status: 'PROCESSING',
-      paystackPaidAt: new Date(paid_at),
-      paystackChannel: channel,
-      paystackFees: fees ? toCedis(fees) : null,
-    },
-  })
-
-  // Update product stock and sold count
-  for (const item of order.items) {
-    await prisma.product.update({
-      where: { id: item.productId },
-      data: {
-        stockQuantity: { decrement: item.quantity },
-        soldCount: { increment: item.quantity },
-      },
-    })
-  }
-
-  // Create notifications
-  await prisma.notification.create({
-    data: {
-      userId: order.customerId,
-      type: 'ORDER_UPDATE',
-      title: 'Payment Confirmed',
-      message: `Your payment of GHS ${toCedis(amount).toFixed(2)} has been confirmed. Your order is being processed.`,
-      data: { orderId: order.id },
-    },
-  })
-
-  // Notify sellers
-  const sellerIds = [...new Set(order.items.map(item => item.professionalId))]
-  for (const sellerId of sellerIds) {
-    const sellerItems = order.items.filter(item => item.professionalId === sellerId)
-    const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-
-    await prisma.notification.create({
-      data: {
-        userId: sellerId,
-        type: 'ORDER_UPDATE',
-        title: 'New Order - Payment Confirmed',
-        message: `You have a new paid order worth GHS ${sellerTotal.toFixed(2)}. Please prepare for shipping.`,
-        data: { orderId: order.id },
-      },
-    })
-
-    // Update professional analytics
-    await prisma.professionalAnalytics.upsert({
-      where: { professionalId: sellerId },
-      update: {
-        totalOrders: { increment: 1 },
-        totalRevenue: { increment: sellerTotal },
-      },
-      create: {
-        professionalId: sellerId,
-        totalOrders: 1,
-        totalRevenue: sellerTotal,
-      },
-    })
-  }
-
-  console.log('Successfully processed payment for order:', order.id)
+  console.error('No Order or Booking found for reference:', reference)
 }
 
 // Handle failed charge
@@ -185,35 +183,50 @@ async function handleChargeFailed(data: {
   reference: string
   gateway_response?: string
 }) {
-  const { reference, gateway_response } = data
+  const { reference } = data
 
+  // Check Order
   const order = await prisma.order.findUnique({
     where: { paystackReference: reference },
   })
 
-  if (!order) {
-    console.error('Order not found for failed charge:', reference)
+  if (order) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { paymentStatus: 'FAILED' },
+    })
+    await prisma.notification.create({
+      data: {
+        userId: order.customerId,
+        type: 'ORDER_UPDATE',
+        title: 'Order Payment Failed',
+        message: `Your payment for order #${order.id.substring(0, 8)} failed.`,
+        data: { orderId: order.id },
+      },
+    })
     return
   }
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      paymentStatus: 'FAILED',
-    },
+  // Check Booking
+  const booking = await prisma.booking.findUnique({
+    where: { paystackReference: reference },
   })
-
-  await prisma.notification.create({
-    data: {
-      userId: order.customerId,
-      type: 'ORDER_UPDATE',
-      title: 'Payment Failed',
-      message: `Your payment for order #${order.id.substring(0, 8)} failed. ${gateway_response || 'Please try again.'}`,
-      data: { orderId: order.id },
-    },
-  })
-
-  console.log('Payment failed for order:', order.id)
+  
+  if (booking) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { paymentStatus: 'UNPAID' }, // Revert or stay unpaid
+    })
+    await prisma.notification.create({
+      data: {
+        userId: booking.customerId,
+        type: 'BOOKING_UPDATE',
+        title: 'Booking Payment Failed',
+        message: `Your payment for the professional session failed. Please retry from your bookings page.`,
+        data: { bookingId: booking.id },
+      },
+    })
+  }
 }
 
 // Handle successful transfer to seller

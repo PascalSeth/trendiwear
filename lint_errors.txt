@@ -1,0 +1,17 @@
+
+> trendizip@0.1.0 lint
+> next lint
+
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+
+./lib/booking-utils.ts
+2:10  Error: 'isAfter' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services.ts
+190:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

@@ -7,10 +7,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
-import { CartSheetTrigger } from "@/components/ui/cart-sheet-trigger";
+import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu} from "lucide-react";
+import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu, Calendar} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const CartSheetTrigger = dynamic(() => import("@/components/ui/cart-sheet-trigger").then(mod => ({ default: mod.CartSheetTrigger })), {
+  ssr: false,
+  loading: () => <div className="h-6 w-6" />
+});
 
 type User = {
   id?: string;
@@ -65,7 +70,13 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
         
         {/* Left: Original Logo */}
         <Link href="/" className="flex-shrink-0 group">
-          <img src="/navlogo.png" alt="BeliBeli" className="h-10 w-10 transition-transform duration-300 group-hover:scale-105" />
+          <Image 
+            src="/navlogo.png" 
+            alt="TrendiZip" 
+            width={40} 
+            height={40} 
+            className="transition-transform duration-300 group-hover:scale-105" 
+          />
         </Link>
 
         {/* Center: Navigation Links (Styled Editorially) */}
@@ -102,7 +113,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
 
           {/* Icons */}
           <div className="hidden md:flex items-center gap-4">
-             <NotificationBell />
+             <NotificationBell context="personal" />
              <CartSheetTrigger />
           </div>
 
@@ -140,6 +151,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                   {[
                     { icon: User, label: 'Profile', href: getProfileUrl() },
                     { icon: Package, label: 'Orders', href: '/orders' },
+                    { icon: Calendar, label: 'Bookings', href: '/bookings' },
                     { icon: Heart, label: 'Wishlist', href: '/wishlist' },
                   ].map((item, idx) => (
                     <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50">
@@ -197,7 +209,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 <div className="border-t border-stone-100 p-2">
                   <DropdownMenuItem asChild className="cursor-pointer focus:bg-red-50 rounded-lg">
                     <button 
-                      onClick={() => signOut()} 
+                      onClick={() => signOut({ callbackUrl: '/auth/signin' })} 
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <LogOut size={16} strokeWidth={1.5} />
@@ -230,8 +242,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               <div className="h-full flex flex-col">
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between p-6 border-b border-stone-200">
-                  <img src="/navlogo.png" alt="BeliBeli" className="h-8 w-8" />
-
+                  <Image src="/navlogo.png" alt="TrendiZip" width={32} height={32} />
                 </div>
 
                 {/* Mobile Search */}
@@ -261,6 +272,27 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                       {link.label}
                     </Link>
                   ))}
+                  
+                  {user && (
+                    <div className="pt-6 mt-6 border-t border-stone-100 space-y-6">
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Personal Curation</p>
+                      {[
+                        { icon: Package, label: 'Orders', href: '/orders' },
+                        { icon: Calendar, label: 'Bookings', href: '/bookings' },
+                        { icon: Heart, label: 'Wishlist', href: '/wishlist' },
+                      ].map((item, idx) => (
+                        <Link
+                          key={idx}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-4 text-stone-600 hover:text-stone-900 transition-all font-serif italic text-lg"
+                        >
+                          <item.icon size={20} strokeWidth={1} />
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Mobile Auth Footer */}
@@ -277,9 +309,18 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                           />
                           <div>
                             <p className="font-serif font-medium text-red-900">{user.name}</p>
-                            <p className="text-xs font-mono text-stone-500">Member</p>
+                            <p className="text-xs font-mono text-stone-500">{role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'PROFESSIONAL' ? 'Professional' : 'Member'}</p>
                           </div>
                       </div>
+                      {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                        <Link 
+                          href="/dashboard" 
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block w-full py-3 mt-4 text-center text-sm font-mono uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+                        >
+                          Dashboard
+                        </Link>
+                      )}
                       <button onClick={() => signOut()} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-600 hover:text-red-700">
                         Logout
                       </button>

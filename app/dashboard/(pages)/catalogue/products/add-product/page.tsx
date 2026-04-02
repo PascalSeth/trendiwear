@@ -1,71 +1,91 @@
 'use client';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Upload, X, Video, HelpCircle } from "lucide-react";
 
+import { 
+  Upload, X, Video, ChevronRight, ChevronLeft, 
+  Check, Info, Tag, Package, Palette, Image as ImageIcon, 
+  GripVertical, Loader2, Sparkles, DollarSign
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+// --- Types ---
 type SizeOption =
   | "US 2" | "US 4" | "US 6" | "US 8" | "US 10" | "US 12" | "US 14" | "US 16"
   | "EU 34" | "EU 36" | "EU 38" | "EU 40" | "EU 42" | "EU 44" | "EU 46" | "EU 48"
   | "UK 6" | "UK 8" | "UK 10" | "UK 12" | "UK 14" | "UK 16" | "UK 18" | "UK 20"
   | "XS" | "S" | "M" | "L" | "XL" | "XXL";
 
-type ProductTag = "NEW" | "TRENDING" | "BESTSELLER" | "SALE" | "LIMITED_EDITION" | "CUSTOM_MADE" | "ECO_FRIENDLY" | "HANDMADE" | "FEATURED";
 
-function AddProductPage() {
+const STEPS = [
+  { id: 'basics', title: 'Basics', icon: <Tag className="w-4 h-4" /> },
+  { id: 'media', title: 'Media', icon: <ImageIcon className="w-4 h-4" /> },
+  { id: 'pricing', title: 'Pricing', icon: <DollarSign className="w-4 h-4" /> },
+  { id: 'details', title: 'Details', icon: <Palette className="w-4 h-4" /> },
+];
+
+export default function AddProductPage() {
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // --- Form State ---
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState("");
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("GHS");
+  const [stockQuantity, setStockQuantity] = useState("0");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string>("");
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState("");
   const [selectedSizes, setSelectedSizes] = useState<SizeOption[]>([]);
   const [denomination, setDenomination] = useState<"US" | "EU" | "UK" | "General">("US");
-  const [parentCategories, setParentCategories] = useState<Array<{
+  const [colors, setColors] = useState<string[]>([]);
+  const [material, setMaterial] = useState("");
+  const [careInstructions, setCareInstructions] = useState("");
+  const [isCustomizable, setIsCustomizable] = useState(false);
+  const [isUnisex, setIsUnisex] = useState(true);
+  const [isOnSale, setIsOnSale] = useState(false);
+  const [isPreorder, setIsPreorder] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState("");
+
+  const [discountStartDate, setDiscountStartDate] = useState("");
+  const [discountEndDate, setDiscountEndDate] = useState("");
+  const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
+
+  // --- Data States ---
+  interface CategoryWithChildren {
     id: string;
     name: string;
-    children: Array<{ id: string; name: string; slug: string; imageUrl?: string }>;
-    collections: Array<{ id: string; name: string; slug: string; imageUrl?: string }>;
-  }>>([]);
-  const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Array<{ id: string; name: string; slug: string; imageUrl?: string }>>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedCollection, setSelectedCollection] = useState<string>("");
-  const [currency, setCurrency] = useState<string>("GHS");
-  const [selectedCategoryImage, setSelectedCategoryImage] = useState<string>("");
-  const [selectedCollectionImage, setSelectedCollectionImage] = useState<string>("");
-  const [colors, setColors] = useState<string[]>([]);
-  const [material, setMaterial] = useState<string>("");
-  const [careInstructions, setCareInstructions] = useState<string>("");
-  const [isCustomizable, setIsCustomizable] = useState<boolean>(false);
-  const [selectedTags, setSelectedTags] = useState<ProductTag[]>([]);
-  const [isUnisex, setIsUnisex] = useState<boolean>(true);
-  const [submittedForShowcase, setSubmittedForShowcase] = useState<boolean>(false);
-  const [isShipped, setIsShipped] = useState<boolean>(false);
-  const [price, setPrice] = useState<string>("");
-  const [discountPercentage, setDiscountPercentage] = useState<string>("");
-  const [discountPrice, setDiscountPrice] = useState<string>("");
-  const [discountStartDate, setDiscountStartDate] = useState<string>("");
-  const [discountEndDate, setDiscountEndDate] = useState<string>("");
-  const [isOnSale, setIsOnSale] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
+    children: { id: string; name: string }[];
+  }
+  interface Collection {
+    id: string;
+    name: string;
+  }
+  const [parentCategories, setParentCategories] = useState<CategoryWithChildren[]>([]);
+  const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Collection[]>([]);
 
-  // Calculate effective price for preview
-  const calculateEffectivePrice = () => {
-    const originalPrice = parseFloat(price) || 0;
-    if (!isOnSale || originalPrice === 0) return originalPrice;
-    
-    if (discountPrice && parseFloat(discountPrice) > 0) {
-      return parseFloat(discountPrice);
+  useEffect(() => {
+    async function fetchFilters() {
+      const url = selectedCategory ? `/api/product-selection-filters?categoryId=${selectedCategory}` : "/api/product-selection-filters";
+      const res = await fetch(url);
+      const data = await res.json();
+      setParentCategories(data.parentCategories);
+      setSelectedCategoryCollections(data.selectedCategoryCollections);
     }
-    if (discountPercentage && parseFloat(discountPercentage) > 0) {
-      return originalPrice * (1 - parseFloat(discountPercentage) / 100);
-    }
-    return originalPrice;
-  };
-
-  const effectivePrice = calculateEffectivePrice();
-  const hasActiveDiscount = isOnSale && (parseFloat(discountPercentage) > 0 || parseFloat(discountPrice) > 0);
-  const savings = parseFloat(price) - effectivePrice;
+    fetchFilters();
+  }, [selectedCategory]);
 
   const sizeOptions = {
     US: ["US 2", "US 4", "US 6", "US 8", "US 10", "US 12", "US 14", "US 16"] as SizeOption[],
@@ -74,126 +94,73 @@ function AddProductPage() {
     General: ["XS", "S", "M", "L", "XL", "XXL"] as SizeOption[],
   };
 
-  useEffect(() => {
-    const fetchFilters = async () => {
-      const url = selectedCategory ? `/api/product-selection-filters?categoryId=${selectedCategory}` : "/api/product-selection-filters";
-      const res = await fetch(url);
-      const data = await res.json();
-      setParentCategories(data.parentCategories);
-      setSelectedCategoryCollections(data.selectedCategoryCollections);
-    };
-    fetchFilters();
-  }, [selectedCategory]);
-
-  // Update selected category image when category changes
-  useEffect(() => {
-    if (selectedCategory) {
-      // Find the selected category across all parent categories
-      for (const parent of parentCategories) {
-        const category = parent.children.find(child => child.id === selectedCategory);
-        if (category) {
-          setSelectedCategoryImage(category.imageUrl || "");
-          break;
-        }
-      }
-    } else {
-      setSelectedCategoryImage("");
-    }
-  }, [selectedCategory, parentCategories]);
-
-  // Update selected collection image when collection changes
-  useEffect(() => {
-    if (selectedCollection) {
-      const collection = selectedCategoryCollections.find(col => col.id === selectedCollection);
-      setSelectedCollectionImage(collection?.imageUrl || "");
-    } else {
-      setSelectedCollectionImage("");
-    }
-  }, [selectedCollection, selectedCategoryCollections]);
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-
-    const totalImages = selectedImages.length + files.length;
-    if (totalImages > 4) {
-      alert(`You can only upload up to 4 images. Currently ${selectedImages.length} selected.`);
+    if (selectedImages.length + files.length > 4) {
+      alert("Max 4 images allowed");
       return;
     }
+    setSelectedImages(prev => [...prev, ...files]);
+    const urls = files.map(f => URL.createObjectURL(f));
+    setUploadedImageUrls(prev => [...prev, ...urls]);
+  };
 
-    const maxSize = 5 * 1024 * 1024;
-    const oversizedFiles = files.filter(file => file.size > maxSize);
-    if (oversizedFiles.length > 0) {
-      alert(`Some images are too large. Maximum size per image is 5MB.`);
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      alert("Video too large (max 50MB)");
       return;
     }
-
-    // Store files locally
-    setSelectedImages((prev) => [...prev, ...files]);
-
-    // Create preview URLs for display
-    const previewUrls = files.map((file) => URL.createObjectURL(file));
-    setUploadedImageUrls((prev) => [...prev, ...previewUrls]);
+    setSelectedVideo(file);
+    setUploadedVideoUrl(URL.createObjectURL(file));
   };
 
-  const handleSizeSelection = (size: SizeOption) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
-    );
+  const nextStep = () => {
+    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
   };
 
-  const handleTagSelection = (tag: ProductTag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const prevStep = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
-
     try {
-      // First, upload all selected images
-      let uploadedUrls: string[] = [];
-      if (selectedImages.length > 0) {
-        const uploadPromises = selectedImages.map(async (file) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
-          const result = await response.json();
-          return result.url;
-        });
+      // 1. Upload Images
+      const imgUrls = await Promise.all(selectedImages.map(async file => {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        return data.url;
+      }));
 
-        uploadedUrls = await Promise.all(uploadPromises);
-      }
-
-      // Upload video if selected
-      let finalVideoUrl = uploadedVideoUrl;
+      // 2. Upload Video
+      let finalVideoUrl = "";
       if (selectedVideo) {
-        const formData = new FormData();
-        formData.append('file', selectedVideo);
-        formData.append('bucket', 'videos');
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) throw new Error(`Video upload failed: ${response.statusText}`);
-        const result = await response.json();
-        finalVideoUrl = result.url;
+        const fd = new FormData();
+        fd.append('file', selectedVideo);
+        fd.append('bucket', 'videos');
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        finalVideoUrl = data.url;
       }
 
-      const formData = new FormData(e.target as HTMLFormElement);
-      const data = {
-        name: formData.get('name') as string,
-        description: formData.get('description') as string,
-        price: price,
+      // 3. Create Product
+      const productData = {
+        name,
+        description,
+        price,
         currency,
-        stockQuantity: isShipped ? undefined : formData.get('stockQuantity') as string,
-        images: uploadedUrls,
+        stockQuantity: parseInt(stockQuantity),
+        images: imgUrls,
         videoUrl: finalVideoUrl || undefined,
         categoryId: selectedCategory,
         collectionId: selectedCollection || undefined,
@@ -201,674 +168,520 @@ function AddProductPage() {
         colors,
         material: material || undefined,
         careInstructions: careInstructions || undefined,
-        estimatedDelivery: isShipped ? parseInt(formData.get('estimatedArrivalTime') as string) : undefined,
         isCustomizable,
-        tags: selectedTags,
         isUnisex,
+        isPreorder,
         submittedForShowcase,
         discountPercentage: discountPercentage || undefined,
-        discountPrice: discountPrice || undefined,
+
         discountStartDate: discountStartDate || undefined,
         discountEndDate: discountEndDate || undefined,
         isOnSale,
+        allowPickup: true,
+        allowDelivery: true,
       };
 
-      const response = await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(productData)
       });
 
-      if (response.ok) {
-        alert('Product added successfully!');
-        (e.target as HTMLFormElement).reset();
-        setSelectedImages([]);
-        setUploadedImageUrls([]);
-        setSelectedVideo(null);
-        setUploadedVideoUrl('');
-        setSelectedSizes([]);
-        setColors([]);
-        setMaterial('');
-        setCareInstructions('');
-        setIsCustomizable(false);
-        setCurrency("GHS");
-        setSelectedTags([]);
-        setIsUnisex(true);
-        setSubmittedForShowcase(false);
-        setIsShipped(false);
-        setDiscountPercentage("");
-        setPrice("");
-        setDiscountPrice("");
-        setDiscountStartDate("");
-        setDiscountEndDate("");
-        setIsOnSale(false);
+      if (res.ok) {
+        router.push('/dashboard/catalogue/products');
       } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
+         const err = await res.json();
+         alert(err.error || "Failed to add product");
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('An error occurred while adding the product.');
+    } catch (err) {
+      console.error(err);
+      alert("Check your connection and try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (selectedVideo) {
-      alert('Only one video can be uploaded per product.');
-      return;
-    }
-
-    const maxSize = 50 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert('Video file is too large. Maximum size is 50MB.');
-      return;
-    }
-
-    // Store video file locally
-    setSelectedVideo(file);
-
-    // Create preview URL for display
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedVideoUrl(previewUrl);
-  };
+  const canGoNext = useMemo(() => {
+    if (currentStep === 0) return name && description && selectedCategory;
+    if (currentStep === 1) return uploadedImageUrls.length > 0;
+    if (currentStep === 2) return price && currency;
+    return true;
+  }, [currentStep, name, description, selectedCategory, uploadedImageUrls, price, currency]);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">Add Product</h1>
-          <p className="text-sm text-neutral-500 mt-1">Create a new product listing</p>
+    <div className="min-h-screen bg-[#F8FAFC] pb-24">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-40 backdrop-blur-md bg-white/80">
+        <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              Product Creation
+            </h1>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Step {currentStep + 1} of {STEPS.length}</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+             <Button variant="ghost" onClick={() => router.back()} disabled={loading}>Discard</Button>
+             {currentStep === STEPS.length - 1 ? (
+               <Button 
+                onClick={handleSubmit} 
+                disabled={loading || !canGoNext}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-100 px-6 font-bold"
+               >
+                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                 Launch Product
+               </Button>
+             ) : (
+               <Button 
+                onClick={nextStep} 
+                disabled={!canGoNext}
+                className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg px-6 font-bold"
+               >
+                 Next Section <ChevronRight className="w-4 h-4 ml-1" />
+               </Button>
+             ) }
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="bg-white border border-neutral-200 rounded-lg shadow-sm">
-            <div className="p-8 space-y-10">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Product Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Enter product name"
-                      required
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                    />
-                  </div>
+        {/* Progress Bar */}
+        <div className="h-1 bg-slate-100 w-full overflow-hidden">
+           <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
+           />
+        </div>
+      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Description</label>
-                    <textarea
-                      name="description"
-                      rows={5}
-                      placeholder="Product description and key features"
-                      required
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Price</label>
-                      <div className="flex gap-2">
-                        <Select value={currency} onValueChange={setCurrency}>
-                          <SelectTrigger className="w-20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="GHS">GHS</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="GBP">GBP</SelectItem>
-                            <SelectItem value="KES">KES</SelectItem>
-                            <SelectItem value="CAD">CAD</SelectItem>
-                            <SelectItem value="AUD">AUD</SelectItem>
-                            <SelectItem value="JPY">JPY</SelectItem>
-                            <SelectItem value="CNY">CNY</SelectItem>
-                            <SelectItem value="INR">INR</SelectItem>
-                            <SelectItem value="BRL">BRL</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input
-                          type="number"
-                          name="price"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
-                          placeholder="0.00"
-                          step="0.01"
-                          required
-                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                      {hasActiveDiscount && parseFloat(price) > 0 && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
-                          <span className="text-neutral-500 line-through">{currency} {parseFloat(price).toFixed(2)}</span>
-                          <span className="ml-2 text-green-700 font-semibold">{currency} {effectivePrice.toFixed(2)}</span>
-                          <span className="ml-2 text-green-600 text-xs">Save {currency} {savings.toFixed(2)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isShipped && (
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Stock</label>
-                        <input
-                          type="number"
-                          name="stockQuantity"
-                          placeholder="0"
-                          required
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    )}
-                  </div>
+      <div className="max-w-4xl mx-auto px-6 mt-8">
+        {/* Step Indicator Desktop */}
+        <div className="hidden md:flex items-center justify-between mb-12">
+           {STEPS.map((step, idx) => (
+             <React.Fragment key={step.id}>
+                <div 
+                  className={`flex flex-col items-center gap-2 transition-all duration-500 ${idx === currentStep ? 'opacity-100 scale-110' : 'opacity-40'}`}
+                >
+                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${idx <= currentStep ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'bg-white border-2 border-slate-200 text-slate-400'}`}>
+                      {idx < currentStep ? <Check className="w-5 h-5" /> : step.icon}
+                   </div>
+                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{step.title}</span>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Images ({uploadedImageUrls.length}/4)</label>
-                  <div className="border border-dashed border-neutral-300 rounded p-6 text-center hover:border-neutral-400 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={uploadedImageUrls.length >= 4}
-                    />
-                    <label htmlFor="image-upload" className={`cursor-pointer block ${uploadedImageUrls.length >= 4 ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                      <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                      <p className="text-xs text-neutral-600">Click to upload</p>
-                      <p className="text-xs text-neutral-400 mt-1">Up to 5MB each</p>
-                    </label>
-                  </div>
-
-                  {uploadedImageUrls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      {uploadedImageUrls.map((url, index) => (
-                        <div key={index} className="relative group aspect-square">
-                          <img
-                            src={url}
-                            alt={`Product ${index + 1}`}
-                            className="w-full h-full object-cover rounded border border-neutral-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                              setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
-                            }}
-                            className="absolute top-1 right-1 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3 text-neutral-600" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Video Upload */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Video (Optional)</label>
-                <div className="border border-dashed border-neutral-300 rounded p-6 text-center hover:border-neutral-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoUpload}
-                    className="hidden"
-                    id="video-upload"
-                    disabled={!!selectedVideo}
-                  />
-                  <label htmlFor="video-upload" className={`cursor-pointer block ${uploadedVideoUrl ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                    <Video className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                    <p className="text-xs text-neutral-600">{selectedVideo ? 'Video selected' : 'Upload video'}</p>
-                    <p className="text-xs text-neutral-400 mt-1">Up to 50MB</p>
-                  </label>
-                </div>
-
-                {uploadedVideoUrl && (
-                  <div className="relative group mt-3 flex justify-center">
-                    <div className="relative max-w-md">
-                      <video src={uploadedVideoUrl} controls className="w-60 h-48 rounded border border-neutral-200" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedVideo(null);
-                          setUploadedVideoUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3 text-neutral-600" />
-                      </button>
-                    </div>
-                  </div>
+                {idx < STEPS.length - 1 && (
+                  <div className={`h-0.5 flex-1 mx-4 rounded-full transition-colors ${idx < currentStep ? 'bg-blue-600' : 'bg-slate-200'}`} />
                 )}
-              </div>
+             </React.Fragment>
+           ))}
+        </div>
 
-              <div className="border-t border-neutral-200" />
-
-              {/* Category & Collection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Category</label>
-                  <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSelectedCollection(""); }} required>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {parentCategories.flatMap((parent) =>
-                        parent.children.map((child) => (
-                          <SelectItem key={child.id} value={child.id}>
-                            {parent.name} / {child.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {selectedCategoryImage && (
-                    <div className="mt-3">
-                      <img
-                        src={selectedCategoryImage}
-                        alt="Selected category"
-                        className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Collection</label>
-                  <Select value={selectedCollection} onValueChange={setSelectedCollection} required disabled={selectedCategoryCollections.length === 0}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={selectedCategoryCollections.length === 0 ? "Select category first" : "Select collection"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedCategoryCollections.map((collection) => (
-                        <SelectItem key={collection.id} value={collection.id}>
-                          {collection.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCollectionImage && (
-                    <div className="mt-3">
-                      <img
-                        src={selectedCollectionImage}
-                        alt="Selected collection"
-                        className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Sizes */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-3">Sizes</label>
-                <div className="mb-4">
-                  <Select value={denomination} onValueChange={(value) => setDenomination(value as "US" | "EU" | "UK" | "General")}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">US</SelectItem>
-                      <SelectItem value="EU">EU</SelectItem>
-                      <SelectItem value="UK">UK</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {sizeOptions[denomination].map((size) => (
-                    <label
-                      key={size}
-                      className={`px-4 py-2 border rounded text-sm cursor-pointer transition-colors ${
-                        selectedSizes.includes(size)
-                          ? 'border-neutral-900 bg-neutral-900 text-white'
-                          : 'border-neutral-300 hover:border-neutral-400'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSizes.includes(size)}
-                        onChange={() => handleSizeSelection(size)}
-                        className="hidden"
-                      />
-                      {size}
-                    </label>
-                  ))}
-                </div>
-                
-                {selectedSizes.length > 0 && (
-                  <p className="mt-2 text-sm text-neutral-600">
-                    Selected: {selectedSizes.join(', ')}
-                  </p>
-                )}
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Discount/Promotion Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-3">Discount & Promotions</label>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
-                      <Checkbox 
-                        checked={isOnSale} 
-                        onCheckedChange={() => setIsOnSale((prev) => !prev)} 
-                      />
-                      <span className={`text-sm font-medium ${isOnSale ? 'text-green-700' : 'text-neutral-700'}`}>
-                        {isOnSale ? '✓ On Sale - Discount Active' : 'Mark as On Sale'}
-                      </span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button type="button" className="inline-flex ml-auto">
-                            <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                          <p className="text-sm text-neutral-600">
-                            <strong>On Sale:</strong> Enable this to apply the discount. Fixed price takes priority over percentage if both are set.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div className={!isOnSale ? 'opacity-50' : ''}>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Discount Percentage (%)</label>
-                      <input
-                        type="number"
-                        value={discountPercentage}
-                        onChange={(e) => {
-                          setDiscountPercentage(e.target.value);
-                          if (e.target.value && discountPrice) {
-                            setDiscountPrice(''); // Clear fixed price when percentage is set
-                          }
-                        }}
-                        placeholder="e.g. 20 for 20% off"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        disabled={!isOnSale}
-                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
-                      />
-                      {discountPercentage && parseFloat(discountPercentage) > 0 && parseFloat(price) > 0 && (
-                        <p className="mt-1 text-xs text-green-600">
-                          Customers save {currency} {(parseFloat(price) * parseFloat(discountPercentage) / 100).toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="h-px flex-1 bg-neutral-200" />
-                      <span className="text-xs text-neutral-400">OR</span>
-                      <div className="h-px flex-1 bg-neutral-200" />
-                    </div>
-
-                    <div className={!isOnSale ? 'opacity-50' : ''}>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Fixed Sale Price</label>
-                      <div className="flex gap-2">
-                        <span className="inline-flex items-center px-3 py-2 border border-neutral-300 rounded text-sm bg-neutral-100 text-neutral-600">
-                          {currency}
-                        </span>
-                        <input
-                          type="number"
-                          value={discountPrice}
-                          onChange={(e) => {
-                            setDiscountPrice(e.target.value);
-                            if (e.target.value && discountPercentage) {
-                              setDiscountPercentage(''); // Clear percentage when fixed price is set
-                            }
-                          }}
-                          placeholder="Sale price"
-                          step="0.01"
-                          min="0"
-                          max={price || undefined}
-                          disabled={!isOnSale}
-                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
-                        />
-                      </div>
-                      {discountPrice && parseFloat(discountPrice) >= parseFloat(price) && parseFloat(price) > 0 && (
-                        <p className="mt-1 text-xs text-red-600">
-                          Sale price should be less than original price
-                        </p>
-                      )}
-                      {discountPrice && parseFloat(discountPrice) < parseFloat(price) && parseFloat(price) > 0 && (
-                        <p className="mt-1 text-xs text-green-600">
-                          Customers save {currency} {(parseFloat(price) - parseFloat(discountPrice)).toFixed(2)} ({((1 - parseFloat(discountPrice) / parseFloat(price)) * 100).toFixed(0)}% off)
-                        </p>
-                      )}
-                    </div>
-
-                    <div className={`grid grid-cols-2 gap-4 ${!isOnSale ? 'opacity-50' : ''}`}>
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Start Date (optional)</label>
-                        <input
-                          type="datetime-local"
-                          value={discountStartDate}
-                          onChange={(e) => setDiscountStartDate(e.target.value)}
-                          disabled={!isOnSale}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">End Date (optional)</label>
-                        <input
-                          type="datetime-local"
-                          value={discountEndDate}
-                          onChange={(e) => setDiscountEndDate(e.target.value)}
-                          min={discountStartDate || undefined}
-                          disabled={!isOnSale}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 disabled:bg-neutral-100"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Additional Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Colors</label>
-                    <ColorPicker value={colors} onChange={setColors} maxColors={10} />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Material</label>
-                    <Select value={material} onValueChange={setMaterial}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select material" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 overflow-y-auto">
-                        <SelectItem value="Cotton">Cotton</SelectItem>
-                        <SelectItem value="Polyester">Polyester</SelectItem>
-                        <SelectItem value="Wool">Wool</SelectItem>
-                        <SelectItem value="Silk">Silk</SelectItem>
-                        <SelectItem value="Linen">Linen</SelectItem>
-                        <SelectItem value="Denim">Denim</SelectItem>
-                        <SelectItem value="Leather">Leather</SelectItem>
-                        <SelectItem value="Satin">Satin</SelectItem>
-                        <SelectItem value="Velvet">Velvet</SelectItem>
-                        <SelectItem value="Chiffon">Chiffon</SelectItem>
-                        <SelectItem value="Lace">Lace</SelectItem>
-                        <SelectItem value="Spandex">Spandex</SelectItem>
-                        <SelectItem value="Nylon">Nylon</SelectItem>
-                        <SelectItem value="Rayon">Rayon</SelectItem>
-                        <SelectItem value="Acrylic">Acrylic</SelectItem>
-                        <SelectItem value="Cashmere">Cashmere</SelectItem>
-                        <SelectItem value="Mohair">Mohair</SelectItem>
-                        <SelectItem value="Angora">Angora</SelectItem>
-                        <SelectItem value="Tulle">Tulle</SelectItem>
-                        <SelectItem value="Organza">Organza</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Care Instructions</label>
-                    <textarea
-                      value={careInstructions}
-                      onChange={(e) => setCareInstructions(e.target.value)}
-                      rows={3}
-                      placeholder="Washing and care guidelines"
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-3">Options</label>
+        {/* Content Area */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-8 md:p-12 min-h-[500px] relative overflow-hidden">
+           <AnimatePresence mode="wait">
+             <motion.div
+               key={currentStep}
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               transition={{ duration: 0.3 }}
+               className="space-y-8"
+             >
+                {/* STEP 1: BASICS */}
+                {currentStep === 0 && (
+                  <div className="space-y-8">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isUnisex} onCheckedChange={() => setIsUnisex((prev) => !prev)} />
-                          <span className="text-neutral-700">Unisex</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex">
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Unisex:</strong> This product can be worn by both men and women. It will appear in search results for all genders.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
+                       <h2 className="text-3xl font-black text-slate-900">What are you listing?</h2>
+                       <p className="text-slate-500 font-medium">Start with the fundamental details of your product.</p>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Product Identity</Label>
+                        <Input 
+                          placeholder="e.g. Midnight Silk Evening Gown"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 text-lg font-bold px-6"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isCustomizable} onCheckedChange={() => setIsCustomizable((prev) => !prev)} />
-                          <span className="text-neutral-700">Customizable</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Customizable:</strong> Customers can request customizations like different colors, sizes, or modifications. You&apos;ll receive customization requests through the platform.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
+
+                      <div className="space-y-3">
+                        <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">The Story / Description</Label>
+                        <textarea 
+                          rows={4}
+                          placeholder="Describe the aesthetic, fit, and soul of this piece..."
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="w-full h-32 rounded-[2rem] border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 text-md font-medium px-6 py-4 transition-all resize-none"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={submittedForShowcase} onCheckedChange={() => setSubmittedForShowcase((prev) => !prev)} />
-                          <span className="text-neutral-700">Request showcase approval</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Request showcase approval:</strong> Submit your product for review by super administrators. If approved, your product will be featured prominently on the platform, increasing visibility and potential sales. You can check the status in the Showcase section.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isShipped} onCheckedChange={() => setIsShipped((prev) => !prev)} />
-                          <span className="text-neutral-700">Custom order (shipped)</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Custom order (shipped):</strong> This is a made-to-order item that will be produced after purchase. You&apos;ll need to provide an estimated delivery time, and stock quantity won&apos;t be required.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Core Category</Label>
+                          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-bold px-6">
+                               <SelectValue placeholder="Where does it fit?" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-none shadow-2xl">
+                               {parentCategories.flatMap((parent: CategoryWithChildren) =>
+                                parent.children.map((child: { id: string; name: string }) => (
+                                  <SelectItem key={child.id} value={child.id} className="rounded-xl py-3 font-medium">
+                                    {parent.name} › {child.name}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Collection (Optional)</Label>
+                          <Select value={selectedCollection} onValueChange={setSelectedCollection} disabled={selectedCategoryCollections.length === 0}>
+                            <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-bold px-6">
+                               <SelectValue placeholder={selectedCategoryCollections.length === 0 ? "No collections" : "Select collection"} />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                {selectedCategoryCollections.map((col: { id: string; name: string }) => (
+                                  <SelectItem key={col.id} value={col.id} className="rounded-xl py-3 font-medium">
+                                    {col.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {isShipped && (
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Estimated Delivery (days)</label>
-                      <input
-                        type="number"
-                        name="estimatedArrivalTime"
-                        placeholder="7"
-                        min={1}
-                        required={isShipped}
-                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                      />
+                {/* STEP 2: MEDIA */}
+                {currentStep === 1 && (
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                       <h2 className="text-3xl font-black text-slate-900">Visual Showcase</h2>
+                       <p className="text-slate-500 font-medium">High quality visuals drive 80% of purchasing decisions.</p>
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-3">Tags</label>
-                    <div className="flex flex-wrap gap-2">
-                      {["LIMITED_EDITION", "HANDMADE", "CUSTOM_MADE"].map((tag) => (
-                        <label
-                          key={tag}
-                          className={`px-3 py-1.5 border rounded text-xs cursor-pointer transition-colors ${
-                            selectedTags.includes(tag as ProductTag)
-                              ? 'border-neutral-900 bg-neutral-900 text-white'
-                              : 'border-neutral-300 hover:border-neutral-400'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag as ProductTag)}
-                            onChange={() => handleTagSelection(tag as ProductTag)}
-                            className="hidden"
-                          />
-                          {tag.replace('_', ' ')}
-                        </label>
-                      ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                       <div className="space-y-6">
+                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Imagery (Max 4)</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                             {uploadedImageUrls.map((url, idx) => (
+                               <div key={idx} className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-md">
+                                  <Image src={url} alt={`Product preview ${idx + 1}`} fill className="w-full h-full object-cover" />
+                                  <button 
+                                    onClick={() => removeImage(idx)}
+                                    className="absolute top-3 right-3 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white"
+                                  >
+                                    <X className="w-4 h-4 text-rose-500" />
+                                  </button>
+                                  <div className="absolute bottom-0 inset-x-0 h-1 bg-blue-600 shadow-[0_0_10px_blue]" />
+                               </div>
+                             ))}
+
+                             {uploadedImageUrls.length < 4 && (
+                               <label className="aspect-square rounded-[2rem] border-4 border-dashed border-slate-100 hover:border-blue-200 hover:bg-blue-50/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 group">
+                                  <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
+                                  <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                     <Upload className="w-6 h-6" />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-blue-600 transition-all">Add Photo</span>
+                               </label>
+                             )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Recommended: 1080x1080px, PNG or JPG, Under 2MB</p>
+                       </div>
+
+                       <div className="space-y-6">
+                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Product Cinematic (Optional)</Label>
+                          {uploadedVideoUrl ? (
+                            <div className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-lg border-4 border-slate-50">
+                               <video src={uploadedVideoUrl} className="w-full h-full object-cover" autoPlay muted loop />
+                               <button 
+                                  onClick={() => { setSelectedVideo(null); setUploadedVideoUrl(""); }}
+                                  className="absolute top-4 right-4 p-3 bg-white rounded-2xl shadow-xl opacity-0 group-hover:opacity-100 transition-all"
+                               >
+                                  <X className="w-5 h-5 text-rose-500" />
+                               </button>
+                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+                               <div className="absolute bottom-6 left-6 flex items-center gap-2 text-white">
+                                  <Video className="w-4 h-4" />
+                                  <span className="text-xs font-black uppercase tracking-widest">Cinema Ready</span>
+                               </div>
+                            </div>
+                          ) : (
+                            <label className="aspect-square rounded-[2.5rem] bg-slate-50 border-4 border-slate-100 border-dashed hover:border-indigo-200 hover:bg-indigo-50/10 transition-all cursor-pointer flex flex-col items-center justify-center gap-3 group">
+                              <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} />
+                              <div className="w-16 h-16 rounded-3xl bg-white text-slate-300 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-xl group-hover:scale-110 transition-all">
+                                 <Video className="w-8 h-8" />
+                              </div>
+                              <div className="text-center">
+                                <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600 transition-all">Add Cinematic</span>
+                                <span className="text-[9px] text-slate-300 font-bold tracking-tight">Max 50MB · Square / Vertical</span>
+                              </div>
+                            </label>
+                          )}
+                       </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* STEP 3: PRICING */}
+                {currentStep === 2 && (
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                       <h2 className="text-3xl font-black text-slate-900">Commercials</h2>
+                       <p className="text-slate-500 font-medium">Set your price and inventory levels.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                       <div className="space-y-8">
+                          <div className="space-y-4">
+                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Active Price</Label>
+                            <div className="flex gap-4">
+                               <Select value={currency} onValueChange={setCurrency}>
+                                  <SelectTrigger className="w-28 h-16 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-black text-lg">
+                                     <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl">
+                                     <SelectItem value="GHS">GHS</SelectItem>
+                                     <SelectItem value="USD">USD</SelectItem>
+                                     <SelectItem value="EUR">EUR</SelectItem>
+                                     <SelectItem value="KES">KES</SelectItem>
+                                  </SelectContent>
+                               </Select>
+                               <div className="relative flex-1">
+                                  <Input 
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={price}
+                                    onChange={(e) => setPrice(e.target.value)}
+                                    className="h-16 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 text-2xl font-black px-6"
+                                  />
+                                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-black">.00</div>
+                               </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Inventory Status</Label>
+                            <div className="flex items-center gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                               <Package className="w-8 h-8 text-blue-600" />
+                               <div className="flex-1">
+                                  <p className="text-xs font-black uppercase text-slate-900">Units in Stock</p>
+                                  <input 
+                                    type="number"
+                                    value={stockQuantity}
+                                    onChange={(e) => setStockQuantity(e.target.value)}
+                                    className="w-full bg-transparent border-none text-2xl font-black focus:ring-0 p-0"
+                                  />
+                               </div>
+                            </div>
+                          </div>
+                       </div>
+
+                       <div className="bg-slate-50/50 rounded-[2.5rem] border border-slate-100 p-8 space-y-6">
+                          <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                                <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">
+                                   <Sparkles className="w-4 h-4" />
+                                </span>
+                                <span className="text-sm font-black uppercase tracking-widest">Promotion Mode</span>
+                             </div>
+                             <Checkbox 
+                                checked={isOnSale} 
+                                onCheckedChange={(v) => setIsOnSale(!!v)} 
+                                className="w-6 h-6 rounded-lg data-[state=checked]:bg-orange-600"
+                             />
+                          </div>
+                          
+                          <AnimatePresence>
+                             {isOnSale && (
+                               <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="space-y-6 overflow-hidden pt-4 border-t border-slate-200"
+                               >
+                                  <div className="space-y-3">
+                                     <Label className="text-[10px] font-black uppercase text-slate-400">Discount Percentage</Label>
+                                     <div className="relative">
+                                        <Input 
+                                          type="number"
+                                          placeholder="e.g. 20"
+                                          value={discountPercentage}
+                                          onChange={(e) => setDiscountPercentage(e.target.value)}
+                                          className="h-12 rounded-xl border-slate-200 font-bold"
+                                        />
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-300">%</div>
+                                     </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-3">
+                                     <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">Start Date</Label>
+                                        <input type="date" value={discountStartDate} onChange={e => setDiscountStartDate(e.target.value)} className="w-full h-10 rounded-xl border-slate-200 text-xs px-3 font-bold" />
+                                     </div>
+                                     <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400">End Date</Label>
+                                        <input type="date" value={discountEndDate} onChange={e => setDiscountEndDate(e.target.value)} className="w-full h-10 rounded-xl border-slate-200 text-xs px-3 font-bold" />
+                                     </div>
+                                  </div>
+                               </motion.div>
+                             )}
+                          </AnimatePresence>
+
+                          <div className="pt-4 mt-auto">
+                              <div className="p-4 bg-blue-600 rounded-2xl text-white">
+                                 <p className="text-[10px] font-black uppercase opacity-60">Customer Sees</p>
+                                 <p className="text-2xl font-black">
+                                    {currency} {isOnSale && discountPercentage ? (parseFloat(price) * (1 - parseFloat(discountPercentage)/100 || 0)).toFixed(2) : (parseFloat(price) || 0).toFixed(2)}
+                                 </p>
+                                 {isOnSale && <p className="text-[10px] font-bold line-through opacity-40">{currency} {price}</p>}
+                              </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: DETAILS */}
+                {currentStep === 3 && (
+                  <div className="space-y-12">
+                    <div className="space-y-2">
+                       <h2 className="text-3xl font-black text-slate-900">Final Touches</h2>
+                       <p className="text-slate-500 font-medium">Define variants and special options.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                       <div className="space-y-10">
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                               <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Size Matrix</Label>
+                               <Select value={denomination} onValueChange={(v: "US" | "EU" | "UK" | "General") => setDenomination(v)}>
+                                  <SelectTrigger className="w-24 h-8 text-[10px] font-black uppercase tracking-widest border-none bg-slate-100 rounded-lg">
+                                     <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl">
+                                     <SelectItem value="US">US</SelectItem>
+                                     <SelectItem value="EU">EU</SelectItem>
+                                     <SelectItem value="UK">UK</SelectItem>
+                                     <SelectItem value="General">General</SelectItem>
+                                  </SelectContent>
+                               </Select>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                               {sizeOptions[denomination].map((size) => (
+                                 <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])}
+                                    className={`px-4 py-2.5 rounded-xl border-2 transition-all font-black text-xs ${selectedSizes.includes(size) ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                                 >
+                                    {size}
+                                 </button>
+                               ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Color Palette</Label>
+                             <div className="p-4 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                <ColorPicker value={colors} onChange={setColors} maxColors={10} />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="space-y-10">
+                          <div className="space-y-4">
+                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Material & Craft</Label>
+                             <Select value={material} onValueChange={setMaterial}>
+                                <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 font-bold px-6">
+                                   <SelectValue placeholder="Select primary material" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-none shadow-2xl overflow-y-auto max-h-[300px]">
+                                   {["Cotton", "Silk", "Linen", "Denim", "Leather", "Wool", "Satin", "Velvet", "Cashmere", "Synthetic"].map(m => (
+                                     <SelectItem key={m} value={m} className="font-medium rounded-xl">{m}</SelectItem>
+                                   ))}
+                                </SelectContent>
+                             </Select>
+                             <textarea 
+                              placeholder="Care instructions (e.g. Dry clean only)"
+                              value={careInstructions}
+                              onChange={e => setCareInstructions(e.target.value)}
+                              className="w-full h-24 rounded-2xl border-2 border-slate-100 focus:border-blue-600 p-4 text-xs font-medium resize-none"
+                             />
+                          </div>
+
+                          <div className="space-y-4">
+                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Product Attributes</Label>
+                             <div className="space-y-3">
+                                {[
+                                  { id: 'unisex', label: 'Unisex Design', state: isUnisex, set: setIsUnisex, icon: <GripVertical className="w-4 h-4" /> },
+                                  { id: 'custom', label: 'Accept Customizations', state: isCustomizable, set: setIsCustomizable, icon: <Palette className="w-4 h-4 text-pink-500" /> },
+                                  { id: 'preorder', label: 'Enable Pre-order', state: isPreorder, set: setIsPreorder, icon: <Package className="w-4 h-4 text-blue-500" /> },
+                                  { id: 'showcase', label: 'Request SuperAdmin Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+                                ].map(opt => (
+                                  <div key={opt.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                           {opt.icon}
+                                        </div>
+                                        <span className="text-xs font-black uppercase text-slate-700">{opt.label}</span>
+                                     </div>
+                                     <Checkbox 
+                                        checked={opt.state} 
+                                        onCheckedChange={(v) => opt.set(!!v)}
+                                        className="w-5 h-5 rounded-md"
+                                     />
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                )}
+             </motion.div>
+           </AnimatePresence>
+
+           {/* Mobile Navigation */}
+           <div className="md:hidden flex items-center justify-between mt-12 pt-8 border-t border-slate-100">
+              <Button variant="ghost" onClick={prevStep} disabled={currentStep === 0} className="font-bold">
+                 <ChevronLeft className="w-4 h-4 mr-2" /> Back
+              </Button>
+              <div className="flex items-center gap-1">
+                 {STEPS.map((_, i) => (
+                   <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === currentStep ? 'bg-blue-600 w-4' : 'bg-slate-200'} transition-all`} />
+                 ))}
               </div>
-            </div>
-
-            <div className="border-t border-neutral-200 px-8 py-4 bg-neutral-50 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-neutral-900 text-white text-sm font-medium rounded hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              <Button 
+                onClick={currentStep === STEPS.length - 1 ? handleSubmit : nextStep} 
+                disabled={!canGoNext || loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
               >
-                {loading ? 'Adding...' : 'Add Product'}
-              </button>
-            </div>
-          </div>
-        </form>
+                 {currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}
+              </Button>
+           </div>
+        </div>
+
+        {/* Support Card */}
+        <div className="mt-8 p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-[2rem] text-white flex items-center justify-between overflow-hidden relative">
+           <div className="relative z-10 flex items-center gap-4">
+              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                 <Info className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                 <p className="text-sm font-black uppercase tracking-widest">Need help with your listing?</p>
+                 <p className="text-xs text-slate-400 font-medium tracking-tight">Professional sellers follow our high-converting guide.</p>
+              </div>
+           </div>
+           <Button variant="outline" className="relative z-10 border-white/20 hover:bg-white/10 text-white font-bold rounded-xl whitespace-nowrap hidden sm:flex">
+              View Guide
+           </Button>
+           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px]" />
+        </div>
       </div>
     </div>
   );
 }
-
-export default AddProductPage;

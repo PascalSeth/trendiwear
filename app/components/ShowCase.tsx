@@ -58,7 +58,7 @@ interface APIProduct {
   averageRating: number;
 }
 
-function LuxuryShowcase() {
+function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,48 +66,56 @@ function LuxuryShowcase() {
   const [autoPlay, setAutoPlay] = useState(true);
   const autoplayRef = useRef<NodeJS.Timeout>();
 
-  // Fetch showcase products from API
+  const mapApiProduct = useCallback((p: APIProduct) => {
+    const isTrendiZip = p.isTrendiZip || p.professional?.role === 'SUPER_ADMIN';
+    const sellerName = isTrendiZip 
+      ? 'TrendiZip'
+      : p.professional?.professionalProfile?.businessName || 
+        `${p.professional?.firstName || ''} ${p.professional?.lastName || ''}`.trim() || 
+        'Artisan';
+    const sellerImage = isTrendiZip
+      ? '/logo3d.jpg'
+      : p.professional?.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
+    const sellerUrl = isTrendiZip
+      ? '/'
+      : p.professional?.professionalProfile?.slug 
+        ? `/tz/${p.professional.professionalProfile.slug}`
+        : `/tz/${p.professional?.id}`;
+
+    return {
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      currency: p.currency || 'GHS',
+      image: p.images?.[0] || '/placeholder.jpg',
+      category: p.category?.name || 'Fashion',
+      rating: p.averageRating || 0,
+      reviews: p._count?.reviews || 0,
+      badge: p.tags?.[0] || undefined,
+      description: p.description || '',
+      seller: sellerName,
+      seller_url: sellerUrl,
+      seller_image: sellerImage,
+      isTrendiZip,
+    };
+  }, []);
+
+  // Hydrate from server or fetch on client
   useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      const mapped = initialProducts.map(mapApiProduct);
+      setProducts(mapped);
+      setLoading(false);
+      return;
+    }
+
     const fetchProducts = async () => {
       try {
         const response = await fetch('/api/showcase-products');
         if (!response.ok) throw new Error('Failed to fetch');
         const data: APIProduct[] = await response.json();
         
-        const mappedProducts: Product[] = data.map((p) => {
-          const isTrendiZip = p.isTrendiZip || p.professional?.role === 'SUPER_ADMIN';
-          const sellerName = isTrendiZip 
-            ? 'TrendiZip'
-            : p.professional?.professionalProfile?.businessName || 
-              `${p.professional?.firstName || ''} ${p.professional?.lastName || ''}`.trim() || 
-              'Artisan';
-          const sellerImage = isTrendiZip
-            ? '/logo3d.jpg'
-            : p.professional?.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
-          const sellerUrl = isTrendiZip
-            ? '/'
-            : p.professional?.professionalProfile?.slug 
-              ? `/tz/${p.professional.professionalProfile.slug}`
-              : `/tz/${p.professional?.id}`;
-
-          return {
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            currency: p.currency || 'GHS',
-            image: p.images?.[0] || '/placeholder.jpg',
-            category: p.category?.name || 'Fashion',
-            rating: p.averageRating || 0,
-            reviews: p._count?.reviews || 0,
-            badge: p.tags?.[0] || undefined,
-            description: p.description || '',
-            seller: sellerName,
-            seller_url: sellerUrl,
-            seller_image: sellerImage,
-            isTrendiZip,
-          };
-        });
-        
+        const mappedProducts = data.map(mapApiProduct);
         setProducts(mappedProducts);
       } catch (error) {
         console.error('Error fetching showcase products:', error);
@@ -117,7 +125,7 @@ function LuxuryShowcase() {
     };
 
     fetchProducts();
-  }, []);
+  }, [initialProducts, mapApiProduct]);
 
   const moveSlide = useCallback((newDirection: 'left' | 'right') => {
     if (products.length === 0) return;

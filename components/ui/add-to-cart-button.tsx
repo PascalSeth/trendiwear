@@ -4,6 +4,7 @@ import React, { useRef } from 'react'
 import { ShoppingBag, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react' // ADD THIS
 import { useCartStore } from '@/lib/stores'
 
 interface AddToCartButtonProps {
@@ -13,6 +14,9 @@ interface AddToCartButtonProps {
   variant?: 'default' | 'overlay' | 'inline' | 'primary'
   onCartChange?: (isInCart: boolean) => void
   quantity?: number
+  selectedSize?: string
+  selectedColor?: string
+  isOutOfStock?: boolean
 }
 
 export function AddToCartButton({
@@ -21,8 +25,12 @@ export function AddToCartButton({
   size = 'md',
   variant = 'default',
   onCartChange,
-  quantity = 1
+  quantity = 1,
+  selectedSize,
+  selectedColor,
+  isOutOfStock = false
 }: AddToCartButtonProps) {
+  const { status } = useSession() // GET SESSION STATUS
   const isInCart = useCartStore(state => state.isInCart)
   const addToCart = useCartStore(state => state.addToCart)
   const removeFromCart = useCartStore(state => state.removeFromCart)
@@ -30,23 +38,42 @@ export function AddToCartButton({
 
   const productInCart = isInCart(productId)
 
-  const handleCartAction = () => {
+  const handleCartAction = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // AUTH CHECK: If not logged in, prompt user
+    if (status === 'unauthenticated') {
+      toast.error("Please login to add items to your bag", {
+        description: "You need an account to manage your shopping cart.",
+        duration: 3000,
+      })
+      return
+    }
+
     if (pendingRef.current) return
+    if (isOutOfStock && !productInCart) {
+      toast.error("Item is out of stock")
+      return
+    }
+
     pendingRef.current = true
 
-    // Fire and forget - don't await, let optimistic update show immediately
     if (productInCart) {
       onCartChange?.(false)
-      toast.success("Removed from bag", { duration: 1500 })
-      removeFromCart(productId).finally(() => {
-        pendingRef.current = false
-      })
+      const success = await removeFromCart(productId)
+      if (success) {
+        toast.success("Removed from bag", { duration: 1500 })
+      }
+      pendingRef.current = false
     } else {
-      onCartChange?.(true)
-      toast.success("Added to bag!", { duration: 1500 })
-      addToCart(productId, quantity).finally(() => {
-        pendingRef.current = false
-      })
+      // For adding, we'll wait for the result to avoid fake success toasts
+      const success = await addToCart(productId, quantity, selectedSize, selectedColor)
+      if (success) {
+        onCartChange?.(true)
+        toast.success("Added to bag!", { duration: 1500 })
+      }
+      pendingRef.current = false
     }
   }
 

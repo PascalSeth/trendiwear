@@ -1,18 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import {
   Star, MapPin, Phone, Clock,
-  ArrowRight, ShoppingBag, MessageSquare,
-  Globe, Instagram, Facebook, Settings, BadgeCheck
+  ArrowRight, ShoppingBag, MessageSquare, Zap,
+  Globe, Instagram, Facebook, Settings, BadgeCheck, Loader, ImageIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WishlistButton } from '@/components/ui/wishlist-button';
-import { AddToCartButton } from '@/components/ui/add-to-cart-button';
+import { ProductCard } from '@/components/common/ProductCard';
+import { ServiceListItem } from '@/app/components/services/ServiceListItem';
+import { type ServiceWithVariants } from '@/app/components/services/ServiceCard';
+import { useRouter } from 'next/navigation';
 
 // --- TYPES ---
 interface DayHours {
@@ -124,6 +126,10 @@ interface ProductPreview {
   _count: {
     wishlistItems: number;
   };
+  category?: {
+    name: string;
+    slug: string;
+  };
   tags?: string[];
 }
 
@@ -136,6 +142,7 @@ export interface ProfessionalProfile {
   rating?: number;
   totalReviews?: number;
   isVerified?: boolean;
+  galleryImages?: string[];
   location?: Location;
   reviews?: Review[];
   featuredProducts?: ProductPreview[];
@@ -154,6 +161,7 @@ export interface ProfessionalProfile {
   specialization: {
     name: string;
   };
+  slug: string;
 }
 
 // --- COMPONENTS ---
@@ -178,149 +186,6 @@ const InfoCard = ({ icon: Icon, title, children, className = "" }: { icon: Lucid
   </div>
 );
 
-// Product Card with image cycling on hover
-const FeaturedProductCard = ({ product, index }: { product: ProductPreview; index: number }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  const sellerName = product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`;
-  const sellerImage = product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
-  const isVerified = product.professional.professionalProfile?.isVerified || false;
-  const isTrendiZip = sellerName === 'TrendiZip';
-
-  // Cycle through images on hover
-  useEffect(() => {
-    if (!isHovered || product.images.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [isHovered, product.images.length]);
-
-  // Reset image index when not hovered
-  useEffect(() => {
-    if (!isHovered) setCurrentImageIndex(0);
-  }, [isHovered]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-    >
-      <Link 
-        href={`/shopping/products/${product.id}`} 
-        className="group relative w-full cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-[1.02] block"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="relative aspect-[3/4] overflow-hidden bg-stone-100 rounded-t-2xl">
-          {/* Images with crossfade */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentImageIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
-            >
-              <Image
-                src={product.images[currentImageIndex] || "/placeholder-product.jpg"}
-                alt={product.name}
-                fill
-                className={cn(
-                  "object-cover transition-transform duration-700",
-                  isHovered && "scale-105"
-                )}
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Image Indicators */}
-          {product.images.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-              {product.images.slice(0, 4).map((_, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                    idx === currentImageIndex ? "bg-white w-4" : "bg-white/50"
-                  )}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
-            isHovered && "opacity-100"
-          )} />
-
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={sellerImage}
-                alt={sellerName}
-                width={24}
-                height={24}
-                className="rounded-full border border-white/50"
-              />
-              {(isTrendiZip || isVerified) && (
-                <div className={`absolute -bottom-0.5 -right-0.5 rounded-full ${isTrendiZip ? 'bg-blue-500' : 'bg-emerald-500'}`}>
-                  <BadgeCheck size={10} className="text-white" />
-                </div>
-              )}
-            </div>
-            <div className="text-white text-xs font-medium drop-shadow-lg">
-              {sellerName}
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute bottom-6 left-6 right-6 flex justify-between items-end z-20"
-          >
-            <div className="flex flex-col gap-2">
-              <button className="bg-white text-black px-6 py-3 rounded-full font-medium text-sm hover:bg-stone-200 transition-colors flex items-center gap-2">
-                View Details <ArrowRight size={16} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
-                <WishlistButton productId={product.id} variant="default" size="sm" />
-              </div>
-              <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white hover:text-black transition-all">
-                <AddToCartButton productId={product.id} variant="default" size="sm" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="mt-6 flex justify-between items-start border-b border-stone-200 pb-4 group-hover:border-black transition-colors px-6">
-          <div>
-            <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">Category</p>
-            <h3 className="text-xl font-serif font-medium text-stone-900 leading-tight group-hover:italic transition-all">
-              {product.name}
-            </h3>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-medium text-stone-900">{product.currency} {product.price.toFixed(2)}</p>
-            <div className="flex items-center justify-end gap-1 mt-1 text-xs text-stone-400">
-              <Star size={10} className="fill-current text-stone-400" />
-              4.5
-            </div>
-          </div>
-        </div>
-
-        <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/30 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-95 group-hover:scale-100 pointer-events-none"></div>
-      </Link>
-    </motion.div>
-  );
-};
 
 interface ProfileClientProps {
   profile: ProfessionalProfile;
@@ -333,20 +198,50 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
   const coverImage = profile.coverImage || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop";
   const profileImage = profile.businessImage || profile.user.profileImage || '/placeholder-avatar.jpg';
 
+  // Tabs & modals state
+  const isModel = profile.specialization?.name?.toLowerCase().includes('model');
+  const [activeTab, setActiveTab] = useState<'products' | 'services' | 'reviews' | 'gallery'>(isModel ? 'gallery' : 'products')
+  const [services, setServices] = useState<ServiceWithVariants[]>([])
+  const [servicesLoading, setServicesLoading] = useState(false)
+  const router = useRouter();
+
   // Real-time open/closed status
   const [openStatus, setOpenStatus] = useState(() => checkIfOpen(profile.location?.availabilityRaw));
 
   useEffect(() => {
-    // Update immediately
     setOpenStatus(checkIfOpen(profile.location?.availabilityRaw));
-    
-    // Update every minute
     const interval = setInterval(() => {
       setOpenStatus(checkIfOpen(profile.location?.availabilityRaw));
     }, 60000);
-
     return () => clearInterval(interval);
   }, [profile.location?.availabilityRaw]);
+
+  // Fetch services when tab changes
+  const fetchServices = useCallback(async () => {
+    try {
+      setServicesLoading(true);
+      const response = await fetch(`/api/services?professionalId=${profile.user.id}&limit=50`);
+      if (response.ok) {
+        const data: { services: ServiceWithVariants[] } = await response.json();
+        setServices(data.services || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch services:', error);
+    } finally {
+      setServicesLoading(false);
+    }
+  }, [profile.user.id]);
+
+  useEffect(() => {
+    if (activeTab === 'services' && services.length === 0) {
+      fetchServices();
+    }
+  }, [activeTab, services.length, fetchServices]);
+
+  const handleBookService = (service: ServiceWithVariants) => {
+    // Navigate to full-page booking experience
+    router.push(`/tz/${profile.slug}/book/${service.professionalServiceId}`);
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 pb-20">
@@ -439,13 +334,21 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
                   </Link>
                   
                   {isOwner && (
-                    <Link 
-                      href="/dashboard" 
-                      className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Dashboard
-                    </Link>
+                    <>
+                      <Link 
+                        href="/settings" 
+                        className="bg-white border border-stone-200 text-stone-800 px-6 py-3 rounded-xl font-semibold hover:bg-stone-50 transition-all shadow-sm flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Edit Profile
+                      </Link>
+                      <Link 
+                        href="/dashboard" 
+                        className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2"
+                      >
+                        Dashboard
+                      </Link>
+                    </>
                   )}
                   
                   <button 
@@ -527,93 +430,245 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
           )}
         </div>
 
-        {/* RIGHT COLUMN - Reviews & Products (Span 8) */}
-        <div className="lg:col-span-8 space-y-8">
-          
-          {/* Featured Products */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-serif font-bold">Trending Products</h2>
-              <Link href={`/tz/${slug}/shop`} className="text-sm font-bold text-amber-600 flex items-center gap-1 hover:underline">
-                View All <ArrowRight size={16} />
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {profile.featuredProducts?.map((product, index) => (
-                <FeaturedProductCard key={product.id} product={product} index={index} />
-              ))}
-              {[...Array(Math.max(0, 3 - (profile.featuredProducts?.length || 0)))].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-stone-100 rounded-2xl border border-dashed border-stone-300 flex items-center justify-center text-stone-400">
-                  <ShoppingBag size={24} />
+        {/* RIGHT COLUMN - Tabbed Content (Span 8) */}
+        <div className="lg:col-span-8">
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6 border-b border-stone-200">
+            {(isModel 
+              ? ['gallery', 'products', 'services', 'reviews'] as const
+              : ['products', 'services', 'gallery', 'reviews'] as const
+            ).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-4 py-3 font-semibold text-sm border-b-2 transition-all capitalize',
+                  activeTab === tab
+                    ? 'border-amber-600 text-amber-600'
+                    : 'border-transparent text-stone-600 hover:text-stone-900'
+                )}
+              >
+                {tab === 'gallery' && <ImageIcon className="w-4 h-4 inline mr-2" />}
+                {tab === 'products' && <ShoppingBag className="w-4 h-4 inline mr-2" />}
+                {tab === 'services' && <Zap className="w-4 h-4 inline mr-2" />}
+                {tab === 'reviews' && <MessageSquare className="w-4 h-4 inline mr-2" />}
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <AnimatePresence mode="wait">
+            {/* Gallery Tab */}
+            {activeTab === 'gallery' && (
+              <motion.section
+                key="gallery"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-serif font-bold">Portfolio Gallery</h2>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Reviews Section */}
-          <section className="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm">
-             <div className="flex items-center justify-between mb-6">
-               <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
-                    <MessageSquare className="w-6 h-6" />
+                
+                {profile.galleryImages && profile.galleryImages.length > 0 ? (
+                  <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+                    {profile.galleryImages.map((img, i) => (
+                      <div key={i} className="break-inside-avoid relative rounded-2xl overflow-hidden group cursor-pointer bg-stone-100 mb-4 ring-1 ring-stone-200">
+                        <Image src={img} alt={`Gallery ${i}`} width={800} height={1200} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <ImageIcon className="text-white w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <h2 className="text-xl font-serif font-bold">Customer Reviews</h2>
-                    <p className="text-sm text-stone-500">What people are saying</p>
+                ) : (
+                  <div className="text-center py-12">
+                    <ImageIcon className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                    <p className="text-stone-600">No images in portfolio yet.</p>
                   </div>
-               </div>
-               <Link href={`/tz/${slug}/reviews`} className="text-xs font-bold uppercase tracking-wider border-b border-stone-300 pb-1 hover:border-black transition-colors">
-                 Read All
-               </Link>
-             </div>
+                )}
+              </motion.section>
+            )}
 
-             <div className="space-y-6">
-               {profile.reviews?.slice(0, 3).map((review) => (
-                 <div key={review.id} className="border-b border-stone-100 pb-6 last:border-0 last:pb-0">
-                   <div className="flex justify-between items-start mb-2">
-                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden">
-                         {review.userAvatar ? (
-                           <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="object-cover"/>
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
-                             {review.userName.charAt(0)}
-                           </div>
-                         )}
-                       </div>
-                       <div>
-                         <p className="font-bold text-stone-900 text-sm">{review.userName}</p>
-                         <div className="flex text-amber-500 text-[10px] gap-0.5">
-                           {[...Array(5)].map((_, i) => (
-                             <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={10} />
+            {/* Products Tab */}
+            {activeTab === 'products' && (
+              <motion.section
+                key="products"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-serif font-bold">Trending Products</h2>
+                  <Link href={`/tz/${slug}/shop`} className="text-sm font-bold text-amber-600 flex items-center gap-1 hover:underline">
+                    View All <ArrowRight size={16} />
+                  </Link>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {profile.featuredProducts?.map((product, index) => (
+                    <ProductCard 
+                      key={product.id} 
+                      item={{ 
+                        ...product, 
+                        category: { name: "Featured", slug: "featured" }, 
+                        stockQuantity: 1 
+                      }} 
+                      index={index} 
+                    />
+                  ))}
+                  {[...Array(Math.max(0, 3 - (profile.featuredProducts?.length || 0)))].map((_, i) => (
+                    <div key={i} className="aspect-[3/4] bg-stone-100 rounded-2xl border border-dashed border-stone-300 flex items-center justify-center text-stone-400">
+                      <ShoppingBag size={24} />
+                    </div>
+                  ))}
+                </div>
+              </motion.section>
+            )}
+
+            {/* Services Tab */}
+            {activeTab === 'services' && (
+              <motion.section
+                key="services"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-12"
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-serif font-bold">Catalogue of Services</h2>
+                      <p className="text-sm text-stone-500">Expertly curated to match your needs</p>
+                    </div>
+                  </div>
+                </div>
+
+                {servicesLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="flex flex-col items-center gap-4">
+                       <Loader className="w-8 h-8 animate-spin text-amber-600" />
+                       <p className="text-xs font-black text-stone-400 uppercase tracking-widest">Loading our services...</p>
+                    </div>
+                  </div>
+                ) : services.length === 0 ? (
+                  <div className="text-center py-20 bg-stone-50 rounded-[2rem] border border-dashed border-stone-200">
+                    <Zap className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                    <p className="text-stone-600 font-medium">No services currently listed</p>
+                  </div>
+                ) : (
+                  <div className="space-y-32 py-12">
+                    {/* Group services by category if available, otherwise just list them */}
+                    {Object.entries(
+                      services.reduce((acc, s) => {
+                        const cat = s.category?.name || "Premium Selection";
+                        if (!acc[cat]) acc[cat] = [];
+                        acc[cat].push(s);
+                        return acc;
+                      }, {} as Record<string, ServiceWithVariants[]>)
+                    ).map(([category, catServices]) => (
+                      <div key={category} className="space-y-16">
+                         <div className="flex items-center gap-10">
+                            <div className="flex flex-col">
+                               <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-2">Category</span>
+                               <h3 className="text-4xl md:text-5xl font-serif font-bold text-stone-900 tracking-tight">{category}</h3>
+                            </div>
+                            <div className="h-[2px] flex-1 bg-stone-900/5 mt-auto mb-2" />
+                         </div>
+                         <div className="flex flex-col">
+                           {catServices.map((service, idx) => (
+                             <ServiceListItem
+                               key={service.id}
+                               service={service}
+                               onBook={handleBookService}
+                               index={idx}
+                             />
                            ))}
                          </div>
-                       </div>
-                     </div>
-                     <span className="text-xs text-stone-400">{review.date}</span>
-                   </div>
-                   {review.productName && (
-                     <div className="flex items-center gap-2 mb-2 pl-13">
-                       {review.productImage && (
-                         <div className="w-8 h-8 rounded bg-stone-100 overflow-hidden">
-                           <Image src={review.productImage} alt={review.productName} width={32} height={32} className="object-cover w-full h-full"/>
-                         </div>
-                       )}
-                       <span className="text-xs text-stone-500">Review on <span className="font-medium text-stone-700">{review.productName}</span></span>
-                     </div>
-                   )}
-                   <p className="text-stone-600 text-sm leading-relaxed pl-13">
-                     &apos;{review.comment}&apos;
-                   </p>
-                 </div>
-               ))}
-               {(!profile.reviews || profile.reviews.length === 0) && (
-                 <p className="text-stone-500 text-sm text-center py-4">No reviews yet.</p>
-               )}
-             </div>
-          </section>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.section>
+            )}
 
+            {/* Reviews Tab */}
+            {activeTab === 'reviews' && (
+              <motion.section
+                key="reviews"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-serif font-bold">Customer Reviews</h2>
+                      <p className="text-sm text-stone-500">What people are saying</p>
+                    </div>
+                  </div>
+                  <Link href={`/tz/${slug}/reviews`} className="text-xs font-bold uppercase tracking-wider border-b border-stone-300 pb-1 hover:border-black transition-colors">
+                    Read All
+                  </Link>
+                </div>
+
+                <div className="space-y-6">
+                  {profile.reviews?.slice(0, 3).map((review) => (
+                    <div key={review.id} className="border-b border-stone-100 pb-6 last:border-0 last:pb-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden">
+                            {review.userAvatar ? (
+                              <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="object-cover"/>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
+                                {review.userName.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-stone-900 text-sm">{review.userName}</p>
+                            <div className="flex text-amber-500 text-[10px] gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={10} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-xs text-stone-400">{review.date}</span>
+                      </div>
+                      {review.productName && (
+                        <div className="flex items-center gap-2 mb-2 pl-13">
+                          {review.productImage && (
+                            <div className="w-8 h-8 rounded bg-stone-100 overflow-hidden">
+                              <Image src={review.productImage} alt={review.productName} width={32} height={32} className="object-cover w-full h-full"/>
+                            </div>
+                          )}
+                          <span className="text-xs text-stone-500">Review on <span className="font-medium text-stone-700">{review.productName}</span></span>
+                        </div>
+                      )}
+                      <p className="text-stone-600 text-sm leading-relaxed pl-13">
+                        &apos;{review.comment}&apos;
+                      </p>
+                    </div>
+                  ))}
+                  {(!profile.reviews || profile.reviews.length === 0) && (
+                    <p className="text-stone-500 text-sm text-center py-4">No reviews yet.</p>
+                  )}
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

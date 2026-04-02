@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
 import {
   initializeTransaction,
   generateReference,
   toPesewas,
-  calculateSplit,
 } from '@/lib/paystack'
 
 // POST: Initialize a payment for an order
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch the order with items and professional details
+    // Fetch the order with customer details
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -37,24 +36,12 @@ export async function POST(request: NextRequest) {
         items: {
           include: {
             product: {
-              include: {
-                professional: {
-                  include: {
-                    professionalProfile: {
-                      select: {
-                        id: true,
-                        businessName: true,
-                        paystackSubaccountCode: true,
-                        paymentSetupComplete: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+              select: {
+                name: true,
+              }
+            }
+          }
         },
-        address: true,
       },
     })
 
@@ -85,36 +72,11 @@ export async function POST(request: NextRequest) {
     if (order.paystackReference && order.paymentStatus === 'PENDING') {
       // Return existing payment link
       return NextResponse.json({
+        success: true,
         authorizationUrl: `https://checkout.paystack.com/${order.paystackAccessCode}`,
         reference: order.paystackReference,
         accessCode: order.paystackAccessCode,
       })
-    }
-
-    // Group items by professional for split payments
-    const professionalItems = new Map<string, {
-      subaccountCode: string | null
-      businessName: string
-      amount: number
-      items: typeof order.items
-    }>()
-
-    for (const item of order.items) {
-      const professional = item.product.professional
-      const profile = professional.professionalProfile
-
-      if (!professionalItems.has(item.professionalId)) {
-        professionalItems.set(item.professionalId, {
-          subaccountCode: profile?.paystackSubaccountCode || null,
-          businessName: profile?.businessName || `${professional.firstName} ${professional.lastName}`,
-          amount: 0,
-          items: [],
-        })
-      }
-
-      const profData = professionalItems.get(item.professionalId)!
-      profData.amount += item.price * item.quantity
-      profData.items.push(item)
     }
 
     // Use client-provided reference if supplied, otherwise generate unique reference
@@ -127,120 +89,36 @@ export async function POST(request: NextRequest) {
     const parsed = body as InitBody
     const reference = parsed.reference || generateReference('TZ')
     
-    // Calculate platform fee
-    const { platformFee, platformFeePercent } = calculateSplit(order.totalPrice)
-
-    // Build split payment configuration
-    // For single seller orders, use simple subaccount split
-    // For multi-seller orders, use split code (more complex)
-    const professionals = Array.from(professionalItems.values())
-    
-    let transactionPayload: Parameters<typeof initializeTransaction>[0]
-
-    if (professionals.length === 1 && professionals[0].subaccountCode) {
-      // Single seller with subaccount - use percentage split so platform fee
-      // is deducted from the seller's share rather than giving the full
-      // amount to the subaccount.
-      const prof = professionals[0]
-      const sharePercent = Math.round((prof.amount / order.totalPrice) * (100 - platformFeePercent))
-
-      transactionPayload = {
-        email: order.customer.email,
-        amount: toPesewas(order.totalPrice),
-        reference,
-        callback_url: callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment-complete`,
-        metadata: {
-          orderId: order.id,
-          customerId: user.id,
-          orderItems: order.items.map(item => ({
-            productId: item.productId,
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          custom_fields: [
-            {
-              display_name: 'Order ID',
-              variable_name: 'order_id',
-              value: order.id,
-            },
-            {
-              display_name: 'Customer',
-              variable_name: 'customer_name',
-              value: `${order.customer.firstName} ${order.customer.lastName}`,
-            },
-          ],
-        },
-        split: {
-          type: 'percentage',
-          bearer_type: 'account',
-          subaccounts: [
-            {
-              subaccount: prof.subaccountCode!,
-              share: sharePercent,
-            },
-          ],
-        },
-        channels: ['card', 'mobile_money', 'bank_transfer'],
-      }
-    } else if (professionals.some(p => p.subaccountCode)) {
-      // Multiple sellers or mixed - use percentage split
-      const subaccounts = professionals
-        .filter(p => p.subaccountCode)
-        .map(p => ({
-          subaccount: p.subaccountCode!,
-          share: Math.round((p.amount / order.totalPrice) * (100 - platformFeePercent)),
-        }))
-
-      transactionPayload = {
-        email: order.customer.email,
-        amount: toPesewas(order.totalPrice),
-        reference,
-        callback_url: callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment-complete`,
-        metadata: {
-          orderId: order.id,
-          customerId: user.id,
-          custom_fields: [
-            {
-              display_name: 'Order ID',
-              variable_name: 'order_id',
-              value: order.id,
-            },
-          ],
-        },
-        split: {
-          type: 'percentage',
-          bearer_type: 'account',
-          subaccounts,
-        },
-        channels: ['card', 'mobile_money', 'bank_transfer'],
-      }
-    } else {
-      // No subaccounts - payment goes to main account
-      // You may want to handle this case differently (e.g., reject payment)
-      transactionPayload = {
-        email: order.customer.email,
-        amount: toPesewas(order.totalPrice),
-        reference,
-        callback_url: callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment-complete`,
-        metadata: {
-          orderId: order.id,
-          customerId: user.id,
-          noSplit: true, // Flag that this payment didn't split
-          custom_fields: [
-            {
-              display_name: 'Order ID',
-              variable_name: 'order_id',
-              value: order.id,
-            },
-          ],
-        },
-        channels: ['card', 'mobile_money', 'bank_transfer'],
-      }
-    }
-
-    // Initialize transaction with Paystack
-    const paystackResponse = await initializeTransaction(transactionPayload)
+    // Initialize transaction with Paystack (100% to platform account)
+    const paystackResponse = await initializeTransaction({
+      email: order.customer.email,
+      amount: toPesewas(order.totalPrice),
+      reference,
+      callback_url: callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment-complete`,
+      metadata: {
+        orderId: order.id,
+        customerId: user.id,
+        orderItems: order.items.map(item => ({
+          productId: item.productId,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        custom_fields: [
+          {
+            display_name: 'Order ID',
+            variable_name: 'order_id',
+            value: order.id,
+          },
+          {
+            display_name: 'Customer',
+            variable_name: 'customer_name',
+            value: `${order.customer.firstName} ${order.customer.lastName}`,
+          },
+        ],
+      },
+      channels: ['card', 'mobile_money', 'bank_transfer'],
+    })
 
     // Update order with payment reference
     await prisma.order.update({
@@ -248,7 +126,6 @@ export async function POST(request: NextRequest) {
       data: {
         paystackReference: reference,
         paystackAccessCode: paystackResponse.data.access_code,
-        platformFee,
         paymentMethod: 'paystack',
       },
     })

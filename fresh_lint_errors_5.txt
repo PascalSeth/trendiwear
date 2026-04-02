@@ -1,0 +1,87 @@
+
+> trendizip@0.1.0 lint
+> next lint
+
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+
+./app/api/products/[id]/duplicate/route.ts
+92:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+93:80  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/dashboard/(pages)/catalogue/products/add-product/page.tsx
+60:25  Error: '_setDiscountPrice' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+370:36  Error: 'Image' is not defined.  react/jsx-no-undef
+
+./app/dashboard/(pages)/management/subscriptions/page.tsx
+447:38  Error: '_cycle' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/(pages)/professionals/page.tsx
+250:27  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/dashboard/(pages)/riders/page.tsx
+80:14  Error: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+99:14  Error: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+113:14  Error: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/(pages)/showcase/AddToShowcaseDialog.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'fetchProducts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+148:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/dashboard/(pages)/showcase/page.tsx
+295:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/dashboard/(pages)/showcase/ShowcaseDataTable.tsx
+117:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/dashboard/bookings/BookingsManager.tsx
+7:3  Error: 'MoreHorizontal' is defined but never used.  @typescript-eslint/no-unused-vars
+16:48  Error: 'differenceInHours' is defined but never used.  @typescript-eslint/no-unused-vars
+69:84  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+85:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+92:9  Error: 'markAsPaid' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+96:13  Error: 'res' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+106:14  Error: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/bookings/page.tsx
+2:10  Error: 'prisma' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/components/DashboardShell.tsx
+24:9  Error: 'router' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/components/RecentActivity.tsx
+24:10  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/dashboard/components/SetupGuide.tsx
+68:6  Warning: React Hook useEffect has a missing dependency: 'isExpanded'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:37  Error: 'index' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/components/sheet/Collections/CollectionSheet.tsx
+383:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/dashboard/page.tsx
+2:10  Error: 'PAYSTACK_CONFIG' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/subscription/SubscriptionTiers.tsx
+32:3  Error: 'currentSubscriptionId' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/ui/notification-bell.tsx
+92:6  Warning: React Hook useCallback has a missing dependency: 'context'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/booking-utils.ts
+2:10  Error: 'addHours' is defined but never used.  @typescript-eslint/no-unused-vars
+2:20  Error: 'isAfter' is defined but never used.  @typescript-eslint/no-unused-vars
+2:58  Error: 'parse' is defined but never used.  @typescript-eslint/no-unused-vars
+49:12  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+120:9  Error: 'buffer' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./lib/paystack.ts
+538:66  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services.ts
+187:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

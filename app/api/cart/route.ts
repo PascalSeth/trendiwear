@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
+import { PAYSTACK_CONFIG } from "@/lib/paystack"
 
 // Helper function to calculate effective price with discount
 function calculateEffectivePrice(product: {
@@ -90,12 +91,15 @@ export async function GET() {
     }, 0)
     const itemCount = itemsWithDiscount.reduce((sum, item) => sum + item.quantity, 0)
 
+    const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100
+    const estimatedTotal = round(subtotal * (1 + PAYSTACK_CONFIG.platformFeePercent / 100))
+
     return NextResponse.json({
       items: itemsWithDiscount,
       summary: {
         itemCount,
-        subtotal,
-        estimatedTotal: subtotal * 1.03,
+        subtotal: round(subtotal),
+        estimatedTotal,
       },
     })
   } catch (error) {
@@ -117,11 +121,15 @@ export async function POST(request: NextRequest) {
       where: { id: productId },
     })
 
-    if (!product || !product.isActive || !product.isInStock) {
+    if (!product || !product.isActive) {
       return NextResponse.json({ error: "Product not available" }, { status: 400 })
     }
 
-    if (product.stockQuantity < quantity) {
+    if (!product.isPreorder && !product.isInStock) {
+      return NextResponse.json({ error: "Product currently out of stock" }, { status: 400 })
+    }
+
+    if (!product.isPreorder && product.stockQuantity < quantity) {
       return NextResponse.json({ error: "Insufficient stock" }, { status: 400 })
     }
 
@@ -184,10 +192,11 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    await prisma.product.update({
+    // Background analytical update (SPEED UP)
+    prisma.product.update({
       where: { id: productId },
       data: { cartCount: { increment: 1 } },
-    })
+    }).catch(() => {})
 
     // Calculate effective price for the item
     const { effectivePrice, isDiscountActive, discountAmount } = calculateEffectivePrice(cartItem.product)

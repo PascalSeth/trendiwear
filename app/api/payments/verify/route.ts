@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
 import { verifyTransaction, toCedis } from '@/lib/paystack'
+import { createYangoClaim, acceptYangoClaim } from '@/lib/yango'
+import { fulfillOrder } from '@/lib/orders'
 
 // GET: Verify a payment by reference
 export async function GET(request: NextRequest) {
@@ -18,39 +20,28 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Find the order by reference
-    const order = await prisma.order.findUnique({
-      where: { paystackReference: reference },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { paystackReference: reference },
+          { deliveryPaystackReference: reference }
+        ]
+      },
       include: {
-        customer: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+        customer: true,
+        address: true,
         items: {
           include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                images: true,
-              },
-            },
+            product: true,
           },
         },
       },
     })
 
-    // If no order exists yet, verify the payment and return success
-    // The order will be created by the client after verification
+    // If no order exists yet, return error or handle creation (legacy logic)
     if (!order) {
-      // Still verify with Paystack to ensure payment was successful
       const paystackResponse = await verifyTransaction(reference)
       const { data } = paystackResponse
-
       if (data.status === 'success') {
         return NextResponse.json({
           success: true,
@@ -59,135 +50,125 @@ export async function GET(request: NextRequest) {
           verifiedAmount: data.amount,
           needsOrderCreation: true,
         })
-      } else {
-        return NextResponse.json({
-          success: false,
-          status: 'failed',
-          error: 'Payment verification failed',
-        })
       }
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
     // Verify the order belongs to the user
     if (order.customerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
-    // If already completed, return the order
-    if (order.paymentStatus === 'PAID') {
-      return NextResponse.json({
-        success: true,
-        status: 'success',
-        message: 'Payment already verified',
-        order: {
-          id: order.id,
-          totalPrice: order.totalPrice,
-          paymentStatus: order.paymentStatus,
-          status: order.status,
-          paidAt: order.paystackPaidAt,
-        },
-      })
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     // Verify with Paystack
     const paystackResponse = await verifyTransaction(reference)
     const { data } = paystackResponse
 
-    if (data.status === 'success') {
-      // Payment successful - update order
-      const updatedOrder = await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentStatus: 'PAID',
-          status: 'PROCESSING',
-          paystackPaidAt: new Date(data.paid_at),
-          paystackChannel: data.channel,
-          paystackFees: data.fees ? toCedis(data.fees) : null,
-        },
-      })
-
-      // Update product stock and sold count
-      for (const item of order.items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQuantity: { decrement: item.quantity },
-            soldCount: { increment: item.quantity },
-          },
-        })
-      }
-
-      // Create notification for customer
-      await prisma.notification.create({
-        data: {
-          userId: order.customerId,
-          type: 'ORDER_UPDATE',
-          title: 'Payment Successful',
-          message: `Your payment of GHS ${order.totalPrice.toFixed(2)} for order #${order.id.substring(0, 8)} was successful.`,
-          data: { orderId: order.id },
-        },
-      })
-
-      // Notify each seller
-      const sellerIds = [...new Set(order.items.map(item => item.professionalId))]
-      for (const sellerId of sellerIds) {
-        const sellerItems = order.items.filter(item => item.professionalId === sellerId)
-        const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-
-        await prisma.notification.create({
-          data: {
-            userId: sellerId,
-            type: 'ORDER_UPDATE',
-            title: 'New Order Received',
-            message: `You have a new order worth GHS ${sellerTotal.toFixed(2)}. Please prepare for shipping.`,
-            data: {
-              orderId: order.id,
-              items: sellerItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
-            },
-          },
-        })
-      }
-
-      return NextResponse.json({
-        success: true,
-        status: 'success',
-        message: 'Payment verified successfully',
-        order: {
-          id: updatedOrder.id,
-          totalPrice: updatedOrder.totalPrice,
-          paymentStatus: updatedOrder.paymentStatus,
-          status: updatedOrder.status,
-          paidAt: updatedOrder.paystackPaidAt,
-          channel: updatedOrder.paystackChannel,
-        },
-      })
-    } else if (data.status === 'pending') {
-      return NextResponse.json({
-        success: false,
-        status: 'pending',
-        message: 'Payment is still being processed',
-      })
-    } else {
-      // Payment failed
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentStatus: 'FAILED',
-        },
-      })
-
-      return NextResponse.json({
-        success: false,
-        status: data.status,
-        message: data.gateway_response || 'Payment failed',
-      })
+    if (data.status !== 'success') {
+       if (data.status === 'pending') {
+         return NextResponse.json({ success: false, status: 'pending', message: 'Payment pending' })
+       }
+       await prisma.order.update({
+         where: { id: order.id },
+         data: { paymentStatus: 'FAILED' }
+       })
+       return NextResponse.json({ success: false, status: data.status, message: data.gateway_response || 'Payment failed' })
     }
+
+    const isDeliveryPayment = order.deliveryPaystackReference === reference
+
+    if (isDeliveryPayment) {
+       // --- Handle Delivery Payment ---
+       const updatedOrder = await prisma.order.update({
+         where: { id: order.id },
+         data: {
+           status: 'SHIPPED',
+           yangoStatus: 'PAID',
+           paystackPaidAt: new Date(data.paid_at),
+         }
+       })
+
+       // Trigger Yango Claim
+       try {
+         const prof = await prisma.professionalProfile.findUnique({
+            where: { userId: order.items[0].professionalId },
+            include: { user: true }
+         })
+         
+         if (prof && prof.latitude && prof.longitude && order.address && order.address.latitude && order.address.longitude) {
+           const claim = await createYangoClaim({
+             route_points: [
+               {
+                 point: [prof.longitude, prof.latitude],
+                 type: 'source',
+                 visit_order: 1,
+                 contact: { name: prof.businessName || "Professional", phone: prof.user.phone || "+2330000000" },
+                 address: { fullname: prof.location || "Store Location" }
+               },
+               {
+                 point: [order.address.longitude, order.address.latitude],
+                 type: 'destination',
+                 visit_order: 2,
+                 contact: { name: `${order.customer.firstName} ${order.customer.lastName}`, phone: order.customer.phone || "+2330000000" },
+                 address: { fullname: `${order.address.street}, ${order.address.city}` }
+               }
+             ],
+             items: order.items.map((item) => ({
+               title: item.product.name,
+               quantity: item.quantity,
+               cost_value: item.price.toString(),
+               cost_currency: "GHS",
+               weight: 0.5
+             }))
+           })
+           
+           await prisma.order.update({
+             where: { id: order.id },
+             data: { yangoClaimId: claim.id }
+           })
+           
+           await acceptYangoClaim(claim.id)
+         }
+       } catch (yangoErr) {
+         console.error("Yango claim dispatch failed:", yangoErr)
+       }
+
+       return NextResponse.json({
+         success: true,
+         status: 'success',
+         message: 'Delivery payment verified and courier dispatched',
+         order: updatedOrder
+       })
+    } else {
+       // --- Handle Initial Order Payment ---
+       // If already completed, just return
+       if (order.paymentStatus === 'PAID') {
+         return NextResponse.json({ success: true, status: 'success', order })
+       }
+
+       const updatedOrder = await prisma.order.update({
+         where: { id: order.id },
+         data: {
+           paymentStatus: 'PAID',
+           status: 'PROCESSING',
+           paystackPaidAt: new Date(data.paid_at),
+           paystackChannel: data.channel,
+           paystackFees: data.fees ? toCedis(data.fees) : null,
+         },
+       })
+
+        // Fulfillment logic (stock, cart, notifications)
+        await fulfillOrder(order.id)
+
+       return NextResponse.json({
+         success: true,
+         status: 'success',
+         message: 'Payment verified successfully',
+         order: updatedOrder
+       })
+    }
+
   } catch (error) {
     const { status, message } = mapErrorToResponse(error, { route: 'payments.verify' })
-    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })
   }
 }

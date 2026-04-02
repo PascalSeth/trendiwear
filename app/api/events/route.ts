@@ -33,7 +33,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const user = await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     const contentType = request.headers.get("content-type") || ""
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
       if (imageFile) {
         // Upload to Supabase
-        const fileName = `event-${Date.now()}-${imageFile.name}`
+        const fileName = `${user.id}/event-images/event-${Date.now()}-${imageFile.name}`
         imageUrl = await uploadFile(imageFile, "images", fileName)
       }
     } else {

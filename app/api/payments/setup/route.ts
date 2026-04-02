@@ -2,8 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { 
-  createSubaccount, 
-  updateSubaccount, 
+  createTransferRecipient, 
   validateGhanaPhone,
   PAYSTACK_CONFIG,
   getMomoProviderName
@@ -56,8 +55,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { momoNumber, momoProvider } = body
     
-    // Normalize provider to lower-case to accept case-insensitive codes
-    const provider = typeof momoProvider === 'string' ? momoProvider.toLowerCase() : momoProvider
+    // Normalize provider to upper-case as Paystack expects MTN, VOD, ATL
+    let provider = typeof momoProvider === 'string' ? momoProvider.toUpperCase() : momoProvider
+    
+    // Map legacy/frontend codes if they send the old lowercase ones
+    if (provider === 'TEL') provider = 'VOD'
+    if (provider === 'TGO') provider = 'ATL'
 
     // Validate inputs
     if (!momoNumber || !provider) {
@@ -109,38 +112,35 @@ export async function POST(request: NextRequest) {
     
     const formattedPhone = phoneValidation.formatted
     
-    // Prepare subaccount payload
-    const subaccountPayload = {
-      business_name: profile.businessName,
-      settlement_bank: momoProvider,
+    // Prepare Transfer Recipient payload
+    const recipientPayload = {
+      type: "mobile_money" as const,
+      name: `${profile.user.firstName} ${profile.user.lastName}`,
       account_number: formattedPhone,
-      percentage_charge: PAYSTACK_CONFIG.platformFeePercent,
-      description: `TrendiWear seller account for ${profile.businessName}`,
-      primary_contact_email: profile.user.email,
-      primary_contact_name: `${profile.user.firstName} ${profile.user.lastName}`,
-      primary_contact_phone: profile.user.phone || formattedPhone,
+      bank_code: provider,
+      currency: "GHS",
+      description: `TrendiWear seller payout for ${profile.businessName}`,
       metadata: {
         professionalId: profile.id,
         userId: user.id,
+        businessName: profile.businessName
       },
     }
     
-    let subaccountCode: string
+    let recipientCode: string
     
     try {
-      if (profile.paystackSubaccountCode) {
-        // Update existing subaccount
-        const response = await updateSubaccount(profile.paystackSubaccountCode, subaccountPayload)
-        subaccountCode = response.data.subaccount_code
-      } else {
-        // Create new subaccount
-        const response = await createSubaccount(subaccountPayload)
-        subaccountCode = response.data.subaccount_code
-      }
+      // In the Direct Transfer model, we create a recipient. 
+      // If one already exists, we could update it, but usually, we just create a new one or keep the old.
+      // For simplicity and since Paystack recipients are lightweight, we'll create one if not present.
+      
+      const response = await createTransferRecipient(recipientPayload)
+      recipientCode = response.data.recipient_code
+      
     } catch (paystackError) {
-      console.error('Paystack subaccount error:', paystackError)
+      console.error('Paystack recipient error:', paystackError)
       return NextResponse.json(
-        { error: paystackError instanceof Error ? paystackError.message : 'Failed to setup payment account with Paystack' },
+        { error: paystackError instanceof Error ? paystackError.message : 'Failed to setup payout recipient with Paystack' },
         { status: 500 }
       )
     }
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       data: {
         momoNumber: formattedPhone,
         momoProvider: provider,
-        paystackSubaccountCode: subaccountCode,
+        paystackSubaccountCode: recipientCode, // Reusing field for recipient_code
         paymentSetupComplete: true,
       },
     })

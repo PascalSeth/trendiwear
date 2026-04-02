@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Crown, Medal, Award } from 'lucide-react';
 import Image from 'next/image';
@@ -13,6 +13,23 @@ type TopSeller = {
   color: string;
   totalSales: number;
 };
+
+interface RawProfessionalProfile {
+  id: string;
+  businessName?: string | null;
+  businessImage?: string | null;
+  actualSales?: number | null;
+  completedOrders?: number | null;
+  rating?: number | null;
+  specialization?: {
+    name: string;
+  } | null;
+  user?: {
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  } | null;
+}
 
 function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
   // Determine rank icon
@@ -82,11 +99,51 @@ function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
   );
 }
 
-function TopSellers() {
+function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfile[] }) {
   const [topSellers, setTopSellers] = useState<TopSeller[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const transformSellers = useCallback((data: RawProfessionalProfile[]) => {
+    const gradients = [
+      'from-emerald-400 to-teal-600',
+      'from-pink-400 to-rose-600',
+      'from-purple-400 to-indigo-600',
+      'from-orange-400 to-red-600',
+    ];
+
+    const sorted = data
+      .slice()
+      .sort((a, b) => {
+        const aSales = a.actualSales ?? a.completedOrders ?? 0;
+        const bSales = b.actualSales ?? b.completedOrders ?? 0;
+        if (bSales !== aSales) return bSales - aSales;
+        const aRating = a.rating ?? 0;
+        const bRating = b.rating ?? 0;
+        return bRating - aRating;
+      })
+      .slice(0, 4);
+
+    return sorted.map((prof, index) => ({
+      id: prof.id,
+      rank: index + 1,
+      name: prof.businessName || `${prof.user?.firstName} ${prof.user?.lastName}`,
+      profession: prof.specialization?.name || 'Fashion Professional',
+      imageUrl:
+        prof.businessImage ||
+        prof.user?.profileImage ||
+        'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
+      color: gradients[index % gradients.length],
+      totalSales: prof.actualSales ?? prof.completedOrders ?? 0,
+    }));
+  }, []);
+
   useEffect(() => {
+    if (initialSellers && initialSellers.length > 0) {
+      setTopSellers(transformSellers(initialSellers));
+      setLoading(false);
+      return;
+    }
+
     const fetchTopSellers = async () => {
       try {
         const response = await fetch('/api/professional-profiles?public=true');
@@ -94,66 +151,8 @@ function TopSellers() {
           throw new Error('Failed to load top sellers');
         }
 
-        type ApiProfessional = {
-          id: string;
-          businessName: string;
-          businessImage?: string | null;
-          experience: number;
-          bio?: string | null;
-          location?: string | null;
-          completedOrders?: number | null;
-          rating?: number | null;
-          totalReviews?: number | null;
-          slug?: string | null;
-          user: {
-            firstName: string;
-            lastName: string;
-            profileImage?: string | null;
-            _count: {
-              products: number;
-              professionalServices: number;
-            };
-          };
-          specialization?: {
-            name: string;
-          } | null;
-        };
-
-        const data: ApiProfessional[] = await response.json();
-
-        const gradients = [
-          'from-emerald-400 to-teal-600',
-          'from-pink-400 to-rose-600',
-          'from-purple-400 to-indigo-600',
-          'from-orange-400 to-red-600',
-        ];
-
-        const sorted = data
-          .slice()
-          .sort((a, b) => {
-            const aSales = a.completedOrders ?? a.totalReviews ?? a.user._count.products ?? 0;
-            const bSales = b.completedOrders ?? b.totalReviews ?? b.user._count.products ?? 0;
-            if (bSales !== aSales) return bSales - aSales;
-            const aRating = a.rating ?? 0;
-            const bRating = b.rating ?? 0;
-            return bRating - aRating;
-          })
-          .slice(0, 4);
-
-        const transformed: TopSeller[] = sorted.map((prof, index) => ({
-          id: prof.id,
-          rank: index + 1,
-          name: prof.businessName || `${prof.user.firstName} ${prof.user.lastName}`,
-          profession: prof.specialization?.name || 'Fashion Professional',
-          imageUrl:
-            prof.businessImage ||
-            prof.user.profileImage ||
-            'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
-          color: gradients[index % gradients.length],
-          totalSales: prof.completedOrders ?? prof.totalReviews ?? prof.user._count.products ?? 0,
-        }));
-
-        setTopSellers(transformed);
+        const data = await response.json();
+        setTopSellers(transformSellers(data));
       } catch (error) {
         console.error(error);
       } finally {
@@ -162,7 +161,7 @@ function TopSellers() {
     };
 
     fetchTopSellers();
-  }, []);
+  }, [initialSellers, transformSellers]);
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] py-24 px-6 md:px-12">

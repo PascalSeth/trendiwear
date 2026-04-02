@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
                   id: true,
                   name: true,
                   price: true,
+                  currency: true,
                   images: true,
                 },
               },

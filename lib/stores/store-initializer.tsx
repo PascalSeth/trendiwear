@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { useCartStore } from './cart-store'
 import { useWishlistStore } from './wishlist-store'
 
@@ -14,20 +15,32 @@ import { useWishlistStore } from './wishlist-store'
  * The stores use subscribeWithSelector middleware for optimized re-renders.
  */
 export function StoreInitializer() {
+  const { status } = useSession()
   const fetchCart = useCartStore(state => state.fetchCart)
   const fetchWishlist = useWishlistStore(state => state.fetchWishlist)
   const cartHydrated = useCartStore(state => state.isHydrated)
   const wishlistHydrated = useWishlistStore(state => state.isHydrated)
+  const clearCart = useCartStore(state => state.clearCart)
+  const clearWishlist = useWishlistStore(state => state.clearWishlist || (() => {}))
 
   useEffect(() => {
-    // Only fetch if not already hydrated
-    if (!cartHydrated) {
-      fetchCart()
+    // If not authenticated, clear stores and don't fetch
+    if (status === 'unauthenticated') {
+      clearCart()
+      if (typeof clearWishlist === 'function') clearWishlist()
+      return
     }
-    if (!wishlistHydrated) {
-      fetchWishlist()
+
+    // Only fetch if authenticated and not already hydrated
+    if (status === 'authenticated') {
+      if (!cartHydrated) {
+        fetchCart()
+      }
+      if (!wishlistHydrated) {
+        fetchWishlist()
+      }
     }
-  }, [fetchCart, fetchWishlist, cartHydrated, wishlistHydrated])
+  }, [status, fetchCart, fetchWishlist, cartHydrated, wishlistHydrated, clearCart, clearWishlist])
 
   // This component doesn't render anything
   return null

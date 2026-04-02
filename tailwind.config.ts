@@ -73,11 +73,32 @@ const config: Config = {
   				to: {
   					height: '0'
   				}
+  			},
+  			'blob-float': {
+  				'0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+  				'33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+  				'66%': { transform: 'translate(-20px, 20px) scale(0.9)' }
+  			},
+  			'float-slow': {
+  				'0%, 100%': { transform: 'translateY(0)' },
+  				'50%': { transform: 'translateY(-20px)' }
+  			},
+  			'spin-slow': {
+  				from: { transform: 'rotate(0deg)' },
+  				to: { transform: 'rotate(360deg)' }
+  			},
+  			'pulse-slow': {
+  				'0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+  				'50%': { opacity: '0.6', transform: 'scale(1.2)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'blob': 'blob-float 15s infinite ease-in-out',
+  			'float-slow': 'float-slow 10s infinite ease-in-out',
+  			'spin-slow': 'spin-slow 20s linear infinite',
+  			'pulse-slow': 'pulse-slow 8s infinite ease-in-out'
   		}
   	}
   },

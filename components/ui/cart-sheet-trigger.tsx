@@ -6,9 +6,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { usePaystackPayment } from 'react-paystack'
-import { PAYSTACK_CONFIG } from '@/lib/paystack'
-import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { CartCountBadge } from '@/components/ui/cart-count-badge'
@@ -21,31 +18,7 @@ export function CartSheetTrigger() {
   const removeItem = useCartStore(state => state.removeItem)
   const [open, setOpen] = useState(false)
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
-  const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
-  interface PayConfig {
-    reference: string
-    email: string
-    amount: number
-    publicKey: string
-    currency: string
-  }
-
-  const [payConfig, setPayConfig] = useState<PayConfig>({
-    reference: '',
-    email: '',
-    amount: 0,
-    publicKey: PAYSTACK_CONFIG.publicKey,
-    currency: 'GHS',
-  })
-
-  const initializePayment = usePaystackPayment(payConfig)
-
-  function generateReference(prefix = 'TZ') {
-    const timestamp = Date.now().toString(36)
-    const random = Math.random().toString(36).substring(2, 8)
-    return `${prefix}_${timestamp}_${random}`.toUpperCase()
-  }
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -176,15 +149,15 @@ export function CartSheetTrigger() {
                             {item.product.isDiscountActive ? (
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-black">
-                                  {item.product.currency} {(item.product.effectivePrice || item.product.price).toFixed(0)}
+                                  {item.product.currency} {(item.product.effectivePrice || item.product.price).toFixed(2)}
                                 </span>
                                 <span className="text-xs text-stone-400 line-through">
-                                  {item.product.price.toFixed(0)}
+                                  {item.product.price.toFixed(2)}
                                 </span>
                               </div>
                             ) : (
                               <span className="text-sm font-bold text-black">
-                                {item.product.currency} {item.product.price.toFixed(0)}
+                                {item.product.currency} {item.product.price.toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -242,15 +215,15 @@ export function CartSheetTrigger() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-500">Subtotal</span>
-                  <span className="font-medium text-stone-900">{summary?.subtotal.toFixed(0)} GHS</span>
+                  <span className="font-medium text-stone-900">{summary?.subtotal.toFixed(2)} GHS</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Tax</span>
-                  <span className="font-medium text-stone-900">{((summary?.subtotal || 0) * 0.03).toFixed(0)} GHS</span>
+                  <span className="text-stone-500">Handling Fee (3%)</span>
+                  <span className="font-medium text-stone-900">{((summary?.subtotal || 0) * 0.03).toFixed(2)} GHS</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-stone-200">
                   <span className="text-stone-900">Total</span>
-                  <span className="text-black">{summary?.estimatedTotal.toFixed(0)} GHS</span>
+                  <span className="text-black">{summary?.estimatedTotal.toFixed(2)} GHS</span>
                 </div>
               </div>
 
@@ -258,94 +231,14 @@ export function CartSheetTrigger() {
               <div className="space-y-3">
                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                   <Button
-                    onClick={async () => {
-                      if (isProcessing) return
-                      setIsProcessing(true)
-
-                      try {
-                        // Fetch default address
-                        const addrRes = await fetch('/api/addresses')
-                        const addrData = await addrRes.json()
-
-                        if (!addrRes.ok || !addrData.addresses || addrData.addresses.length === 0) {
-                          toast.error('Please add a delivery address before checking out')
-                          router.push('/addresses')
-                          return
-                        }
-
-                        const addressId = addrData.addresses[0].id
-
-                        // Get user email - order created AFTER payment
-                        const meRes = await fetch('/api/me')
-                        const meData = await meRes.json()
-                        const email = meData?.user?.email || ''
-
-                        // Generate client-side reference
-                        const clientRef = generateReference('TZ')
-                        const amountPesewas = Math.round((summary?.estimatedTotal || 0) * 100)
-
-                        // Store checkout data for recovery
-                        localStorage.setItem('pendingCheckout', JSON.stringify({
-                          addressId,
-                          items: cartItems.map(i => ({ productId: i.product.id, quantity: i.quantity, size: i.size, color: i.color })),
-                          reference: clientRef,
-                          total: summary?.estimatedTotal || 0,
-                        }))
-
-                        setPayConfig({
-                          reference: clientRef,
-                          email,
-                          amount: amountPesewas,
-                          publicKey: PAYSTACK_CONFIG.publicKey,
-                          currency: 'GHS',
-                        })
-
-                        // Open Paystack - order created AFTER payment
-                        setTimeout(() => {
-                          initializePayment({
-                            onSuccess: async (ref: { reference: string }) => {
-                              try {
-                                const verifyRes = await fetch(`/api/payments/verify?reference=${encodeURIComponent(ref.reference)}`)
-                                const verifyData = await verifyRes.json()
-                                if (!verifyRes.ok || !verifyData.success) throw new Error(verifyData.error || 'Payment verification failed')
-
-                                const orderRes = await fetch('/api/orders', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ addressId, items: cartItems.map(i => ({ productId: i.product.id, quantity: i.quantity, size: i.size, color: i.color })), paystackReference: ref.reference, paymentStatus: 'PAID' }),
-                                })
-                                const order = await orderRes.json()
-                                if (!orderRes.ok) throw new Error(order.error || 'Failed to create order')
-
-                                localStorage.removeItem('pendingCheckout')
-                                toast.success('Payment successful! Order placed.')
-                                router.push(`/orders/${order.id}/payment-complete?reference=${ref.reference}`)
-                              } catch (orderError) {
-                                console.error('Order creation error:', orderError)
-                                toast.error('Payment successful but order creation failed. Contact support.')
-                                router.push('/orders')
-                              }
-                            },
-                            onClose: () => { toast('Payment closed. Items still in cart.'); localStorage.removeItem('pendingCheckout') },
-                          })
-                        }, 50)
-                      } catch (err) {
-                        console.error('Checkout error:', err)
-                        toast.error(err instanceof Error ? err.message : 'Checkout failed')
-                      } finally {
-                        setIsProcessing(false)
-                        setOpen(false)
-                      }
+                    onClick={() => {
+                      setOpen(false)
+                      router.push('/checkout')
                     }}
-                    disabled={isProcessing}
                     className="w-full bg-black hover:bg-stone-800 text-white py-6 rounded-full font-semibold text-base shadow-lg hover:shadow-xl transition-all"
                   >
-                    {isProcessing ? 'Processing…' : (
-                      <>
-                        Checkout
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </>
-                    )}
+                    Checkout
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </motion.div>
 

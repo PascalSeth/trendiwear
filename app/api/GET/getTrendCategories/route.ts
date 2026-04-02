@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const user = await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     const formData = await request.formData()
     const name = formData.get("name") as string
@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
 
     if (imageFile) {
       // Upload to Supabase
-      const fileName = `trend-category-${Date.now()}-${imageFile.name}`
-      imageUrl = await uploadFile(imageFile, "images", fileName)
+      const fileName = `${user.id}/trend-categories/${Date.now()}-${imageFile.name}`
+      imageUrl = await uploadFile(imageFile, "categories", fileName)
     }
 
     // Generate slug from name

@@ -10,17 +10,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     const { quantity } = body
 
+    console.log(`[cart.[id].PUT] Attempting to update cart item: ${id} to quantity: ${quantity} for user: ${user.id}`)
+
     if (quantity < 1) {
       return NextResponse.json({ error: "Quantity must be at least 1" }, { status: 400 })
     }
 
-    const cartItem = await prisma.cartItem.findFirst({
-      where: { id, userId: user.id },
+    const cartItem = await prisma.cartItem.findUnique({
+      where: { id },
       include: { product: true },
     })
 
     if (!cartItem) {
+      console.log(`[cart.[id].PUT] Cart item ${id} not found in DB.`)
       return NextResponse.json({ error: "Cart item not found" }, { status: 404 })
+    }
+
+    if (cartItem.userId !== user.id) {
+       console.log(`[cart.[id].PUT] Cart item ${id} belongs to user ${cartItem.userId}, but requested by user ${user.id}.`)
+       return NextResponse.json({ error: "Unauthorized access to cart item" }, { status: 403 })
     }
 
     if (cartItem.product.stockQuantity < quantity) {
@@ -47,8 +55,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
+    console.log(`[cart.[id].PUT] Successfully updated cart item ${id}`)
     return NextResponse.json(updatedItem)
   } catch (error) {
+    console.error(`[cart.[id].PUT] Error:`, error)
     const { status, message } = mapErrorToResponse(error, { route: 'cart.[id].PUT' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })
@@ -60,17 +70,27 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params
     const user = await requireAuth()
 
-    const cartItem = await prisma.cartItem.findFirst({
-      where: { id, userId: user.id },
+    console.log(`[cart.[id].DELETE] Attempting to remove cart item: ${id} for user: ${user.id} (${user.email})`)
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: { id },
     })
 
     if (!cartItem) {
+      console.log(`[cart.[id].DELETE] Cart item ${id} not found at all in DB.`)
       return NextResponse.json({ error: "Cart item not found" }, { status: 404 })
     }
 
+    if (cartItem.userId !== user.id) {
+      console.log(`[cart.[id].DELETE] Cart item ${id} belongs to user ${cartItem.userId}, but requested by user ${user.id}.`)
+      return NextResponse.json({ error: "Unauthorized access to cart item" }, { status: 403 })
+    }
+
     await prisma.cartItem.delete({ where: { id } })
+    console.log(`[cart.[id].DELETE] Successfully removed cart item ${id}`)
     return NextResponse.json({ message: "Item removed from cart" })
   } catch (error) {
+    console.error(`[cart.[id].DELETE] Error:`, error)
     const { status, message } = mapErrorToResponse(error, { route: 'cart.[id].DELETE' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })

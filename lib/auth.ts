@@ -1,16 +1,26 @@
 // lib/auth.ts
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth-config"
 import { prisma } from "./prisma"
 import { HttpError } from './errors'
 import type { Role } from "@prisma/client"
 
+export async function getAuthSession() {
+  await headers()
+  await cookies()
+  const session = await getServerSession(authOptions)
+  return session
+}
+
 export async function getCurrentUser() {
+  await headers()
+  await cookies()
   const session = await getServerSession(authOptions)
 
   if (!session || !session.user?.email) return null
 
-  let user = await prisma.user.findUnique({
+  // ONLY query the database if we actually need the full user object with all relations
+  const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       professionalProfile: {
@@ -20,162 +30,80 @@ export async function getCurrentUser() {
           store: true,
           deliveryZones: true,
           specialization: true,
+          subscription: {
+            include: {
+              tier: true,
+            },
+          },
         }
       },
       measurements: true,
       addresses: true,
-      orders: {
-        include: {
-          items: true,
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 10 // Get last 10 orders
-      },
-      bookingCustomers: {
-        include: {
-          service: true,
-          professional: true,
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 10 // Get last 10 bookings as customer
-      },
-      bookingProfessionals: {
-        include: {
-          service: true,
-          customer: true,
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 10 // Get last 10 bookings as professional
-      },
-      wishlist: {
-        include: {
-          product: true,
-        }
-      },
-      cart: {
-        include: {
-          product: true,
-        }
-      },
       notifications: {
-        where: {
-          isRead: false
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
+        where: { isRead: false },
+        orderBy: { createdAt: 'desc' },
         take: 20
       }
     },
   })
 
-  if (!user) {
-    // Create new user with data from NextAuth session
-    user = await prisma.user.create({
-      data: {
-        email: session.user.email!,
-        name: session.user.name || null,
-        image: session.user.image || null,
-        firstName: session.user.name?.split(' ')[0] || "",
-        lastName: session.user.name?.split(' ').slice(1).join(' ') || "",
-        profileImage: session.user.image || null,
-        role: 'CUSTOMER', // Default role
-        isActive: true,
-      },
-      include: {
-        professionalProfile: {
-          include: {
-            socialMedia: true,
-            documents: true,
-            store: true,
-            deliveryZones: true,
-            specialization: true,
-          }
-        },
-        measurements: true,
-        addresses: true,
-        orders: {
-          include: {
-            items: true,
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 10
-        },
-        bookingCustomers: {
-          include: {
-            service: true,
-            professional: true,
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 10
-        },
-        bookingProfessionals: {
-          include: {
-            service: true,
-            customer: true,
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 10
-        },
-        wishlist: {
-          include: {
-            product: true,
-          }
-        },
-        cart: {
-          include: {
-            product: true,
-          }
-        },
-        notifications: {
-          where: {
-            isRead: false
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 20
-        }
-      },
-    })
-  }
-
   return user
 }
 
+import { headers, cookies } from "next/headers"
+
+/**
+ * ULTRA FAST AUTH CHECK
+ * Does not query the database. Uses JWT session data.
+ */
 export async function requireAuth() {
-  const user = await getCurrentUser()
-  if (!user) {
+  // Prime headers/cookies for Next.js 15 compatibility if needed
+  await headers()
+  await cookies()
+  
+  const session = await getServerSession(authOptions)
+  
+  if (!session || !session.user) {
     throw new HttpError("Unauthorized", 401)
   }
-  return user
+  return session.user
 }
 
 export async function requireRole(allowedRoles: Role[]) {
   const user = await requireAuth()
-  if (!allowedRoles.includes(user.role)) {
-    throw new HttpError("Forbidden", 403)
+  
+  // If the role in the session is already allowed, we're good (fast path)
+  if (allowedRoles.includes(user.role)) {
+    return user
   }
-  return user
+
+  // If not, double check the database in case the session is stale
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true }
+  })
+
+  if (dbUser && allowedRoles.includes(dbUser.role)) {
+    // Update the user object with the true role before returning
+    return { ...user, role: dbUser.role }
+  }
+
+  throw new HttpError("Forbidden", 403)
+}
+
+export async function requireProfessional() {
+  return requireRole(['PROFESSIONAL', 'SUPER_ADMIN', 'ADMIN'])
+}
+
+export async function requireAdmin() {
+  return requireRole(['ADMIN', 'SUPER_ADMIN'])
 }
 
 export async function getUserRole() {
-  const user = await getCurrentUser()
+  const session = await getServerSession(authOptions)
   return {
-    role: user?.role || 'CUSTOMER',
-    user: user
+    role: session?.user?.role || 'CUSTOMER',
+    user: session?.user || null
   }
 }
 

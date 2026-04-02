@@ -12,10 +12,41 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "20")
     const unreadOnly = searchParams.get("unreadOnly") === "true"
+    const minimal = searchParams.get("minimal") === "true"
 
     const where: Prisma.NotificationWhereInput = { userId: user.id }
     if (unreadOnly) where.isRead = false
 
+    const context = searchParams.get("context")
+    if (context === "business") {
+      // Filter for professional/business related notifications
+      where.type = {
+        in: [
+          "ORDER_UPDATE", 
+          "BOOKING_CONFIRMATION", 
+          "PAYMENT_RECEIVED", 
+          "REVIEW_RECEIVED", 
+          "STOCK_ALERT", 
+          "DELIVERY_CONFIRMATION_REQUEST", 
+          "PAYMENT_RELEASED",
+          "MESSAGE_RECEIVED"
+        ] as NotificationType[]
+      }
+    } else if (context === "personal") {
+      // Filter for customer/personal related notifications
+      where.type = {
+        in: [
+          "SHIPPING_UPDATE", 
+          "DELIVERY_ARRIVAL", 
+          "WISHLIST_SALE", 
+          "PROMOTION",
+          "NEW_INSPIRATION",
+          "SYSTEM_UPDATE"
+        ] as NotificationType[]
+      }
+    }
+
+    // OPTIMIZATION: Only count total if NOT in 'minimal' mode (typically for the bell dropdown)
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
@@ -23,16 +54,16 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: { createdAt: "desc" },
       }),
-      prisma.notification.count({ where }),
+      !minimal ? prisma.notification.count({ where }) : Promise.resolve(0),
       prisma.notification.count({
-        where: { userId: user.id, isRead: false },
+        where: { ...where, isRead: false },
       }),
     ])
 
     return NextResponse.json({
       notifications,
       unreadCount,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      pagination: !minimal ? { page, limit, total, pages: Math.ceil(total / limit) } : null,
     })
   } catch (error) {
     const { status, message } = mapErrorToResponse(error, { route: 'notifications.GET' })

@@ -5,18 +5,18 @@ export const PAYSTACK_CONFIG = {
   publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
   baseUrl: 'https://api.paystack.co',
   
-  // Platform fee configuration
-  platformFeePercent: 3, // 3% platform handling fee
-  
-  // Supported MoMo providers in Ghana
+  // Supported MoMo providers in Ghana (Paystack bank codes)
   momoProviders: {
-    MTN: 'mtn',
-    TELECEL: 'tel',
-    AIRTELTIGO: 'tgo',
+    MTN: 'MTN',
+    TELECEL: 'VOD',
+    AIRTELTIGO: 'ATL',
   },
   
   // Currency
   currency: 'GHS',
+  
+  // Handling Fee (3%)
+  platformFeePercent: 3, 
 }
 
 // Paystack API headers
@@ -95,6 +95,55 @@ export interface InitializeTransactionPayload {
     }>
   }
   channels?: Array<'card' | 'bank' | 'ussd' | 'qr' | 'mobile_money' | 'bank_transfer'>
+}
+
+// ================================
+// SPLIT TYPES
+// ================================
+
+export interface CreateSplitPayload {
+  name: string
+  type: 'percentage' | 'flat'
+  currency: string
+  subaccounts: Array<{
+    subaccount: string
+    share: number
+  }>
+  bearer_type: 'account' | 'subaccount' | 'all-proportional' | 'all'
+  bearer_subaccount?: string
+}
+
+export interface SplitResponse {
+  status: boolean
+  message: string
+  data: {
+    id: number
+    name: string
+    split_code: string
+    active: boolean
+    bearer_type: string
+    bearer_subaccount: number | null
+    type: string
+    currency: string
+    subaccounts: Array<{
+      subaccount: {
+        id: number
+        subaccount_code: string
+        business_name: string
+        description: string
+        primary_contact_name: string
+        primary_contact_email: string
+        primary_contact_phone: string
+        metadata: null
+        percentage_charge: number
+        settlement_bank: string
+        account_number: string
+      }
+      share: number
+    }>
+    createdAt: string
+    updatedAt: string
+  }
 }
 
 export interface TransactionInitResponse {
@@ -188,6 +237,86 @@ export interface TransactionVerifyResponse {
   }
 }
 
+export interface RefundTransactionResponse {
+  status: boolean
+  message: string
+  data: {
+    id: number
+    transaction: number
+    integration: number
+    deducted_amount: number
+    fully_refunded: boolean
+    amount: number
+    created_at: string
+  }
+}
+
+// ================================
+// TRANSFER TYPES
+// ================================
+
+export interface CreateTransferRecipientPayload {
+  type: "nuban" | "mobile_money"
+  name: string
+  account_number: string
+  bank_code: string
+  currency: string
+  description?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface TransferRecipientResponse {
+  status: boolean
+  message: string
+  data: {
+    active: boolean
+    createdAt: string
+    currency: string
+    domain: string
+    id: number
+    integration: number
+    name: string
+    recipient_code: string
+    type: string
+    updatedAt: string
+    is_deleted: boolean
+    details: {
+      account_number: string
+      account_name: string | null
+      bank_code: string
+      bank_name: string
+    }
+  }
+}
+
+export interface InitiateTransferPayload {
+  source: "balance"
+  amount: number // in pesewas
+  recipient: string // recipient_code
+  reason?: string
+  currency?: string
+  reference?: string
+}
+
+export interface TransferResponse {
+  status: boolean
+  message: string
+  data: {
+    integration: number
+    domain: string
+    amount: number
+    currency: string
+    source: string
+    reason: string
+    recipient: number
+    status: string
+    transfer_code: string
+    id: number
+    createdAt: string
+    updatedAt: string
+  }
+}
+
 // ================================
 // PAYSTACK API FUNCTIONS
 // ================================
@@ -253,6 +382,25 @@ export async function fetchSubaccount(subaccountCode: string): Promise<Subaccoun
 }
 
 /**
+ * Create a multi-account split for transactions
+ */
+export async function createSplit(payload: CreateSplitPayload): Promise<SplitResponse> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/split`, {
+    method: 'POST',
+    headers: getPaystackHeaders(),
+    body: JSON.stringify(payload),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to create split')
+  }
+  
+  return data
+}
+
+/**
  * List all banks/MoMo providers
  */
 export async function listBanks(country: string = 'ghana', type: string = 'mobile_money') {
@@ -300,6 +448,9 @@ export async function initializeTransaction(
 /**
  * Verify a transaction by reference
  */
+/**
+ * Verify a transaction by reference
+ */
 export async function verifyTransaction(reference: string): Promise<TransactionVerifyResponse> {
   const response = await fetch(
     `${PAYSTACK_CONFIG.baseUrl}/transaction/verify/${encodeURIComponent(reference)}`,
@@ -319,6 +470,87 @@ export async function verifyTransaction(reference: string): Promise<TransactionV
 }
 
 /**
+ * Refund a transaction
+ */
+export async function refundTransaction(reference: string, amountPesewas?: number): Promise<RefundTransactionResponse> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/refund`, {
+    method: 'POST',
+    headers: getPaystackHeaders(),
+    body: JSON.stringify({
+      transaction: reference,
+      ...(amountPesewas && { amount: amountPesewas }),
+    }),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to initiate refund')
+  }
+  
+  return data
+}
+
+/**
+ * Create a Transfer Recipient
+ */
+export async function createTransferRecipient(payload: CreateTransferRecipientPayload): Promise<TransferRecipientResponse> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/transferrecipient`, {
+    method: 'POST',
+    headers: getPaystackHeaders(),
+    body: JSON.stringify(payload),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to create transfer recipient')
+  }
+  
+  return data
+}
+
+/**
+ * Initiate a Transfer (Payout)
+ */
+export async function initiateTransfer(payload: InitiateTransferPayload): Promise<TransferResponse> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/transfer`, {
+    method: 'POST',
+    headers: getPaystackHeaders(),
+    body: JSON.stringify({
+      ...payload,
+      currency: payload.currency || PAYSTACK_CONFIG.currency,
+    }),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to initiate transfer')
+  }
+  
+  return data
+}
+
+/**
+ * Verify a Transfer
+ */
+export async function verifyTransfer(reference: string): Promise<Record<string, unknown>> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/transfer/verify/${reference}`, {
+    method: 'GET',
+    headers: getPaystackHeaders(),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to verify transfer')
+  }
+  
+  return data
+}
+
+/**
  * Generate a unique transaction reference
  */
 export function generateReference(prefix: string = 'TZ'): string {
@@ -331,7 +563,7 @@ export function generateReference(prefix: string = 'TZ'): string {
  * Convert amount to pesewas (Paystack uses smallest currency unit)
  */
 export function toPesewas(amount: number): number {
-  return Math.round(amount * 100)
+  return Math.round((amount + Number.EPSILON) * 100)
 }
 
 /**
@@ -342,20 +574,22 @@ export function toCedis(pesewas: number): number {
 }
 
 /**
- * Calculate platform fee and seller amount
+ * Calculate platform fee and customer total (Fee is added on top)
  */
-export function calculateSplit(totalAmount: number): {
+export function calculateSplit(productSubtotal: number): {
   platformFee: number
+  totalWithFee: number
   sellerAmount: number
   platformFeePercent: number
 } {
   const platformFeePercent = PAYSTACK_CONFIG.platformFeePercent
-  const platformFee = (totalAmount * platformFeePercent) / 100
-  const sellerAmount = totalAmount - platformFee
+  const platformFee = (productSubtotal * platformFeePercent) / 100
+  const totalWithFee = productSubtotal + platformFee
   
   return {
     platformFee: Math.round(platformFee * 100) / 100,
-    sellerAmount: Math.round(sellerAmount * 100) / 100,
+    totalWithFee: Math.round(totalWithFee * 100) / 100,
+    sellerAmount: Math.round(productSubtotal * 100) / 100,
     platformFeePercent,
   }
 }
@@ -385,16 +619,15 @@ export function validateGhanaPhone(phone: string): { valid: boolean; formatted: 
   
   // MTN prefixes
   if (['024', '054', '055', '059'].includes(prefix)) {
-    provider = 'mtn'
+    provider = PAYSTACK_CONFIG.momoProviders.MTN
   }
-  // Telecel prefixes (some deployments map common Vodafone prefixes to Telecel)
+  // Telecel prefixes (Vodafone codes)
   else if (['020', '050'].includes(prefix)) {
-    // Map common 020/050 prefixes to Telecel for this deployment
-    provider = 'tel'
+    provider = PAYSTACK_CONFIG.momoProviders.TELECEL
   }
   // AirtelTigo prefixes
   else if (['026', '027', '056', '057'].includes(prefix)) {
-    provider = 'tgo'
+    provider = PAYSTACK_CONFIG.momoProviders.AIRTELTIGO
   }
   
   return { valid: true, formatted: cleaned, provider }
@@ -405,9 +638,14 @@ export function validateGhanaPhone(phone: string): { valid: boolean; formatted: 
  */
 export function getMomoProviderName(code: string): string {
   const providers: Record<string, string> = {
-    mtn: 'MTN Mobile Money',
-    tel: 'Telecel Mobile Money',
-    tgo: 'AirtelTigo Money'
+    MTN: 'MTN Mobile Money',
+    VOD: 'Telecel (Vodafone) Mobile Money',
+    ATL: 'AirtelTigo Money'
   }
+  // Support legacy codes for existing setups
+  if (code === 'mtn') return providers.MTN;
+  if (code === 'tel' || code === 'vod') return providers.VOD;
+  if (code === 'tgo' || code === 'atl') return providers.ATL;
+  
   return providers[code] || code
 }

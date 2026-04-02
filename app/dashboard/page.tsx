@@ -1,11 +1,30 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
 import Image from "next/image";
 import Link from "next/link";
 import { Role, ProfessionalProfile } from "@prisma/client";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import AnalyticsInsights from "./components/AnalyticsInsights";
+import SetupGuide from "./components/SetupGuide";
+import RecentActivity, { ActivityItem } from "./components/RecentActivity";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  ArrowRight, 
+  CheckCircle2, 
+  Wallet, 
+  ShoppingBag, 
+  Star, 
+  Zap, 
+  Plus, 
+  Package, 
+  BarChart3, 
+  Trophy, 
+  Activity, 
+  Users,
+  User,
+  Sparkles,
+  Calendar
+} from "lucide-react";
 
 // Professional Business Dashboard Component
 interface ServiceItem {
@@ -43,8 +62,13 @@ interface DashboardData {
     totalReviews?: number;
     activeCustomers?: number;
   };
+  setupStatus?: {
+    hasProductsOrServices: boolean;
+  };
   analytics?: Analytics;
   topServices?: ServiceItem[];
+  recentActivities?: ActivityItem[];
+  currency?: string; // Professional's primary currency
 }
 
 function ProfessionalBusinessDashboard({
@@ -62,269 +86,321 @@ function ProfessionalBusinessDashboard({
       .join(' ');
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden">
-      <div className="relative w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-        
-        {/* Verification Banner - Show if not verified */}
-        {!professionalProfile.isVerified && (
-          <div className="mb-6 animate-fade-in">
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 shadow-lg">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 p-3 bg-amber-100 rounded-xl">
-                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-amber-800">Get Verified to Build Trust</h3>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Verified sellers get a badge on their profile and products, increasing customer trust and sales. 
-                    Contact us to start the verification process.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    <a 
-                      href="mailto:verify@trendiwear.com?subject=Business Verification Request&body=Business Name: {professionalProfile.businessName}%0AProfile ID: {professionalProfile.id}"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Request Verification
-                    </a>
-                    <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Verified businesses see 40% more sales
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+  // Get currency from professional's products (or default)
+  const currencySymbol = dashboardData?.currency || 'GHS';
 
-        {/* Header Section */}
-        <div className="mb-12 animate-fade-in">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-6 md:space-y-0">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                    Business Dashboard
-                  </h1>
-                  {professionalProfile.isVerified && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Verified
-                    </span>
-                  )}
-                </div>
-                <p className="text-lg md:text-xl text-gray-700 font-medium">
-                  {professionalProfile.specialization ? formatSpecialization(professionalProfile.specialization.name) : 'Professional Services'}
-                </p>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  <span>Live Analytics</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-6">
-              <div className="text-right bg-gradient-to-r from-green-400 to-emerald-500 p-4 rounded-xl text-white shadow-lg">
-                <p className="text-2xl md:text-3xl font-bold">
-                  ${dashboardData?.metrics?.totalRevenue?.toFixed(2) || professionalProfile.accountBalance?.toFixed(2) || "0.00"}
-                </p>
-                <p className="text-sm opacity-90">Revenue</p>
-              </div>
-                <div className="relative">
-                  <div className="w-16 md:w-20 h-16 md:h-20 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-indigo-100">
+    // Helper to format money (supports future currency expansion)
+  const formatMoney = (amount: number | undefined) => {
+    if (amount === undefined) return `${currencySymbol}0.00`;
+    return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  
+    // Calculate previous month comparison logic roughly if not exact
+   const getTrendColor = (change: number | undefined) => {
+    if (!change) return 'text-slate-400';
+    return change >= 0 ? 'text-emerald-500' : 'text-rose-500';
+  };
+
+  const getTrendIcon = (change: number | undefined) => {
+    if (!change) return null;
+    return change >= 0 
+      ? <TrendingUp className="w-3 h-3 mr-1" />
+      : <TrendingDown className="w-3 h-3 mr-1" />;
+  };
+
+  return (
+    <div className="min-h-screen relative font-sans">
+      <div className="relative z-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+        
+        {/* Setup Guide Component */}
+        <SetupGuide
+          isVerified={professionalProfile.isVerified}
+          paymentSetupComplete={professionalProfile.paymentSetupComplete}
+          hasProductsOrServices={dashboardData?.setupStatus?.hasProductsOrServices || false}
+          businessName={professionalProfile.businessName}
+          profileId={professionalProfile.id}
+        />
+
+        {/* Dashboard Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+           <div className="space-y-1">
+            <div className="flex items-center gap-3">
+               <h1 className="text-4xl font-black tracking-tight text-slate-900">
+                  Overview
+               </h1>
+               {professionalProfile.isVerified && (
+                  <span className="flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Verified
+                  </span>
+               )}
+            </div>
+            <p className="text-slate-500 font-medium flex items-center gap-2">
+              Welcome back, <span className="text-slate-900 font-bold">{professionalProfile.businessName}</span>
+              <span className="h-1 w-1 rounded-full bg-slate-300"></span>
+              <span className="text-sm font-bold bg-white px-2 py-0.5 rounded-md text-violet-600 border border-violet-100 shadow-sm">
+                {formatSpecialization(professionalProfile.specialization?.name || 'Professional')}
+              </span>
+            </p>
+           </div>
+
+           <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md p-2 pr-6 rounded-2xl border border-white/50 shadow-xl shadow-slate-200/40">
+              <div className="relative group">
+                 <div className="absolute -inset-1 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                 <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-white shadow-lg">
                     <Image
                       src={professionalProfile.businessImage || "/beccaProfile.jpg"}
                       alt="Profile"
-                      width={80}
-                      height={80}
+                      width={48}
+                      height={48}
                       className="w-full h-full object-cover"
                     />
+                 </div>
+                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></span>
+              </div>
+              <div className="flex flex-col">
+                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Status</span>
+                 <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                    Online <span className="relative flex h-2 w-2">
+                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                     </span>
+                 </span>
+              </div>
+               <div className="h-8 w-px bg-slate-200 mx-1"></div>
+               <div className="flex -space-x-2.5">
+                 {[1,2,3].map(i => (
+                   <div key={i} className={`w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm z-${10-i} hover:-translate-y-1 transition-transform cursor-pointer`}>
+                      <User className="w-4 h-4 opacity-50" />
+                   </div>
+                 ))}
+                 <div className="w-9 h-9 rounded-full border-2 border-white bg-violet-600 text-white flex items-center justify-center text-xs font-black shadow-lg hover:-translate-y-1 transition-transform cursor-pointer">
+                   +12
+                 </div>
+               </div>
+           </div>
+        </div>
+
+        {/* Bento Grid Analytics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           
+           {/* Metric Card 1: Revenue */}
+           <div className="group relative bg-white border border-white shadow-xl shadow-indigo-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-500 hover:-translate-y-1">
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-50 rounded-full blur-3xl group-hover:bg-indigo-100 transition-colors"></div>
+              <div className="relative space-y-4">
+                 <div className="flex justify-between items-start">
+                    <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 shadow-inner">
+                       <Wallet className="w-6 h-6" />
+                    </div>
+                    <div className={`flex items-center text-[10px] font-black px-2.5 py-1.5 rounded-full bg-slate-50 ${getTrendColor(dashboardData?.analytics?.periodComparison?.change)} border border-current/10 shadow-sm`}>
+                       {getTrendIcon(dashboardData?.analytics?.periodComparison?.change)}
+                       {dashboardData?.analytics?.periodComparison?.change?.toFixed(1)}%
+                    </div>
+                 </div>
+                 <div>
+                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Total Revenue</h3>
+                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                       {formatMoney(dashboardData?.metrics?.totalRevenue || professionalProfile.accountBalance)}
+                    </p>
+                 </div>
+              </div>
+           </div>
+
+           {/* Metric Card 2: Orders */}
+           <div className="group relative bg-white border border-white shadow-xl shadow-blue-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 hover:-translate-y-1">
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-blue-50 rounded-full blur-3xl group-hover:bg-blue-100 transition-colors"></div>
+              <div className="relative space-y-4">
+                 <div className="flex justify-between items-start">
+                    <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
+                       <ShoppingBag className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full border border-blue-100">Live</span>
+                 </div>
+                 <div>
+                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Fulfillment</h3>
+                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                       {dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}
+                    </p>
+                 </div>
+              </div>
+           </div>
+
+           {/* Metric Card 3: Rating */}
+           <div className="group relative bg-white border border-white shadow-xl shadow-amber-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-amber-200/50 transition-all duration-500 hover:-translate-y-1">
+               <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-amber-50 rounded-full blur-3xl group-hover:bg-amber-100 transition-colors"></div>
+               <div className="relative space-y-4">
+                  <div className="flex justify-between items-start">
+                     <div className="p-3 rounded-2xl bg-amber-50 text-amber-500 shadow-inner">
+                        <Star className="w-6 h-6 fill-current" />
+                     </div>
+                     <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-full border border-amber-100">{dashboardData?.metrics?.totalReviews || 0} Reviews</span>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                  <div>
+                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Reputation</h3>
+                    <div className="flex items-baseline gap-2">
+                       <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                          {dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "N/A"}
+                       </p>
+                       <div className="flex text-amber-400 gap-0.5">
+                          {[1,2,3,4,5].map((star) => (
+                             <Star key={star} className={`w-3.5 h-3.5 ${star <= (Math.round(dashboardData?.metrics?.avgRating || 0)) ? 'fill-current' : 'text-slate-100'}`} />
+                          ))}
+                       </div>
+                    </div>
                   </div>
+               </div>
+           </div>
+
+           {/* Metric Card 4: Customers */}
+           <div className="group relative bg-white border border-white shadow-xl shadow-purple-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-purple-200/50 transition-all duration-500 hover:-translate-y-1">
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-purple-50 rounded-full blur-3xl group-hover:bg-purple-100 transition-colors"></div>
+              <div className="relative space-y-4">
+                 <div className="flex justify-between items-start">
+                    <div className="p-3 rounded-2xl bg-purple-50 text-purple-600 shadow-inner">
+                       <Users className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-1.5 rounded-full border border-purple-100">Global</span>
+                 </div>
+                 <div>
+                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Trust Base</h3>
+                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                       {dashboardData?.metrics?.activeCustomers || 0}
+                    </p>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Real-time Insights Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           
+           {/* Section: Quick Actions */}
+           <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
+                <h3 className="text-lg font-black text-slate-900 mb-8 flex items-center justify-between">
+                   <span className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-amber-500 fill-amber-500" /> Quick Flow
+                   </span>
+                   <Sparkles className="w-4 h-4 text-violet-400" />
+                </h3>
+                <div className="space-y-4">
+                   <Link href="/dashboard/catalogue/products/add-product" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-violet-600 border border-slate-100 hover:border-violet-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-violet-200/40">
+                      <div className="w-12 h-12 rounded-xl bg-white text-violet-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-sm">
+                         <Plus className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Add Item</h4>
+                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Expand your library</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                   </Link>
+                   
+                   <Link href="/dashboard/orders" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-indigo-600 border border-slate-100 hover:border-indigo-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-indigo-200/40">
+                      <div className="w-12 h-12 rounded-xl bg-white text-indigo-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:-rotate-6 transition-all shadow-sm">
+                         <Package className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Manage Orders</h4>
+                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Track fulfillment state</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                   </Link>
+
+                   <Link href="/dashboard/analytics" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-cyan-600 border border-slate-100 hover:border-cyan-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-cyan-200/40">
+                      <div className="w-12 h-12 rounded-xl bg-white text-cyan-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-sm">
+                         <BarChart3 className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">View Intel</h4>
+                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Real-time data stream</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                   </Link>
+
+                   <Link href="/dashboard/bookings" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-emerald-600 border border-slate-100 hover:border-emerald-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-emerald-200/40">
+                      <div className="w-12 h-12 rounded-xl bg-white text-emerald-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:-rotate-6 transition-all shadow-sm">
+                         <Calendar className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Bookings</h4>
+                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Manage your schedule</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                   </Link>
                 </div>
               </div>
-            </div>
-          </div>
+
+              {/* Top Performing Card */}
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
+                 <div className="flex justify-between items-center mb-8">
+                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                       <Trophy className="w-5 h-5 text-yellow-500" /> Top Sales
+                    </h3>
+                    <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">Month</span>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    {dashboardData?.topServices && dashboardData.topServices.length > 0 ? (
+                      dashboardData.topServices.map((service: ServiceItem, index: number) => (
+                        <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-50 hover:border-violet-200 hover:shadow-lg transition-all">
+                           <div className="flex items-center gap-4">
+                              <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-[10px] font-black ${index === 0 ? 'bg-yellow-400 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                 #{index + 1}
+                              </span>
+                              <div>
+                                 <p className="font-bold text-slate-800 text-xs">{service.name}</p>
+                                 <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1 mt-0.5">
+                                    <TrendingUp className="w-2.5 h-2.5" /> High Velocity
+                                 </p>
+                              </div>
+                           </div>
+                           <p className="font-black text-slate-900 text-sm">{currencySymbol}{service.revenue.toFixed(0)}</p>
+                        </div>
+                      ))
+                    ) : (
+                       <div className="h-40 flex flex-col items-center justify-center text-slate-400 p-8 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                          <BarChart3 className="w-10 h-10 mb-2 opacity-20" />
+                          <p className="text-xs font-medium">Intel loading...</p>
+                       </div>
+                    )}
+                 </div>
+              </div>
+           </div>
+
+           {/* Section: Recent Activity & Detailed Analytics */}
+           <div className="lg:col-span-2 space-y-8">
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
+                 <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                       <Activity className="w-5 h-5 text-violet-600" /> Recent Stream
+                    </h3>
+                    <Link href="/dashboard/orders" className="text-xs font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1 group">
+                      View all activity <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                 </div>
+                 <RecentActivity activities={dashboardData?.recentActivities || []} />
+              </div>
+
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
+                 <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                       <BarChart3 className="w-5 h-5 text-indigo-600" /> Data Insights
+                    </h3>
+                 </div>
+                 <AnalyticsInsights dashboardData={dashboardData} />
+              </div>
+           </div>
+
         </div>
 
-        {/* Business Analytics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {/* Revenue Stats */}
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-white/90">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Monthly Revenue</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">${dashboardData?.metrics?.totalRevenue?.toFixed(2) || professionalProfile.accountBalance?.toFixed(2) || "0.00"}</p>
-                <p className="text-xs text-green-600 font-medium">
-                  {dashboardData?.analytics?.periodComparison?.change !== undefined && (dashboardData.analytics.periodComparison.change >= 0 ? '+' : '')}
-                  {dashboardData?.analytics?.periodComparison?.change?.toFixed(1) || '0.0'}% from last month
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Orders Completed */}
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-white/90">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Orders Completed</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}</p>
-                <p className="text-xs text-blue-600 font-medium">
-                  {dashboardData?.analytics?.periodComparison?.change !== undefined && (dashboardData.analytics.periodComparison.change >= 0 ? '+' : '')}
-                  {dashboardData?.analytics?.periodComparison?.change?.toFixed(1) || '0.0'}% from last month
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Satisfaction */}
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-white/90">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Avg Rating</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "N/A"}</p>
-                <p className="text-xs text-yellow-600 font-medium">Based on {dashboardData?.metrics?.totalReviews || professionalProfile.totalReviews || 0} reviews</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Active Customers */}
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-white/90">
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Active Customers</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{dashboardData?.metrics?.activeCustomers || 0}</p>
-                <p className="text-xs text-purple-600 font-medium">Active in last 30 days</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Business Insights & Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Top Performing Services */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
-            <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center">
-              <svg className="w-6 h-6 text-indigo-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Top Services
-            </h3>
-            <div className="space-y-4">
-              {dashboardData?.topServices && dashboardData.topServices.length > 0 ? (
-                dashboardData.topServices.map((service: ServiceItem, index: number) => {
-                  const colors = ['bg-green-50 text-green-600', 'bg-blue-50 text-blue-600', 'bg-purple-50 text-purple-600'];
-                  const colorClass = colors[index % colors.length];
-                  return (
-                    <div key={index} className={`flex justify-between items-center p-3 rounded-lg ${colorClass.split(' ')[0]}`}>
-                      <span className="text-gray-700 font-medium">{service.name}</span>
-                      <span className={`font-bold ${colorClass.split(' ')[1]}`}>${service.revenue.toFixed(2)}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <>
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-gray-700 font-medium">No sales data yet</span>
-                    <span className="font-bold text-green-600">$0.00</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
-            <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center">
-              <svg className="w-6 h-6 text-cyan-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Quick Actions
-            </h3>
-            <div className="space-y-4">
-              <Link href="/dashboard/catalogue/products/add-product" className="block">
-                <button className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 group">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-gray-900">Add New Product</span>
-                  </div>
-                </button>
-              </Link>
-              <Link href="/dashboard/orders" className="block">
-                <button className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300 group">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg mr-3 group-hover:bg-green-200 transition-colors">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-gray-900">View Orders</span>
-                  </div>
-                </button>
-              </Link>
-              <Link href="/dashboard/analytics" className="block">
-                <button className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-300 group">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg mr-3 group-hover:bg-purple-200 transition-colors">
-                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-gray-900">View Analytics</span>
-                  </div>
-                </button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Analytics Insights */}
-          <AnalyticsInsights dashboardData={dashboardData} />
-        </div>
       </div>
     </div>
   );
 }
 
+import { getAuthSession } from "@/lib/auth";
+
 async function Home() {
-  const session = await getServerSession(authOptions);
+  const session = await getAuthSession();
 
   // Check if user exists and has a valid email
   if (!session || !session.user?.email) {
@@ -360,7 +436,7 @@ async function Home() {
       return <div>No professional profile found for this user.</div>;
     }
 
-    // Fetch dashboard data directly using Prisma (not via API)
+    // Fetch dashboard data directly using Prisma
     const dashboardData = await getDashboardData(dbUser.id, professionalProfile.id);
 
     return <ProfessionalBusinessDashboard
@@ -372,7 +448,8 @@ async function Home() {
   return <div>Access denied. Invalid user role.</div>;
 }
 
-// Helper function to get dashboard data directly
+// ─── Data Fetching ────────────────────────────────────────────────────────────
+
 async function getDashboardData(userId: string, professionalProfileId: string): Promise<DashboardData> {
   try {
     const now = new Date();
@@ -389,16 +466,20 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
         id: true,
         name: true,
         price: true,
+        currency: true,
         soldCount: true,
         viewCount: true,
         isOnSale: true,
         discountPercentage: true,
-        discountPrice: true
-      }
+        discountPrice: true,
+        updatedAt: true
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 20
     });
 
     // Get orders and revenue data
-    const orders = await prisma.orderItem.findMany({
+    const orderItems = await prisma.orderItem.findMany({
       where: {
         professionalId: userId,
         order: {
@@ -409,26 +490,34 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
       },
       include: {
         order: {
-          select: {
-            customerId: true,
-            totalPrice: true,
-            createdAt: true,
-            status: true
+          include: {
+            customer: true
           }
         },
-        product: {
-          select: {
-            name: true,
-            price: true
-          }
-        }
+        product: true
+      },
+      orderBy: {
+        order: { createdAt: 'desc' }
       }
     });
 
+    // Determine if the seller has added any product or service globally
+    const totalProductsCount = await prisma.product.count({
+      where: { professionalId: userId }
+    });
+    const totalServicesCount = await prisma.professionalService.count({
+      where: { professionalId: userId }
+    });
+    const hasProductsOrServices = (totalProductsCount + totalServicesCount) > 0;
+
     // Calculate business metrics
-    const totalRevenue = orders.reduce((sum, item) => sum + item.order.totalPrice, 0);
-    const completedOrders = orders.filter(item => item.order.status === 'DELIVERED').length;
-    const totalOrders = orders.length;
+    const totalRevenue = orderItems.reduce((sum, item) => {
+      const itemSubtotal = item.price * item.quantity;
+      return sum + itemSubtotal;
+    }, 0);
+    
+    const completedOrders = orderItems.filter(item => item.order.status === 'DELIVERED').length;
+    const totalOrders = orderItems.length;
 
     // Calculate average rating from reviews
     const reviews = await prisma.review.findMany({
@@ -437,8 +526,13 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
         targetId: professionalProfileId
       },
       select: {
-        rating: true
-      }
+        rating: true,
+        comment: true,
+        createdAt: true,
+        user: { select: { firstName: true, lastName: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
     });
 
     const avgRating = reviews.length > 0
@@ -447,13 +541,13 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
 
     const totalReviews = reviews.length;
 
-    // Get active customers (unique customers who ordered in last 30 days)
+    // Get active customers
     const activeCustomers = new Set(
-      orders.map(item => item.order.customerId)
+      orderItems.map(item => item.order.customerId)
     ).size;
 
     // Calculate top performing services/products
-    const productPerformance = orders.reduce((acc, item) => {
+    const productPerformance = orderItems.reduce((acc, item) => {
       const productId = item.productId;
       if (!acc[productId]) {
         acc[productId] = {
@@ -462,7 +556,8 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
           orders: 0
         };
       }
-      acc[productId].revenue += item.order.totalPrice;
+      const itemNetRevenue = (item.price * item.quantity);
+      acc[productId].revenue += itemNetRevenue;
       acc[productId].orders += 1;
       return acc;
     }, {} as Record<string, { name: string; revenue: number; orders: number }>);
@@ -471,13 +566,36 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 3);
 
-    // Calculate analytics insights
-    const totalViews = products.reduce((sum, p) => sum + p.viewCount, 0);
-    const totalSold = products.reduce((sum, p) => sum + p.soldCount, 0);
-    const conversionRate = totalViews > 0 ? (totalSold / totalViews) * 100 : 0;
-
-    // Products on sale
-    const productsOnSale = products.filter(p => p.isOnSale || p.discountPercentage || p.discountPrice).length;
+    // Build Recent Activities
+    const recentActivities: ActivityItem[] = [
+      // Recent Orders
+      ...orderItems.slice(0, 5).map(item => ({
+        id: `order-${item.order.id}`,
+        type: 'ORDER' as const,
+        title: `New Order #${item.order.id.slice(-8).toUpperCase()}`,
+        description: `${item.product.name} ordered`,
+        timestamp: item.order.createdAt,
+        status: item.order.status,
+        meta: { customerName: `${item.order.customer.firstName} ${item.order.customer.lastName}` }
+      })),
+      // Recent Product Updates
+      ...products.slice(0, 3).map(p => ({
+        id: `product-${p.id}`,
+        type: 'PRODUCT' as const,
+        title: `Product Updated`,
+        description: `${p.name} listing was updated`,
+        timestamp: p.updatedAt
+      })),
+      // Recent Reviews
+      ...reviews.slice(0, 2).map((r, i) => ({
+        id: `review-${i}`,
+        type: 'REVIEW' as const,
+        title: `New Review: ${r.rating} Stars`,
+        description: r.comment || 'No comment provided',
+        timestamp: r.createdAt,
+        meta: { customerName: `${r.user.firstName} ${r.user.lastName}` }
+      }))
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8);
 
     // Calculate period comparison
     const sixtyDaysAgo = new Date();
@@ -496,6 +614,7 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
     });
 
     const orderChange = previousOrders > 0 ? ((totalOrders - previousOrders) / previousOrders) * 100 : 0;
+    const primaryCurrency = products[0]?.currency || 'GHS';
 
     return {
       metrics: {
@@ -505,32 +624,31 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
         totalReviews,
         activeCustomers
       },
+      setupStatus: {
+        hasProductsOrServices
+      },
       analytics: {
         periodComparison: {
           change: Math.round(orderChange * 100) / 100
         },
         insights: [
           {
-            title: "Conversion Rate",
-            description: `${conversionRate.toFixed(1)}% of views convert to sales`,
-            change: conversionRate,
-            period: "overall"
-          },
-          {
-            title: "Active Promotions",
-            description: `${productsOnSale} products currently on sale`,
-            change: productsOnSale,
+            title: "Intel Feed",
+            description: `You have ${orderItems.length} orders in the last 30 days`,
+            change: orderItems.length,
             period: "active"
           },
           {
-            title: "Order Growth",
-            description: orderChange >= 0 ? "Orders increased this month" : "Orders decreased this month",
+            title: "Performance",
+            description: orderChange >= 0 ? "Growth velocity is positive" : "Velocity slowed down slightly",
             change: Math.round(orderChange * 100) / 100,
             period: "vs last month"
           }
         ]
       },
-      topServices
+      topServices,
+      recentActivities,
+      currency: primaryCurrency
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);

@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
-import type { Prisma, BookingStatus } from "@prisma/client"
+import type { Prisma, BookingStatus, NotificationType } from "@prisma/client"
+import { addHours, isBefore, startOfDay, addDays } from "date-fns"
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
               category: true,
             },
           },
+          variant: true,
           professional: {
             select: {
               firstName: true,
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
       bookings,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
-  } catch (error) {
+  } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'bookings.GET' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })
@@ -78,74 +80,132 @@ export async function POST(request: NextRequest) {
 
     const {
       serviceId,
+      professionalId,
+      variantId,
       bookingDate,
       location,
       notes,
+      paymentMethod = 'PLATFORM',
     }: {
       serviceId: string
+      professionalId: string
+      variantId?: string
       bookingDate: string
       location?: string
       notes?: string
+      paymentMethod?: 'PLATFORM' | 'IN_PERSON'
     } = body
 
-    // Find the service and get the professional who offers it
-    const professionalService = await prisma.professionalService.findFirst({
-      where: {
-        serviceId,
-        isActive: true,
-      },
-      include: {
-        professional: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            professionalProfile: {
-              select: { businessName: true },
-            },
-          },
-        },
-        service: true,
-      },
-    })
-
-    if (!professionalService || !professionalService.service.isActive) {
-      return NextResponse.json({ error: "Service not available" }, { status: 400 })
+    if (!professionalId) {
+      return NextResponse.json({ error: "professionalId is required" }, { status: 400 })
     }
 
     const bookingDateTime = new Date(bookingDate)
-    const endTime = new Date(bookingDateTime.getTime() + professionalService.service.duration * 60000)
+    const tomorrow = startOfDay(addDays(new Date(), 1))
+
+    // 1. Enforce "No same-day bookings"
+    if (isBefore(bookingDateTime, tomorrow)) {
+      return NextResponse.json(
+        { error: "Bookings must be requested at least 24 hours in advance." },
+        { status: 400 }
+      )
+    }
+
+    // 2. Find the professional's service offering
+    const professionalService = await prisma.professionalService.findUnique({
+      where: { professionalId_serviceId: { professionalId, serviceId } },
+      include: {
+        service: true,
+        variants: { where: { isActive: true } },
+      },
+    })
+
+    if (!professionalService || !professionalService.isActive || !professionalService.service.isActive) {
+      return NextResponse.json({ error: "Service not available" }, { status: 400 })
+    }
+
+    // 3. Resolve price and duration
+    let resolvedPrice = professionalService.price
+    let resolvedDuration = professionalService.durationOverride ?? professionalService.service.duration
+
+    if (variantId) {
+      const variant = professionalService.variants.find(v => v.id === variantId)
+      if (!variant) return NextResponse.json({ error: "Variant not found" }, { status: 400 })
+      resolvedPrice = variant.price
+      resolvedDuration = variant.durationMinutes
+    }
+
+    const endTime = new Date(bookingDateTime.getTime() + resolvedDuration * 60000)
+
+    // 4. Competitive Conflict Check
+    // A slot is ONLY blocked if someone has PAID or if it's a confirmed IN_PERSON booking.
+    const conflict = await prisma.booking.findFirst({
+      where: {
+        professionalId,
+        OR: [
+          { paymentStatus: 'PAID' },
+          { paymentMethod: 'IN_PERSON', status: 'CONFIRMED' }
+        ],
+        AND: [
+          { bookingDate: { lt: endTime } },
+          { endTime: { gt: bookingDateTime } },
+        ],
+      },
+    })
+
+    if (conflict) {
+      return NextResponse.json(
+        { error: "This slot has already been secured by another customer." },
+        { status: 409 }
+      )
+    }
+
+    // 5. Create Booking with 6-hour confirmation window
+    const requestExpiresAt = addHours(new Date(), 6)
 
     const booking = await prisma.booking.create({
       data: {
         customerId: user.id,
         serviceId,
-        professionalId: professionalService.professionalId,
+        professionalId,
+        ...(variantId ? { variantId } : {}),
         bookingDate: bookingDateTime,
         endTime,
+        totalPrice: resolvedPrice,
         location,
         notes,
+        paymentMethod,
+        requestExpiresAt,
+        status: 'PENDING',
+        paymentStatus: 'UNPAID',
       },
       include: {
-        service: {
-          include: {
-            category: true,
-          },
-        },
+        service: { include: { category: true } },
+        variant: true,
+        customer: { select: { firstName: true, lastName: true, email: true } },
         professional: {
           select: {
             firstName: true,
             lastName: true,
-            professionalProfile: {
-              select: { businessName: true },
-            },
+            professionalProfile: { select: { businessName: true } },
           },
         },
       },
     })
 
+    // 6. Notify the professional
+    await prisma.notification.create({
+      data: {
+        userId: professionalId,
+        type: "BOOKING_CONFIRMATION" as NotificationType,
+        title: "New Booking Request",
+        message: `You have a new booking request for ${booking.service.name} from ${booking.customer.firstName}. You have 6 hours to confirm.`,
+        data: JSON.stringify({ bookingId: booking.id, expiresAt: requestExpiresAt }),
+      },
+    })
+
     return NextResponse.json(booking, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'bookings.POST' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })

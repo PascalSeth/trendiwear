@@ -1,0 +1,30 @@
+c:\Users\DELL\Desktop\trendiwear/app/(pages)/register-as-professional/page.tsx:95:      uploadFormData.append('bucket', 'images');
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:37:    const bucket = (formData.get("bucket") as string) || "images"
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:40:    console.log("Form data parsed:", { bucket, folder, hasFile: !!file })
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:47:    // Validate bucket - only allow images, documents, videos
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:49:    let targetBucket = bucket || "images" // Default to images if not specified
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:52:    // If bucket is not a valid storage bucket, treat it as a folder and use 'images' as bucket
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:55:      targetFolder = targetBucket // Use the provided bucket as folder
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:56:      targetBucket = "images" // Default to images bucket
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:59:    // Validate file type based on bucket
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:72:      console.log("Invalid file type:", file.type, "for bucket:", targetBucket)
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:74:        error: `Invalid file type for ${targetBucket} bucket. Allowed types: ${allowedTypes.join(', ')}`
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:78:    // Validate file size based on bucket
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:106:    console.log("Using Supabase for bucket:", targetBucket)
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:115:    // Upload to specified bucket
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:134:          error: `Storage bucket '${targetBucket}' not found. Please create it in your Supabase dashboard.`,
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:135:          details: "Go to Storage → Create bucket"
+c:\Users\DELL\Desktop\trendiwear/app/api/upload/route.ts:150:      bucket: targetBucket,
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/(pages)/catalogue/products/add-product/page.tsx:141:        fd.append('bucket', 'videos');
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/(pages)/catalogue/products/edit/[id]/page.tsx:252:        formData.append('bucket', 'videos');
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/(pages)/management/blogs/page.tsx:229:    formData.append('bucket', 'images')
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/(pages)/trends/events/page.tsx:141:        uploadData.append("bucket", "images");
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/(pages)/trends/outfit-inspirations/page.tsx:204:        uploadData.append("bucket", "images");
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/components/sheet/Collections/CollectionSheet.tsx:116:    formData.append("bucket", "collections");
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/components/sheet/ProductCategory/ProductCategorySheet.tsx:110:    formData.append("bucket", "categories");
+c:\Users\DELL\Desktop\trendiwear/app/dashboard/components/sheet/Service/ServiceSheet.tsx:131:    formData.append("bucket", "services");
+c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:5:  bucket: string,
+c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:9:    .from(bucket)
+c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:19:    .from(bucket)
+c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:25:export async function deleteFile(bucket: string, path: string) {
+c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:27:    .from(bucket)

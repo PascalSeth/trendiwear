@@ -17,6 +17,7 @@ const errorMessages: Record<string, string> = {
   Callback: 'Error in the callback URL.',
   OAuthAccountNotLinked: 'To confirm your identity, sign in with the same account you used originally.',
   SessionRequired: 'Please sign in to access this page.',
+  EmailMismatch: 'The email address for this Google account does not match your existing account. Please sign out and sign in with the correct account.',
 }
 
 function ErrorContent() {

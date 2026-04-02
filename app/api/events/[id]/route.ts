@@ -42,7 +42,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const user = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const { id } = await params
 
     const contentType = request.headers.get("content-type") || ""
@@ -64,7 +64,7 @@ export async function PUT(
 
       if (imageFile) {
         // Upload to Supabase
-        const fileName = `event-${Date.now()}-${imageFile.name}`
+        const fileName = `${user.id}/event-images/event-${Date.now()}-${imageFile.name}`
         imageUrl = await uploadFile(imageFile, "images", fileName)
       }
     } else {

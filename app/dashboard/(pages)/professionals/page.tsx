@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 // import Link from 'next/link';
 import { Eye, Edit, Trash2, Star, MapPin, Calendar, DollarSign, ShieldCheck, ShieldX, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -247,10 +248,12 @@ const ProfessionalsPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <img
+                          <Image
                             className="h-10 w-10 rounded-full object-cover"
                             src={professional.businessImage || '/beccaProfile.jpg'}
                             alt={professional.businessName}
+                            width={40}
+                            height={40}
                           />
                         </div>
                         <div className="ml-4">

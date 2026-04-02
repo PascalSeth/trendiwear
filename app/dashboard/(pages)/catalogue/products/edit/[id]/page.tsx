@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +43,8 @@ type Product = {
   discountStartDate?: string;
   discountEndDate?: string;
   isOnSale: boolean;
+  allowPickup: boolean;
+  allowDelivery: boolean;
   category: {
     id: string;
     name: string;
@@ -88,6 +91,9 @@ function EditProductPage() {
   const [discountStartDate, setDiscountStartDate] = useState<string>("");
   const [discountEndDate, setDiscountEndDate] = useState<string>("");
   const [isOnSale, setIsOnSale] = useState<boolean>(false);
+  const [allowPickup, setAllowPickup] = useState<boolean>(true);
+  const [allowDelivery, setAllowDelivery] = useState<boolean>(true);
+  const [isPreorder, setIsPreorder] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [fetchLoading, setFetchLoading] = useState<boolean>(true);
   const [product, setProduct] = useState<Product | null>(null);
@@ -121,8 +127,11 @@ function EditProductPage() {
           setDiscountPercentage(productData.discountPercentage || "");
           setDiscountPrice(productData.discountPrice || "");
           setDiscountStartDate(productData.discountStartDate || "");
-          setDiscountEndDate(productData.discountEndDate || "");
+           setDiscountEndDate(productData.discountEndDate || "");
           setIsOnSale(productData.isOnSale || false);
+          setAllowPickup(productData.allowPickup ?? true);
+          setAllowDelivery(productData.allowDelivery ?? true);
+          setIsPreorder(productData.isPreorder ?? false);
           setUploadedImageUrls(productData.images || []);
           setUploadedVideoUrl(productData.videoUrl || "");
           setCurrency(productData.currency || "GHS");
@@ -278,6 +287,9 @@ function EditProductPage() {
         discountStartDate: discountStartDate || undefined,
         discountEndDate: discountEndDate || undefined,
         isOnSale,
+        allowPickup,
+        allowDelivery,
+        isPreorder,
       };
 
       const response = await fetch(`/api/products/${productId}`, {
@@ -464,9 +476,10 @@ function EditProductPage() {
                     <div className="grid grid-cols-2 gap-2 mt-3">
                       {uploadedImageUrls.map((url, index) => (
                         <div key={index} className="relative group aspect-square">
-                          <img
+                          <Image
                             src={url}
                             alt={`Product ${index + 1}`}
+                            fill
                             className="w-full h-full object-cover rounded border border-neutral-200"
                           />
                           <button
@@ -547,9 +560,11 @@ function EditProductPage() {
                   </Select>
                   {selectedCategoryImage && (
                     <div className="mt-3">
-                      <img
+                      <Image
                         src={selectedCategoryImage}
                         alt="Selected category"
+                        width={400}
+                        height={128}
                         className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
                       />
                     </div>
@@ -572,9 +587,11 @@ function EditProductPage() {
                   </Select>
                   {selectedCollectionImage && (
                     <div className="mt-3">
-                      <img
+                      <Image
                         src={selectedCollectionImage}
                         alt="Selected collection"
+                        width={400}
+                        height={128}
                         className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
                       />
                     </div>
@@ -834,6 +851,18 @@ function EditProductPage() {
                             </p>
                           </PopoverContent>
                         </Popover>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm pt-2 border-t border-neutral-100">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox checked={allowPickup} onCheckedChange={() => setAllowPickup((prev) => !prev)} />
+                          <span className="text-neutral-700">Allow Pickup</span>
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox checked={allowDelivery} onCheckedChange={() => setAllowDelivery((prev) => !prev)} />
+                          <span className="text-neutral-700">Allow Delivery</span>
+                        </label>
                       </div>
                     </div>
                   </div>

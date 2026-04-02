@@ -91,12 +91,20 @@ const SuperAdminDashboard = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currencySymbol, setCurrencySymbol] = useState('$');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        // Fetch currency settings
+        const currencyResponse = await fetch('/api/currency');
+        if (currencyResponse.ok) {
+          const currencyData = await currencyResponse.json();
+          setCurrencySymbol(currencyData.symbol);
+        }
 
         // Fetch stats
         const statsResponse = await fetch('/api/dashboard/stats');
@@ -374,7 +382,7 @@ const SuperAdminDashboard = () => {
               <StatCard
                 icon={DollarSign}
                 title="Revenue"
-                value={`KSh ${stats.totalRevenue.toLocaleString()}`}
+                value={`${currencySymbol} ${stats.totalRevenue.toLocaleString()}`}
                 change={18.7}
                 color="bg-gradient-to-r from-orange-500 to-orange-600"
               />

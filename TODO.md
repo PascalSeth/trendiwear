@@ -1,0 +1,5 @@
+- [x] Read and understand current `app/dashboard/page.tsx` structure and existing logic/data dependencies
+- [ ] Redesign `app/dashboard/page.tsx` UI to match current light premium dashboard system
+- [ ] Preserve all existing business logic, API usage, and interactions
+- [ ] Ensure visual consistency with updated shell/topbar/sidebar styles
+- [ ] Perform static review for layout consistency and regressions

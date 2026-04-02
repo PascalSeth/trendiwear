@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate bucket - only allow images, documents, videos
-    const allowedBuckets = ['images', 'documents', 'videos']
+    const allowedBuckets = ['images', 'documents', 'videos', 'categories']
     let targetBucket = bucket || "images" // Default to images if not specified
     let targetFolder = folder || "uploads"
 
@@ -57,13 +57,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type based on bucket
-    console.log("Validating file type:", file.type)
+    console.log("Validating file type:", file.type, "for bucket:", targetBucket)
     let allowedTypes: string[] = []
 
     if (targetBucket === 'videos') {
       allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/mkv']
-    } else if (targetBucket === 'images') {
-      allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    } else if (targetBucket === 'images' || targetBucket === 'categories') {
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
     } else if (targetBucket === 'documents') {
       allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf']
     }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       maxSize = 25 * 1024 * 1024 // 25MB for documents
       sizeText = "25MB"
     } else {
-      maxSize = 10 * 1024 * 1024 // 10MB for images
+      maxSize = 10 * 1024 * 1024 // 10MB for images/categories
       sizeText = "10MB"
     }
 
@@ -100,18 +100,18 @@ export async function POST(request: NextRequest) {
 
     const fileExt = file.name.split(".").pop()
     const timestamp = Date.now()
+    // Structured path: targetFolder/userId/timestamp.ext
     const fileName = `${targetFolder}/${user.id}/${timestamp}.${fileExt}`
 
-    console.log("Generated filename:", fileName)
-    console.log("Using Supabase for bucket:", targetBucket)
+    console.log(`Attempting upload to bucket: '${targetBucket}', path: '${fileName}'`)
 
     if (!supabase) {
+      console.error("Supabase client is null")
       return NextResponse.json({
         error: "Supabase storage is not configured. File uploads require Supabase."
       }, { status: 500 })
     }
 
-    console.log("Attempting Supabase upload...")
     // Upload to specified bucket
     const { data, error } = await supabase.storage.from(targetBucket).upload(fileName, file, {
       cacheControl: "3600",
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      console.error("Supabase upload error:", error)
+      console.error(`Supabase upload error in bucket '${targetBucket}':`, error)
 
       // Handle specific Supabase errors
       if (error.message?.includes('signature verification failed')) {

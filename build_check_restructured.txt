@@ -1,0 +1,37 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 37.4s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+unhandledRejection [Error: Cannot find module './5611.js'
+Require stack:
+- c:\Users\DELL\Desktop\trendiwear\.next\server\webpack-runtime.js
+- c:\Users\DELL\Desktop\trendiwear\.next\server\pages\_document.js
+- c:\Users\DELL\Desktop\trendiwear\node_modules\next\dist\server\require.js
+- c:\Users\DELL\Desktop\trendiwear\node_modules\next\dist\server\load-components.js
+- c:\Users\DELL\Desktop\trendiwear\node_modules\next\dist\build\utils.js
+- c:\Users\DELL\Desktop\trendiwear\node_modules\next\dist\build\worker.js
+- c:\Users\DELL\Desktop\trendiwear\node_modules\next\dist\compiled\jest-worker\processChild.js] {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}

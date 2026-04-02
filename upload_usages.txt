@@ -1,0 +1,6 @@
+c:\Users\DELL\Desktop\trendiwear\app/api/events/route.ts:5:import { uploadFile } from "@/lib/upload"
+c:\Users\DELL\Desktop\trendiwear\app/api/events/route.ts:58:        imageUrl = await uploadFile(imageFile, "images", fileName)
+c:\Users\DELL\Desktop\trendiwear\app/api/events/[id]/route.ts:4:import { uploadFile } from "@/lib/upload"
+c:\Users\DELL\Desktop\trendiwear\app/api/events/[id]/route.ts:68:        imageUrl = await uploadFile(imageFile, "images", fileName)
+c:\Users\DELL\Desktop\trendiwear\app/api/GET/getTrendCategories/route.ts:4:import { uploadFile } from "@/lib/upload"
+c:\Users\DELL\Desktop\trendiwear\app/api/GET/getTrendCategories/route.ts:49:      imageUrl = await uploadFile(imageFile, "images", fileName)

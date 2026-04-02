@@ -66,6 +66,13 @@ export async function GET() {
       pendingOrders
     })
   } catch (error) {
+    console.error("[api/dashboard/stats] Error:", error)
+    if (error instanceof Error && 'status' in error) {
+      return NextResponse.json(
+        { error: error.message }, 
+        { status: (error as { status: number }).status }
+      )
+    }
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }

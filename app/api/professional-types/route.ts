@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth"
 export async function GET() {
   try {
     const professionalTypes = await prisma.professionalType.findMany({
+      where: { isActive: true },
       include: {
         _count: {
           select: { professionals: true }

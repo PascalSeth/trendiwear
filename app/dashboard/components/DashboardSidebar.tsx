@@ -16,11 +16,12 @@ import {
   Sparkles,
   ChevronDown,
   ChevronRight,
-  LogOut,
   Home,
   Briefcase,
   Layers,
   FileText,
+  CreditCard,
+  Truck,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,6 +32,7 @@ import { cn } from '@/lib/utils';
 
 type DashboardSidebarProps = {
   role: Role;
+  collapsed?: boolean;
 };
 
 interface NavItem {
@@ -41,7 +43,7 @@ interface NavItem {
   roles?: Role[];
 }
 
-const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
+const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = false }) => {
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Catalogue', 'Management']);
 
@@ -62,7 +64,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
       {
-        label: 'Dashboard',
+        label: 'Overview',
         href: '/dashboard',
         icon: <LayoutDashboard className="h-5 w-5" />,
       },
@@ -72,9 +74,20 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
       return [
         ...baseItems,
         {
-          label: 'Products',
-          href: '/dashboard/catalogue/products',
-          icon: <Package className="h-5 w-5" />,
+          label: 'Catalogue',
+          icon: <Layers className="h-5 w-5" />,
+          children: [
+            {
+              label: 'Products',
+              href: '/dashboard/catalogue/products',
+              icon: <Package className="h-4 w-4" />,
+            },
+            {
+              label: 'Services',
+              href: '/dashboard/services',
+              icon: <Briefcase className="h-4 w-4" />,
+            },
+          ],
         },
         {
           label: 'Orders',
@@ -82,14 +95,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
           icon: <ShoppingCart className="h-5 w-5" />,
         },
         {
-          label: 'Services',
-          href: '/dashboard/services',
-          icon: <Briefcase className="h-5 w-5" />,
-        },
-        {
           label: 'Analytics',
           href: '/dashboard/analytics',
           icon: <BarChart3 className="h-5 w-5" />,
+        },
+        {
+          label: 'Riders',
+          href: '/dashboard/riders',
+          icon: <Truck className="h-5 w-5" />,
+        },
+        {
+          label: 'Bookings',
+          href: '/dashboard/bookings',
+          icon: <Calendar className="h-5 w-5" />,
         },
         {
           label: 'Showcase',
@@ -178,6 +196,11 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
             icon: <Briefcase className="h-4 w-4" />,
           },
           {
+            label: 'Subscriptions',
+            href: '/dashboard/management/subscriptions',
+            icon: <CreditCard className="h-4 w-4" />,
+          },
+          {
             label: 'Professional Types',
             href: '/dashboard/management/professional-types',
             icon: <Users className="h-4 w-4" />,
@@ -217,24 +240,31 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
           <button
             onClick={() => toggleMenu(item.label)}
             className={cn(
-              'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+              'w-full flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+              collapsed ? 'justify-center' : 'justify-between',
               active
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-violet-600/90 to-indigo-600/90 text-white shadow-[0_4px_12px_rgba(139,92,246,0.3)]'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
             )}
           >
-            <div className="flex items-center gap-3">
-              {item.icon}
-              <span>{item.label}</span>
+            <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
+              <div className={cn(
+                'p-1.5 rounded-lg transition-colors',
+                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+              )}>
+                {item.icon}
+              </div>
+              {!collapsed && <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>}
             </div>
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            {!collapsed &&
+              (isExpanded ? (
+                <ChevronDown className={cn("h-4 w-4", active ? "text-white/70" : "text-slate-400")} />
+              ) : (
+                <ChevronRight className={cn("h-4 w-4", active ? "text-white/70" : "text-slate-400")} />
+              ))}
           </button>
-          {isExpanded && (
-            <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-100 pl-3">
+          {isExpanded && !collapsed && (
+            <div className="ml-4 mt-2 space-y-1 border-l border-slate-200 pl-3">
               {item.children!.map((child) => renderNavItem(child, depth + 1))}
             </div>
           )}
@@ -247,71 +277,102 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role }) => {
         key={item.label}
         href={item.href!}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+          'flex items-center rounded-xl px-3 py-2.5 text-sm transition-all duration-300',
+          collapsed ? 'justify-center' : 'gap-3',
           active
-            ? 'bg-indigo-100 text-indigo-700 shadow-sm'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+            ? 'bg-gradient-to-r from-violet-600/90 to-indigo-600/90 text-white shadow-[0_4px_12px_rgba(139,92,246,0.3)]'
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent',
           depth > 0 && 'text-sm'
         )}
+        title={collapsed ? item.label : undefined}
       >
-        {item.icon}
-        <span>{item.label}</span>
+        <div className={cn(
+          'p-1.5 rounded-lg transition-colors',
+          active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+        )}>
+          {item.icon}
+        </div>
+        {!collapsed && <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>}
       </Link>
     );
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col">
+    <aside
+      className={cn(
+        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white/70 backdrop-blur-xl transition-all duration-500 shadow-2xl',
+        collapsed ? 'w-24' : 'w-72'
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-50">
+        {/* Sidebar Interior Light Effects */}
+        <div className="absolute -top-20 -left-10 h-64 w-64 animate-blob rounded-full bg-violet-400/20 blur-[80px]" />
+        <div className="absolute bottom-[10%] -right-20 h-80 w-80 animate-blob rounded-full bg-indigo-300/20 blur-[100px] [animation-delay:8s]" />
+      </div>
+      <div className="relative flex flex-col flex-1 min-h-0">
       {/* Logo Section */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/navlogo.png"
-            alt="TrendiWear"
-            width={40}
-            height={40}
-            className="w-10 h-10"
-          />
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">TrendiWear</h1>
-            <p className="text-xs text-gray-500">Dashboard</p>
+      <div className={cn('border-b border-slate-100 py-6 flex-shrink-0', collapsed ? 'px-3' : 'px-8')}>
+        <Link href="/" className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-4')}>
+          <div className="relative group">
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+            <Image
+              src="/navlogo.png"
+              alt="TrendiWear"
+              width={48}
+              height={48}
+              className="relative h-12 w-12 rounded-xl ring-1 ring-white/50 shadow-xl transition-all duration-300 group-hover:scale-105"
+            />
           </div>
+          {!collapsed && (
+            <div className="ml-1 flex flex-col justify-center">
+              <span className="text-[14px] font-black tracking-tighter bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 bg-clip-text text-transparent uppercase">TrendiZip</span>
+              <span className="text-[9px] font-bold text-slate-400 opacity-80 tracking-widest uppercase">Seller Hub</span>
+            </div>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
+      <nav className={cn('scrollbar-hide flex-1 space-y-2 overflow-y-auto py-6 min-h-0', collapsed ? 'px-3' : 'px-5')}>
         {navItems.map((item) => renderNavItem(item))}
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-gray-100 px-4 py-4 space-y-1.5">
+      <div className={cn('space-y-2 border-t border-slate-100 py-6 flex-shrink-0', collapsed ? 'px-3' : 'px-5')}>
         <Link
           href="/dashboard/settings"
           className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+            'flex items-center rounded-xl px-3 py-2.5 text-sm transition-all duration-300',
+            collapsed ? 'justify-center gap-0' : 'gap-3',
             isActive('/dashboard/settings')
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-violet-600/90 to-indigo-600/90 text-white'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           )}
+          title={collapsed ? 'Settings' : undefined}
         >
-          <Settings className="h-5 w-5" />
-          <span>Settings</span>
+          <div className={cn(
+            'p-1.5 rounded-lg',
+            isActive('/dashboard/settings') ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+          )}>
+            <Settings className="h-5 w-5" />
+          </div>
+          {!collapsed && <span className="font-medium">Settings</span>}
         </Link>
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+          className={cn(
+            'flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+            collapsed ? 'justify-center gap-0' : 'gap-3',
+            'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/50 bg-slate-50/50'
+          )}
+          title={collapsed ? 'Back to Site' : undefined}
         >
-          <Home className="h-5 w-5" />
-          <span>Back to Store</span>
+          <div className="p-1.5 rounded-lg bg-white shadow-sm text-indigo-600">
+            <Home className="h-5 w-5" />
+          </div>
+          {!collapsed && <span>Back to Site</span>}
         </Link>
-        <Link
-          href="/auth/signout"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Sign Out</span>
-        </Link>
+      </div>
       </div>
     </aside>
   );

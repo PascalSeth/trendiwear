@@ -18,6 +18,7 @@ interface PaymentResult {
     status: string
     paidAt: string
     channel?: string
+    currency?: string
   }
 }
 
@@ -97,7 +98,7 @@ export default function PaymentCompletePage() {
                 </div>
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-sm text-gray-500">Amount Paid</span>
-                  <span className="font-semibold">GHS {result.order.totalPrice.toFixed(2)}</span>
+                  <span className="font-semibold">{result.order.currency || 'GHS'} {result.order.totalPrice.toFixed(2)}</span>
                 </div>
                 {result.order.channel && (
                   <div className="flex justify-between items-center mb-3">

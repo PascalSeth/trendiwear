@@ -1,11 +1,10 @@
+import { getAuthSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -86,7 +85,11 @@ export async function GET() {
     });
 
     // Calculate business metrics
-    const totalRevenue = orders.reduce((sum, item) => sum + item.order.totalPrice, 0);
+    const totalRevenue = orders.reduce((sum, item) => {
+      const itemSubtotal = item.price * item.quantity;
+      return sum + itemSubtotal;
+    }, 0);
+    
     const completedOrders = orders.filter(item => item.order.status === 'DELIVERED').length;
     const totalOrders = orders.length;
 
@@ -122,7 +125,8 @@ export async function GET() {
           orders: 0
         };
       }
-      acc[productId].revenue += item.order.totalPrice;
+      const itemNetRevenue = (item.price * item.quantity);
+      acc[productId].revenue += itemNetRevenue;
       acc[productId].orders += 1;
       return acc;
     }, {} as Record<string, { name: string; revenue: number; orders: number }>);
@@ -196,7 +200,7 @@ export async function GET() {
       recentOrders: recentOrders.map(item => ({
         id: item.orderId,
         productName: item.product.name,
-        amount: item.order.totalPrice,
+        amount: item.price * item.quantity,
         status: item.order.status,
         date: item.order.createdAt
       })),

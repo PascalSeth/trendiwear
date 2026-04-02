@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import { Star, MapPin, Mail, Eye, Heart,  TrendingUp } from 'lucide-react';
+import Image from 'next/image';
 
 // Enhanced dummy data for fashion professionals
 const professionals = [
@@ -168,10 +169,11 @@ function Page() {
               >
                 {/* Background Image with Overlay */}
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={professional.businessImage}
-                    alt={`?{professional.name}'s work`}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    alt={`${professional.name}'s work`}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className={`absolute inset-0 bg-gradient-to-t ?{professional.color} opacity-60 group-hover:opacity-40 transition-opacity duration-300`}></div>
                   
@@ -203,10 +205,11 @@ function Page() {
                 {/* Profile Image */}
                 <div className="flex justify-center -mt-12 relative z-10">
                   <div className="relative">
-                    <img
+                    <Image
                       src={professional.imageUrl}
                       alt={professional.name}
-                      className="w-24 h-24 rounded-full border-4 border-white object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
+                      fill
+                      className="rounded-full border-4 border-white object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
                     />
                     <div className={`absolute inset-0 rounded-full bg-gradient-to-br ?{professional.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
                   </div>

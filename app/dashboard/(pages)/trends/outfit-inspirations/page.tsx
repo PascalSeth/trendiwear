@@ -50,6 +50,12 @@ interface OutfitInspiration {
       businessName: string | null;
     } | null;
   };
+  products: Array<{
+    product: {
+      id: string;
+      currency: string;
+    };
+  }>;
   _count: {
     savedByUsers: number;
   };
@@ -389,7 +395,7 @@ export default function OutfitInspirationsTrendsPage() {
                     Saves: {outfit._count.savedByUsers} • Likes: {outfit.likes}
                   </span>
                   <span>
-                    {outfit.totalPrice ? `GHS ${outfit.totalPrice.toFixed(2)}` : ""}
+                    {outfit.totalPrice ? `${outfit.products?.[0]?.product?.currency || 'GHS'} ${outfit.totalPrice.toFixed(2)}` : ""}
                   </span>
                 </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { AccessControlWrapper } from '@/app/dashboard/components/AccessControlWrapper'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import ServiceSheet, { type Service } from '@/app/dashboard/components/sheet/Service/ServiceSheet'
+import type { Service } from '@/app/dashboard/components/sheet/Service/ServiceSheet'
 
 type ServiceCategory = {
   id: string
@@ -41,7 +43,10 @@ type ServiceCategory = {
 }
 
 function ServicesPage() {
-  const [activeTab, setActiveTab] = useState<'services' | 'categories'>('categories')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialTab = (searchParams.get('tab') as 'services' | 'categories') || 'services'
+  const [activeTab, setActiveTab] = useState<'services' | 'categories'>(initialTab)
   const [services, setServices] = useState<Service[]>([])
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,20 +57,35 @@ function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'home' | 'instore'>('all')
-  const [editingService, setEditingService] = useState<Service | null>(null)
+
+  const [userRole, setUserRole] = useState<string>('CUSTOMER')
   const [error, setError] = useState('')
+  const [showGuide, setShowGuide] = useState(false)
+
+  const isManagementAllowed = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
 
   const tabs = [
-    { id: 'categories' as const, label: 'Categories', icon: LayoutGrid },
-    { id: 'services' as const, label: 'Services', icon: Sparkles }
+    { id: 'services' as const, label: 'Services', icon: Sparkles },
+    ...(isManagementAllowed ? [{ id: 'categories' as const, label: 'Categories', icon: LayoutGrid }] : [])
   ]
 
-  useEffect(() => {
-    fetchServices()
-    fetchCategories()
-  }, [])
+  const fetchUserData = React.useCallback(async () => {
+    try {
+      const res = await fetch('/api/me')
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.user?.role || 'CUSTOMER')
+        // Automatically switch back to services if categories tab is not allowed
+        if (activeTab === 'categories' && data.user?.role === 'PROFESSIONAL') {
+          setActiveTab('services')
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch user role:', e)
+    }
+  }, [activeTab])
 
-  const fetchServices = async () => {
+  const fetchServices = React.useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/services?page=1&limit=100&dashboard=true')
@@ -78,9 +98,9 @@ function ServicesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchCategories = async () => {
+  const fetchCategories = React.useCallback(async () => {
     try {
       setCategoriesLoading(true)
       const response = await fetch('/api/service-categories')
@@ -93,7 +113,13 @@ function ServicesPage() {
     } finally {
       setCategoriesLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchUserData()
+    fetchServices()
+    fetchCategories()
+  }, [fetchUserData, fetchServices, fetchCategories])
 
   const handleDelete = async (service: Service) => {
     if (!confirm(`Are you sure you want to delete "${service.name}"?`)) return
@@ -196,8 +222,9 @@ function ServicesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AccessControlWrapper requiredPermission="ADD_SERVICE">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -205,21 +232,30 @@ function ServicesPage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-indigo-800 to-slate-900 bg-clip-text text-transparent">
                 Services Management
               </h1>
-              <p className="text-slate-600 mt-1">Create and manage your service offerings</p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-slate-600">Create and manage your services</p>
+                <button 
+                  onClick={() => setShowGuide(!showGuide)}
+                  className="text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex items-center gap-1.5 border border-indigo-100"
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${showGuide ? 'bg-indigo-600 animate-pulse' : 'bg-indigo-300'}`} />
+                  {showGuide ? 'Close Help' : 'How does this work?'}
+                </button>
+              </div>
             </div>
             {activeTab === 'services' ? (
-              <ServiceSheet
-                categories={categories}
-                onServiceAdded={(newService) => setServices(prev => [newService, ...prev])}
-                serviceToEdit={editingService || undefined}
-                onServiceUpdated={(updatedService) => {
-                  setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s))
-                  setEditingService(null)
-                }}
-                onClose={() => setEditingService(null)}
-              />
+              <Button 
+                onClick={() => router.push('/dashboard/services/new')}
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30"
+              >
+                <Plus className="h-4 w-4" />
+                Add Service
+              </Button>
             ) : (
-              <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30">
+              <Button 
+                onClick={() => router.push('/dashboard/services/categories/new')}
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30"
+              >
                 <Plus className="h-4 w-4" />
                 Add Category
               </Button>
@@ -249,6 +285,48 @@ function ServicesPage() {
             })}
           </nav>
         </div>
+
+        {/* Quick Guide */}
+        <AnimatePresence>
+          {showGuide && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Sparkles size={60} />
+                  </div>
+                  <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                    Quick Guide
+                  </h3>
+                  <p className="text-indigo-50 text-xs">Follow these 3 steps to start earning.</p>
+                </div>
+                
+                <div className="md:col-span-2 bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">1</div>
+                    <p className="font-bold text-slate-900 text-xs uppercase tracking-tight">Add service</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Tell us what you do (like sewing or modeling).</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">2</div>
+                    <p className="font-bold text-slate-900 text-xs uppercase tracking-tight">Set price</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">How much you charge and how long it takes.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="w-7 h-7 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">3</div>
+                    <p className="font-bold text-slate-900 text-xs uppercase tracking-tight">Get booked</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">People book you, you work, you get paid!</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Error Toast */}
         {error && (
@@ -522,7 +600,7 @@ function ServicesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingService(service)}>
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/services/${service.id}/edit`)}>
                             <Edit2 size={14} className="mr-2" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
@@ -643,7 +721,7 @@ function ServicesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingService(service)}>
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/services/${service.id}/edit`)}>
                         <Edit2 size={14} className="mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
@@ -814,7 +892,7 @@ function ServicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/services/categories/${category.id}/edit`)}>
                                 <Edit2 size={14} className="mr-2" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleToggleCategoryStatus(category)}>
@@ -861,6 +939,7 @@ function ServicesPage() {
         )}
       </div>
     </div>
+    </AccessControlWrapper>
   )
 }
 

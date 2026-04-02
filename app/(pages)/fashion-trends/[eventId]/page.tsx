@@ -40,6 +40,12 @@ interface OutfitInspiration {
       businessName: string | null;
     } | null;
   };
+  products: Array<{
+    product: {
+      id: string;
+      currency: string;
+    };
+  }>;
 }
 
 export default function EventDetailPage() {
@@ -257,7 +263,7 @@ export default function EventDetailPage() {
                       </p>
                       {outfit.totalPrice && (
                         <p className="text-white/60 text-xs mt-1 font-mono">
-                          GHS {outfit.totalPrice.toFixed(2)}
+                          {outfit.products?.[0]?.product?.currency || 'GHS'} {outfit.totalPrice.toFixed(2)}
                         </p>
                       )}
                     </div>
@@ -360,7 +366,7 @@ export default function EventDetailPage() {
                   {selectedOutfit.totalPrice && (
                     <div className="mb-8 pb-6 border-b border-neutral-100">
                       <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Total Look Price</p>
-                      <p className="text-2xl font-serif font-medium">GHS {selectedOutfit.totalPrice.toFixed(2)}</p>
+                      <p className="text-2xl font-serif font-medium">{selectedOutfit.products?.[0]?.product?.currency || 'GHS'} {selectedOutfit.totalPrice.toFixed(2)}</p>
                     </div>
                   )}
 

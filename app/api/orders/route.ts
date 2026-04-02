@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
+import { PAYSTACK_CONFIG } from "@/lib/paystack"
 import type { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
 
 // Helper function to calculate effective price with discount
@@ -12,7 +13,7 @@ function calculateEffectivePrice(product: {
   discountStartDate?: Date | null
   discountEndDate?: Date | null
   isOnSale?: boolean
-}): { effectivePrice: number; isDiscountActive: boolean } {
+}): { effectivePrice: number; isDiscountActive: boolean; discountAmount: number } {
   const now = new Date()
   
   const isWithinDateRange = 
@@ -23,7 +24,7 @@ function calculateEffectivePrice(product: {
   const isDiscountActive = Boolean(product.isOnSale && hasDiscount && isWithinDateRange)
   
   if (!isDiscountActive) {
-    return { effectivePrice: product.price, isDiscountActive: false }
+    return { effectivePrice: product.price, isDiscountActive: false, discountAmount: 0 }
   }
   
   let effectivePrice = product.price
@@ -34,7 +35,13 @@ function calculateEffectivePrice(product: {
     effectivePrice = product.price * (1 - product.discountPercentage / 100)
   }
   
-  return { effectivePrice: Math.round(effectivePrice * 100) / 100, isDiscountActive }
+  const discountAmount = product.price - effectivePrice
+  
+  return { 
+    effectivePrice: Math.round(effectivePrice * 100) / 100, 
+    isDiscountActive,
+    discountAmount: Math.round(discountAmount * 100) / 100
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -79,6 +86,7 @@ export async function GET(request: NextRequest) {
                   name: true,
                   images: true,
                   price: true,
+                  currency: true,
                 },
               },
             },
@@ -121,6 +129,7 @@ export async function POST(request: NextRequest) {
       addressId,
       items,
       deliveryZone,
+      deliveryMethod,
       couponCode,
       paystackReference,
       paymentStatus,
@@ -128,6 +137,7 @@ export async function POST(request: NextRequest) {
       addressId: string
       items: OrderItemInput[]
       deliveryZone?: string
+      deliveryMethod?: 'PICKUP' | 'DELIVERY'
       couponCode?: string
       paystackReference?: string
       paymentStatus?: string
@@ -141,30 +151,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid address" }, { status: 400 })
     }
 
-    let subtotal = 0
-    let shippingCost = 0
-    const orderItems: Prisma.OrderItemCreateWithoutOrderInput[] = []
-
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        include: {
-          professional: {
-            include: {
-              professionalProfile: {
-                include: { deliveryZones: true },
-              },
+    // OPTIMIZATION: Batch fetch all needed products in ONE query
+    const itemIds = items.map(i => i.productId)
+    const products = await prisma.product.findMany({
+      where: { id: { in: itemIds } },
+      include: {
+        professional: {
+          include: {
+            professionalProfile: {
+              include: { deliveryZones: true },
             },
           },
         },
-      })
+      },
+    })
 
-      if (!product || !product.isActive || !product.isInStock) {
-        return NextResponse.json({ error: `Product ${item.productId} is not available` }, { status: 400 })
+    const productMap = products.reduce((acc, p) => {
+      acc[p.id] = p
+      return acc
+    }, {} as Record<string, typeof products[number]>)
+
+    let subtotal = 0
+    let shippingCost = 0
+    const orderItems: Array<{
+      productId: string;
+      professionalId: string;
+      quantity: number;
+      size?: string;
+      color?: string;
+      price: number;
+      notes?: string;
+    }> = []
+
+    for (const item of items) {
+      const product = productMap[item.productId]
+
+      if (!product || !product.isActive) {
+        return NextResponse.json({ error: `Product ${product?.name || item.productId} is not available` }, { status: 400 })
       }
 
-      if (product.stockQuantity < item.quantity) {
-        return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 })
+      if (!product.isPreorder && (!product.isInStock || product.stockQuantity < item.quantity)) {
+        const errorMsg = !product.isInStock 
+          ? `Product ${product.name} is currently out of stock` 
+          : `Insufficient stock for ${product.name}`;
+        return NextResponse.json({ error: errorMsg }, { status: 400 })
       }
 
       // Calculate effective price with any active discounts
@@ -172,7 +202,8 @@ export async function POST(request: NextRequest) {
       const itemTotal = effectivePrice * item.quantity
       subtotal += itemTotal
 
-      if (deliveryZone && product.professional.professionalProfile?.deliveryZones) {
+      // Only calculate shipping if deliveryMethod is not PICKUP
+      if (deliveryMethod !== 'PICKUP' && deliveryZone && product.professional.professionalProfile?.deliveryZones) {
         const zone = product.professional.professionalProfile.deliveryZones.find((z) => z.zoneName === deliveryZone)
         if (zone) {
           const freeDeliveryThreshold =
@@ -184,7 +215,7 @@ export async function POST(request: NextRequest) {
       }
 
       orderItems.push({
-        product: { connect: { id: item.productId } },
+        productId: item.productId,
         professionalId: product.professionalId,
         quantity: item.quantity,
         size: item.size,
@@ -216,8 +247,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const tax = (subtotal - discount) * 0.03
-    const totalPrice = subtotal + shippingCost + tax - discount
+    const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100
+
+    const platformFee = round((subtotal - discount) * (PAYSTACK_CONFIG.platformFeePercent / 100))
+    const tax = 0
+    const totalPrice = round(subtotal + shippingCost + platformFee + tax - discount)
 
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
@@ -227,73 +261,24 @@ export async function POST(request: NextRequest) {
           subtotal,
           shippingCost,
           tax,
+          platformFee,
           totalPrice,
           deliveryZone,
-          items: { create: orderItems },
+          deliveryMethod: deliveryMethod || 'DELIVERY',
+          items: { 
+            create: orderItems.map(item => ({
+              product: { connect: { id: item.productId } },
+              professionalId: item.professionalId,
+              quantity: item.quantity,
+              size: item.size,
+              color: item.color,
+              price: item.price,
+              notes: item.notes,
+            }))
+          },
           // Set payment info if provided (after successful payment)
           ...(paystackReference && { paystackReference }),
           ...(paymentStatus && { paymentStatus: paymentStatus as PaymentStatus }),
-        },
-        include: {
-          items: { include: { product: true } },
-        },
-      })
-
-      // Update product stock using the original item input
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQuantity: { decrement: item.quantity },
-            soldCount: { increment: item.quantity },
-          },
-        })
-      }
-
-      // Clear cart items
-      await tx.cartItem.deleteMany({
-        where: {
-          userId: user.id,
-          productId: { in: items.map((item) => item.productId) },
-        },
-      })
-
-      const professionalTotals = new Map<string, number>()
-      for (const item of newOrder.items) {
-        const current = professionalTotals.get(item.professionalId) || 0
-        professionalTotals.set(item.professionalId, current + item.price * item.quantity)
-      }
-
-      for (const [professionalId, amount] of Array.from(professionalTotals.entries())) {
-        await tx.paymentEscrow.create({
-          data: {
-            orderId: newOrder.id,
-            professionalId,
-            amount,
-            releaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-          },
-        })
-
-        // Notify the professional about the new order
-        await tx.notification.create({
-          data: {
-            userId: professionalId,
-            type: 'ORDER_UPDATE',
-            title: 'New Order Received!',
-            message: `You have a new order worth GHS ${amount.toFixed(2)}. Check your dashboard to process it.`,
-            data: JSON.stringify({ orderId: newOrder.id, amount }),
-          },
-        })
-      }
-
-      // Notify the customer about successful order
-      await tx.notification.create({
-        data: {
-          userId: user.id,
-          type: 'ORDER_UPDATE',
-          title: 'Order Placed Successfully!',
-          message: `Your order #${newOrder.id.slice(-8).toUpperCase()} has been placed. Total: GHS ${newOrder.totalPrice.toFixed(2)}`,
-          data: JSON.stringify({ orderId: newOrder.id, totalPrice: newOrder.totalPrice }),
         },
       })
 
@@ -303,6 +288,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+    console.error("Order creation error:", error)
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

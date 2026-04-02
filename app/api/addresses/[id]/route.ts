@@ -10,7 +10,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
 
     const existingAddress = await prisma.address.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId: user.id, isDeleted: false },
     })
 
     if (!existingAddress) {
@@ -46,14 +46,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const user = await requireAuth()
 
     const address = await prisma.address.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId: user.id, isDeleted: false },
     })
 
     if (!address) {
       return NextResponse.json({ error: "Address not found" }, { status: 404 })
     }
 
-    await prisma.address.delete({ where: { id } })
+    await prisma.address.update({
+      where: { id },
+      data: { isDeleted: true, isDefault: false }
+    })
     return NextResponse.json({ message: "Address deleted successfully" })
   } catch (error) {
     const { status, message } = mapErrorToResponse(error, { route: 'addresses.[id].DELETE' })

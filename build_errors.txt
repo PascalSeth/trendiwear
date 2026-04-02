@@ -1,0 +1,20 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 16.8s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./lib/booking-utils.ts
+2:10  Error: 'isAfter' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services.ts
+190:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

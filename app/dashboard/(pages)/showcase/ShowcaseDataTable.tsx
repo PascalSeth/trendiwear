@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { MoreHorizontal, Eye, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +25,7 @@ interface ShowcaseProduct {
   id: string
   name: string
   price: number
+  currency: string
   images: string[]
   category: {
     name: string
@@ -35,7 +37,11 @@ interface ShowcaseProduct {
       businessName?: string
     }
   }
-  approvedAt: string
+  submittedForShowcase: boolean
+  isShowcaseApproved: boolean
+  submittedAt: string | null
+  approvedAt: string | null
+  showcaseStatus: "PENDING" | "APPROVED" | "REJECTED"
   _count: {
     wishlistItems: number
     orderItems: number
@@ -109,10 +115,12 @@ export default function ShowcaseDataTable({
               <TableRow key={product.id}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
-                    <img
+                    <Image
                       src={product.images[0] || '/placeholder-product.jpg'}
                       alt={product.name}
                       className="w-12 h-12 object-cover rounded-lg"
+                      width={48}
+                      height={48}
                     />
                     <div>
                       <div className="font-medium">{product.name}</div>
@@ -131,7 +139,7 @@ export default function ShowcaseDataTable({
                 <TableCell>
                   <Badge variant="outline">{product.category.name}</Badge>
                 </TableCell>
-                <TableCell>${product.price}</TableCell>
+                <TableCell>{product.currency} {product.price}</TableCell>
                 <TableCell>
                   <div className="text-sm space-y-1">
                     <div>❤️ {product._count.wishlistItems}</div>
@@ -139,8 +147,25 @@ export default function ShowcaseDataTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(product.approvedAt).toLocaleDateString()}
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={
+                        product.showcaseStatus === "APPROVED" 
+                          ? "default" 
+                          : product.showcaseStatus === "PENDING"
+                          ? "outline"
+                          : "destructive"
+                      }
+                    >
+                      {product.showcaseStatus}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {product.showcaseStatus === "APPROVED" && product.approvedAt
+                        ? new Date(product.approvedAt).toLocaleDateString()
+                        : product.submittedAt
+                        ? new Date(product.submittedAt).toLocaleDateString()
+                        : "—"}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>

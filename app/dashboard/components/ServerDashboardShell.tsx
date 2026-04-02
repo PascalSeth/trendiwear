@@ -11,6 +11,9 @@ export interface UserInfo {
   role: Role;
   businessName?: string;
   businessImage?: string | null;
+  trialEndDate?: string | null;
+  subscriptionStatus?: string | null;
+  hasActiveSubscription?: boolean;
 }
 
 interface ServerDashboardShellProps {
@@ -41,6 +44,13 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
     businessImage: role === Role.SUPER_ADMIN 
       ? '/logo3d.jpg' 
       : (user.professionalProfile?.businessImage || undefined),
+    trialEndDate: user.professionalProfile?.trialEndDate?.toISOString() || null,
+    subscriptionStatus: user.professionalProfile?.subscriptionStatus || null,
+    hasActiveSubscription: (role === Role.SUPER_ADMIN || role === Role.ADMIN) || !!(
+      user.professionalProfile?.subscription && 
+      user.professionalProfile.subscription.status === 'ACTIVE' && 
+      new Date(user.professionalProfile.subscription.nextRenewalDate) > new Date()
+    ),
   };
 
   return <DashboardShell role={role} userInfo={userInfo}>{children}</DashboardShell>;

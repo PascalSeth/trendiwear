@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown, MoreHorizontal, Plus, Edit, Trash2, Eye,  ShoppingBag, Heart, MessageCircle, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { ChevronDown, MoreHorizontal, Plus, Edit, Trash2, Eye,  ShoppingBag, Heart, MessageCircle, ChevronLeft, ChevronRight, Package, Copy } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -257,6 +257,25 @@ export function ProductTable({ initialData }: ProductTableProps) {
     }
   };
 
+  const handleDuplicateProduct = async (product: Product) => {
+    try {
+      const response = await fetch(`/api/products/${product.id}/duplicate`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        const duplicatedProduct = await response.json();
+        setData((prev: Product[]) => [duplicatedProduct, ...prev]);
+        alert('Product duplicated successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error duplicating product:', error);
+      alert('An error occurred while duplicating the product.');
+    }
+  };
+
   const nextImage = () => {
     if (selectedProduct && currentImageIndex < selectedProduct.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
@@ -379,6 +398,10 @@ export function ProductTable({ initialData }: ProductTableProps) {
                 <Edit className="mr-2 h-4 w-4" />
                 <span>Edit Product</span>
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDuplicateProduct(row.original)} className="cursor-pointer">
+              <Copy className="mr-2 h-4 w-4" />
+              <span>Duplicate Product</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

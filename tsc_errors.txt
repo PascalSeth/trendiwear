@@ -1,0 +1,15 @@
+app/(pages)/bookings/page.tsx(19,25): error TS2322: Type '{ user: { id: string; email: string; name: string; image?: string | undefined; firstName?: string | undefined; lastName?: string | undefined; role: Role; }; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'user' does not exist on type 'IntrinsicAttributes'.
+app/(pages)/shopping/ShoppingClient.tsx(188,43): error TS2322: Type 'Product' is not assignable to type '{ id: string; name: string; images: string[]; price: number; currency: string; category: string | { name: string; slug: string; }; isNew?: boolean | undefined; isPreorder?: boolean | undefined; estimatedDelivery?: number | undefined; ... 6 more ...; discountEndDate?: string | ... 1 more ... | undefined; }'.
+  Types of property 'category' are incompatible.
+    Type '{ name: string; }' is not assignable to type 'string | { name: string; slug: string; }'.
+      Property 'slug' is missing in type '{ name: string; }' but required in type '{ name: string; slug: string; }'.
+app/(pages)/shopping/ShoppingClient.tsx(206,28): error TS2322: Type 'Product' is not assignable to type '{ id: string; name: string; images: string[]; price: number; currency: string; category: string | { name: string; slug: string; }; isNew?: boolean | undefined; isPreorder?: boolean | undefined; estimatedDelivery?: number | undefined; ... 6 more ...; discountEndDate?: string | ... 1 more ... | undefined; }'.
+  Types of property 'category' are incompatible.
+    Type '{ name: string; }' is not assignable to type 'string | { name: string; slug: string; }'.
+      Property 'slug' is missing in type '{ name: string; }' but required in type '{ name: string; slug: string; }'.
+app/(pages)/tz/[slug]/book/[serviceId]/page.tsx(65,9): error TS2322: Type '{ user: { id: string; firstName: string; lastName: string; profileImage: string | null; }; } & { id: string; createdAt: Date; updatedAt: Date; userId: string; latitude: number | null; ... 30 more ...; galleryImages: string[]; }' is not assignable to type '{ userId: string; businessName?: string | undefined; businessImage?: string | undefined; user: { firstName: string; lastName: string; }; }'.
+  Types of property 'businessImage' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+app/api/orders/[id]/status/route.ts(83,11): error TS2322: Type 'string' is not assignable to type 'NotificationType'.

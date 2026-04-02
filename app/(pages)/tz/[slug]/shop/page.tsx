@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Star, ArrowUpRight, Store, Clock, BadgeCheck, X, SlidersHorizontal,
+  Star, Store, X, SlidersHorizontal,
   Grid3X3, LayoutGrid, ChevronDown, Search, ShoppingBag,
   Sparkles, TrendingUp, Percent, ArrowRight, Check
 } from 'lucide-react';
@@ -10,8 +10,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { WishlistButton } from '@/components/ui/wishlist-button';
-import { AddToCartButton } from '@/components/ui/add-to-cart-button';
+import { ProductCard } from '@/components/common/ProductCard';
 
 // --- INTERFACES ---
 interface Category {
@@ -41,8 +40,11 @@ interface Product {
   tags: string[];
   viewCount: number;
   soldCount: number;
+  stockQuantity: number;
+  isPreorder?: boolean;
   category: {
     name: string;
+    slug: string;
   };
   collection?: {
     name: string;
@@ -125,36 +127,7 @@ const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 
 // --- COMPONENTS ---
 
-// Countdown hook for discount timer
-function useCountdown(endDate: string | null | undefined) {
-  const [timeLeft, setTimeLeft] = useState('');
-  
-  useEffect(() => {
-    if (!endDate) return;
-    
-    const calculateTimeLeft = () => {
-      const end = new Date(endDate).getTime();
-      const now = Date.now();
-      const diff = end - now;
-      
-      if (diff <= 0) return '';
-      
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      if (days > 0) return `${days}d ${hours}h`;
-      if (hours > 0) return `${hours}h ${minutes}m`;
-      return `${minutes}m`;
-    };
-    
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
-    return () => clearInterval(timer);
-  }, [endDate]);
-  
-  return timeLeft;
-}
+
 
 // Category Card Component - Compact Pill Design
 function CategoryCard({ 
@@ -536,210 +509,6 @@ function FilterPanel({
   );
 }
 
-// Product Card Component
-function ProductCard({ item, index, viewMode }: { item: Product; index: number; viewMode: 'grid' | 'large' }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const timeLeft = useCountdown(item.discountEndDate);
-
-  const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
-  const sellerImage = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
-  const isVerified = item.professional.professionalProfile?.isVerified || false;
-  const isTrendiZip = sellerName === 'TrendiZip';
-  const categoryName = item.category.name;
-  const rating = item.rating ?? item.professional.professionalProfile?.rating ?? 0;
-
-  // Cycle through images on hover
-  useEffect(() => {
-    if (!isHovered || item.images.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % item.images.length);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [isHovered, item.images.length]);
-
-  useEffect(() => {
-    if (!isHovered) setCurrentImageIndex(0);
-  }, [isHovered]);
-
-  const isLarge = viewMode === 'large';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: index * 0.05 }}
-      className="group relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Image Container */}
-      <div className={cn(
-        "relative overflow-hidden bg-stone-100 rounded-2xl",
-        isLarge ? "aspect-[3/4]" : "aspect-square"
-      )}>
-        {/* Images with crossfade */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentImageIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={item.images[currentImageIndex] || "/placeholder-product.jpg"}
-              alt={item.name}
-              fill
-              className={cn(
-                "object-cover transition-transform duration-700",
-                isHovered && "scale-105"
-              )}
-            />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Gradient Overlay */}
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500",
-          isHovered && "opacity-100"
-        )} />
-
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10">
-          {/* Left badges */}
-          <div className="flex flex-col gap-2">
-            {item.isDiscountActive && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                {item.discountPercentage ? `-${item.discountPercentage}%` : 'SALE'}
-                {timeLeft && (
-                  <span className="flex items-center gap-0.5 opacity-90">
-                    <Clock size={8} />
-                    {timeLeft}
-                  </span>
-                )}
-              </span>
-            )}
-            {item.isNew && (
-              <span className="bg-stone-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                NEW
-              </span>
-            )}
-          </div>
-
-          {/* Wishlist Button */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white/90 backdrop-blur-sm w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-          >
-            <WishlistButton
-              productId={item.id}
-              variant="overlay"
-              size="sm"
-              showCount={false}
-            />
-          </motion.div>
-        </div>
-
-        {/* Image Indicators */}
-        {item.images.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-            {item.images.slice(0, 4).map((_, idx) => (
-              <div
-                key={idx}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                  idx === currentImageIndex ? "bg-white w-4" : "bg-white/50"
-                )}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Quick Actions - Slide up on hover */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: isHovered ? 0 : 20, opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-          className="absolute bottom-0 left-0 right-0 p-4 flex gap-2 z-10"
-        >
-          <Link href={`/shopping/products/${item.id}`} className="flex-1">
-            <button className="w-full bg-white hover:bg-stone-900 hover:text-white text-stone-900 py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2">
-              Quick View
-              <ArrowUpRight size={16} />
-            </button>
-          </Link>
-          <div className="bg-white hover:bg-stone-900 hover:text-white rounded-xl px-4 flex items-center justify-center transition-all duration-300">
-            <AddToCartButton productId={item.id} variant="overlay" size="sm" />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Product Info */}
-      <div className="mt-4 space-y-2">
-        {/* Category & Seller */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-stone-500 uppercase tracking-wide">{categoryName}</span>
-          <div className="flex items-center gap-1.5">
-            <div className="relative w-5 h-5 rounded-full overflow-hidden border border-stone-200">
-              <Image src={sellerImage} alt={sellerName} fill className="object-cover" />
-            </div>
-            {(isTrendiZip || isVerified) && (
-              <BadgeCheck size={12} className={isTrendiZip ? 'text-blue-500' : 'text-emerald-500'} />
-            )}
-          </div>
-        </div>
-
-        {/* Name */}
-        <h3 className="font-medium text-stone-900 text-sm leading-tight line-clamp-2 group-hover:text-stone-600 transition-colors">
-          {item.name}
-        </h3>
-
-        {/* Price & Rating */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            {item.isDiscountActive ? (
-              <>
-                <span className="font-bold text-red-600">{item.currency} {(item.effectivePrice || item.price).toFixed(0)}</span>
-                <span className="text-xs text-stone-400 line-through">{item.currency} {item.price.toFixed(0)}</span>
-              </>
-            ) : (
-              <span className="font-bold text-stone-900">{item.currency} {item.price.toFixed(0)}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-stone-500">
-            <Star size={12} className="fill-amber-400 text-amber-400" />
-            <span>{rating > 0 ? rating.toFixed(1) : 'New'}</span>
-          </div>
-        </div>
-
-        {/* Colors Preview */}
-        {item.colors && item.colors.length > 0 && (
-          <div className="flex items-center gap-1 pt-1">
-            {item.colors.slice(0, 4).map((color, idx) => {
-              const colorObj = ALL_COLORS.find(c => c.name.toLowerCase() === color.toLowerCase());
-              return (
-                <div
-                  key={idx}
-                  className="w-4 h-4 rounded-full border border-stone-200"
-                  style={{ backgroundColor: colorObj?.value || '#ccc' }}
-                  title={color}
-                />
-              );
-            })}
-            {item.colors.length > 4 && (
-              <span className="text-xs text-stone-400 ml-1">+{item.colors.length - 4}</span>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 // Quick Filter Chip
 function FilterChip({ 
@@ -851,7 +620,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'large'>('large');
+  const [viewMode, setViewMode] = useState<'grid' | 'large'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'new' | 'sale' | 'trending'>('all');
   
@@ -1395,11 +1164,11 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
           <div className={cn(
             "grid gap-6 mb-16",
             viewMode === 'grid'
-              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           )}>
             {filteredProducts.map((product, index) => (
-              <ProductCard key={product.id} item={product} index={index} viewMode={viewMode} />
+              <ProductCard key={product.id} item={product} index={index} />
             ))}
           </div>
         ) : (

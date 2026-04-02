@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, Package, Heart, ShoppingBag, DollarSign, Truck, Star, X, Check, CheckCheck, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -50,34 +50,53 @@ const notificationColors: Record<string, string> = {
   DELIVERY_ARRIVAL: 'bg-green-100 text-green-600',
 };
 
-export function NotificationBell() {
+// Global cache to prevent multiple instances from firing redundant requests
+let lastFetchTime = 0;
+const FETCH_COOLDOWN = 5000; // 5 seconds
+
+export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const isFetchingRef = useRef(false);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (isManual = false) => {
+    // Avoid double-fetching or fetching within cooldown (if not manual)
+    const now = Date.now();
+    if (isFetchingRef.current) return;
+    if (!isManual && now - lastFetchTime < FETCH_COOLDOWN) return;
+
     try {
-      setLoading(true);
-      const res = await fetch('/api/notifications?limit=10');
+      isFetchingRef.current = true;
+      if (isManual) setLoading(true);
+      
+      const url = new URL('/api/notifications', window.location.origin);
+      url.searchParams.append('limit', '10');
+      url.searchParams.append('minimal', 'true');
+      if (context) url.searchParams.append('context', context);
+      
+      const res = await fetch(url.toString());
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
+        lastFetchTime = Date.now();
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('Speed Check Notification Error:', error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, [context]);
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll for new notifications every 60 seconds (optimized from 30)
+    const interval = setInterval(() => fetchNotifications(), 60000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, context]);
 
   const markAllAsRead = async () => {
     try {
@@ -115,11 +134,10 @@ export function NotificationBell() {
 
   return (
     <div className="relative">
-      {/* Bell Button */}
       <button
         onClick={() => {
           setIsOpen(!isOpen);
-          if (!isOpen) fetchNotifications();
+          if (!isOpen) fetchNotifications(true);
         }}
         className="relative hover:text-red-900 text-stone-400 transition-colors p-1"
       >
@@ -135,17 +153,10 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/* Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
-            />
-
-            {/* Panel */}
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -153,7 +164,6 @@ export function NotificationBell() {
               transition={{ duration: 0.2 }}
               className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] border border-stone-100 overflow-hidden z-50"
             >
-              {/* Header */}
               <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-stone-900">Notifications</h3>
@@ -180,7 +190,6 @@ export function NotificationBell() {
                 </div>
               </div>
 
-              {/* Content */}
               <div className="max-h-[400px] overflow-y-auto">
                 {loading && notifications.length === 0 ? (
                   <div className="py-12 text-center">
@@ -188,27 +197,18 @@ export function NotificationBell() {
                     <p className="text-sm text-stone-500 mt-3">Loading...</p>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Bell className="w-6 h-6 text-stone-400" />
-                    </div>
-                    <p className="text-sm font-medium text-stone-900">No notifications yet</p>
-                    <p className="text-xs text-stone-500 mt-1">We&apos;ll notify you when something happens</p>
+                  <div className="py-12 text-center text-stone-400">
+                    <p className="text-sm">No notifications</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-stone-100">
                     {notifications.map((notification) => {
                       const Icon = notificationIcons[notification.type] || Bell;
                       const colorClass = notificationColors[notification.type] || 'bg-stone-100 text-stone-600';
-                      
                       return (
                         <button
                           key={notification.id}
-                          onClick={() => {
-                            if (!notification.isRead) {
-                              markAsRead(notification.id);
-                            }
-                          }}
+                          onClick={() => !notification.isRead && markAsRead(notification.id)}
                           className={cn(
                             "w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-start gap-3",
                             !notification.isRead && "bg-blue-50/50"
@@ -218,14 +218,9 @@ export function NotificationBell() {
                             <Icon size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={cn("text-sm line-clamp-1", !notification.isRead ? "font-semibold text-stone-900" : "text-stone-700")}>
+                            <p className={cn("text-sm line-clamp-1", !notification.isRead ? "font-semibold text-stone-900" : "text-stone-700")}>
                                 {notification.title}
-                              </p>
-                              {!notification.isRead && (
-                                <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
-                              )}
-                            </div>
+                            </p>
                             <p className="text-xs text-stone-500 line-clamp-2 mt-0.5">
                               {notification.message}
                             </p>
@@ -239,18 +234,6 @@ export function NotificationBell() {
                   </div>
                 )}
               </div>
-
-              {/* Footer */}
-              {notifications.length > 0 && (
-                <div className="px-4 py-3 border-t border-stone-100 bg-stone-50">
-                  <a
-                    href="/notifications"
-                    className="block text-center text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors"
-                  >
-                    View all notifications
-                  </a>
-                </div>
-              )}
             </motion.div>
           </>
         )}

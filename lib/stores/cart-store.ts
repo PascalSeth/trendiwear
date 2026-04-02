@@ -1,5 +1,6 @@
               import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { toast } from 'sonner'
 
 // ================================
 // TYPES
@@ -25,6 +26,8 @@ export interface CartProduct {
       businessName: string
     }
   }
+  allowPickup: boolean
+  allowDelivery: boolean
 }
 
 export interface CartItem {
@@ -136,14 +139,14 @@ export const useCartStore = create<CartState>()(
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
-        const newSubtotal = (summary?.subtotal || 0) + (existingItem.product.effectivePrice || existingItem.product.price) * quantity
+        const newSubtotal = Math.round(((summary?.subtotal || 0) + (existingItem.product.effectivePrice || existingItem.product.price) * quantity) * 100) / 100
         set({ 
           items: optimisticItems,
           summary: summary ? { 
             ...summary, 
             itemCount: summary.itemCount + quantity,
             subtotal: newSubtotal,
-            estimatedTotal: newSubtotal * 1.03
+            estimatedTotal: Math.round(newSubtotal * 1.03 * 100) / 100
           } : null
         })
       } else {
@@ -163,7 +166,9 @@ export const useCartStore = create<CartState>()(
             stockQuantity: 99,
             isActive: true,
             isInStock: true,
-            professional: { firstName: '', lastName: '' }
+            professional: { firstName: '', lastName: '' },
+            allowPickup: true,
+            allowDelivery: true
           }
         }
         set({ 
@@ -199,15 +204,15 @@ export const useCartStore = create<CartState>()(
               updatedItems.push(data.item)
             }
             
-            const newSubtotal = updatedItems.reduce((sum, item) => 
+            const newSubtotal = Math.round(updatedItems.reduce((sum, item) => 
               sum + (item.product.effectivePrice || item.product.price) * item.quantity, 0
-            )
+            ) * 100) / 100
             set({ 
               items: updatedItems,
               summary: {
                 itemCount: updatedItems.reduce((count, item) => count + item.quantity, 0),
                 subtotal: newSubtotal,
-                estimatedTotal: newSubtotal * 1.03
+                estimatedTotal: Math.round(newSubtotal * 1.03 * 100) / 100
               }
             })
           }
@@ -215,8 +220,9 @@ export const useCartStore = create<CartState>()(
         } else {
           // Revert on failure
           set({ items, summary })
-          const error = await response.json()
-          console.error('Failed to add to bag:', error.error)
+          const errorData = await response.json()
+          toast.error(errorData.error || 'Failed to add to bag')
+          console.error('Failed to add to bag:', errorData.error)
           return false
         }
       } catch (error) {
@@ -236,14 +242,14 @@ export const useCartStore = create<CartState>()(
       // Optimistic update - remove immediately for fast UI
       const optimisticItems = items.filter(item => item.productId !== productId)
       const removedValue = (cartItem.product.effectivePrice || cartItem.product.price) * cartItem.quantity
-      const newSubtotal = Math.max(0, (summary?.subtotal || 0) - removedValue)
+      const newSubtotal = Math.round(Math.max(0, (summary?.subtotal || 0) - removedValue) * 100) / 100
       
       set({ 
         items: optimisticItems,
         summary: summary ? {
           itemCount: Math.max(0, summary.itemCount - cartItem.quantity),
           subtotal: newSubtotal,
-          estimatedTotal: newSubtotal * 1.03
+          estimatedTotal: Math.round(newSubtotal * 1.03 * 100) / 100
         } : null
       })
 
@@ -281,14 +287,14 @@ export const useCartStore = create<CartState>()(
       // Optimistic update
       const optimisticItems = [...items]
       optimisticItems[itemIndex] = { ...oldItem, quantity }
-      const newSubtotal = (summary?.subtotal || 0) + priceDiff
+      const newSubtotal = Math.round(((summary?.subtotal || 0) + priceDiff) * 100) / 100
       
       set({ 
         items: optimisticItems,
         summary: summary ? {
           itemCount: summary.itemCount + quantityDiff,
           subtotal: newSubtotal,
-          estimatedTotal: newSubtotal * 1.03
+          estimatedTotal: Math.round(newSubtotal * 1.03 * 100) / 100
         } : null
       })
 
@@ -302,6 +308,8 @@ export const useCartStore = create<CartState>()(
         if (!response.ok) {
           // Revert on failure
           set({ items, summary })
+          const errorData = await response.json().catch(() => ({}))
+          toast.error(errorData.error || 'Failed to update quantity')
           return false
         }
         return true
@@ -322,14 +330,14 @@ export const useCartStore = create<CartState>()(
       // Optimistic update
       const optimisticItems = items.filter(i => i.id !== itemId)
       const removedValue = (item.product.effectivePrice || item.product.price) * item.quantity
-      const newSubtotal = Math.max(0, (summary?.subtotal || 0) - removedValue)
+      const newSubtotal = Math.round(Math.max(0, (summary?.subtotal || 0) - removedValue) * 100) / 100
       
       set({ 
         items: optimisticItems,
         summary: summary ? {
           itemCount: Math.max(0, summary.itemCount - item.quantity),
           subtotal: newSubtotal,
-          estimatedTotal: newSubtotal * 1.03
+          estimatedTotal: Math.round(newSubtotal * 1.03 * 100) / 100
         } : null
       })
 
@@ -340,6 +348,8 @@ export const useCartStore = create<CartState>()(
 
         if (!response.ok) {
           set({ items, summary })
+          const errorData = await response.json().catch(() => ({}))
+          toast.error(errorData.error || 'Failed to remove item')
           return false
         }
         return true

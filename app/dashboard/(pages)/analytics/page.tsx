@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { AccessControlWrapper } from '@/app/dashboard/components/AccessControlWrapper';
 import {
   AreaChart,
   Area,
@@ -197,8 +198,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+    <AccessControlWrapper requiredPermission="VIEW_ANALYTICS">
+      <div className="min-h-screen bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -826,5 +828,6 @@ export default function AnalyticsPage() {
         </Tabs>
       </div>
     </div>
+    </AccessControlWrapper>
   );
 }

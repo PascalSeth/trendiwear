@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-config'
+import { getAuthSession } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import CustomerProfileClient from './CustomerProfileClient'
@@ -115,7 +114,7 @@ export default async function CustomerProfilePage({ params }: { params: Promise<
   
   const [user, session] = await Promise.all([
     getUserById(id),
-    getServerSession(authOptions),
+    getAuthSession(),
   ])
 
   if (!user) {

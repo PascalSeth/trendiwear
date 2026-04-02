@@ -1,14 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireRole } from "@/lib/auth"
+import { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const dashboard = searchParams.get("dashboard") === "true"
+    const professionalTypeId = searchParams.get("professionalTypeId")
+
+    const where: Prisma.ServiceCategoryWhereInput = dashboard ? {} : { isActive: true }
+    
+    if (professionalTypeId) {
+      where.professionalTypes = {
+        some: { id: professionalTypeId }
+      }
+    }
 
     const categories = await prisma.serviceCategory.findMany({
-      where: dashboard ? {} : { isActive: true }, // Show all for dashboard, only active for public
+      where,
       include: {
         services: {
           where: dashboard ? {} : { isActive: true },
@@ -16,10 +26,10 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            services: dashboard ? {} : { where: { isActive: true } },
+            services: dashboard ? true : { where: { isActive: true } },
           },
         },
-      },
+      } as Prisma.ServiceCategoryInclude,
       orderBy: { name: "asc" },
     })
 
@@ -35,10 +45,21 @@ export async function POST(request: NextRequest) {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
 
-    const { name, description, imageUrl } = body
+    const { name, description, imageUrl, professionalTypeIds } = body
+
+    if (!name) {
+      return NextResponse.json({ error: "Category name is required" }, { status: 400 })
+    }
 
     const category = await prisma.serviceCategory.create({
-      data: { name, description, imageUrl },
+      data: { 
+        name, 
+        description, 
+        imageUrl,
+        professionalTypes: professionalTypeIds && professionalTypeIds.length > 0 ? {
+          connect: professionalTypeIds.map((id: string) => ({ id }))
+        } : undefined
+      } as Prisma.ServiceCategoryCreateInput,
     })
 
     return NextResponse.json(category, { status: 201 })

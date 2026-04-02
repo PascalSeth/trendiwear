@@ -136,6 +136,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         CANCELLED: { title: 'Order Cancelled', message: 'Your order has been cancelled. Contact support if you have questions.', type: 'ORDER_UPDATE' },
         REFUNDED: { title: 'Refund Processed', message: 'Your refund has been processed. It may take 3-5 business days to reflect.', type: 'ORDER_UPDATE' },
         PARTIALLY_REFUNDED: { title: 'Partial Refund', message: 'A partial refund has been issued for your order. Check your account for details.', type: 'ORDER_UPDATE' },
+        READY_FOR_DELIVERY: { title: 'Ready for Delivery', message: 'Your order is ready for delivery.', type: 'ORDER_UPDATE' },
+        AWAITING_DELIVERY_PAYMENT: { title: 'Payment Required', message: 'Please pay the delivery fee to proceed with your order.', type: 'ORDER_UPDATE' },
       }
 
       const notificationContent = statusMessages[status]

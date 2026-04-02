@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { requireAdmin } from "@/lib/auth"
+import { mapErrorToResponse } from "@/lib/api-utils"
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -181,5 +183,83 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    await requireAdmin()
+
+    const body = await request.json()
+    const {
+      name,
+      slug,
+      description,
+      imageUrl,
+      parentId,
+      order,
+      isActive,
+    } = body
+
+    const category = await prisma.category.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(slug && { slug }),
+        ...(description !== undefined && { description }),
+        ...(imageUrl !== undefined && { imageUrl }),
+        ...(parentId !== undefined && { parentId }),
+        ...(order !== undefined && { order: Number(order) }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    })
+
+    return NextResponse.json(category)
+  } catch (error) {
+    const { status, message } = mapErrorToResponse(error, { route: 'categories.[id].PATCH' })
+    return NextResponse.json({ error: message }, { status })
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  return PATCH(request, { params })
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    await requireAdmin()
+
+    // Check if category has children
+    const childrenCount = await prisma.category.count({
+      where: { parentId: id }
+    })
+
+    if (childrenCount > 0) {
+      return NextResponse.json({ 
+        error: "Cannot delete category with subcategories. Delete children first." 
+      }, { status: 400 })
+    }
+
+    // Check if category has products
+    const productsCount = await prisma.product.count({
+      where: { categoryId: id }
+    })
+
+    if (productsCount > 0) {
+      return NextResponse.json({ 
+        error: "Cannot delete category with products. Reassign or delete products first." 
+      }, { status: 400 })
+    }
+
+    await prisma.category.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ message: "Category deleted successfully" })
+  } catch (error) {
+     const { status, message } = mapErrorToResponse(error, { route: 'categories.[id].DELETE' })
+     return NextResponse.json({ error: message }, { status })
   }
 }

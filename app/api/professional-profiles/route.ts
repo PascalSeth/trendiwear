@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { createSubaccount, updateSubaccount, validateGhanaPhone, PAYSTACK_CONFIG, listBanks } from '@/lib/paystack'
+import { createTransferRecipient, validateGhanaPhone, PAYSTACK_CONFIG } from '@/lib/paystack'
 import { mapErrorToResponse } from '@/lib/api-utils'
-import type { CreateSubaccountPayload } from '@/lib/paystack'
+import type { CreateTransferRecipientPayload } from '@/lib/paystack'
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
         where: {},
         select: {
           id: true,
+          userId: true,
           businessName: true,
           businessImage: true,
+          galleryImages: true,
           experience: true,
           bio: true,
           location: true,
@@ -54,7 +56,26 @@ export async function GET(request: NextRequest) {
         ...(limit && { take: parseInt(limit) }),
       })
 
-      return NextResponse.json(profiles)
+      // Compute actual sales per professional from order items
+      // Count items from all non-cancelled orders (payment is verified by Paystack before order creation)
+      const salesCounts = await prisma.orderItem.groupBy({
+        by: ['professionalId'],
+        _sum: { quantity: true },
+        _count: { id: true },
+        where: {
+          order: {
+            status: { notIn: ['CANCELLED', 'REFUNDED'] },
+          },
+        },
+      })
+      const salesMap = new Map(salesCounts.map(s => [s.professionalId, s._sum.quantity || s._count.id || 0]))
+
+      const enrichedProfiles = profiles.map(p => ({
+        ...p,
+        actualSales: salesMap.get(p.userId) || 0,
+      }))
+
+      return NextResponse.json(enrichedProfiles)
     }
 
     // Private endpoint for authenticated user
@@ -83,6 +104,7 @@ export async function GET(request: NextRequest) {
           userId: true,
           businessName: true,
           businessImage: true,
+          galleryImages: true,
           specializationId: true,
           experience: true,
           bio: true,
@@ -223,6 +245,7 @@ export async function POST(request: NextRequest) {
       experience,
       bio,
       portfolioUrl,
+      galleryImages,
       spotlightVideoUrl,
       latitude,
       longitude,
@@ -237,6 +260,7 @@ export async function POST(request: NextRequest) {
       experience: number
       bio?: string
       portfolioUrl?: string
+      galleryImages?: string[]
       spotlightVideoUrl?: string
       latitude?: number
       longitude?: number
@@ -258,10 +282,13 @@ export async function POST(request: NextRequest) {
         data: {
           businessName,
           businessImage,
+          // Generate slug if none exists
+          ...(businessName && !existingProfile.slug && { slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') }),
           specializationId,
           experience,
           bio,
           portfolioUrl,
+          galleryImages,
           spotlightVideoUrl,
           ...(latitude && { latitude }),
           ...(longitude && { longitude }),
@@ -286,17 +313,21 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           businessName,
+          slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           businessImage,
           specializationId,
           experience,
           bio,
           portfolioUrl,
+          galleryImages,
           spotlightVideoUrl,
           ...(latitude && { latitude }),
           ...(longitude && { longitude }),
           ...(location && { location }),
           availability,
           freeDeliveryThreshold,
+          trialStartDate: new Date(),
+          trialEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 3 months
           socialMedia: { create: socialMedia || [] },
         },
         include: {
@@ -317,33 +348,21 @@ export async function POST(request: NextRequest) {
     }
 
     // If momoNumber and momoProvider were provided as part of the profile
-    // creation/update, attempt to create/update a Paystack subaccount
+    // creation/update, attempt to register a Paystack transfer recipient
     if (momoNumber && momoProvider) {
-      // Normalize and map provider values (accept different casings and common names)
-      const normalize = (v: string) => v.trim().toLowerCase()
-      const providerMap: Record<string, string> = {
-        mtn: 'mtn',
-        'mtn mobile money': 'mtn',
-        telecel: 'tel',
-        tel: 'tel',
-        vod: 'tel',
-        vodafone: 'tel',
-        'vodafone mobile money': 'tel',
-        tgo: 'tgo',
-        airteltigo: 'tgo',
-        'airtel tigo': 'tgo',
-        'airteltigo money': 'tgo',
-        airtel: 'tgo',
-        tigo: 'tgo',
-      }
-
-      const normalized = normalize(momoProvider)
-      const mappedProvider = providerMap[normalized] || normalized
+      // Normalize and map provider values
+      const normalize = (v: string) => v.trim().toUpperCase()
+      const provider = normalize(momoProvider)
+      
+      // Map common variants if needed
+      const mappedProvider = (provider === 'TEL' || provider === 'VODAFONE') ? 'VOD' : 
+                            (provider === 'TGO' || provider === 'AIRTELTIGO') ? 'ATL' : 
+                            provider
 
       // Validate provider against allowed codes
       const validProviders = Object.values(PAYSTACK_CONFIG.momoProviders)
       if (!validProviders.includes(mappedProvider)) {
-        return NextResponse.json({ error: 'Invalid mobile money provider. Use: mtn, tel, or tgo' }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid mobile money provider. Please select a valid provider from the list.' }, { status: 400 })
       }
 
       // Validate phone
@@ -354,7 +373,7 @@ export async function POST(request: NextRequest) {
 
       const formattedPhone = phoneValidation.formatted
 
-      // Re-fetch profile to ensure we have latest data (and any existing subaccount code)
+      // Re-fetch profile to ensure we have latest data
       const freshProfile = await prisma.professionalProfile.findUnique({
         where: { userId: user.id },
         include: { user: { select: { firstName: true, lastName: true, email: true, phone: true } } },
@@ -364,74 +383,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Professional profile not found after update' }, { status: 500 })
       }
 
-      // Step 1: fetch Paystack mobile_money banks and resolve bank code
-      type PaystackBank = { code?: string; name?: string; slug?: string; id?: number; active?: boolean }
-      let bankCandidate: PaystackBank | undefined
-      try {
-        const banksRes = await listBanks('ghana', 'mobile_money')
-        const banks: PaystackBank[] = (banksRes.data as PaystackBank[]) || []
-
-        const keywordsMap: Record<string, string[]> = {
-          mtn: ['mtn', 'mtn mobile money'],
-          tel: ['vodafone', 'vod', 'telecel', 'vodafone cash'],
-          tgo: ['airteltigo', 'airtel', 'tigo', 'airteltigo money'],
-        }
-
-        const keywords = keywordsMap[mappedProvider] || [mappedProvider]
-
-        bankCandidate = banks.find((b) => {
-          const name = (b.name || '').toLowerCase()
-          const slug = (b.slug || '').toLowerCase()
-          const code = String(b.code || '').toLowerCase()
-          return keywords.some(k => name.includes(k) || slug.includes(k) || code === k)
-        })
-      } catch (bankErr) {
-        console.warn('Failed to fetch Paystack banks:', bankErr)
-      }
-
-      if (!bankCandidate) {
-        return NextResponse.json({ error: 'Could not resolve Paystack bank code for the selected MoMo provider. Please choose from the provider list.' }, { status: 400 })
-      }
-
-      // Build payload using Paystack settlement_bank (bank code) as per documentation
-      const subaccountPayload: CreateSubaccountPayload = {
-        business_name: freshProfile.businessName,
-        settlement_bank: (bankCandidate?.code || String(bankCandidate?.id || '')).toString(),
+      // Build payload for Transfer Recipient
+      const recipientPayload: CreateTransferRecipientPayload = {
+        type: "mobile_money" as const,
+        name: `${freshProfile.user.firstName} ${freshProfile.user.lastName}`,
         account_number: formattedPhone,
-        percentage_charge: PAYSTACK_CONFIG.platformFeePercent,
-        description: `TrendiWear seller account for ${freshProfile.businessName}`,
-        primary_contact_email: freshProfile.user.email,
-        primary_contact_name: `${freshProfile.user.firstName} ${freshProfile.user.lastName}`,
-        primary_contact_phone: freshProfile.user.phone || formattedPhone,
+        bank_code: mappedProvider,
+        currency: "GHS",
+        description: `TrendiWear seller payout for ${freshProfile.businessName}`,
         metadata: {
           professionalId: freshProfile.id,
           userId: user.id,
+          businessName: freshProfile.businessName
         },
       }
 
       try {
-        let subaccountCode: string | undefined
-        if (freshProfile.paystackSubaccountCode) {
-          const res = await updateSubaccount(freshProfile.paystackSubaccountCode, subaccountPayload)
-          subaccountCode = res.data.subaccount_code
-        } else {
-          const res = await createSubaccount(subaccountPayload)
-          subaccountCode = res.data.subaccount_code
-        }
+        const res = await createTransferRecipient(recipientPayload)
+        const recipientCode = res.data.recipient_code
 
-        // Persist payment setup info only after successful Paystack response
+        // Persist payout recipient info
         await prisma.professionalProfile.update({
           where: { id: freshProfile.id },
           data: {
             momoNumber: formattedPhone,
             momoProvider: mappedProvider,
-            paystackSubaccountCode: subaccountCode,
+            paystackSubaccountCode: recipientCode, // Reusing field for recipient_code
             paymentSetupComplete: true,
           },
         })
       } catch (payErr) {
-        console.error('Automated subaccount creation failed:', payErr)
-        return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack subaccount' }, { status: 500 })
+        console.error('Automated payout recipient setup failed:', payErr)
+        return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack payout recipient' }, { status: 500 })
       }
     }
 

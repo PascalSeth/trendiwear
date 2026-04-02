@@ -1,17 +1,23 @@
-// app/dashboard/components/ServerNavbar.tsx
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { getCurrentUser } from '@/lib/auth'; // Import the auth helper
+import { getAuthSession } from '@/lib/auth'; // Import the fast session helper
 import { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import Navbar from './Navbar';
 
 const ServerNavbar = async () => {
-  const user = await getCurrentUser(); // Get the complete user data
-  const session = await getServerSession(authOptions);
+  const session = await getAuthSession();
+  const user = session?.user;
 
-  // Extract role from user data
-  const role: Role = user?.role || Role.CUSTOMER;
+  // Fetch true role from DB to handle stale sessions (ensure Super Admin sees dashboard)
+  let role: Role = Role.CUSTOMER;
+  if (user?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
+    });
+    if (dbUser) {
+      role = dbUser.role as Role;
+    }
+  }
 
   // Fetch professional slug on server side
   let profileSlug = '';

@@ -13,7 +13,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2, ImageIcon } from "lucide-react";
+import Image from "next/image";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -102,14 +103,17 @@ export function CollectionsTable() {
     cell: ({ row }) => {
       const imageUrl = row.getValue("imageUrl") as string;
       return imageUrl ? (
-        <img
-          src={`${imageUrl}`}
-          alt={row.original.name}
-          className="h-12 w-12 object-cover rounded-md"
-        />
+        <div className="relative h-12 w-12 overflow-hidden rounded-md">
+          <Image
+            src={imageUrl}
+            alt={row.original.name}
+            fill
+            className="object-cover"
+          />
+        </div>
       ) : (
         <div className="h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center">
-          <span className="text-xs text-gray-500">No Image</span>
+          <ImageIcon className="h-6 w-6 text-gray-400 font-light" />
         </div>
       );
     },

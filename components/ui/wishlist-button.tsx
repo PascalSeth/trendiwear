@@ -4,6 +4,7 @@ import React, { useRef } from 'react'
 import { Heart } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react' // ADD THIS
 import { useWishlistStore } from '@/lib/stores'
 
 interface WishlistButtonProps {
@@ -25,6 +26,7 @@ export function WishlistButton({
   showCount = false,
   count = 0
 }: WishlistButtonProps) {
+  const { status } = useSession() // GET SESSION STATUS
   const isInWishlist = useWishlistStore(state => state.isInWishlist)
   const addToWishlist = useWishlistStore(state => state.addToWishlist)
   const removeFromWishlist = useWishlistStore(state => state.removeFromWishlist)
@@ -33,7 +35,19 @@ export function WishlistButton({
 
   const inWishlist = isInWishlist(productId)
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // AUTH CHECK: If not logged in, prompt user
+    if (status === 'unauthenticated') {
+      toast.error("Please login to save to your wishlist", {
+        description: "You need an account to track your favorite items.",
+        duration: 3000,
+      })
+      return
+    }
+
     if (!isHydrated || pendingRef.current) return
     pendingRef.current = true
 

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Search, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +20,7 @@ interface Product {
   id: string
   name: string
   price: number
+  currency: string
   images: string[]
   category: {
     name: string
@@ -46,13 +48,7 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
   const [loading, setLoading] = useState(false)
   const [adding, setAdding] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (open) {
-      fetchProducts()
-    }
-  }, [open, search])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -77,7 +73,13 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
     } finally {
       setLoading(false)
     }
-  }
+  }, [search])
+
+  useEffect(() => {
+    if (open) {
+      fetchProducts()
+    }
+  }, [open, fetchProducts])
 
   const handleAdd = async (productId: string) => {
     setAdding(productId)
@@ -144,10 +146,12 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
-                      <img
+                      <Image
                         src={product.images[0] || '/placeholder-product.jpg'}
                         alt={product.name}
                         className="w-16 h-16 object-cover rounded-lg"
+                        width={64}
+                        height={64}
                       />
                       <div>
                         <h4 className="font-medium">{product.name}</h4>
@@ -157,7 +161,7 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
                           <Badge variant="outline">{product.category.name}</Badge>
-                          <span className="text-sm font-medium">${product.price}</span>
+                          <span className="text-sm font-medium">{product.currency} {product.price}</span>
                         </div>
                       </div>
                     </div>

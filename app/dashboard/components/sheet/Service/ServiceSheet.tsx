@@ -63,6 +63,14 @@ export type Service = {
       businessName?: string;
     };
   };
+  variants?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    durationMinutes: number;
+    isActive: boolean;
+  }>;
   _count: {
     bookings: number;
   };
@@ -120,8 +128,8 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
   const handleImageUpload = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("bucket", "services");
-    formData.append("folder", "images");
+    formData.append("bucket", "images");
+    formData.append("folder", "services");
 
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -178,6 +186,7 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
         isHomeService: formData.isHomeService,
         requirements: formData.requirements || undefined,
         isActive: formData.isActive,
+        isCustom: !serviceToEdit, // Professionals create custom services by default
       };
 
       const url = serviceToEdit ? `/api/services/${serviceToEdit.id}` : "/api/services";

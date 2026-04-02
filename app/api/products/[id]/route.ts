@@ -51,10 +51,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params
 
-    await prisma.product.update({
+    // FIRE AND FORGET VIEW INCREMENT (SPEED OPTIMIZATION)
+    prisma.product.update({
       where: { id },
       data: { viewCount: { increment: 1 } },
-    })
+    }).catch(e => console.error("View Count Failed:", e))
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -78,6 +79,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 momoNumber: true,
                 paymentSetupComplete: true,
                 isVerified: true,
+                slug: true,
               },
             },
           },
@@ -173,6 +175,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.discountStartDate !== undefined) updateData.discountStartDate = body.discountStartDate ? new Date(body.discountStartDate) : null
     if (body.discountEndDate !== undefined) updateData.discountEndDate = body.discountEndDate ? new Date(body.discountEndDate) : null
     if (body.isOnSale !== undefined) updateData.isOnSale = Boolean(body.isOnSale)
+    if (body.allowPickup !== undefined) updateData.allowPickup = Boolean(body.allowPickup)
+    if (body.allowDelivery !== undefined) updateData.allowDelivery = Boolean(body.allowDelivery)
+    if (body.isPreorder !== undefined) updateData.isPreorder = Boolean(body.isPreorder)
 
     const product = await prisma.product.update({
       where: { id },

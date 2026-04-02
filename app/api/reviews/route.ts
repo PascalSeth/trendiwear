@@ -143,15 +143,43 @@ export async function POST(request: NextRequest) {
         where: { targetId, targetType: "PROFESSIONAL" },
       })
 
-      const avgRating = professionalReviews.reduce((sum, r) => sum + r.rating, 0) / professionalReviews.length
+      const sumOfRatings = professionalReviews.reduce((sum, r) => sum + r.rating, 0)
+      const totalReviews = professionalReviews.length
+      
+      // Inject the base default seed of 4.0 algorithm
+      const baselineRating = 4.0;
+      const baselineWeight = 1;
+      const avgRating = (baselineRating * baselineWeight + sumOfRatings) / (baselineWeight + totalReviews)
 
       await prisma.professionalProfile.update({
         where: { userId: targetId },
         data: {
           rating: avgRating,
-          totalReviews: professionalReviews.length,
+          totalReviews,
         },
       })
+    } else if (targetType === "PRODUCT") {
+      const productReviews = await prisma.review.findMany({
+        where: { targetId, targetType: "PRODUCT" },
+      })
+
+      const sumOfRatings = productReviews.reduce((sum, r) => sum + r.rating, 0)
+      const totalReviews = productReviews.length
+      
+      const baselineRating = 4.0;
+      const baselineWeight = 1;
+      const avgRating = (baselineRating * baselineWeight + sumOfRatings) / (baselineWeight + totalReviews)
+
+      await prisma.productAnalytics.upsert({
+        where: { productId: targetId },
+        create: {
+          productId: targetId,
+          avgRating,
+        },
+        update: {
+          avgRating,
+        }
+      }).catch(e => console.error("Could not update missing product analytics", e))
     }
 
     return NextResponse.json(review, { status: 201 })

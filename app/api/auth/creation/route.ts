@@ -1,13 +1,16 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
+import { getAuthSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export async function GET(){
     noStore()
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
+    console.log('[auth:creation] Handling redirect after sign-in', {
+        hasSession: !!session,
+        email: session?.user?.email
+    })
 
     if(!session || !session.user?.email){
         throw new Error("Something went Wrong.... Sorry")
