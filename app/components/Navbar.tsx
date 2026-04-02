@@ -221,10 +221,10 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
             </DropdownMenu>
           ) : (
             <div className="hidden md:flex items-center gap-3">
-              <button onClick={() => window.location.href = '/auth/signin'} className="text-xs font-mono uppercase tracking-[0.2em] text-stone-500 hover:text-red-900 transition-colors">
+              <button onClick={() => window.location.href = '/auth/signin?mode=signin'} className="text-xs font-mono uppercase tracking-[0.2em] text-stone-500 hover:text-red-900 transition-colors">
                 Login
               </button>
-              <button onClick={() => window.location.href = '/auth/signin'} className="px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors">
+              <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors">
                 Sign up
               </button>
             </div>
@@ -327,10 +327,10 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <button onClick={() => window.location.href = '/auth/signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-900 border border-stone-300 hover:border-stone-900 transition-colors">
+                      <button onClick={() => window.location.href = '/auth/signin?mode=signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-900 border border-stone-300 hover:border-stone-900 transition-colors">
                         Login
                       </button>
-                      <button onClick={() => window.location.href = '/auth/signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-white bg-stone-900 hover:bg-stone-800 transition-colors">
+                      <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-white bg-stone-900 hover:bg-stone-800 transition-colors">
                         Sign up
                       </button>
                     </div>

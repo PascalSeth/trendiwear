@@ -1,13 +1,33 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { ShieldCheck, Zap } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
 
-function AuthPage() {
+function AuthPageContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+
+  useEffect(() => {
+    const m = searchParams.get('mode')
+    if (m === 'signup') {
+      setMode('signup')
+    } else {
+      setMode('signin')
+    }
+  }, [searchParams])
+
+  const toggleMode = () => {
+    const newMode = mode === 'signin' ? 'signup' : 'signin'
+    setMode(newMode)
+    // Update URL without full refresh to stay in context
+    router.push(`/auth/signin?mode=${newMode}`)
+  }
 
   const handleGoogleSignIn = () => {
     setLoading(true)
@@ -97,6 +117,7 @@ function AuthPage() {
         {/* Content */}
         <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 relative z-10">
           <motion.div 
+            key={mode}
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -104,11 +125,13 @@ function AuthPage() {
           >
             {/* Greeting */}
             <div className="mb-12">
-              <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-stone-400 mb-4">Welcome to TrendiZip</p>
+              <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-stone-400 mb-4">
+                {mode === 'signup' ? 'Join TrendiZip' : 'Welcome to TrendiZip'}
+              </p>
               <h2 className="text-4xl lg:text-5xl font-serif text-stone-900 leading-[1.1]">
-                Sign in to
+                {mode === 'signup' ? 'Create an' : 'Sign in to'}
                 <br />
-                <span className="italic text-stone-400">continue.</span>
+                <span className="italic text-stone-400">{mode === 'signup' ? 'account.' : 'continue.'}</span>
               </h2>
             </div>
 
@@ -131,7 +154,7 @@ function AuthPage() {
                 </svg>
               )}
               <span className="text-sm font-semibold text-stone-700 group-hover:text-stone-900 transition-colors">
-                {loading ? 'Redirecting...' : 'Continue with Google'}
+                {loading ? 'Redirecting...' : mode === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
               </span>
             </motion.button>
 
@@ -139,7 +162,7 @@ function AuthPage() {
             <div className="mt-12 space-y-4">
               {[
                 { icon: <ShieldCheck className="w-4 h-4" />, text: 'Secure authentication by Google' },
-                { icon: <Zap className="w-4 h-4" />, text: 'One click sign-in, no password needed' },
+                { icon: <Zap className="w-4 h-4" />, text: 'One click access, no password needed' },
               ].map((item, i) => (
                 <motion.div 
                   key={i}
@@ -155,12 +178,26 @@ function AuthPage() {
             </div>
 
             {/* Terms */}
-            <p className="text-center text-[10px] text-stone-400 mt-16 leading-relaxed">
+            <p className="text-center text-[10px] text-stone-400 mt-12 leading-relaxed">
               By continuing, you agree to our{' '}
               <a href="#" className="underline underline-offset-2 hover:text-stone-900 transition-colors">Terms of Service</a>
               {' '}and{' '}
               <a href="#" className="underline underline-offset-2 hover:text-stone-900 transition-colors">Privacy Policy</a>.
             </p>
+
+            {/* Toggle Mode */}
+            <div className="mt-8 pt-8 border-t border-stone-100 text-center">
+              <p className="text-sm text-stone-600">
+                {mode === 'signup' ? 'Already have an account?' : 'New to TrendiZip?'}
+                {' '}
+                <button 
+                  onClick={toggleMode}
+                  className="text-stone-900 font-semibold hover:underline underline-offset-4 ml-1 transition-all"
+                >
+                  {mode === 'signup' ? 'Sign in' : 'Create an account'}
+                </button>
+              </p>
+            </div>
           </motion.div>
         </div>
 
@@ -168,6 +205,18 @@ function AuthPage() {
         <div className="h-1 bg-gradient-to-r from-amber-400 via-rose-400 to-violet-500 relative z-10" />
       </div>
     </div>
+  )
+}
+
+function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full bg-[#fafaf9] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
+      </div>
+    }>
+      <AuthPageContent />
+    </Suspense>
   )
 }
 
