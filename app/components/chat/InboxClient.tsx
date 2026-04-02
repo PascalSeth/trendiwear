@@ -7,7 +7,7 @@ import {
   CheckCheck, Loader2, Filter,
   ArrowLeft, ShoppingBag, Zap, Image as ImageIcon
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -187,7 +187,6 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
           ) : (
             filteredConvs?.map((conv: Conversation) => {
               const isOtherPro = conv.professionalId !== currentUserId;
-              const otherUser = isOtherPro ? conv.professional : conv.customer;
               const otherName = isOtherPro 
                 ? (conv.professional.professionalProfile?.businessName || `${conv.professional.firstName} ${conv.professional.lastName}`)
                 : `${conv.customer.firstName} ${conv.customer.lastName}`;
@@ -297,7 +296,7 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
               className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 bg-[#FAFAF9]/30 custom-scrollbar"
             >
               <AnimatePresence mode="wait">
-              {messages?.map((msg: Message, i: number) => {
+              {messages?.map((msg: Message) => {
                 const isMe = msg.senderId === currentUserId;
                 return (
                   <motion.div 

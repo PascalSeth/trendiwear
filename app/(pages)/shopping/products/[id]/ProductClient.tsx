@@ -176,7 +176,7 @@ export default function ProductClient({
       } else {
         toast.error('Failed to post reply')
       }
-    } catch (error) {
+    } catch {
       toast.error('Something went wrong')
     } finally {
       setIsSubmittingReply(false)
@@ -213,12 +213,6 @@ export default function ProductClient({
     setIsAutoPlaying(true)
   }, [product])
 
-  const getProfileSlug = () => {
-    const profile = product?.professional?.professionalProfile;
-    if (profile?.slug) return profile.slug;
-    if (profile?.businessName) return profile.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    return `${product.professional.firstName}-${product.professional.lastName}`.toLowerCase();
-  }
 
   const isOutOfStock = product.stockQuantity === 0 && !product.isPreorder
   const isLowStock = product.stockQuantity > 0 && product.stockQuantity <= 5

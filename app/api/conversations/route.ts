@@ -52,9 +52,10 @@ export async function GET() {
     });
 
     return NextResponse.json(conversations);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; status?: number };
     console.error("[CONVERSATIONS_GET]", error);
-    return new NextResponse(error.message || "Internal Error", { status: error.status || 500 });
+    return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
   }
 }
 
@@ -106,8 +107,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(conversation);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; status?: number };
     console.error("[CONVERSATIONS_POST]", error);
-    return new NextResponse(error.message || "Internal Error", { status: error.status || 500 });
+    return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
   }
 }

@@ -1,0 +1,38 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 26.2s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/api/bookings/route.ts:217:11
+Type error: Object literal may only specify known properties, and 'bookingId' does not exist in type '{ to: string; customerName: string; serviceName: string; date: string; }'.
+
+[0m [90m 215 |[39m           serviceName[33m:[39m booking[33m.[39mservice[33m.[39mname[33m,[39m
+ [90m 216 |[39m           date[33m:[39m format(booking[33m.[39mbookingDate[33m,[39m [32m"PPP 'at' p"[39m)[33m,[39m
+[31m[1m>[22m[39m[90m 217 |[39m           bookingId[33m:[39m booking[33m.[39mid[33m,[39m
+ [90m     |[39m           [31m[1m^[22m[39m
+ [90m 218 |[39m         })
+ [90m 219 |[39m       } [36mcatch[39m (emailErr) {
+ [90m 220 |[39m         console[33m.[39merror([32m"Failed to send booking request email:"[39m[33m,[39m emailErr)[0m
+Next.js build worker exited with code: 1 and signal: null

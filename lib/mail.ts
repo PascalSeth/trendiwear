@@ -262,13 +262,11 @@ export async function sendBookingRequestEmail({
   customerName,
   serviceName,
   date,
-  bookingId,
 }: {
   to: string
   customerName: string
   serviceName: string
   date: string
-  bookingId: string
 }) {
   const mailOptions = {
     from: process.env.EMAIL_FROM,

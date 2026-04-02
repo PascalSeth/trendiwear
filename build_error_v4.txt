@@ -1,0 +1,38 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 25.6s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/api/conversations/[id]/messages/route.ts:141:28
+Type error: Property 'professionalProfile' does not exist on type '{ id: string; email: string; name: string; image?: string | undefined; firstName?: string | undefined; lastName?: string | undefined; role: Role; }'.
+
+[0m [90m 139 |[39m         [36mawait[39m sendNewMessageEmail({
+ [90m 140 |[39m           to[33m:[39m recipient[33m.[39memail[33m,[39m
+[31m[1m>[22m[39m[90m 141 |[39m           senderName[33m:[39m user[33m.[39mprofessionalProfile[33m?[39m[33m.[39mbusinessName [33m||[39m [32m`${user.firstName} ${user.lastName}`[39m[33m,[39m
+ [90m     |[39m                            [31m[1m^[22m[39m
+ [90m 142 |[39m           messageContent[33m:[39m content [33m||[39m [32m"Sent an attachment"[39m[33m,[39m
+ [90m 143 |[39m           conversationId[33m:[39m id[33m,[39m
+ [90m 144 |[39m         })[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

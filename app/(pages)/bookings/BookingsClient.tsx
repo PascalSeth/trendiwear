@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { 
   Calendar, Clock, MapPin, ChevronRight, 
   Loader2, CalendarX,
@@ -44,7 +44,6 @@ interface Booking {
 }
 
 export function BookingsClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL');
 

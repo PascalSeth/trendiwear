@@ -14,15 +14,13 @@ import {
 } from "@tanstack/react-table";
 import useSWR from 'swr';
 import {
-  ShoppingBag, Truck, Eye, Package,
+  ShoppingBag, Truck, Package,
   Check, Loader2, X, AlertCircle, Search, ChevronRight, Clock, RefreshCw,
-  MapPin, Phone, Mail, CheckCheck, SendHorizontal, Ban, RotateCcw,
-  Hash, Wallet
+  MapPin, Phone, Mail, CheckCheck, SendHorizontal, Ban, RotateCcw, Wallet
 } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import * as React from "react";
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +31,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+  Sheet, SheetContent, SheetTitle,
 } from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
@@ -159,16 +157,7 @@ function OrderDetailSheet({
   onStatusUpdate: (id: string, status: string, extra?: { trackingNumber?: string; notes?: string }) => Promise<void>;
   onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
 }) {
-  const [trackingInput, setTrackingInput] = useState("");
-  const [notesInput, setNotesInput] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (order) {
-      setTrackingInput(order.trackingNumber || "");
-      setNotesInput(order.notes || "");
-    }
-  }, [order]);
 
   if (!order) return null;
 
@@ -440,7 +429,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
   }, []);
 
   const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: swrData, mutate } = useSWR("/api/orders?page=1&limit=100", fetcher, {
+  const { mutate } = useSWR("/api/orders?page=1&limit=100", fetcher, {
     refreshInterval: 10000, // Poll every 10 seconds for real-time updates
     onSuccess: (data) => {
       setData(data.orders || []);
@@ -657,8 +646,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     );
   }
 
-  const statusFilters = ["All", "PENDING", "CONFIRMED", "PROCESSING", "AWAITING_DELIVERY_PAYMENT", "SHIPPED", "DELIVERED", "CANCELLED", "READY_FOR_PICKUP"];
-
   return (
     <div className="w-full space-y-5">
       {/* Toast */}
@@ -740,7 +727,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
                     setColumnFilters([]);
                   } else {
                     const statuses = Object.entries(STATUS_CONFIG)
-                      .filter(([_, cfg]) => cfg.workflow === tab.id)
+                      .filter(([, cfg]) => cfg.workflow === tab.id)
                       .map(([status]) => status);
                     // Use equality mapping or similar — for now sets to first in category but table needs to handle list
                     setColumnFilters([{ id: "status", value: { in: statuses } }]); 

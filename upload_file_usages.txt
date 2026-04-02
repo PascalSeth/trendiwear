@@ -1,9 +1,0 @@
-Binary file c:\Users\DELL\Desktop\trendiwear/.next/cache/webpack/server-production/0.pack matches
-Binary file c:\Users\DELL\Desktop\trendiwear/.next/cache/webpack/server-production/14.pack matches
-c:\Users\DELL\Desktop\trendiwear/app/api/events/route.ts:58:        imageUrl = await uploadFile(imageFile, "images", fileName)
-c:\Users\DELL\Desktop\trendiwear/app/api/events/[id]/route.ts:68:        imageUrl = await uploadFile(imageFile, "images", fileName)
-c:\Users\DELL\Desktop\trendiwear/app/api/GET/getTrendCategories/route.ts:49:      imageUrl = await uploadFile(imageFile, "categories", fileName)
-c:\Users\DELL\Desktop\trendiwear/lib/upload.ts:3:export async function uploadFile(
-c:\Users\DELL\Desktop\trendiwear/upload_usages.txt:2:c:\Users\DELL\Desktop\trendiwear\app/api/events/route.ts:58:        imageUrl = await uploadFile(imageFile, "images", fileName)
-c:\Users\DELL\Desktop\trendiwear/upload_usages.txt:4:c:\Users\DELL\Desktop\trendiwear\app/api/events/[id]/route.ts:68:        imageUrl = await uploadFile(imageFile, "images", fileName)
-c:\Users\DELL\Desktop\trendiwear/upload_usages.txt:6:c:\Users\DELL\Desktop\trendiwear\app/api/GET/getTrendCategories/route.ts:49:      imageUrl = await uploadFile(imageFile, "images", fileName)

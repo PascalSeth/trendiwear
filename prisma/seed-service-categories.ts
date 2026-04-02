@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -79,7 +79,7 @@ async function main() {
   for (const cat of categories) {
     const connects = cat.proRoles.map(role => ({ id: RoleIds[role as keyof typeof RoleIds] }));
 
-    await (prisma.serviceCategory as any).upsert({
+    await prisma.serviceCategory.upsert({
       where: { name: cat.name },
       update: {
         description: cat.description,

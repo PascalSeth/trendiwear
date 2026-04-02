@@ -92,6 +92,8 @@ function NewArrivals() {
             discountEndDate?: string;
             isPreorder?: boolean;
             estimatedDelivery?: number;
+            sizes?: string[];
+            colors?: string[];
           }) => {
             const sellerName = product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`;
             return {
@@ -120,8 +122,8 @@ function NewArrivals() {
             isPreorder: product.isPreorder || false,
             estimatedDelivery: product.estimatedDelivery,
             professional: product.professional,
-            sizes: (product as any).sizes || [],
-            colors: (product as any).colors || [],
+            sizes: product.sizes || [],
+            colors: product.colors || [],
           }});
           setNewArrivals(transformedProducts);
         }

@@ -4,11 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { LucideIcon } from 'lucide-react';
 import {
-  Star, MapPin, Phone, Clock,
+  Star, MapPin, Clock,
   ArrowRight, ShoppingBag, MessageSquare, Zap,
-  Globe, Instagram, Facebook, Settings, BadgeCheck, Loader, ImageIcon
+  Globe, Instagram, Facebook, Settings, BadgeCheck, ImageIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductCard } from '@/components/common/ProductCard';
@@ -170,28 +169,7 @@ export interface ProfessionalProfile {
   slug: string;
 }
 
-// --- COMPONENTS ---
-
-const RatingBadge = ({ rating, count }: { rating: number; count?: number }) => (
-  <div className="flex items-center gap-2 bg-white/90 backdrop-blur border border-stone-200 px-3 py-1.5 rounded-full shadow-sm">
-    <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-    <span className="font-bold text-stone-900">{rating?.toFixed(1)}</span>
-    {count && <span className="text-xs text-stone-400">({count})</span>}
-  </div>
-);
-
-const InfoCard = ({ icon: Icon, title, children, className = "" }: { icon: LucideIcon, title: string, children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-3xl p-6 border border-stone-100 shadow-sm hover:shadow-md transition-shadow ${className}`}>
-    <div className="flex items-center gap-3 mb-4">
-      <div className="p-2 bg-stone-50 rounded-full text-stone-700">
-        <Icon className="w-5 h-5" />
-      </div>
-      <h3 className="font-bold text-stone-900">{title}</h3>
-    </div>
-    {children}
-  </div>
-);
-
+// --- TYPES ---
 
 interface ProfileClientProps {
   profile: ProfessionalProfile;
@@ -404,7 +382,7 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
               <span className="w-8 h-[1px] bg-stone-300" /> The Atelier
             </h3>
             <p className="font-serif text-2xl lg:text-3xl text-stone-800 leading-snug italic px-4 border-l-4 border-amber-500/20">
-              "{profile.bio || `A premium ${profile.specialization.name} business dedicated to bringing you the finest quality materials and craftsmanship.`}"
+              &quot;{profile.bio || `A premium ${profile.specialization.name} business dedicated to bringing you the finest quality materials and craftsmanship.`}&quot;
             </p>
             {profile.socials && (
               <div className="flex gap-6 pt-6 px-4">
@@ -662,7 +640,7 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
                       </div>
                       
                       <p className="font-serif text-xl md:text-2xl text-stone-700 leading-relaxed italic border-l-4 border-stone-200 pl-6 lg:pl-8">
-                        "{review.comment}"
+                        &quot;{review.comment}&quot;
                       </p>
 
                       {review.productName && (

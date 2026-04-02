@@ -53,9 +53,10 @@ export async function GET(
     });
 
     return NextResponse.json(messages);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; status?: number };
     console.error("[MESSAGES_GET]", error);
-    return new NextResponse(error.message || "Internal Error", { status: error.status || 500 });
+    return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
   }
 }
 
@@ -137,7 +138,7 @@ export async function POST(
       try {
         await sendNewMessageEmail({
           to: recipient.email,
-          senderName: user.professionalProfile?.businessName || `${user.firstName} ${user.lastName}`,
+          senderName: message.sender.professionalProfile?.businessName || `${message.sender.firstName} ${message.sender.lastName}`,
           messageContent: content || "Sent an attachment",
           conversationId: id,
         });
@@ -147,8 +148,9 @@ export async function POST(
     }
 
     return NextResponse.json(message);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; status?: number };
     console.error("[MESSAGES_POST]", error);
-    return new NextResponse(error.message || "Internal Error", { status: error.status || 500 });
+    return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
   }
 }

@@ -214,7 +214,6 @@ export async function POST(request: NextRequest) {
           customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
           serviceName: booking.service.name,
           date: format(booking.bookingDate, "PPP 'at' p"),
-          bookingId: booking.id,
         })
       } catch (emailErr) {
         console.error("Failed to send booking request email:", emailErr)

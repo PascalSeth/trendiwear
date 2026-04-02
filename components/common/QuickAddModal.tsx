@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Check, X, ShoppingBag } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Check, X } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { AddToCartButton } from '@/components/ui/add-to-cart-button'
 import Image from 'next/image'
@@ -29,7 +28,7 @@ interface QuickAddModalProps {
 export function QuickAddModal({ isOpen, onClose, product }: QuickAddModalProps) {
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
-  const [quantity, setQuantity] = useState(1)
+  const [quantity] = useState(1)
 
   const isOutOfStock = product.stockQuantity === 0 && !product.isPreorder
   const hasSizes = product.sizes && product.sizes.length > 0

@@ -7,6 +7,9 @@
 
    Creating an optimized production build ...
 
+[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
+
 [1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
 [1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
 
@@ -18,15 +21,18 @@
 
 [1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
 [1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
- ✓ Compiled successfully in 84s
+ ✓ Compiled successfully in 23.8s
    Linting and checking validity of types ...
-
 Failed to compile.
 
-./lib/booking-utils.ts
-2:10  Error: 'isAfter' is defined but never used.  @typescript-eslint/no-unused-vars
+./app/dashboard/(pages)/orders/Datatable.tsx:164:7
+Type error: Cannot find name 'setTrackingInput'.
 
-./lib/services.ts
-190:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-
-info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+[0m [90m 162 |[39m   useEffect(() [33m=>[39m {
+ [90m 163 |[39m     [36mif[39m (order) {
+[31m[1m>[22m[39m[90m 164 |[39m       setTrackingInput(order[33m.[39mtrackingNumber [33m||[39m [32m""[39m)[33m;[39m
+ [90m     |[39m       [31m[1m^[22m[39m
+ [90m 165 |[39m       setNotesInput(order[33m.[39mnotes [33m||[39m [32m""[39m)[33m;[39m
+ [90m 166 |[39m     }
+ [90m 167 |[39m   }[33m,[39m [order])[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

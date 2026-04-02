@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Star, Send, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 interface ProductReviewFormProps {
   productId: string
@@ -87,8 +87,9 @@ export default function ProductReviewForm({
       setRating(0)
       setComment('')
       onSuccess()
-    } catch (error: any) {
-      toast.error('Review interrupted', { description: error.message })
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast.error('Review interrupted', { description: err.message })
     } finally {
       setIsSubmitting(false)
     }

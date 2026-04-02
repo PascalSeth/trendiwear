@@ -1,12 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bell, Package, Heart, ShoppingBag, DollarSign, Truck, Star, X, Check, CheckCheck, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import useSWR from 'swr';
-import { toast } from 'sonner';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -54,10 +53,7 @@ const notificationColors: Record<string, string> = {
   DELIVERY_ARRIVAL: 'bg-green-100 text-green-600',
 };
 
-// Global cache to prevent multiple instances from firing redundant requests
-let lastFetchTime = 0;
-const FETCH_COOLDOWN = 5000; // 5 seconds
-
+// Component
 export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
   const [isOpen, setIsOpen] = useState(false);
   const lastNotifiedIdRef = useRef<string | null>(null);
@@ -76,8 +72,8 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
     { refreshInterval: 10000 }
   );
 
-  const notifications = data?.notifications || [];
-  const unreadCount = data?.unreadCount || 0;
+  const notifications = useMemo(() => data?.notifications || [], [data?.notifications]);
+  const unreadCount = useMemo(() => data?.unreadCount || 0, [data?.unreadCount]);
 
   // Browser Notification Logic (Alerts only, prompt is global)
   useEffect(() => {

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Send, X, MessageSquare, Loader2, 
-  Image as ImageIcon, Paperclip, MoreVertical,
-  Check, CheckCheck
+  Paperclip,
+  CheckCheck
 } from 'lucide-react';
 import { 
   Sheet, 
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import useSWR from 'swr';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import NextImage from 'next/image';
@@ -61,29 +61,23 @@ export function ChatDrawer({
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [conversation, setConversation] = useState<any>(null);
+  const [conversation, setConversation] = useState<Record<string, unknown> | null>(null);
   const [convError, setConvError] = useState<boolean>(false);
   const [convLoading, setConvLoading] = useState<boolean>(false);
   const { data: session } = useSession();
 
   // 1. Initialize Conversation once when opened
-  const initConversation = async () => {
+  const initConversation = useCallback(async () => {
     // Don't init if not open or if we're self-messaging
     if (!isOpen || !professionalId || !currentUserId) {
-       console.log("[ChatDrawer] Skipping init: isOpen=", isOpen, "proId=", professionalId, "currId=", currentUserId);
-       if (isOpen && (!professionalId || !currentUserId)) {
-          console.error("[ChatDrawer] Initialization blocked: missing IDs.");
-       }
        return null;
     }
     
     if (professionalId === currentUserId) {
-        console.warn("[ChatDrawer] Self-messaging detected. Blocking initialization.");
         return null;
     }
     
     try {
-      console.log("[ChatDrawer] Initializing conversation with:", professionalId);
       setConvLoading(true);
       setConvError(false);
       const res = await fetch('/api/conversations', {
@@ -97,7 +91,6 @@ export function ChatDrawer({
          throw new Error(errText || "Failed to initialize");
       }
       const data = await res.json();
-      console.log("[ChatDrawer] Conversation initialized:", data.id);
       setConversation(data);
       return data;
     } catch (err) {
@@ -107,14 +100,14 @@ export function ChatDrawer({
     } finally {
       setConvLoading(false);
     }
-  };
+  }, [isOpen, professionalId, currentUserId]);
 
   useEffect(() => {
     // Only run if open and not already initialized / currently loading
     if (isOpen && !conversation && !convLoading && currentUserId) {
       initConversation();
     }
-  }, [isOpen, professionalId, currentUserId, conversation, convLoading]);
+  }, [isOpen, conversation, convLoading, currentUserId, initConversation]);
 
   // 2. Fetch Messages (Poll every 5s)
   const { data: messages, error: messagesError, mutate } = useSWR<Message[]>(
@@ -267,7 +260,7 @@ export function ChatDrawer({
             </div>
           ) : (messages && messages.length > 0) || isSending ? (
             <div className="space-y-6">
-               {messages?.map((msg: Message, idx: number) => {
+               {messages?.map((msg: Message) => {
                  const isMe = msg.senderId === currentUserId;
                  return (
                     <motion.div 

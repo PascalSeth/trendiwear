@@ -6,15 +6,12 @@
    - Environments: .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 16.8s
+ ✓ Compiled successfully in 41s
    Linting and checking validity of types ...
 
 Failed to compile.
 
-./lib/booking-utils.ts
-2:10  Error: 'isAfter' is defined but never used.  @typescript-eslint/no-unused-vars
-
-./lib/services.ts
-190:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+./app/(pages)/tz/[slug]/ProfileClient.tsx
+7:15  Error: 'LucideIcon' is defined but never used.  @typescript-eslint/no-unused-vars
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
