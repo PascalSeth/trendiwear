@@ -213,3 +213,140 @@ export async function sendStatusUpdateEmail({
     console.error(`Failed to send status email to ${to}:`, error)
   }
 }
+
+export async function sendNewMessageEmail({
+  to,
+  senderName,
+  messageContent,
+  conversationId,
+}: {
+  to: string
+  senderName: string
+  messageContent: string
+  conversationId: string
+}) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: `New Message from ${senderName} — TrendiZip`,
+    html: `
+      <div style="font-family: 'Inter', system-ui, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.05);">
+        <div style="background: #1e293b; padding: 40px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 800;">New Message</h1>
+          <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">From ${senderName}</p>
+        </div>
+        <div style="padding: 30px;">
+          <div style="background: #f8fafc; padding: 24px; border-radius: 16px; border: 1px solid #f1f5f9; margin-bottom: 30px;">
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0; italic: true;">"${messageContent}"</p>
+          </div>
+          <div style="text-align: center;">
+            <a href="${process.env.NEXTAUTH_URL}/messages/${conversationId}" style="background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">Reply Now</a>
+          </div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">This is an automated notification from TrendiZip Concierge.</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+  } catch (error) {
+    console.error(`Failed to send message email to ${to}:`, error)
+  }
+}
+
+export async function sendBookingRequestEmail({
+  to,
+  customerName,
+  serviceName,
+  date,
+  bookingId,
+}: {
+  to: string
+  customerName: string
+  serviceName: string
+  date: string
+  bookingId: string
+}) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: `New Booking Request from ${customerName} — TrendiZip`,
+    html: `
+      <div style="font-family: 'Inter', system-ui, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.05);">
+        <div style="background: #4f46e5; padding: 40px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 800;">New Appointment Request</h1>
+          <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">Waiting for your confirmation</p>
+        </div>
+        <div style="padding: 30px;">
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">You have a new booking request for <strong>${serviceName}</strong> on <strong>${date}</strong>.</p>
+          <div style="text-align: center; margin-top: 40px;">
+            <a href="${process.env.NEXTAUTH_URL}/bookings" style="background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View Booking Request</a>
+          </div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">This request will expire in 6 hours if not confirmed.</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+  } catch (error) {
+    console.error(`Failed to send booking request email to ${to}:`, error)
+  }
+}
+
+export async function sendBookingStatusEmail({
+  to,
+  status,
+  serviceName,
+  date,
+  businessName,
+  bookingId,
+}: {
+  to: string
+  status: 'CONFIRMED' | 'CANCELLED'
+  serviceName: string
+  date: string
+  businessName: string
+  bookingId: string
+}) {
+  const isConfirmed = status === 'CONFIRMED'
+  const bgColor = isConfirmed ? '#059669' : '#ef4444'
+  const title = isConfirmed ? 'Appointment Confirmed!' : 'Appointment Cancelled'
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: `${title} — ${businessName}`,
+    html: `
+      <div style="font-family: 'Inter', system-ui, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.05);">
+        <div style="background: ${bgColor}; padding: 40px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 800;">${title}</h1>
+          <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">Order #${bookingId.slice(-8).toUpperCase()}</p>
+        </div>
+        <div style="padding: 30px;">
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+            Your booking for <strong>${serviceName}</strong> with <strong>${businessName}</strong> on <strong>${date}</strong> has been ${status.toLowerCase()}.
+          </p>
+          <div style="text-align: center; margin-top: 40px;">
+            <a href="${process.env.NEXTAUTH_URL}/bookings" style="background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View Booking History</a>
+          </div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">Automated update from ${businessName} via TrendiZip.</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+  } catch (error) {
+    console.error(`Failed to send booking status email to ${to}:`, error)
+  }
+}

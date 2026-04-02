@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
 import type { Prisma, BookingStatus, NotificationType } from "@prisma/client"
-import { addHours, isBefore, startOfDay, addDays } from "date-fns"
+import { addHours, isBefore, startOfDay, addDays, format } from "date-fns"
+import { sendBookingRequestEmail } from "@/lib/mail"
 
 export async function GET(request: NextRequest) {
   try {
@@ -187,6 +188,7 @@ export async function POST(request: NextRequest) {
           select: {
             firstName: true,
             lastName: true,
+            email: true,
             professionalProfile: { select: { businessName: true } },
           },
         },
@@ -203,6 +205,21 @@ export async function POST(request: NextRequest) {
         data: JSON.stringify({ bookingId: booking.id, expiresAt: requestExpiresAt }),
       },
     })
+
+    // Also send email
+    if (booking.professional && booking.professional.email) {
+      try {
+        await sendBookingRequestEmail({
+          to: booking.professional.email,
+          customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+          serviceName: booking.service.name,
+          date: format(booking.bookingDate, "PPP 'at' p"),
+          bookingId: booking.id,
+        })
+      } catch (emailErr) {
+        console.error("Failed to send booking request email:", emailErr)
+      }
+    }
 
     return NextResponse.json(booking, { status: 201 })
   } catch (error: unknown) {

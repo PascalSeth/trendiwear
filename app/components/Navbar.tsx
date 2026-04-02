@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import {  signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu, Calendar} from "lucide-react";
+import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu, Calendar, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CartSheetTrigger = dynamic(() => import("@/components/ui/cart-sheet-trigger").then(mod => ({ default: mod.CartSheetTrigger })), {
@@ -48,34 +48,34 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     return '/profile';
   };
 
-  // KEPT ORIGINAL TEXT
   const navLinks = [
     { href: "/fashion-trends", label: "Fashion Trends" },
     { href: "/tailors-designers", label: "Tailors & Designers" },
     { href: "/shopping", label: "Shopping" },
     { href: "/blog", label: "Blog" },
+    { href: "/messages", label: "Messages" },
     // { href: "/about", label: "About Us" },
   ];
 
   return (
-    <div 
+    <div
       className={cn(
         "fixed w-full top-0 z-50 transition-all duration-500 ease-out border-b",
-        scrolled 
-          ? 'bg-[#FAFAF9]/95 backdrop-blur-md border-stone-200 py-4' 
+        scrolled
+          ? 'bg-[#FAFAF9]/95 backdrop-blur-md border-stone-200 py-4'
           : 'bg-[#FAFAF9]/80 backdrop-blur-md border-transparent py-6'
       )}
     >
       <div className="max-w-[1600px] mx-auto px-6 flex items-center justify-between">
-        
+
         {/* Left: Original Logo */}
         <Link href="/" className="flex-shrink-0 group">
-          <Image 
-            src="/navlogo.png" 
-            alt="TrendiZip" 
-            width={40} 
-            height={40} 
-            className="transition-transform duration-300 group-hover:scale-105" 
+          <Image
+            src="/navlogo.png"
+            alt="TrendiZip"
+            width={40}
+            height={40}
+            className="transition-transform duration-300 group-hover:scale-105"
           />
         </Link>
 
@@ -113,8 +113,8 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
 
           {/* Icons */}
           <div className="hidden md:flex items-center gap-4">
-             <NotificationBell context="personal" />
-             <CartSheetTrigger />
+            <NotificationBell context="personal" />
+            <CartSheetTrigger />
           </div>
 
           {/* User Actions */}
@@ -133,10 +133,10 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              
+
               {/* Minimal Awwards-worthy Dropdown */}
-              <DropdownMenuContent 
-                align="end" 
+              <DropdownMenuContent
+                align="end"
                 sideOffset={8}
                 className="w-64 p-0 bg-white border-0 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden"
               >
@@ -150,6 +150,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 <div className="max-h-[50vh] overflow-y-auto overscroll-contain py-2">
                   {[
                     { icon: User, label: 'Profile', href: getProfileUrl() },
+                    { icon: MessageSquare, label: 'Messages', href: '/messages' },
                     { icon: Package, label: 'Orders', href: '/orders' },
                     { icon: Calendar, label: 'Bookings', href: '/bookings' },
                     { icon: Heart, label: 'Wishlist', href: '/wishlist' },
@@ -208,8 +209,8 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 {/* Logout */}
                 <div className="border-t border-stone-100 p-2">
                   <DropdownMenuItem asChild className="cursor-pointer focus:bg-red-50 rounded-lg">
-                    <button 
-                      onClick={() => signOut({ callbackUrl: '/auth/signin' })} 
+                    <button
+                      onClick={() => signOut({ callbackUrl: '/auth/signin' })}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <LogOut size={16} strokeWidth={1.5} />
@@ -272,7 +273,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                       {link.label}
                     </Link>
                   ))}
-                  
+
                   {user && (
                     <div className="pt-6 mt-6 border-t border-stone-100 space-y-6">
                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Personal Curation</p>
@@ -300,21 +301,21 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                   {user ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
-                         <Image
-                            src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
-                            alt="User"
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div>
-                            <p className="font-serif font-medium text-red-900">{user.name}</p>
-                            <p className="text-xs font-mono text-stone-500">{role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'PROFESSIONAL' ? 'Professional' : 'Member'}</p>
-                          </div>
+                        <Image
+                          src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                          alt="User"
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div>
+                          <p className="font-serif font-medium text-red-900">{user.name}</p>
+                          <p className="text-xs font-mono text-stone-500">{role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'PROFESSIONAL' ? 'Professional' : 'Member'}</p>
+                        </div>
                       </div>
                       {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                        <Link 
-                          href="/dashboard" 
+                        <Link
+                          href="/dashboard"
                           onClick={() => setMobileMenuOpen(false)}
                           className="block w-full py-3 mt-4 text-center text-sm font-mono uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800 transition-colors"
                         >

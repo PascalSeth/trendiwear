@@ -9,6 +9,9 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
+import useSWR from 'swr'
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 // --- Types ---
 interface OrderItem {
@@ -80,10 +83,19 @@ const statusConfig: Record<string, { color: string; bg: string; border: string; 
 const timelineSteps = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED']
 
 export default function OrderDetailClient({ order, isCustomer }: Props) {
-  const [currentOrder, setCurrentOrder] = useState(order)
   const [confirmingDelivery, setConfirmingDelivery] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  const { data, mutate } = useSWR(
+    `/api/orders/${order.id}`,
+    fetcher,
+    { 
+      fallbackData: order,
+      refreshInterval: 15000 
+    }
+  )
+
+  const currentOrder = data || order
   const cfg = statusConfig[currentOrder.status] || statusConfig.PENDING
   const currency = currentOrder.items[0]?.product?.currency || 'GHS'
 
@@ -99,13 +111,25 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
   const confirmDelivery = async () => {
     setConfirmingDelivery(true)
     try {
-      const res = await fetch(`/api/orders/${currentOrder.id}/confirm-delivery`, { method: 'POST' })
+      const res = await fetch(`/api/orders/${currentOrder.id}/confirm-delivery`, { 
+        method: 'POST' 
+      })
+      
       if (res.ok) {
-        setCurrentOrder(prev => ({ ...prev, status: 'DELIVERED' }))
+        // Optimistic update
+        mutate({
+          ...currentOrder,
+          status: 'DELIVERED',
+          deliveryConfirmation: {
+            ...currentOrder.deliveryConfirmation,
+            customerConfirmed: true,
+            confirmedAt: new Date().toISOString()
+          }
+        }, false)
         toast.success('Delivery confirmed! Thank you.')
       } else {
-        const data = await res.json()
-        toast.error(data.error || 'Failed to confirm delivery')
+        const errorData = await res.json()
+        toast.error(errorData.error || 'Failed to confirm delivery')
       }
     } catch {
       toast.error('Something went wrong')
@@ -173,7 +197,7 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2 bg-white border border-stone-100 rounded-3xl p-8 lg:p-12 shadow-sm">
             <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-8">Items ({currentOrder.items.length})</h3>
             <div className="space-y-6">
-              {currentOrder.items.map(item => (
+              {currentOrder.items.map((item: OrderItem) => (
                 <div key={item.id} className="flex gap-5 p-4 rounded-2xl hover:bg-stone-50 transition-colors">
                   <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0 ring-1 ring-stone-900/5">
                     <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt={item.product.name} fill className="object-cover" />
@@ -189,10 +213,11 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
                         </span>
                       )}
                       {item.color && (
-                        <span className="text-[10px] font-mono uppercase tracking-widest bg-stone-100 text-stone-500 px-3 py-1 rounded-full flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full border border-stone-200 flex-shrink-0" style={{ backgroundColor: item.color }} />
-                          {item.color}
-                        </span>
+                        <span 
+                          className="w-4 h-4 rounded-full border border-stone-200 shadow-sm shrink-0" 
+                          style={{ backgroundColor: item.color }} 
+                          title={item.color}
+                        />
                       )}
                       <span className="text-[10px] font-mono uppercase tracking-widest bg-stone-100 text-stone-500 px-3 py-1 rounded-full">
                         Qty: {item.quantity}

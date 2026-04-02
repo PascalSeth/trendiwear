@@ -152,8 +152,11 @@ export default function CartPage() {
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 mb-4">
                         {item.color && (
                           <div className="flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full border border-gray-200" style={{ backgroundColor: item.color }} />
-                            {item.color}
+                            <span 
+                              className="w-4 h-4 rounded-full border border-gray-200 shadow-sm shrink-0" 
+                              style={{ backgroundColor: item.color }} 
+                              title={item.color} 
+                            />
                           </div>
                         )}
                         {item.size && (

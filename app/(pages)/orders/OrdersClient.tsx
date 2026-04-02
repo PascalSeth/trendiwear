@@ -9,6 +9,9 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
+import useSWR from 'swr'
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 // --- Types ---
 interface OrderItem {
@@ -66,15 +69,29 @@ const StatusIcon = ({ status }: { status: string }) => {
 }
 
 export default function OrdersClient({ initialOrders, totalPages: total, currentPage }: OrdersClientProps) {
-  const [orders, setOrders] = useState<Order[]>(initialOrders)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+
+  const { data, mutate } = useSWR(
+    `/api/orders?page=${currentPage}&limit=10`,
+    fetcher,
+    { 
+      fallbackData: { orders: initialOrders, pagination: { totalPages: total } },
+      refreshInterval: 15000 
+    }
+  )
+
+  const orders = data?.orders || initialOrders
 
   const confirmDelivery = async (orderId: string) => {
     setConfirmingId(orderId)
     try {
       const res = await fetch(`/api/orders/${orderId}/confirm-delivery`, { method: 'POST' })
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'DELIVERED' } : o))
+        // Optimistic update
+        mutate({
+          ...data,
+          orders: orders.map((o: Order) => o.id === orderId ? { ...o, status: 'DELIVERED' } : o)
+        }, false)
         toast.success('Delivery confirmed! Thank you.')
       } else {
         const data = await res.json()
@@ -121,7 +138,7 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
         </header>
 
         <div className="space-y-12">
-           {orders.map((order, idx) => (
+           {orders.map((order: Order, idx: number) => (
              <motion.div 
                key={order.id}
                initial={{ opacity: 0, y: 30 }}

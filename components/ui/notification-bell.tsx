@@ -5,6 +5,10 @@ import { Bell, Package, Heart, ShoppingBag, DollarSign, Truck, Star, X, Check, C
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import useSWR from 'swr';
+import { toast } from 'sonner';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 interface Notification {
   id: string;
@@ -56,47 +60,43 @@ const FETCH_COOLDOWN = 5000; // 5 seconds
 
 export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const isFetchingRef = useRef(false);
+  const lastNotifiedIdRef = useRef<string | null>(null);
+  
+  const queryParams = new URLSearchParams({
+    limit: '10',
+    minimal: 'true',
+  });
+  if (context) queryParams.append('context', context);
+  
+  const swrKey = `/api/notifications?${queryParams.toString()}`;
 
-  const fetchNotifications = useCallback(async (isManual = false) => {
-    // Avoid double-fetching or fetching within cooldown (if not manual)
-    const now = Date.now();
-    if (isFetchingRef.current) return;
-    if (!isManual && now - lastFetchTime < FETCH_COOLDOWN) return;
+  const { data, mutate, isLoading } = useSWR(
+    swrKey,
+    fetcher,
+    { refreshInterval: 10000 }
+  );
 
-    try {
-      isFetchingRef.current = true;
-      if (isManual) setLoading(true);
-      
-      const url = new URL('/api/notifications', window.location.origin);
-      url.searchParams.append('limit', '10');
-      url.searchParams.append('minimal', 'true');
-      if (context) url.searchParams.append('context', context);
-      
-      const res = await fetch(url.toString());
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
-        lastFetchTime = Date.now();
-      }
-    } catch (error) {
-      console.error('Speed Check Notification Error:', error);
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
-    }
-  }, [context]);
+  const notifications = data?.notifications || [];
+  const unreadCount = data?.unreadCount || 0;
 
+  // Browser Notification Logic (Alerts only, prompt is global)
   useEffect(() => {
-    fetchNotifications();
-    // Poll for new notifications every 60 seconds (optimized from 30)
-    const interval = setInterval(() => fetchNotifications(), 60000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications, context]);
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    // Trigger browser notification for new alerts
+    if (Notification.permission === 'granted' && notifications.length > 0) {
+      const latest = notifications[0];
+      if (lastNotifiedIdRef.current && lastNotifiedIdRef.current !== latest.id) {
+         new window.Notification(latest.title, {
+            body: latest.message,
+            icon: '/navlogo.png',
+         });
+      }
+      lastNotifiedIdRef.current = latest.id;
+    } else if (notifications.length > 0) {
+      lastNotifiedIdRef.current = notifications[0].id;
+    }
+  }, [notifications]);
 
   const markAllAsRead = async () => {
     try {
@@ -106,8 +106,11 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
         body: JSON.stringify({ markAllAsRead: true }),
       });
       if (res.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        mutate({
+          ...data,
+          notifications: notifications.map((n: Notification) => ({ ...n, isRead: true })),
+          unreadCount: 0
+        }, false);
       }
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
@@ -122,10 +125,13 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
         body: JSON.stringify({ isRead: true }),
       });
       if (res.ok) {
-        setNotifications(prev =>
-          prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        mutate({
+          ...data,
+          notifications: notifications.map((n: Notification) => 
+            (n.id === notificationId ? { ...n, isRead: true } : n)
+          ),
+          unreadCount: Math.max(0, unreadCount - 1)
+        }, false);
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -137,7 +143,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
       <button
         onClick={() => {
           setIsOpen(!isOpen);
-          if (!isOpen) fetchNotifications(true);
+          if (!isOpen) mutate();
         }}
         className="relative hover:text-red-900 text-stone-400 transition-colors p-1"
       >
@@ -191,7 +197,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
               </div>
 
               <div className="max-h-[400px] overflow-y-auto">
-                {loading && notifications.length === 0 ? (
+                {isLoading && notifications.length === 0 ? (
                   <div className="py-12 text-center">
                     <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin mx-auto" />
                     <p className="text-sm text-stone-500 mt-3">Loading...</p>
@@ -202,7 +208,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                   </div>
                 ) : (
                   <div className="divide-y divide-stone-100">
-                    {notifications.map((notification) => {
+                    {notifications.map((notification: Notification) => {
                       const Icon = notificationIcons[notification.type] || Bell;
                       const colorClass = notificationColors[notification.type] || 'bg-stone-100 text-stone-600';
                       return (

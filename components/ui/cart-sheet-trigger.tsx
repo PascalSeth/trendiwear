@@ -139,8 +139,14 @@ export function CartSheetTrigger() {
                           {/* Size/Color */}
                           {(item.size || item.color) && (
                             <div className="flex items-center gap-2 mt-1.5 text-xs text-stone-500">
-                              {item.size && <span className="bg-white px-2 py-0.5 rounded-md">{item.size}</span>}
-                              {item.color && <span className="bg-white px-2 py-0.5 rounded-md">{item.color}</span>}
+                              {item.size && <span className="bg-white px-2 py-0.5 rounded-md border border-stone-200">{item.size}</span>}
+                              {item.color && (
+                                <span 
+                                  className="w-4 h-4 rounded-full border border-stone-200 shadow-sm shrink-0" 
+                                  style={{ backgroundColor: item.color }}
+                                  title={item.color}
+                                />
+                              )}
                             </div>
                           )}
 

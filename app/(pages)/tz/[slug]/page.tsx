@@ -206,6 +206,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
         price: true,
         currency: true,
         images: true,
+        sizes: true,
+        colors: true,
         tags: true,
         professional: {
           select: {

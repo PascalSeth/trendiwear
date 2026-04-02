@@ -4,6 +4,8 @@ import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
 import { BookingStatus } from "@prisma/client"
 import { initializeTransaction, generateReference, toPesewas } from "@/lib/paystack"
+import { sendBookingStatusEmail } from "@/lib/mail"
+import { format } from "date-fns"
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,7 +18,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       include: { 
         service: true,
-        customer: { select: { email: true, firstName: true, lastName: true } }
+        customer: { select: { email: true, firstName: true, lastName: true } },
+        professional: {
+          include: {
+            professionalProfile: { select: { businessName: true } }
+          }
+        }
       },
     })
 
@@ -126,6 +133,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           }),
         },
       })
+
+      // Also send email
+      if (status === 'CONFIRMED' || status === 'CANCELLED') {
+        try {
+          await sendBookingStatusEmail({
+            to: booking.customer.email,
+            status: status as 'CONFIRMED' | 'CANCELLED',
+            serviceName: updatedBooking.service.name,
+            date: format(booking.bookingDate, "PPP 'at' p"),
+            businessName: booking.professional.professionalProfile?.businessName || `${booking.professional.firstName} ${booking.professional.lastName}`,
+            bookingId: updatedBooking.id,
+          })
+        } catch (emailErr) {
+          console.error("Failed to send booking status email:", emailErr)
+        }
+      }
     }
 
     return NextResponse.json(updatedBooking)

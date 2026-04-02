@@ -26,6 +26,7 @@ type ClothingItem = {
   stockQuantity: number;
   isPreorder: boolean;
   estimatedDelivery?: number;
+  createdAt: string;
   professional: {
     firstName: string;
     lastName: string;
@@ -99,7 +100,8 @@ function NewArrivals() {
             images: product.images,
             price: product.price,
             currency: product.currency || 'GHS',
-            isNew: product.tags?.includes('NEW') || false,
+            isNew: false, // Card will calculate based on createdAt
+            createdAt: product.createdAt,
             sellerName,
             sellerProfilePicUrl: product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg',
             isVerified: product.professional.professionalProfile?.isVerified || false,
@@ -118,6 +120,8 @@ function NewArrivals() {
             isPreorder: product.isPreorder || false,
             estimatedDelivery: product.estimatedDelivery,
             professional: product.professional,
+            sizes: (product as any).sizes || [],
+            colors: (product as any).colors || [],
           }});
           setNewArrivals(transformedProducts);
         }

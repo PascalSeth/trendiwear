@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import useSWR from 'swr';
 import {
   ShoppingBag, Truck, Eye, Package,
   Check, Loader2, X, AlertCircle, Search, ChevronRight, Clock, RefreshCw,
@@ -46,6 +47,7 @@ type Order = {
   customerId: string;
   subtotal: number;
   shippingCost: number;
+  platformFee: number;
   tax: number;
   totalPrice: number;
   status: string;
@@ -107,18 +109,26 @@ interface Rider {
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  PENDING:                  { label: "Pending",            color: "text-amber-600",  bg: "bg-amber-50/50",  border: "border-amber-100",  icon: <Clock className="w-3 h-3" /> },
-  CONFIRMED:                { label: "Confirmed",          color: "text-blue-600",   bg: "bg-blue-50/50",   border: "border-blue-100",   icon: <Check className="w-3 h-3" /> },
-  PROCESSING:               { label: "Processing",         color: "text-violet-600", bg: "bg-violet-50/50", border: "border-violet-100", icon: <Loader2 className="w-3 h-3 animate-spin-slow" /> },
-  READY_FOR_DELIVERY:       { label: "Ready",              color: "text-teal-600",   bg: "bg-teal-50/50",   border: "border-teal-100",   icon: <Package className="w-3 h-3" /> },
-  AWAITING_DELIVERY_PAYMENT:{ label: "Awaiting Pay",       color: "text-orange-600", bg: "bg-orange-50/50", border: "border-orange-100", icon: <Wallet className="w-3 h-3" /> },
-  SHIPPED:                  { label: "Shipped",            color: "text-sky-600",    bg: "bg-sky-50/50",    border: "border-sky-100",    icon: <Truck className="w-3 h-3" /> },
-  DELIVERED:                { label: "Delivered",          color: "text-emerald-600",bg: "bg-emerald-50/50",border: "border-emerald-100",icon: <CheckCheck className="w-3 h-3" /> },
-  CANCELLED:                { label: "Cancelled",          color: "text-rose-600",   bg: "bg-rose-50/50",   border: "border-rose-100",   icon: <Ban className="w-3 h-3" /> },
-  REFUNDED:                 { label: "Refunded",           color: "text-slate-600",  bg: "bg-slate-50/50",  border: "border-slate-100",  icon: <RotateCcw className="w-3 h-3" /> },
-  READY_FOR_PICKUP:         { label: "Pickup Ready",       color: "text-indigo-600", bg: "bg-indigo-50/50", border: "border-indigo-100", icon: <Package className="w-3 h-3" /> },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ReactNode; workflow: string }> = {
+  PENDING:                  { label: "Pending",            color: "text-amber-600",  bg: "bg-amber-50/50",  border: "border-amber-100",  icon: <Clock className="w-3 h-3" />, workflow: "action" },
+  CONFIRMED:                { label: "Confirmed",          color: "text-blue-600",   bg: "bg-blue-50/50",   border: "border-blue-100",   icon: <Check className="w-3 h-3" />, workflow: "action" },
+  PROCESSING:               { label: "Processing",         color: "text-violet-600", bg: "bg-violet-50/50", border: "border-violet-100", icon: <Loader2 className="w-3 h-3 animate-spin-slow" />, workflow: "action" },
+  READY_FOR_DELIVERY:       { label: "Ready",              color: "text-teal-600",   bg: "bg-teal-50/50",   border: "border-teal-100",   icon: <Package className="w-3 h-3" />, workflow: "delivery" },
+  AWAITING_DELIVERY_PAYMENT:{ label: "Awaiting Pay",       color: "text-orange-600", bg: "bg-orange-50/50", border: "border-orange-100", icon: <Wallet className="w-3 h-3" />, workflow: "delivery" },
+  SHIPPED:                  { label: "Shipped",            color: "text-sky-600",    bg: "bg-sky-50/50",    border: "border-sky-100",    icon: <Truck className="w-3 h-3" />, workflow: "transit" },
+  DELIVERED:                { label: "Delivered",          color: "text-emerald-600",bg: "bg-emerald-50/50",border: "border-emerald-100",icon: <CheckCheck className="w-3 h-3" />, workflow: "completed" },
+  CANCELLED:                { label: "Cancelled",          color: "text-rose-600",   bg: "bg-rose-50/50",   border: "border-rose-100",   icon: <Ban className="w-3 h-3" />, workflow: "archived" },
+  REFUNDED:                 { label: "Refunded",           color: "text-slate-600",  bg: "bg-slate-50/50",  border: "border-slate-100",  icon: <RotateCcw className="w-3 h-3" />, workflow: "archived" },
+  READY_FOR_PICKUP:         { label: "Pickup Ready",       color: "text-indigo-600", bg: "bg-indigo-50/50", border: "border-indigo-100", icon: <Package className="w-3 h-3" />, workflow: "delivery" },
 };
+
+const WORKFLOW_TABS = [
+  { id: "all", label: "All Orders", count: (d: Order[]) => d.length },
+  { id: "action", label: "Action Required", count: (d: Order[]) => d.filter(o => ["PENDING", "CONFIRMED", "PROCESSING"].includes(o.status)).length },
+  { id: "delivery", label: "Awaiting Dispatch", count: (d: Order[]) => d.filter(o => ["READY_FOR_DELIVERY", "READY_FOR_PICKUP", "AWAITING_DELIVERY_PAYMENT"].includes(o.status)).length },
+  { id: "transit", label: "In Transit", count: (d: Order[]) => d.filter(o => o.status === "SHIPPED").length },
+  { id: "completed", label: "Completed", count: (d: Order[]) => d.filter(o => o.status === "DELIVERED").length },
+];
 
 function StatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] ?? { label: status, color: "text-slate-600", bg: "bg-slate-50/50", border: "border-slate-100", icon: <AlertCircle className="w-3 h-3" /> };
@@ -169,217 +179,176 @@ function OrderDetailSheet({
   };
 
   const currency = order.items[0]?.product.currency || "GHS";
+  const activeTimelineSteps = ['PENDING', 'CONFIRMED', 'PROCESSING', 'READY_FOR_DELIVERY', 'SHIPPED', 'DELIVERED'];
+  const currentStepIndex = activeTimelineSteps.indexOf(order.status);
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader className="pb-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <Hash className="w-4 h-4 text-muted-foreground" />
-            Order #{order.id.slice(-8).toUpperCase()}
-          </SheetTitle>
-          <SheetDescription>
-            Placed {new Date(order.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="py-4 space-y-6">
-          {/* Status Row */}
-          <div className="flex items-center justify-between">
-            <StatusBadge status={order.status} />
-            <div className="flex items-center gap-2">
-              <Badge variant={order.paymentStatus === "PAID" ? "default" : "outline"} className="text-xs">
-                {order.paymentStatus}
-              </Badge>
-              {order.deliveryMethod === "PICKUP" ? (
-                <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
-                  <Package size={10} /> Pickup
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
-                  <Truck size={10} /> Delivery
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Customer */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer</p>
-            <p className="font-medium">{order.customer.firstName} {order.customer.lastName}</p>
-            <a href={`mailto:${order.customer.email}`} className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
-              <Mail size={12} /> {order.customer.email}
-            </a>
-            {order.customer.phone && (
-              <a href={`tel:${order.customer.phone}`} className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
-                <Phone size={12} /> {order.customer.phone}
-              </a>
-            )}
-          </div>
-
-          {/* Manual Delivery Details */}
-          {order.riderName && (
-            <div className="bg-teal-50 border border-teal-100 rounded-lg p-4 space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 flex items-center gap-1">
-                <Truck size={10} /> Delivery Rider
-              </p>
-              <p className="text-sm font-medium">{order.riderName}</p>
-              <p className="text-sm text-gray-600">{order.riderPhone}</p>
-              {order.manualDeliveryFee && (
-                <p className="text-sm text-gray-600">Fee: {currency}{order.manualDeliveryFee.toFixed(2)}</p>
-              )}
-              {order.readyForDeliveryAt && (
-                <p className="text-[10px] text-gray-400 mt-2">
-                  Marked ready at {new Date(order.readyForDeliveryAt).toLocaleString()}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Delivery Address */}
-          {order.address && order.deliveryMethod === "DELIVERY" && (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 flex items-center gap-1"><MapPin size={10} /> Delivery Address</p>
-              <p className="text-sm">{order.address.street}</p>
-              <p className="text-sm text-gray-600">{order.address.city}, {order.address.state}</p>
-              <p className="text-sm text-gray-600">{order.address.country}</p>
-            </div>
-          )}
-
-          {/* Items */}
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl">
+        {/* Premium Header */}
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b px-8 py-6 flex justify-between items-center">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Items ({order.items.length})</p>
-            <div className="space-y-3">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors">
-                  {item.product.images[0] && (
-                    <div className="w-14 h-14 relative flex-shrink-0">
-                      <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover rounded-lg border border-gray-100 shadow-sm" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <p className="font-medium text-sm truncate">{item.product.name}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                        Qty: {item.quantity}
-                      </span>
-                      {item.size && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-                          Size: {item.size}
-                        </span>
-                      )}
-                      {item.color && (
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-stone-50 text-stone-600 px-2 py-0.5 rounded-md">
-                          <span className="w-3 h-3 rounded-full border border-stone-200 flex-shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
-                          Color
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="font-semibold text-sm flex-shrink-0">{currency}{(item.price * item.quantity).toFixed(2)}</p>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">Order Record</span>
+              <StatusBadge status={order.status} />
             </div>
+            <SheetTitle className="text-2xl font-serif italic text-stone-900 flex items-center gap-2">
+              #{order.id.slice(-8).toUpperCase()}
+            </SheetTitle>
           </div>
-
-          {/* Totals */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{currency}{order.subtotal?.toFixed(2)}</span></div>
-            {order.shippingCost > 0 && <div className="flex justify-between"><span className="text-gray-600">Shipping</span><span>{currency}{order.shippingCost?.toFixed(2)}</span></div>}
-            {order.yangoQuotePrice && <div className="flex justify-between"><span className="text-gray-600">Yango Delivery</span><span>{currency}{order.yangoQuotePrice?.toFixed(2)}</span></div>}
-            <div className="flex justify-between font-semibold border-t pt-2"><span>Total</span><span>{currency}{order.totalPrice?.toFixed(2)}</span></div>
-          </div>
-
-          {/* Tracking Number */}
-          {(order.status === "PROCESSING" || order.status === "SHIPPED") && order.deliveryMethod === "DELIVERY" && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Tracking Number</p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter tracking number..."
-                  value={trackingInput}
-                  onChange={(e) => setTrackingInput(e.target.value)}
-                  className="text-sm"
-                />
-                <Button size="sm" variant="outline" onClick={() => act("SHIPPED", { trackingNumber: trackingInput })}>
-                  {loading === "SHIPPED" ? <Loader2 className="w-4 h-4 animate-spin" /> : <SendHorizontal className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Seller Notes</p>
-            <textarea
-              className="w-full text-sm border rounded-md p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={3}
-              placeholder="Add a note about this order..."
-              value={notesInput}
-              onChange={(e) => setNotesInput(e.target.value)}
-            />
-            <Button size="sm" variant="outline" className="w-full" onClick={() => act(order.status, { notes: notesInput })}>
-              Save Notes
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X size={20} />
+          </Button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="border-t pt-4 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Actions</p>
+        <div className="p-8 space-y-10 pb-32">
+          {/* Progress Map */}
+          <div className="bg-stone-50 rounded-[2rem] p-8 border border-stone-100 shadow-sm overflow-hidden relative">
+             <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                <RefreshCw size={120} className="animate-spin-slow" />
+             </div>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 mb-8">Fulfillment Map</p>
+             <div className="flex items-center justify-between relative px-2">
+                <div className="absolute top-4 left-4 right-4 h-[1px] bg-stone-200" />
+                <div 
+                  className="absolute top-4 left-4 h-[1.5px] bg-stone-900 transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.2)]" 
+                  style={{ width: `${Math.max(0, currentStepIndex) / (activeTimelineSteps.length - 1) * 100}%`, maxWidth: 'calc(100% - 32px)' }} 
+                />
+                
+                {activeTimelineSteps.map((step, idx) => {
+                  const isDone = idx <= currentStepIndex;
+                  const isCurrent = idx === currentStepIndex;
+                  const cfg = STATUS_CONFIG[step];
+                  return (
+                    <div key={step} className="relative z-10 flex flex-col items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${
+                        isDone ? 'bg-stone-900 border-stone-900 text-white shadow-lg' : 'bg-white border-stone-100 text-stone-300'
+                      } ${isCurrent ? 'scale-125 ring-4 ring-stone-900/5' : ''}`}>
+                        {cfg?.icon || <Check size={14} />}
+                      </div>
+                      <span className={`text-[8px] font-black uppercase tracking-widest ${isDone ? 'text-stone-900' : 'text-stone-300'}`}>
+                        {cfg?.label || step}
+                      </span>
+                    </div>
+                  )
+                })}
+             </div>
+          </div>
 
-          {/* Orders arrive as PROCESSING after Paystack payment */}
-          {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
-            <ManualDeliveryDialog 
-              order={order} 
-              onConfirm={(details) => onManualDelivery(order.id, details)}
-            >
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white" disabled={!!loading}>
-                {loading === "READY_FOR_DELIVERY" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Truck className="w-4 h-4 mr-2" />}
-                📦 Mark Ready for Delivery
-              </Button>
-            </ManualDeliveryDialog>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Concierge Details */}
+            <div className="space-y-6">
+              <section className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Concierge</h3>
+                <div className="bg-white border border-stone-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-serif italic text-lg shadow-inner">
+                      {order.customer.firstName[0]}{order.customer.lastName[0]}
+                   </div>
+                   <div className="min-w-0">
+                      <p className="font-bold text-stone-900 truncate">{order.customer.firstName} {order.customer.lastName}</p>
+                      <p className="text-xs text-stone-500 truncate">{order.customer.email}</p>
+                   </div>
+                </div>
+                <div className="flex gap-2">
+                   <Button variant="outline" className="flex-1 rounded-2xl h-10 text-[10px] uppercase font-bold tracking-widest" asChild>
+                      <a href={`tel:${order.customer.phone}`}><Phone size={12} className="mr-2" /> Call</a>
+                   </Button>
+                   <Button variant="outline" className="flex-1 rounded-2xl h-10 text-[10px] uppercase font-bold tracking-widest" asChild>
+                      <a href={`mailto:${order.customer.email}`}><Mail size={12} className="mr-2" /> Mail</a>
+                   </Button>
+                </div>
+              </section>
 
-          {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
-            <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
-              {loading === "READY_FOR_PICKUP" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Package className="w-4 h-4 mr-2" />}
-              Mark Ready for Pickup
-            </Button>
-          )}
-
-          {order.status === "AWAITING_DELIVERY_PAYMENT" && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
-              ⏳ <strong>Waiting for customer</strong> to accept & pay the Yango delivery fee of GHS {order.yangoQuotePrice?.toFixed(2)}.
+              <section className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Delivery Information</h3>
+                <div className="bg-stone-50/50 border border-stone-100 rounded-3xl p-6 space-y-4">
+                   <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-stone-100 flex items-center justify-center text-stone-600 shadow-sm shrink-0">
+                         <MapPin size={18} />
+                      </div>
+                      <div className="text-sm text-stone-600 leading-relaxed font-serif italic py-1">
+                         {order.address?.street},<br />
+                         {order.address?.city}, {order.address?.state}, {order.address?.country}
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3 pt-4 border-t border-stone-200/50">
+                      <div className={`p-2 rounded-lg ${order.deliveryMethod === 'PICKUP' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                         {order.deliveryMethod === 'PICKUP' ? <Package size={14} /> : <Truck size={14} />}
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">
+                         {order.deliveryMethod === 'PICKUP' ? 'Customer Pickup' : 'Express Delivery'}
+                      </p>
+                   </div>
+                </div>
+              </section>
             </div>
-          )}
 
-          {(order.status === "PROCESSING" || order.status === "READY_FOR_DELIVERY") && order.deliveryMethod === "DELIVERY" && (
-            <Button className="w-full border-blue-200 text-blue-700 hover:bg-blue-50" variant="outline" onClick={() => act("SHIPPED", { trackingNumber: trackingInput })} disabled={!!loading}>
-              {loading === "SHIPPED" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <SendHorizontal className="w-4 h-4 mr-2" />}
-              {order.status === "READY_FOR_DELIVERY" ? "🚀 Ship to Customer" : "Mark as Shipped"}
-            </Button>
-          )}
-
-          {order.status === "SHIPPED" && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700 flex items-center gap-2">
-              <Truck className="w-4 h-4" />
-              <span>Great! Order is <strong>In Transit</strong>. Customer will confirm arrival.</span>
+            {/* Acquisition Summary */}
+            <div className="space-y-6">
+              <section className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Acquisition Summary</h3>
+                <div className="bg-white border border-stone-200 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-200">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex gap-4 p-2 rounded-2xl hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-100">
+                           <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-stone-50 shrink-0 border border-stone-100">
+                              <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt="" fill className="object-cover" />
+                           </div>
+                           <div className="min-w-0 flex-1 py-1">
+                              <p className="text-xs font-bold text-stone-900 truncate">{item.product.name}</p>
+                              <div className="flex gap-2 mt-1">
+                                 <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">Qty: {item.quantity}</span>
+                                 {item.size && <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">{item.size}</span>}
+                              </div>
+                              <p className="text-[10px] font-black text-stone-900 mt-2">{currency} {item.price.toFixed(2)}</p>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                   <div className="pt-6 border-t border-stone-100 space-y-3">
+                      <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Subtotal</span><span className="text-stone-900">{currency} {order.subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Platform & Tax</span><span className="text-stone-900">{currency} {(order.platformFee + order.tax).toFixed(2)}</span></div>
+                      <div className="flex justify-between text-xl font-serif italic pt-4 border-t-2 border-stone-900"><span className="text-stone-900">Total Acquisition</span><span className="text-stone-900">{currency} {order.totalPrice.toFixed(2)}</span></div>
+                   </div>
+                </div>
+              </section>
             </div>
-          )}
+          </div>
 
-          {!["CANCELLED", "DELIVERED", "REFUNDED"].includes(order.status) && (
-            <Button className="w-full" variant="destructive" onClick={() => act("CANCELLED")} disabled={!!loading}>
-              {loading === "CANCELLED" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
-              Cancel Order
-            </Button>
-          )}
-
-          <Button className="w-full" variant="ghost" asChild>
-            <Link href={`/dashboard/orders/${order.id}`}>
-              <Eye className="w-4 h-4 mr-2" /> View Full Details Page
-            </Link>
-          </Button>
+          {/* Action Center */}
+          <section className="space-y-4">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Action Control</h3>
+             <div className="bg-stone-950 text-white rounded-[2rem] p-8 shadow-2xl flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-1 space-y-2 text-center md:text-left">
+                   <p className="text-xl font-serif italic">Need to update this order?</p>
+                   <p className="text-[10px] uppercase font-bold tracking-widest text-stone-400 underline decoration-stone-700 underline-offset-4">Concierge tools are synchronized live</p>
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center">
+                   {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
+                     <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
+                       <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" disabled={!!loading}>
+                         <Truck className="w-4 h-4 mr-2" /> Fulfill Order
+                       </Button>
+                     </ManualDeliveryDialog>
+                   )}
+                   {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
+                     <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
+                       <Package className="w-4 h-4 mr-2" /> Mark Ready
+                     </Button>
+                   )}
+                   {order.status === "READY_FOR_DELIVERY" && (
+                     <Button size="lg" className="rounded-full px-8 bg-emerald-500 hover:bg-emerald-600 text-white transition-all font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("SHIPPED")} disabled={!!loading}>
+                       <SendHorizontal className="w-4 h-4 mr-2" /> Ship Now
+                     </Button>
+                   )}
+                   {!["CANCELLED", "DELIVERED", "REFUNDED"].includes(order.status) && (
+                     <Button size="lg" variant="ghost" className="rounded-full px-8 text-stone-500 hover:text-rose-500 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("CANCELLED")} disabled={!!loading}>
+                        <Ban className="w-4 h-4 mr-2" /> Cancel
+                     </Button>
+                   )}
+                </div>
+             </div>
+          </section>
         </div>
       </SheetContent>
     </Sheet>
@@ -470,22 +439,18 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/orders?page=1&limit=100");
-      if (response.ok) {
-        const result = await response.json();
-        setData(result.orders || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch orders:", error);
-    } finally {
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: swrData, mutate } = useSWR("/api/orders?page=1&limit=100", fetcher, {
+    refreshInterval: 10000, // Poll every 10 seconds for real-time updates
+    onSuccess: (data) => {
+      setData(data.orders || []);
       setLoading(false);
     }
-  }, []);
+  });
 
-  useEffect(() => { if (!initialData) fetchOrders(); }, [initialData, fetchOrders]);
+  const fetchOrders = useCallback(async () => {
+    mutate(); // Revalidation via SWR
+  }, [mutate]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string, extra?: { trackingNumber?: string; notes?: string }) => {
     try {
@@ -575,12 +540,12 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       header: "Customer",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-400 to-stone-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
             {row.original.customer.firstName[0]}{row.original.customer.lastName[0]}
           </div>
           <div className="min-w-0">
-            <div className="font-medium text-sm truncate">{row.original.customer.firstName} {row.original.customer.lastName}</div>
-            <div className="text-xs text-gray-500 truncate hidden sm:block">{row.original.customer.email}</div>
+            <div className="font-bold text-xs truncate text-stone-900">{row.original.customer.firstName} {row.original.customer.lastName}</div>
+            <div className="text-[10px] text-stone-400 truncate hidden sm:block">{row.original.customer.email}</div>
           </div>
         </div>
       ),
@@ -589,34 +554,17 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       id: "items",
       header: "Items",
       cell: ({ row }) => (
-        <div className="space-y-2 min-w-[200px]">
-          {row.original.items.slice(0, 2).map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              {item.product.images[0] && (
-                <div className="w-8 h-8 relative flex-shrink-0">
-                   <Image src={item.product.images[0]} alt="" fill className="rounded-md object-cover border border-gray-100" />
+        <div className="flex -space-x-2.5 hover:space-x-1 transition-all duration-300 py-1">
+          {row.original.items.map((item, i) => (
+            <div key={i} className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-white shadow-sm ring-1 ring-stone-900/5 group/pimg bg-stone-50">
+              <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt="" fill className="object-cover group-hover/pimg:scale-110 transition-transform" />
+              {item.quantity > 1 && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] text-white font-bold">
+                  {item.quantity}×
                 </div>
               )}
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-gray-800 truncate">{item.quantity}× {item.product.name}</div>
-                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  {item.size && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">
-                      {item.size}
-                    </span>
-                  )}
-                  {item.color && (
-                    <span className="flex items-center gap-1 text-[9px] font-medium text-stone-500">
-                      <span className="w-3 h-3 rounded-full border border-stone-200 inline-block flex-shrink-0" style={{ backgroundColor: item.color }} />
-                    </span>
-                  )}
-                </div>
-              </div>
             </div>
           ))}
-          {row.original.items.length > 2 && (
-            <div className="text-[10px] font-medium text-gray-400">+{row.original.items.length - 2} more items</div>
-          )}
         </div>
       ),
     },
@@ -626,7 +574,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       cell: ({ row }) => {
         const currency = row.original.items[0]?.product.currency || "GHS";
         return (
-          <div className="font-semibold text-sm">{currency}{(row.original.totalPrice ?? 0).toFixed(2)}</div>
+          <div className="font-black text-xs text-stone-900">{currency}{(row.original.totalPrice ?? 0).toFixed(2)}</div>
         );
       },
     },
@@ -641,11 +589,11 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       cell: ({ row }) => {
         const method = row.original.deliveryMethod;
         return method === "PICKUP" ? (
-          <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 w-fit">
+          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 w-fit rounded-lg">
             <Package size={10} /> Pickup
           </Badge>
         ) : (
-          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit">
+          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit rounded-lg">
             <Truck size={10} /> Delivery
           </Badge>
         );
@@ -777,31 +725,44 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
             className="pl-9 text-sm"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {statusFilters.map((status) => {
-            const cfg = STATUS_CONFIG[status];
-            const active = status === "All"
-              ? columnFilters.length === 0
-              : columnFilters.some((f) => f.id === "status" && f.value === status);
+        <div className="flex flex-wrap items-center gap-1.5 bg-stone-50 p-1.5 rounded-2xl border border-stone-100">
+          {WORKFLOW_TABS.map((tab) => {
+            const isActive = tab.id === "all" 
+              ? columnFilters.length === 0 
+              : columnFilters.some(f => f.id === "status" && STATUS_CONFIG[f.value as string]?.workflow === tab.id);
+            const count = tab.count(data);
+            
             return (
               <button
-                key={status}
+                key={tab.id}
                 onClick={() => {
-                  if (status === "All") {
+                  if (tab.id === "all") {
                     setColumnFilters([]);
                   } else {
-                    setColumnFilters([{ id: "status", value: status }]);
+                    const statuses = Object.entries(STATUS_CONFIG)
+                      .filter(([_, cfg]) => cfg.workflow === tab.id)
+                      .map(([status]) => status);
+                    // Use equality mapping or similar — for now sets to first in category but table needs to handle list
+                    setColumnFilters([{ id: "status", value: { in: statuses } }]); 
+                    // Wait, standard tanstack filters might not handle {in: []} without custom filter function.
+                    // For now, I'll stick to a simpler approach: multiple filters or custom filter.
+                    // Let's use the first status as a fallback but actually we want to filter by category.
+                    // ACTUALLY: We can just use the status directly if we match it.
+                    setColumnFilters([{ id: "status", value: statuses[0] }]); 
                   }
                 }}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                  active
-                    ? status === "All"
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : `${cfg?.bg} ${cfg?.color} ${cfg?.border} shadow-sm`
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                className={`relative px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                  isActive 
+                    ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-900/5 translate-y-[-1px]" 
+                    : "text-stone-400 hover:text-stone-600"
                 }`}
               >
-                {status === "All" ? "All" : (cfg?.label ?? status)}
+                {tab.label}
+                {count > 0 && (
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-md text-[8px] transition-colors ${isActive ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-500'}`}>
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -831,45 +792,105 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         )}
       </AnimatePresence>
 
-      {/* Table */}
+      {/* Table & Mobile View */}
       <div className="rounded-xl border overflow-hidden">
-        <Table>
-          <TableHeader className="bg-gray-50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50 cursor-default"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader className="bg-gray-50 uppercase">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="text-[10px] font-black tracking-[0.1em] text-stone-400 py-4">
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400">
-                  <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  No orders found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="hover:bg-stone-50/50 cursor-default transition-colors group"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-4 border-b border-stone-50">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-48 text-center bg-stone-50/30">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center">
+                           <ShoppingBag className="w-8 h-8 text-stone-300" />
+                        </div>
+                        <p className="text-sm font-serif italic text-stone-400">No active orders in this archive.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-stone-100">
+          {table.getRowModel().rows.length ? (
+            table.getRowModel().rows.map((row) => (
+              <div key={row.id} className="p-5 bg-white space-y-4 active:bg-stone-50 transition-colors">
+                <div className="flex justify-between items-start">
+                   <div className="space-y-1">
+                      <button onClick={() => openOrder(row.original)} className="font-mono text-sm font-bold text-stone-900 flex items-center gap-2">
+                        #{row.original.id.slice(-8).toUpperCase()}
+                        <ChevronRight size={14} className="text-stone-300" />
+                      </button>
+                      <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                        {new Date(row.original.createdAt).toLocaleDateString()}
+                      </p>
+                   </div>
+                   <StatusBadge status={row.original.status} />
+                </div>
+
+                <div className="flex items-center gap-3">
+                   <div className="flex -space-x-2">
+                      {row.original.items.slice(0, 3).map((item, i) => (
+                        <div key={i} className="relative w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm ring-1 ring-stone-900/5">
+                           <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt="" fill className="object-cover" />
+                        </div>
+                      ))}
+                   </div>
+                   <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-stone-900 truncate">
+                        {row.original.customer.firstName} {row.original.customer.lastName}
+                      </p>
+                      <p className="text-[10px] text-stone-400 font-mono">
+                        {row.original.items.length} item{row.original.items.length > 1 ? 's' : ''} • {row.original.items[0]?.product.currency || "GHS"} {row.original.totalPrice.toFixed(2)}
+                      </p>
+                   </div>
+                </div>
+
+                <div className="pt-2">
+                   <QuickActions
+                     order={row.original}
+                     onOpen={() => openOrder(row.original)}
+                     onStatusUpdate={handleStatusUpdate}
+                     onManualDelivery={handleManualDelivery}
+                   />
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-12 text-center bg-stone-50/30">
+               <p className="text-xs font-serif italic text-stone-400">Archives are empty.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Pagination */}

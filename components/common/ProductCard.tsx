@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { WishlistButton } from '@/components/ui/wishlist-button';
 import { AddToCartButton } from '@/components/ui/add-to-cart-button';
+import { QuickAddModal } from '@/components/common/QuickAddModal';
 
 interface ProductCardProps {
   item: {
@@ -37,6 +38,9 @@ interface ProductCardProps {
     discountAmount?: number;
     discountPercentage?: number | null;
     discountEndDate?: string | null;
+    sizes?: string[];
+    colors?: string[];
+    createdAt?: string | Date;
   };
   index: number;
 }
@@ -76,6 +80,7 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const timeLeft = useCountdown(item.discountEndDate);
 
   useEffect(() => {
@@ -103,9 +108,14 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
   const isVerified = item.professional.professionalProfile?.isVerified || false;
   const isTrendiZip = sellerName === 'TrendiZip';
   const categoryName = typeof item.category === 'string' ? item.category : item.category.name;
+  const hasVariations = (item.sizes?.length || 0) > 0 || (item.colors?.length || 0) > 0;
+  
+  // Calculate if the product is 'NEW' (less than 7 days old)
+  const isActuallyNew = item.createdAt ? (Date.now() - new Date(item.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000 : item.isNew;
 
   return (
-    <motion.div
+    <>
+      <motion.div
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -153,11 +163,11 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
           </div>
         )}
 
-        {/* New Arrival Badge */}
-        {item.isNew && !item.isPreorder && (
+        {/* NEW Badge */}
+        {isActuallyNew && !item.isPreorder && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-black/5 flex items-center gap-2">
-              <span className="text-[9px] font-black text-black uppercase tracking-widest">New Arrival</span>
+            <div className="bg-[#FFA126] text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest">NEW</span>
             </div>
           </div>
         )}
@@ -204,7 +214,14 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
             <WishlistButton productId={item.id} variant="default" size="sm" />
           </div>
           <div className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-black hover:text-white transition-colors">
-            <AddToCartButton productId={item.id} variant="default" size="sm" isOutOfStock={item.stockQuantity === 0 && !item.isPreorder} />
+            <AddToCartButton 
+              productId={item.id} 
+              variant="default" 
+              size="sm" 
+              isOutOfStock={item.stockQuantity === 0 && !item.isPreorder} 
+              hasVariations={hasVariations}
+              onShowSelection={() => setIsQuickAddOpen(true)}
+            />
           </div>
         </div>
       </div>
@@ -252,5 +269,11 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
         </Link>
       </div>
     </motion.div>
+    <QuickAddModal 
+      isOpen={isQuickAddOpen} 
+      onClose={() => setIsQuickAddOpen(false)} 
+      product={item} 
+    />
+    </>
   );
 };

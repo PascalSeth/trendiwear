@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
 import type { Prisma, OrderStatus } from "@prisma/client"
+import { sendStatusUpdateEmail } from "@/lib/mail"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -151,6 +152,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             data: JSON.stringify({ orderId: id, status, trackingNumber }),
           },
         })
+
+        // Also send email
+        try {
+          await sendStatusUpdateEmail({
+            to: updatedOrder.customer.email,
+            orderId: id,
+            status: status,
+            message: notificationContent.message,
+          })
+        } catch (emailErr) {
+          console.error('Failed to send status update email:', emailErr)
+        }
       }
     }
 

@@ -15,6 +15,9 @@ import { ProductCard } from '@/components/common/ProductCard';
 import { ServiceListItem } from '@/app/components/services/ServiceListItem';
 import { type ServiceWithVariants } from '@/app/components/services/ServiceCard';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+import { ChatDrawer } from '@/app/components/chat/ChatDrawer';
 
 // --- TYPES ---
 interface DayHours {
@@ -45,14 +48,14 @@ interface Location {
 // Helper to check if currently open
 function checkIfOpen(availabilityRaw?: string): { isOpen: boolean; nextChange: string } {
   if (!availabilityRaw) return { isOpen: false, nextChange: '' };
-  
+
   try {
     const hours: BusinessHours = JSON.parse(availabilityRaw);
     const now = new Date();
     const dayNames: (keyof BusinessHours)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const currentDay = dayNames[now.getDay()];
     const todayHours = hours[currentDay];
-    
+
     if (!todayHours?.enabled) {
       // Find next open day
       for (let i = 1; i <= 7; i++) {
@@ -65,13 +68,13 @@ function checkIfOpen(availabilityRaw?: string): { isOpen: boolean; nextChange: s
       }
       return { isOpen: false, nextChange: 'Closed' };
     }
-    
+
     const [openHour, openMin] = todayHours.open.split(':').map(Number);
     const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
-    
+
     if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
       const closeHour12 = closeHour % 12 || 12;
       const closeAmPm = closeHour >= 12 ? 'PM' : 'AM';
@@ -114,6 +117,9 @@ interface ProductPreview {
   price: number;
   currency: string;
   images: string[];
+  sizes?: string[];
+  colors?: string[];
+  createdAt?: string | Date;
   professional: {
     firstName: string;
     lastName: string;
@@ -204,6 +210,8 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
   const [services, setServices] = useState<ServiceWithVariants[]>([])
   const [servicesLoading, setServicesLoading] = useState(false)
   const router = useRouter();
+  const { data: session } = useSession();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Real-time open/closed status
   const [openStatus, setOpenStatus] = useState(() => checkIfOpen(profile.location?.availabilityRaw));
@@ -244,353 +252,359 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 pb-20">
+    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 pb-32 font-sans selection:bg-stone-200">
       
-      {/* HERO SECTION - Clean Modern Layout */}
-      <div className="relative w-full bg-white">
-        {/* Cover Image */}
-        <div className="relative h-72 lg:h-96 w-full overflow-hidden">
-          <Image 
-            src={coverImage} 
-            alt="Cover" 
-            fill 
-            priority 
-            className="object-cover"
-            quality={100}
-            sizes="100vw"
-            unoptimized={coverImage.startsWith('/uploads')}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
-        </div>
-
-        {/* Profile Content Container */}
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="relative">
-            {/* Profile Card - Overlapping the cover image */}
-            <div className="relative -mt-20 bg-white rounded-3xl shadow-2xl border border-stone-100 p-8">
-              <div className="flex flex-col lg:flex-row gap-8 items-start">
-                
-                {/* Left: Avatar & Basic Info */}
-                <div className="flex flex-col sm:flex-row gap-6 items-start flex-1">
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-32 h-32 rounded-2xl overflow-hidden bg-stone-100 shadow-lg border-4 border-white">
-                      <Image 
-                        src={profileImage} 
-                        alt={displayName}
-                        width={128}
-                        height={128}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    {/* Verified Badge */}
-                    {profile.isVerified && (
-                      <div className="absolute -bottom-1 -right-1 bg-emerald-500 p-1.5 rounded-full shadow-lg border-2 border-white">
-                        <BadgeCheck className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Name & Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl lg:text-4xl font-serif font-bold text-stone-900">
-                        {displayName}
-                      </h1>
-                      {profile.isVerified && (
-                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200">
-                          <BadgeCheck className="w-4 h-4" />
-                          <span className="text-xs font-semibold">Verified</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <p className="text-lg text-stone-600 mb-4">
-                      {profile.specialization.name}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-3">
-                      {profile.rating && (
-                        <RatingBadge rating={profile.rating} count={profile.totalReviews} />
-                      )}
-                      {profile.location && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-full text-sm">
-                          <MapPin className="w-4 h-4 text-stone-500" />
-                          <span className="text-stone-700 font-medium">{profile.location.city}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Action Buttons */}
-                <div className="flex flex-wrap gap-3 lg:pt-0">
-                  <Link 
-                    href={`/tz/${slug}/shop`} 
-                    className="bg-stone-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-stone-800 transition-all shadow-sm flex items-center gap-2"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Visit Shop
-                  </Link>
-                  
-                  {isOwner && (
-                    <>
-                      <Link 
-                        href="/settings" 
-                        className="bg-white border border-stone-200 text-stone-800 px-6 py-3 rounded-xl font-semibold hover:bg-stone-50 transition-all shadow-sm flex items-center gap-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Edit Profile
-                      </Link>
-                      <Link 
-                        href="/dashboard" 
-                        className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all shadow-sm flex items-center gap-2"
-                      >
-                        Dashboard
-                      </Link>
-                    </>
-                  )}
-                  
-                  <button 
-                    className="bg-stone-100 text-stone-700 px-4 py-3 rounded-xl hover:bg-stone-200 transition-all shadow-sm"
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                  </button>
-                </div>
+      {/* 1. CINEMATIC HERO */}
+      <div className="relative w-full h-[70vh] lg:h-[80vh] overflow-hidden">
+        <Image 
+          src={coverImage} 
+          alt="Cover" 
+          fill 
+          priority 
+          className="object-cover"
+          quality={100}
+          sizes="100vw"
+          unoptimized={coverImage.startsWith('/uploads')}
+        />
+        {/* Soft, deep gradient for legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/60 to-transparent" />
+        
+        {/* Hero Content Overlay */}
+        <div className="absolute bottom-0 left-0 w-full p-6 lg:p-16 flex flex-col md:flex-row items-end justify-between gap-8 z-10">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end w-full">
+            {/* Avatar */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative flex-shrink-0"
+            >
+              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden bg-stone-100 shadow-2xl border-4 border-white/10 backdrop-blur-sm relative z-10">
+                <Image 
+                  src={profileImage} 
+                  alt={displayName}
+                  width={192}
+                  height={192}
+                  className="object-cover w-full h-full"
+                />
               </div>
-            </div>
+              {profile.isVerified && (
+                <div className="absolute bottom-2 right-2 bg-emerald-500 p-2 rounded-full shadow-xl border-4 border-stone-900 z-20">
+                  <BadgeCheck className="w-6 h-6 text-white" />
+                </div>
+              )}
+            </motion.div>
+
+            {/* Typography */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex-1 min-w-0 pb-2 md:pb-6"
+            >
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif text-white leading-[0.9] tracking-tight mb-4 drop-shadow-md">
+                {displayName}
+              </h1>
+              <div className="flex flex-wrap items-center gap-4 text-stone-200 font-mono text-xs uppercase tracking-[0.2em]">
+                <span className="font-bold">{profile.specialization.name}</span>
+                {profile.location && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-500" />
+                    <span className="flex items-center gap-2">
+                      <MapPin size={14} className="text-stone-400" /> {profile.location.city}
+                    </span>
+                  </>
+                )}
+                {profile.rating && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-stone-500" />
+                    <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                      <Star size={14} className="fill-current" />
+                      {profile.rating.toFixed(1)} <span className="text-stone-400">({profile.totalReviews})</span>
+                    </span>
+                  </>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Actions */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-wrap gap-4 pb-2 md:pb-6"
+            >
+                  <Link 
+                href={`/tz/${slug}/shop`} 
+                className="bg-white text-stone-900 px-8 py-4 rounded-full font-mono text-xs font-bold uppercase tracking-widest hover:bg-stone-50 hover:scale-105 transition-all shadow-xl flex items-center gap-3"
+              >
+                <ShoppingBag size={16} /> Enter Shop
+              </Link>
+              {isOwner && (
+                <Link 
+                  href="/dashboard" 
+                  className="bg-stone-900/40 backdrop-blur-lg border border-stone-700 text-white px-8 py-4 rounded-full font-mono text-xs font-bold uppercase tracking-widest hover:bg-stone-900/60 hover:scale-105 transition-all shadow-xl flex items-center gap-3"
+                >
+                  <Settings size={16} /> Dashboard
+                </Link>
+              )}
+              {(!session || !isOwner) && (
+                <button 
+                  onClick={() => {
+                    if (!session) {
+                      toast.error("Please sign in to message this professional");
+                      return;
+                    }
+                    setIsChatOpen(true);
+                  }}
+                  className="bg-stone-900/40 backdrop-blur-lg border border-stone-700 text-white w-14 h-14 rounded-full flex items-center justify-center hover:bg-stone-900/60 transition-all hover:scale-105"
+                >
+                  <MessageSquare size={18} />
+                </button>
+              )}
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* CONTENT BENTO GRID */}
-      <div className="max-w-7xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* 2. FLOATING NAVIGATION PILL */}
+      <div className="sticky top-20 z-50 flex justify-center -mt-8 pt-2 pb-6 px-4 pointer-events-none">
+        <div className="bg-white/85 backdrop-blur-xl border border-stone-200/60 p-1.5 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex items-center gap-1 pointer-events-auto overflow-x-auto max-w-full no-scrollbar">
+          {(isModel 
+            ? ['gallery', 'products', 'services', 'reviews'] as const
+            : ['products', 'services', 'gallery', 'reviews'] as const
+          ).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                'px-6 py-3 rounded-full text-xs font-mono font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2 flex-shrink-0',
+                activeTab === tab
+                  ? 'bg-stone-900 text-white shadow-lg scale-105'
+                  : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100/50'
+              )}
+            >
+              {tab === 'products' && <ShoppingBag size={14} className={activeTab === tab ? '' : 'text-stone-400'}/>}
+              {tab === 'services' && <Zap size={14} className={activeTab === tab ? '' : 'text-stone-400'}/>}
+              {tab === 'gallery' && <ImageIcon size={14} className={activeTab === tab ? '' : 'text-stone-400'}/>}
+              {tab === 'reviews' && <MessageSquare size={14} className={activeTab === tab ? '' : 'text-stone-400'}/>}
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. BENTO GRID LAYOUT */}
+      <div className="max-w-7xl mx-auto px-6 mt-12 lg:mt-24 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24 items-start">
         
-        {/* LEFT COLUMN - Business Info (Span 4) */}
-        <div className="lg:col-span-4 space-y-8">
-          
-          {/* Bio Card */}
-          <InfoCard icon={Globe} title="About">
-            <p className="text-stone-600 leading-relaxed text-sm">
-              {profile.bio || `We are a premium ${profile.specialization.name} business dedicated to bringing you the finest quality materials and craftsmanship.`}
+        {/* LEFT COLUMN - Editorial Info (Span 4) */}
+        <div className="lg:col-span-4 space-y-16 sticky top-40">
+          {/* About Statement */}
+          <div className="space-y-6">
+            <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-stone-400 flex items-center gap-3">
+              <span className="w-8 h-[1px] bg-stone-300" /> The Atelier
+            </h3>
+            <p className="font-serif text-2xl lg:text-3xl text-stone-800 leading-snug italic px-4 border-l-4 border-amber-500/20">
+              "{profile.bio || `A premium ${profile.specialization.name} business dedicated to bringing you the finest quality materials and craftsmanship.`}"
             </p>
             {profile.socials && (
-              <div className="flex gap-4 mt-6 pt-6 border-t border-stone-100">
-                {profile.socials.website && <Link href={profile.socials.website} className="text-stone-400 hover:text-stone-900 transition-colors"><Globe size={20}/></Link>}
-                {profile.socials.instagram && <Link href={profile.socials.instagram} className="text-stone-400 hover:text-stone-900 transition-colors"><Instagram size={20}/></Link>}
-                {profile.socials.facebook && <Link href={profile.socials.facebook} className="text-stone-400 hover:text-stone-900 transition-colors"><Facebook size={20}/></Link>}
+              <div className="flex gap-6 pt-6 px-4">
+                {profile.socials.website && <Link href={profile.socials.website} className="text-stone-400 hover:text-stone-900 transition-colors hover:-translate-y-1 transform"><Globe size={20}/></Link>}
+                {profile.socials.instagram && <Link href={profile.socials.instagram} className="text-stone-400 hover:text-stone-900 transition-colors hover:-translate-y-1 transform"><Instagram size={20}/></Link>}
+                {profile.socials.facebook && <Link href={profile.socials.facebook} className="text-stone-400 hover:text-stone-900 transition-colors hover:-translate-y-1 transform"><Facebook size={20}/></Link>}
               </div>
             )}
-          </InfoCard>
+          </div>
 
-          {/* Location Card */}
+          {/* Location Minimal */}
           {profile.location && (
-            <InfoCard icon={MapPin} title="Studio Location">
-              <div className="space-y-4">
-                <div className="relative h-40 w-full rounded-2xl overflow-hidden group">
-                   {profile.location.embedUrl ? (
-                     <iframe
-                       src={profile.location.embedUrl}
-                       width="100%"
-                       height="100%"
-                       style={{ border: 0 }}
-                       allowFullScreen
-                       loading="lazy"
-                       referrerPolicy="no-referrer-when-downgrade"
-                       title="Location Map"
-                     />
-                   ) : (
-                     <div className="w-full h-full bg-stone-200 flex items-center justify-center">
-                       <p className="text-stone-500 text-sm">Map not available</p>
-                     </div>
-                   )}
-                 </div>
-                
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />
-                    <p className="text-stone-600">{profile.location.address}, {profile.location.city}</p>
+            <div className="space-y-6">
+              <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-stone-400 flex items-center gap-3">
+                <span className="w-8 h-[1px] bg-stone-300" /> Location
+              </h3>
+              <div className="bg-white rounded-[2rem] p-8 border border-stone-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-8">
+                {profile.location.embedUrl && (
+                  <div className="aspect-[4/3] rounded-2xl overflow-hidden grayscale hover:grayscale-0 transition-all duration-700 bg-stone-100 ring-1 ring-stone-900/5">
+                    <iframe
+                      src={profile.location.embedUrl}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-stone-600">{profile.location.hours}</p>
-                      <p className={`text-xs font-medium ${openStatus.isOpen ? 'text-green-600' : 'text-red-500'}`}>
-                        {openStatus.isOpen ? 'Open Now' : 'Closed'} {openStatus.nextChange && `· ${openStatus.nextChange}`}
-                      </p>
-                    </div>
+                )}
+                <div className="space-y-6">
+                  <div>
+                    <p className="font-serif text-xl text-stone-900 mb-2">{profile.location.address}</p>
+                    <p className="text-sm font-mono text-stone-500 uppercase tracking-widest">{profile.location.city}</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />
-                    <p className="text-stone-600">+1 (555) 000-0000</p>
+                  <div className="flex items-center justify-between text-xs font-mono uppercase tracking-widest text-stone-500 pt-6 border-t border-stone-100">
+                    <span className="font-bold flex items-center gap-2"><Clock size={14} className="text-stone-400"/> Status</span>
+                    <span className={openStatus.isOpen ? 'text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full' : 'text-stone-500 font-bold bg-stone-100 px-3 py-1 rounded-full'}>
+                      {openStatus.isOpen ? 'Open Now' : 'Closed'}
+                    </span>
                   </div>
+                  <p className="text-[10px] font-mono text-stone-400 text-right uppercase tracking-[0.2em]">{openStatus.nextChange && `${openStatus.nextChange}`}</p>
                 </div>
               </div>
-            </InfoCard>
+            </div>
           )}
         </div>
 
-        {/* RIGHT COLUMN - Tabbed Content (Span 8) */}
-        <div className="lg:col-span-8">
-          {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6 border-b border-stone-200">
-            {(isModel 
-              ? ['gallery', 'products', 'services', 'reviews'] as const
-              : ['products', 'services', 'gallery', 'reviews'] as const
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'px-4 py-3 font-semibold text-sm border-b-2 transition-all capitalize',
-                  activeTab === tab
-                    ? 'border-amber-600 text-amber-600'
-                    : 'border-transparent text-stone-600 hover:text-stone-900'
-                )}
-              >
-                {tab === 'gallery' && <ImageIcon className="w-4 h-4 inline mr-2" />}
-                {tab === 'products' && <ShoppingBag className="w-4 h-4 inline mr-2" />}
-                {tab === 'services' && <Zap className="w-4 h-4 inline mr-2" />}
-                {tab === 'reviews' && <MessageSquare className="w-4 h-4 inline mr-2" />}
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Content */}
+        {/* RIGHT COLUMN - Dynamic Content (Span 8) */}
+        <div className="lg:col-span-8 min-h-[60vh]">
           <AnimatePresence mode="wait">
-            {/* Gallery Tab */}
+            
+            {/* ---------------- 1. GALLERY TAB ---------------- */}
             {activeTab === 'gallery' && (
               <motion.section
                 key="gallery"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
+                exit={{ opacity: 0, y: -40 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-serif font-bold">Portfolio Gallery</h2>
+                <div className="flex items-center justify-between mb-12">
+                  <h2 className="text-4xl lg:text-5xl font-serif text-stone-900">Selected Works</h2>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400 border border-stone-200 rounded-full px-4 py-2">Portfolio</span>
                 </div>
                 
                 {profile.galleryImages && profile.galleryImages.length > 0 ? (
-                  <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+                  <div className="columns-1 md:columns-2 gap-8 space-y-8">
                     {profile.galleryImages.map((img, i) => (
-                      <div key={i} className="break-inside-avoid relative rounded-2xl overflow-hidden group cursor-pointer bg-stone-100 mb-4 ring-1 ring-stone-200">
-                        <Image src={img} alt={`Gallery ${i}`} width={800} height={1200} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <ImageIcon className="text-white w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100" />
-                        </div>
-                      </div>
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        key={i} 
+                        className="break-inside-avoid w-full relative rounded-3xl overflow-hidden group cursor-pointer bg-stone-100 shadow-sm"
+                      >
+                        <Image 
+                          src={img} 
+                          alt={`Gallery ${i}`} 
+                          width={600} 
+                          height={800} 
+                          className="w-full h-auto object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-[1.03]" 
+                        />
+                        <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/10 transition-colors duration-500" />
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <ImageIcon className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                    <p className="text-stone-600">No images in portfolio yet.</p>
+                  <div className="h-64 flex flex-col items-center justify-center text-stone-400 border border-dashed border-stone-200 rounded-3xl bg-white">
+                    <p className="font-mono text-xs uppercase tracking-[0.2em]">No works documented yet</p>
                   </div>
                 )}
               </motion.section>
             )}
 
-            {/* Products Tab */}
+            {/* ---------------- 2. PRODUCTS TAB ---------------- */}
             {activeTab === 'products' && (
               <motion.section
-                key="products"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-serif font-bold">Trending Products</h2>
-                  <Link href={`/tz/${slug}/shop`} className="text-sm font-bold text-amber-600 flex items-center gap-1 hover:underline">
-                    View All <ArrowRight size={16} />
-                  </Link>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {profile.featuredProducts?.map((product, index) => (
-                    <ProductCard 
-                      key={product.id} 
-                      item={{ 
-                        ...product, 
-                        category: { name: "Featured", slug: "featured" }, 
-                        stockQuantity: 1 
-                      }} 
-                      index={index} 
-                    />
-                  ))}
-                  {[...Array(Math.max(0, 3 - (profile.featuredProducts?.length || 0)))].map((_, i) => (
-                    <div key={i} className="aspect-[3/4] bg-stone-100 rounded-2xl border border-dashed border-stone-300 flex items-center justify-center text-stone-400">
-                      <ShoppingBag size={24} />
-                    </div>
-                  ))}
-                </div>
-              </motion.section>
+                 key="products"
+                 initial={{ opacity: 0, y: 40 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, y: -40 }}
+                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                 className="space-y-16"
+               >
+                 <div className="flex items-end justify-between border-b border-stone-200 pb-8">
+                   <div>
+                     <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Collection</span>
+                     <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Ready to Wear</h2>
+                   </div>
+                   <Link href={`/tz/${slug}/shop`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-900 hover:text-amber-600 transition-colors flex items-center gap-2 pb-2 group">
+                     View Full <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
+                   </Link>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
+                   {profile.featuredProducts?.map((product, index) => (
+                     <motion.div 
+                       initial={{ opacity: 0, scale: 0.95 }}
+                       animate={{ opacity: 1, scale: 1 }}
+                       transition={{ delay: index * 0.1 }}
+                       key={product.id}
+                     >
+                       <ProductCard 
+                         item={{ 
+                           ...product, 
+                           category: { name: "Featured", slug: "featured" }, 
+                           stockQuantity: 1 
+                         }} 
+                         index={index} 
+                       />
+                     </motion.div>
+                   ))}
+                   {(!profile.featuredProducts || profile.featuredProducts.length === 0) && (
+                     <div className="col-span-2 py-32 text-center border border-dashed border-stone-200 rounded-3xl bg-white">
+                       <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400">No products available</p>
+                     </div>
+                   )}
+                 </div>
+               </motion.section>
             )}
 
-            {/* Services Tab */}
+            {/* ---------------- 3. SERVICES TAB ---------------- */}
             {activeTab === 'services' && (
               <motion.section
                 key="services"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-12"
+                exit={{ opacity: 0, y: -40 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
-                      <Zap className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-serif font-bold">Catalogue of Services</h2>
-                      <p className="text-sm text-stone-500">Expertly curated to match your needs</p>
-                    </div>
-                  </div>
+                <div className="mb-16 border-b border-stone-200 pb-8">
+                   <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Consultation & Bespoke</span>
+                   <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Services</h2>
                 </div>
 
                 {servicesLoading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="flex flex-col items-center gap-4">
-                       <Loader className="w-8 h-8 animate-spin text-amber-600" />
-                       <p className="text-xs font-black text-stone-400 uppercase tracking-widest">Loading our services...</p>
-                    </div>
+                  <div className="py-32 flex flex-col items-center justify-center gap-6">
+                    <div className="w-12 h-12 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
+                    <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400">Loading Services</p>
                   </div>
                 ) : services.length === 0 ? (
-                  <div className="text-center py-20 bg-stone-50 rounded-[2rem] border border-dashed border-stone-200">
-                    <Zap className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                    <p className="text-stone-600 font-medium">No services currently listed</p>
+                  <div className="py-32 border border-dashed border-stone-200 rounded-3xl text-center bg-white">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400">No services offered presently</p>
                   </div>
                 ) : (
-                  <div className="space-y-32 py-12">
-                    {/* Group services by category if available, otherwise just list them */}
+                  <div className="space-y-32">
                     {Object.entries(
                       services.reduce((acc, s) => {
-                        const cat = s.category?.name || "Premium Selection";
+                        const cat = s.category?.name || "Curated Offering";
                         if (!acc[cat]) acc[cat] = [];
                         acc[cat].push(s);
                         return acc;
                       }, {} as Record<string, ServiceWithVariants[]>)
-                    ).map(([category, catServices]) => (
-                      <div key={category} className="space-y-16">
-                         <div className="flex items-center gap-10">
-                            <div className="flex flex-col">
-                               <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-2">Category</span>
-                               <h3 className="text-4xl md:text-5xl font-serif font-bold text-stone-900 tracking-tight">{category}</h3>
-                            </div>
-                            <div className="h-[2px] flex-1 bg-stone-900/5 mt-auto mb-2" />
-                         </div>
-                         <div className="flex flex-col">
-                           {catServices.map((service, idx) => (
-                             <ServiceListItem
-                               key={service.id}
-                               service={service}
-                               onBook={handleBookService}
-                               index={idx}
-                             />
-                           ))}
-                         </div>
+                    ).map(([category, catServices], gIdx) => (
+                      <div key={category} className="space-y-12">
+                        <motion.h3 
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: gIdx * 0.1 }}
+                          className="text-3xl font-serif text-stone-900 border-l-4 border-amber-500 pl-6 flex flex-col"
+                        >
+                          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-2 font-normal">Category</span>
+                          {category}
+                        </motion.h3>
+                        <div className="flex flex-col space-y-6">
+                          {catServices.map((service, idx) => (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: (gIdx * 0.1) + (idx * 0.1) }}
+                              key={service.id}
+                              className="group relative"
+                            >
+                              {/* Simple aesthetic line between items */}
+                              {idx !== 0 && <div className="absolute -top-3 left-0 w-full h-[1px] bg-stone-100" />}
+                              <ServiceListItem service={service} onBook={handleBookService} index={idx} />
+                            </motion.div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -598,72 +612,78 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
               </motion.section>
             )}
 
-            {/* Reviews Tab */}
+            {/* ---------------- 4. REVIEWS TAB ---------------- */}
             {activeTab === 'reviews' && (
               <motion.section
                 key="reviews"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
+                exit={{ opacity: 0, y: -40 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
-                      <MessageSquare className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-serif font-bold">Customer Reviews</h2>
-                      <p className="text-sm text-stone-500">What people are saying</p>
-                    </div>
-                  </div>
-                  <Link href={`/tz/${slug}/reviews`} className="text-xs font-bold uppercase tracking-wider border-b border-stone-300 pb-1 hover:border-black transition-colors">
-                    Read All
-                  </Link>
+                <div className="flex items-end justify-between border-b border-stone-200 pb-8 mb-16">
+                   <div>
+                     <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Client Feedback</span>
+                     <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Reviews</h2>
+                   </div>
+                   <Link href={`/tz/${slug}/reviews`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-900 hover:text-amber-600 transition-colors pb-2 group flex items-center gap-2">
+                     Read All <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                   </Link>
                 </div>
 
-                <div className="space-y-6">
-                  {profile.reviews?.slice(0, 3).map((review) => (
-                    <div key={review.id} className="border-b border-stone-100 pb-6 last:border-0 last:pb-0">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden">
-                            {review.userAvatar ? (
-                              <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="object-cover"/>
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
-                                {review.userName.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-bold text-stone-900 text-sm">{review.userName}</p>
-                            <div className="flex text-amber-500 text-[10px] gap-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={10} />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-xs text-stone-400">{review.date}</span>
-                      </div>
-                      {review.productName && (
-                        <div className="flex items-center gap-2 mb-2 pl-13">
-                          {review.productImage && (
-                            <div className="w-8 h-8 rounded bg-stone-100 overflow-hidden">
-                              <Image src={review.productImage} alt={review.productName} width={32} height={32} className="object-cover w-full h-full"/>
+                <div className="grid gap-8">
+                  {profile.reviews?.slice(0, 5).map((review, rIdx) => (
+                    <motion.div 
+                      key={review.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: rIdx * 0.1 }}
+                      className="bg-white rounded-3xl p-8 lg:p-12 border border-stone-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                    >
+                      <div className="flex items-start gap-6 mb-8">
+                        <div className="w-16 h-16 rounded-full bg-stone-100 overflow-hidden flex-shrink-0 ring-4 ring-stone-50">
+                          {review.userAvatar ? (
+                            <Image src={review.userAvatar} alt={review.userName} width={64} height={64} className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-400 font-serif text-2xl">
+                              {review.userName.charAt(0)}
                             </div>
                           )}
-                          <span className="text-xs text-stone-500">Review on <span className="font-medium text-stone-700">{review.productName}</span></span>
+                        </div>
+                        <div className="flex-1 mt-1">
+                          <p className="font-serif text-2xl text-stone-900 mb-1">{review.userName}</p>
+                          <div className="flex text-amber-500 gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={14} />
+                            ))}
+                          </div>
+                        </div>
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400 bg-stone-50 px-3 py-1.5 rounded-full">{review.date}</span>
+                      </div>
+                      
+                      <p className="font-serif text-xl md:text-2xl text-stone-700 leading-relaxed italic border-l-4 border-stone-200 pl-6 lg:pl-8">
+                        "{review.comment}"
+                      </p>
+
+                      {review.productName && (
+                        <div className="mt-10 pt-6 border-t border-stone-100 flex items-center gap-4">
+                          {review.productImage && (
+                            <div className="w-12 h-16 rounded-lg bg-stone-100 overflow-hidden shrink-0">
+                              <Image src={review.productImage} alt={review.productName} width={48} height={64} className="object-cover w-full h-full" />
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 mb-1">Reviewed On</span>
+                            <span className="text-sm font-medium text-stone-900 font-serif">{review.productName}</span>
+                          </div>
                         </div>
                       )}
-                      <p className="text-stone-600 text-sm leading-relaxed pl-13">
-                        &apos;{review.comment}&apos;
-                      </p>
-                    </div>
+                    </motion.div>
                   ))}
                   {(!profile.reviews || profile.reviews.length === 0) && (
-                    <p className="text-stone-500 text-sm text-center py-4">No reviews yet.</p>
+                    <div className="py-24 text-center border border-dashed border-stone-200 rounded-3xl bg-white">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">No reviews yet.</p>
+                    </div>
                   )}
                 </div>
               </motion.section>
@@ -671,6 +691,15 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
           </AnimatePresence>
         </div>
       </div>
+
+      <ChatDrawer 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        professionalId={profile.user.id}
+        professionalName={displayName}
+        professionalImage={profileImage}
+        currentUserId={session?.user?.id || ''}
+      />
     </div>
   );
 };

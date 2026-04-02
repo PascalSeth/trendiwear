@@ -51,7 +51,7 @@ interface Product {
   viewCount: number;
   soldCount: number;
   stockQuantity: number;
-  createdAt?: string;
+  createdAt: string;
   categoryId: string;
   category: {
     name: string;

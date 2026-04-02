@@ -55,6 +55,9 @@ interface Product {
   discountPercentage?: number | null;
   isOnSale?: boolean;
   discountEndDate?: string | null;
+  sizes?: string[];
+  colors?: string[];
+  createdAt?: string | Date;
 }
 
 interface ShoppingClientProps {

@@ -16,9 +16,12 @@ import { toast } from 'sonner'
 import { WishlistButton } from '@/components/ui/wishlist-button'
 import { AddToCartButton } from '@/components/ui/add-to-cart-button'
 import Link from 'next/link'
-import Image from 'next/image'
+import NextImage from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useSession } from 'next-auth/react'
+import { ChatDrawer } from '@/app/components/chat/ChatDrawer'
+import { MessageSquare } from 'lucide-react'
 
 // --- TYPES ---
 interface Product {
@@ -141,6 +144,10 @@ export default function ProductClient({
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState('')
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+  const { data: session } = useSession()
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  
+  const isOwner = session?.user?.id === product.professional.userId
 
   const handleReplySubmit = async (reviewId: string) => {
     if (!replyContent.trim()) return
@@ -236,7 +243,7 @@ export default function ProductClient({
                  className="relative w-full h-full"
                >
                   {product.images?.[activeImage] ? (
-                    <Image 
+                    <NextImage 
                       src={product.images[activeImage]} 
                       alt={product.name} 
                       fill 
@@ -429,15 +436,25 @@ export default function ProductClient({
                         </span>
                      </div>
                   )}
-                  {isOutOfStock && !product.isPreorder && (
-                     <div className="py-2 text-center bg-rose-50 rounded-xl">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-rose-500">Item Currently Unavailable</span>
-                     </div>
-                  )}
-                  {product.isPreorder && (
+                   {product.isPreorder && (
                     <div className="py-2 text-center bg-blue-50 rounded-xl">
                        <span className="text-[8px] font-black uppercase tracking-widest text-blue-500">This is a Pre-order item</span>
                     </div>
+                  )}
+
+                  {(!session || !isOwner) && (
+                    <button 
+                      onClick={() => {
+                        if (!session) {
+                          toast.error("Please sign in to message this professional");
+                          return;
+                        }
+                        setIsChatOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border border-stone-200 text-[10px] font-black uppercase tracking-widest hover:bg-stone-50 transition-all"
+                    >
+                      <MessageSquare size={14} /> Message Seller
+                    </button>
                   )}
                </div>
             </div>
@@ -479,7 +496,7 @@ export default function ProductClient({
                <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }} className="lg:col-span-5 relative group">
                   <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-lg ring-1 ring-black/5">
                      {product.professional.professionalProfile?.businessImage ? (
-                        <Image 
+                        <NextImage 
                            src={product.professional.professionalProfile.businessImage} 
                            alt="Atelier" 
                            fill 
@@ -560,8 +577,18 @@ export default function ProductClient({
                        <motion.div key={r.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="space-y-5 border-b border-stone-100 pb-10 last:border-0">
                           <div className="flex items-center justify-between">
                              <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[10px] text-stone-400 uppercase shadow-sm">
-                                   {r.user.firstName[0]}{r.user.lastName[0]}
+                                <div className="h-10 w-10 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[10px] text-stone-400 uppercase shadow-sm overflow-hidden">
+                                   {r.user.profileImage ? (
+                                     <NextImage 
+                                       src={r.user.profileImage} 
+                                       alt={`${r.user.firstName} ${r.user.lastName}`}
+                                       width={40}
+                                       height={40}
+                                       className="w-full h-full object-cover"
+                                     />
+                                   ) : (
+                                     <span>{r.user.firstName[0]}{r.user.lastName[0]}</span>
+                                   )}
                                 </div>
                                 <div>
                                    <p className="text-[10px] font-black uppercase tracking-widest text-stone-900">{r.user.firstName} {r.user.lastName.slice(0, 1)}.</p>
@@ -630,8 +657,18 @@ export default function ProductClient({
                                    <motion.div key={reply.id} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="ml-6 lg:ml-12 p-5 bg-stone-50/50 rounded-2xl border-l border-stone-200 space-y-3">
                                       <div className="flex items-center justify-between">
                                          <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[9px] text-stone-400 uppercase shadow-sm">
-                                               {reply.user.firstName[0]}{reply.user.lastName[0]}
+                                            <div className="h-8 w-8 rounded-full bg-white border border-stone-100 flex items-center justify-center font-mono text-[9px] text-stone-400 uppercase shadow-sm overflow-hidden">
+                                               {reply.user.profileImage ? (
+                                                  <NextImage 
+                                                    src={reply.user.profileImage} 
+                                                    alt={`${reply.user.firstName} ${reply.user.lastName}`}
+                                                    width={32}
+                                                    height={32}
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                               ) : (
+                                                  <span>{reply.user.firstName[0]}{reply.user.lastName[0]}</span>
+                                               )}
                                             </div>
                                             <div>
                                                <div className="flex items-center gap-2">
@@ -666,6 +703,14 @@ export default function ProductClient({
          </div>
       </div>
 
+      <ChatDrawer 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        professionalId={product.professional.id}
+        professionalName={product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`}
+        professionalImage={product.professional.professionalProfile?.businessImage}
+        currentUserId={session?.user?.id || ''}
+      />
     </div>
   )
 }

@@ -7,6 +7,7 @@ import ServerNavbar from "../components/ServerNavbar";
 import Footer from "../components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "../providers";
+import { BrowserNotificationPrompt } from "@/components/ui/browser-notification-prompt";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -42,6 +43,7 @@ export default function RootLayout({
           {children}
           <Footer />
           <Toaster />
+          <BrowserNotificationPrompt />
         </Providers>
       </body>
     </html>

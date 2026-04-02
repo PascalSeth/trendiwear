@@ -426,9 +426,16 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 py-1 min-w-0">
                       <h4 className="text-sm font-medium text-stone-900 line-clamp-1">{item.product.name}</h4>
-                      <p className="text-xs text-stone-500 mt-1">
-                        {item.size && `Size: ${item.size}`} {item.color && `Color: ${item.color}`}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1.5 text-xs text-stone-500">
+                        {item.size && <span className="bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200">{item.size}</span>}
+                        {item.color && (
+                          <span 
+                            className="w-4 h-4 rounded-full border border-stone-200 shadow-sm shrink-0" 
+                            style={{ backgroundColor: item.color }}
+                            title={item.color}
+                          />
+                        )}
+                      </div>
                     </div>
                     <div className="py-1">
                       <span className="text-sm font-medium text-stone-900">

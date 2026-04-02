@@ -17,6 +17,8 @@ interface AddToCartButtonProps {
   selectedSize?: string
   selectedColor?: string
   isOutOfStock?: boolean
+  onShowSelection?: () => void
+  hasVariations?: boolean
 }
 
 export function AddToCartButton({
@@ -28,7 +30,9 @@ export function AddToCartButton({
   quantity = 1,
   selectedSize,
   selectedColor,
-  isOutOfStock = false
+  isOutOfStock = false,
+  onShowSelection,
+  hasVariations = false
 }: AddToCartButtonProps) {
   const { status } = useSession() // GET SESSION STATUS
   const isInCart = useCartStore(state => state.isInCart)
@@ -67,6 +71,13 @@ export function AddToCartButton({
       }
       pendingRef.current = false
     } else {
+      // If variations are required but not selected, trigger selection modal
+      if (hasVariations && (!selectedSize && !selectedColor) && onShowSelection) {
+        onShowSelection()
+        pendingRef.current = false
+        return
+      }
+
       // For adding, we'll wait for the result to avoid fake success toasts
       const success = await addToCart(productId, quantity, selectedSize, selectedColor)
       if (success) {

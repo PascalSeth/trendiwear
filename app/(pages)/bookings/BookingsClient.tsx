@@ -16,6 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 interface Booking {
   id: string;
@@ -43,35 +46,25 @@ interface Booking {
 export function BookingsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL');
 
-  const fetchBookings = async () => {
-    try {
-      const res = await fetch('/api/bookings');
-      const data = await res.json();
-      if (data.bookings) {
-        setBookings(data.bookings);
-      }
-    } catch (err) {
-      console.error('Failed to fetch bookings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useSWR(
+    '/api/bookings',
+    fetcher,
+    { refreshInterval: 15000 }
+  );
+
+  const bookings = data?.bookings || [];
 
   useEffect(() => {
-    fetchBookings();
-    
     // Check if returned from successful payment
     const reference = searchParams.get('reference');
     if (reference) {
       toast.success('Payment successful! Your appointment is secured.');
     }
-  }, [searchParams, router]);
+  }, [searchParams]);
 
-  const filteredBookings = bookings.filter(b => 
+  const filteredBookings = (bookings as Booking[]).filter((b: Booking) => 
     filter === 'ALL' ? true : b.status === filter
   );
 
@@ -136,7 +129,7 @@ export function BookingsClient() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex flex-col items-center justify-center py-40 space-y-4 text-stone-300">
           <Loader2 className="animate-spin" size={40} strokeWidth={1} />
           <p className="text-[10px] uppercase font-black tracking-widest">Retrieving sessions...</p>
@@ -144,7 +137,7 @@ export function BookingsClient() {
       ) : filteredBookings.length > 0 ? (
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence mode='popLayout'>
-            {filteredBookings.map((booking, idx) => {
+            {filteredBookings.map((booking: Booking, idx: number) => {
               const needsPayment = booking.status === 'CONFIRMED' && booking.paymentMethod === 'PLATFORM' && booking.paymentStatus === 'UNPAID';
               const isPaid = booking.paymentStatus === 'PAID';
               const isInPerson = booking.paymentMethod === 'IN_PERSON';
