@@ -17,7 +17,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -138,11 +137,11 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
            ? selectedConv.customerId 
            : selectedConv?.professionalId;
         
-        const isOnline = Object.values(state).flat().some((p: any) => p.user_id === otherUserId || p.presence_ref);
+        const isOnline = Object.values(state).flat().some((p: Record<string, unknown>) => p.user_id === otherUserId || p.presence_ref);
         // Note: In a real scenario, we'd include user_id in the presence payload
         // For now, if there's > 1 person in the channel, someone else is online
         const presenceCount = Object.keys(state).length;
-        setIsOtherOnline(presenceCount > 1);
+        setIsOtherOnline(presenceCount > 1 || isOnline);
       })
       // C. Handle Broadcast (Typing Indicators)
       .on('broadcast', { event: 'typing' }, ({ payload }) => {

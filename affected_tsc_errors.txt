@@ -1,0 +1,231 @@
+app/components/chat/InboxClient.tsx(3,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+app/components/chat/InboxClient.tsx(10,40): error TS2307: Cannot find module '@/components/ui/avatar' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(11,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(12,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(13,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(19,26): error TS2307: Cannot find module '@/lib/supabase' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(252,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(255,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(259,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(260,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(261,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(264,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(265,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(268,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(269,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(270,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(279,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(281,14): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(281,55): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(283,14): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(297,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(307,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(309,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(311,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(316,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(317,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(318,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(321,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(325,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(337,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(342,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(344,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(345,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(346,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(350,20): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(352,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(355,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(357,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(363,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(365,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(371,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(372,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(377,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(381,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(385,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(391,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(392,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(392,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(393,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(393,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(394,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(394,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(399,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(403,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(407,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(417,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(420,28): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(422,28): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(423,47): error TS2339: Property 'firstName' does not exist on type '{ name?: string; email?: string; image?: string; }'.
+app/components/chat/InboxClient.tsx(430,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(436,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(442,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(444,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(451,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(454,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(458,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(466,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(472,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(486,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(487,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(491,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(492,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(494,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(508,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(513,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(513,79): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(516,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(517,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(517,59): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(518,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(518,59): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(523,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(524,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(525,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(527,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(528,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(529,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(533,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(2,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+app/components/Navbar.tsx(3,90): error TS2307: Cannot find module '@/components/ui/dropdown-menu' or its corresponding type declarations.
+app/components/Navbar.tsx(5,63): error TS2307: Cannot find module '@/components/ui/sheet' or its corresponding type declarations.
+app/components/Navbar.tsx(11,34): error TS2307: Cannot find module '@/components/ui/notification-bell' or its corresponding type declarations.
+app/components/Navbar.tsx(13,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+app/components/Navbar.tsx(16,30): error TS2307: Cannot find module '@/hooks/useHeartbeat' or its corresponding type declarations.
+app/components/Navbar.tsx(20,47): error TS2307: Cannot find module '@/components/ui/cart-sheet-trigger' or its corresponding type declarations.
+app/components/Navbar.tsx(22,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(126,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(134,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(137,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(138,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(148,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(150,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(159,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(168,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(170,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(171,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(172,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(180,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(181,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(182,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(187,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(188,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(189,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(190,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(191,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(200,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(220,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(226,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(227,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(228,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(232,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(240,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(241,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(246,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(247,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(248,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(251,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(259,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(260,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(261,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(262,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(267,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(268,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(269,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(272,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(281,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(282,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(283,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(284,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(285,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(286,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(292,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(300,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(301,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(302,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(303,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(310,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(311,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(312,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(316,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(317,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(324,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(325,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(328,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(335,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(336,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(337,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(338,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(341,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(342,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(343,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(345,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(346,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(350,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(351,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(352,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(353,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(362,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(364,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(378,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(379,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(386,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(395,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(396,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(398,31): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(409,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(411,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(412,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(413,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(420,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(421,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(422,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(426,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(436,29): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(440,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(445,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(446,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/Navbar.tsx(449,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+node_modules/@prisma/client-runtime-utils/dist/index.d.ts(4,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@prisma/client-runtime-utils/dist/index.d.ts(10,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@prisma/client-runtime-utils/dist/index.d.ts(325,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@prisma/client-runtime-utils/dist/index.d.ts(355,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/next-auth/adapters.d.ts(2,47): error TS2307: Cannot find module '@auth/core/adapters' or its corresponding type declarations.
+node_modules/next-auth/core/lib/cookie.d.ts(31,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/next/dist/build/webpack/loaders/next-app-loader/index.d.ts(1,13): error TS2613: Module '"next/dist/compiled/webpack/webpack"' has no default export. Did you mean to use 'import { webpack } from "next/dist/compiled/webpack/webpack"' instead?
+node_modules/next/dist/client/components/error-boundary.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/http-access-fallback/error-boundary.d.ts(11,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/layout-router.d.ts(2,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/image-component.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/link.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/script.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/with-router.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/export/types.d.ts(5,13): error TS1192: Module '"next/dist/compiled/amphtml-validator"' has no default export.
+node_modules/next/dist/lib/metadata/metadata.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/next-devtools/dev-overlay/shared.d.ts(181,20): error TS2694: Namespace 'React' has no exported member 'ActionDispatch'.
+node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_app.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_document.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_error.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/server/app-render/entry-base.d.ts(3,10): error TS2305: Module '"react"' has no exported member 'captureOwnerStack'.
+node_modules/next/dist/server/app-render/types.d.ts(11,8): error TS1192: Module '"next/dist/compiled/superstruct"' has no default export.
+node_modules/next/dist/server/route-modules/app-page/vendored/rsc/entrypoints.d.ts(5,39): error TS2307: Cannot find module 'react/compiler-runtime' or its corresponding type declarations.
+node_modules/next/dist/server/route-modules/app-page/vendored/ssr/entrypoints.d.ts(5,39): error TS2307: Cannot find module 'react/compiler-runtime' or its corresponding type declarations.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(39,16): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(40,13): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(41,15): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(42,26): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/shared/lib/amp-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/app-router-context.shared-runtime.d.ts(4,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/dynamic.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/head-manager-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/head.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/image-config-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable.shared-runtime.d.ts(21,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/router-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/server-inserted-html.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/utils.d.ts(10,13): error TS1192: Module '"fs"' has no default export.
+node_modules/next/dist/styled-jsx/types/global.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/types.d.ts(8,13): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/swr/dist/_internal/index.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag

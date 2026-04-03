@@ -1,0 +1,127 @@
+app/components/chat/InboxClient.tsx(3,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+app/components/chat/InboxClient.tsx(10,40): error TS2307: Cannot find module '@/components/ui/avatar' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(11,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(12,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(13,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(19,26): error TS2307: Cannot find module '@/lib/supabase' or its corresponding type declarations.
+app/components/chat/InboxClient.tsx(253,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(256,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(260,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(261,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(262,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(265,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(266,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(269,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(270,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(271,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(280,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(282,14): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(282,55): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(284,14): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(298,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(308,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(310,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(312,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(317,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(318,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(319,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(322,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(326,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(338,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(343,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(345,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(346,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(347,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(351,20): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(353,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(356,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(358,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(364,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(366,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(372,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(373,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(378,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(382,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(386,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(392,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(393,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(393,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(394,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(394,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(395,18): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(395,107): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(400,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(404,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(408,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(418,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(421,28): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(423,28): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(424,47): error TS2339: Property 'firstName' does not exist on type '{ name?: string; email?: string; image?: string; }'.
+app/components/chat/InboxClient.tsx(431,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(437,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(443,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(445,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(452,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(455,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(459,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(467,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(473,27): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(487,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(488,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(492,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(493,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(495,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(509,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(514,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(514,79): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(517,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(518,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(518,59): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(519,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(519,59): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(524,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(525,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(526,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(528,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(529,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(530,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+app/components/chat/InboxClient.tsx(534,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+node_modules/next-auth/adapters.d.ts(2,47): error TS2307: Cannot find module '@auth/core/adapters' or its corresponding type declarations.
+node_modules/next-auth/core/lib/cookie.d.ts(31,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/next/dist/build/webpack/loaders/next-app-loader/index.d.ts(1,13): error TS2613: Module '"next/dist/compiled/webpack/webpack"' has no default export. Did you mean to use 'import { webpack } from "next/dist/compiled/webpack/webpack"' instead?
+node_modules/next/dist/client/components/error-boundary.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/http-access-fallback/error-boundary.d.ts(11,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/components/layout-router.d.ts(2,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/image-component.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/link.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/script.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/client/with-router.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/export/types.d.ts(5,13): error TS1192: Module '"next/dist/compiled/amphtml-validator"' has no default export.
+node_modules/next/dist/lib/metadata/metadata.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/next-devtools/dev-overlay/shared.d.ts(181,20): error TS2694: Namespace 'React' has no exported member 'ActionDispatch'.
+node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_app.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_document.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/pages/_error.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/server/app-render/entry-base.d.ts(3,10): error TS2305: Module '"react"' has no exported member 'captureOwnerStack'.
+node_modules/next/dist/server/app-render/types.d.ts(11,8): error TS1192: Module '"next/dist/compiled/superstruct"' has no default export.
+node_modules/next/dist/server/route-modules/app-page/vendored/rsc/entrypoints.d.ts(5,39): error TS2307: Cannot find module 'react/compiler-runtime' or its corresponding type declarations.
+node_modules/next/dist/server/route-modules/app-page/vendored/ssr/entrypoints.d.ts(5,39): error TS2307: Cannot find module 'react/compiler-runtime' or its corresponding type declarations.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(39,16): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(40,13): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(41,15): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/server/web/spec-extension/adapters/headers.d.ts(42,26): error TS2304: Cannot find name 'HeadersIterator'.
+node_modules/next/dist/shared/lib/amp-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/app-router-context.shared-runtime.d.ts(4,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/dynamic.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/head-manager-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/head.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/image-config-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/loadable.shared-runtime.d.ts(21,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/router-context.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/server-inserted-html.shared-runtime.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/shared/lib/utils.d.ts(10,13): error TS1192: Module '"fs"' has no default export.
+node_modules/next/dist/styled-jsx/types/global.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/next/dist/types.d.ts(8,13): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/swr/dist/_internal/index.d.ts(1,8): error TS1259: Module '"C:/Users/pasca/OneDrive/Desktop/trendiwear/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag

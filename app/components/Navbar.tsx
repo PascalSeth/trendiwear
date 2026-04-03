@@ -13,6 +13,7 @@ import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCirc
 import { cn } from "@/lib/utils";
 import useSWR, { useSWRConfig } from "swr";
 import { motion } from "framer-motion";
+import { useHeartbeat } from "@/hooks/useHeartbeat";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -58,6 +59,9 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   const unreadMessagesCount = batchData?.notifications?.unreadMessagesCount || 0;
   const unreadCount = notifications.length + unreadMessagesCount;
 
+  // Global Heartbeat - keeps the user 'Online' in the DB
+  useHeartbeat(!!user);
+
   const CATEGORY_TYPES: Record<string, string[]> = {
     'Messages': ['MESSAGE_RECEIVED'],
     'Orders': ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL'],
@@ -72,7 +76,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     if (clearedCategories.has(label)) return false;
     if (label === 'Messages') return unreadMessagesCount > 0;
     const types = CATEGORY_TYPES[label] || [];
-    return notifications.some((n: { type: string }) => types.includes(n.type));
+    return notifications.some((n: { type: string; isRead: boolean }) => types.includes(n.type) && !n.isRead);
   };
 
   const handleCategoryClick = async (label: string) => {
