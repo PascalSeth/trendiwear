@@ -4,6 +4,7 @@ import ShowCase from '../components/ShowCase';
 import TopSellers from '../components/sections/TopSellers';
 import NewArrivals from '../components/sections/NewArrivals';
 import BlogIntro from '../components/sections/BlogIntro';
+import ProfessionalCTA from '../components/sections/ProfessionalCTA';
 import FashionInspo from '../components/Intro';
 import { prisma } from '@/lib/prisma';
 
@@ -64,7 +65,7 @@ interface TopSeller {
 // This is a Server Component, we can fetch data directly from Prisma!
 export default async function Page() {
   // Fetch data in parallel for multiple sections
-  const [showcaseProducts, topSellers] = await Promise.all([
+  const [showcaseProducts, topSellers, totalUsers, totalProfessionals] = await Promise.all([
     // Showcase Products
     prisma.product.findMany({
       where: {
@@ -134,7 +135,11 @@ export default async function Page() {
       },
       orderBy: { completedOrders: "desc" },
       take: 10,
-    })
+    }),
+    
+    // Total Metrics for CTA
+    prisma.user.count(),
+    prisma.professionalProfile.count()
   ]);
 
   // Compute actual sales for top sellers from order items
@@ -204,6 +209,12 @@ export default async function Page() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-white -z-10" />
         <TopSellers initialSellers={JSON.parse(JSON.stringify(hydratedTopSellers))} />
       </section>
+
+      {/* Professional Registration CTA */}
+      <ProfessionalCTA 
+        totalUsers={totalUsers} 
+        totalProfessionals={totalProfessionals} 
+      />
 
       {/* Blog Content - Additional Insights */}
       <section className="relative">
