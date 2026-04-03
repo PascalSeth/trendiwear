@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardTopBar from './DashboardTopBar';
 import DashboardSidebar from './DashboardSidebar';
+import DashboardBottomNav from './DashboardBottomNav';
 import { Role } from '@prisma/client';
 import { X } from 'lucide-react';
 import type { UserInfo } from './ServerDashboardShell';
@@ -113,7 +114,11 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <DashboardSidebar role={role} collapsed={isSidebarCollapsed} />
+        <DashboardSidebar 
+          role={role} 
+          collapsed={isSidebarCollapsed} 
+          onToggle={() => setIsSidebarCollapsed(prev => !prev)}
+        />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -123,7 +128,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
             className="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-all duration-300"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-80 border-r border-slate-200 bg-white/90 shadow-2xl backdrop-blur-2xl">
+          <div className="absolute left-0 top-0 h-full w-[280px] border-r border-slate-200 bg-white/90 shadow-2xl backdrop-blur-2xl">
             <div className="relative h-full">
                 <button
                 onClick={() => setIsMobileSidebarOpen(false)}
@@ -146,7 +151,6 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-50">
             <DashboardTopBar
-              onMenuClick={() => setIsMobileSidebarOpen(true)}
               onDesktopToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
               isSidebarCollapsed={isSidebarCollapsed}
               userInfo={userInfo}
@@ -160,7 +164,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
             </div>
           )}
 
-          <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-auto scrollbar-hide">
+          <main className="flex-1 p-4 pb-32 sm:p-6 lg:p-10 overflow-y-auto scrollbar-hide">
             <div className="mx-auto w-full max-w-[1600px] animate-in fade-in slide-in-from-bottom-4 duration-700">
               {mustSubscribe ? (
                 <div className="flex flex-col items-center justify-center min-h-[75vh] text-center">
@@ -193,6 +197,12 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
           </main>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <DashboardBottomNav 
+        role={role} 
+        onMenuClick={() => setIsMobileSidebarOpen(true)} 
+      />
     </div>
   );
 };

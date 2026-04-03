@@ -22,6 +22,8 @@ import {
   FileText,
   CreditCard,
   Truck,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -37,6 +39,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 type DashboardSidebarProps = {
   role: Role;
   collapsed?: boolean;
+  onToggle?: () => void;
 };
 
 interface NavItem {
@@ -48,7 +51,7 @@ interface NavItem {
   badgeType?: 'orders' | 'bookings' | 'messages';
 }
 
-const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = false }) => {
+const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, collapsed = false }) => {
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Catalogue', 'Management']);
 
@@ -347,7 +350,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white/70 backdrop-blur-xl transition-all duration-500 shadow-2xl',
-        collapsed ? 'w-24' : 'w-72'
+        'w-[280px] lg:w-72',
+        collapsed && 'lg:w-24'
       )}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-50">
@@ -420,6 +424,17 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
         </Link>
       </div>
       </div>
+      
+      {/* Desktop Toggle Button */}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          className="absolute -right-4 top-20 hidden lg:flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:text-slate-900 transition-all z-50 hover:scale-110"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
+      )}
     </aside>
   );
 };

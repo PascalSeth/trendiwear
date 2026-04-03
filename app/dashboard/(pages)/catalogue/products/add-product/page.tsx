@@ -216,9 +216,9 @@ export default function AddProductPage() {
           <div>
             <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-600" />
-              Product Creation
+              New Product
             </h1>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Step {currentStep + 1} of {STEPS.length}</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Step {currentStep + 1} / {STEPS.length}</p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -230,7 +230,7 @@ export default function AddProductPage() {
                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-100 px-6 font-bold"
                >
                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                 Launch Product
+                 Add Product
                </Button>
              ) : (
                <Button 
@@ -238,7 +238,7 @@ export default function AddProductPage() {
                 disabled={!canGoNext}
                 className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg px-6 font-bold"
                >
-                 Next Section <ChevronRight className="w-4 h-4 ml-1" />
+                 Next <ChevronRight className="w-4 h-4 ml-1" />
                </Button>
              ) }
           </div>
@@ -275,7 +275,7 @@ export default function AddProductPage() {
         </div>
 
         {/* Content Area */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-8 md:p-12 min-h-[500px] relative overflow-hidden">
+        <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-12 min-h-[500px] relative overflow-hidden">
            <AnimatePresence mode="wait">
              <motion.div
                key={currentStep}
@@ -289,13 +289,13 @@ export default function AddProductPage() {
                 {currentStep === 0 && (
                   <div className="space-y-8">
                     <div className="space-y-2">
-                       <h2 className="text-3xl font-black text-slate-900">What are you listing?</h2>
-                       <p className="text-slate-500 font-medium">Start with the fundamental details of your product.</p>
+                       <h2 className="text-2xl md:text-3xl font-black text-slate-900">Basic Info</h2>
+                       <p className="text-slate-500 font-medium">Add the fundamental details of your product.</p>
                     </div>
 
                     <div className="space-y-6">
                       <div className="space-y-3">
-                        <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Product Identity</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Product Name</Label>
                         <Input 
                           placeholder="e.g. Midnight Silk Evening Gown"
                           value={name}
@@ -305,7 +305,7 @@ export default function AddProductPage() {
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">The Story / Description</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Description</Label>
                         <textarea 
                           rows={4}
                           placeholder="Describe the aesthetic, fit, and soul of this piece..."
@@ -317,7 +317,7 @@ export default function AddProductPage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-3">
-                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Core Category</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Category</Label>
                           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                             <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-bold px-6">
                                <SelectValue placeholder="Where does it fit?" />
@@ -335,7 +335,7 @@ export default function AddProductPage() {
                         </div>
 
                         <div className="space-y-3">
-                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Collection (Optional)</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Collection (Optional)</Label>
                           <Select value={selectedCollection} onValueChange={setSelectedCollection} disabled={selectedCategoryCollections.length === 0}>
                             <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-bold px-6">
                                <SelectValue placeholder={selectedCategoryCollections.length === 0 ? "No collections" : "Select collection"} />
@@ -358,13 +358,13 @@ export default function AddProductPage() {
                 {currentStep === 1 && (
                   <div className="space-y-8">
                     <div className="space-y-2">
-                       <h2 className="text-3xl font-black text-slate-900">Visual Showcase</h2>
-                       <p className="text-slate-500 font-medium">High quality visuals drive 80% of purchasing decisions.</p>
+                       <h2 className="text-2xl md:text-3xl font-black text-slate-900">Product Images</h2>
+                       <p className="text-slate-500 font-medium">High quality visuals make the difference.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                        <div className="space-y-6">
-                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Imagery (Max 4)</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Images (Max 4)</Label>
                           <div className="grid grid-cols-2 gap-4">
                              {uploadedImageUrls.map((url, idx) => (
                                <div key={idx} className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-md">
@@ -393,7 +393,7 @@ export default function AddProductPage() {
                        </div>
 
                        <div className="space-y-6">
-                          <Label className="text-xs font-black uppercase tracking-widest mb-1 text-slate-400">Product Cinematic (Optional)</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Product Video (Optional)</Label>
                           {uploadedVideoUrl ? (
                             <div className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-lg border-4 border-slate-50">
                                <video src={uploadedVideoUrl} className="w-full h-full object-cover" autoPlay muted loop />
@@ -406,7 +406,7 @@ export default function AddProductPage() {
                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
                                <div className="absolute bottom-6 left-6 flex items-center gap-2 text-white">
                                   <Video className="w-4 h-4" />
-                                  <span className="text-xs font-black uppercase tracking-widest">Cinema Ready</span>
+                                  <span className="text-xs font-black uppercase tracking-widest">Video Ready</span>
                                </div>
                             </div>
                           ) : (
@@ -416,7 +416,7 @@ export default function AddProductPage() {
                                  <Video className="w-8 h-8" />
                               </div>
                               <div className="text-center">
-                                <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600 transition-all">Add Cinematic</span>
+                                <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600 transition-all">Add Video</span>
                                 <span className="text-[9px] text-slate-300 font-bold tracking-tight">Max 50MB · Square / Vertical</span>
                               </div>
                             </label>
@@ -430,14 +430,14 @@ export default function AddProductPage() {
                 {currentStep === 2 && (
                   <div className="space-y-8">
                     <div className="space-y-2">
-                       <h2 className="text-3xl font-black text-slate-900">Commercials</h2>
+                       <h2 className="text-2xl md:text-3xl font-black text-slate-900">Pricing & Stock</h2>
                        <p className="text-slate-500 font-medium">Set your price and inventory levels.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                        <div className="space-y-8">
                           <div className="space-y-4">
-                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Active Price</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Price</Label>
                             <div className="flex gap-4">
                                <Select value={currency} onValueChange={setCurrency}>
                                   <SelectTrigger className="w-28 h-16 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-black text-lg">
@@ -464,7 +464,7 @@ export default function AddProductPage() {
                           </div>
 
                           <div className="space-y-4">
-                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Inventory Status</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock</Label>
                             <div className="flex items-center gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                <Package className="w-8 h-8 text-blue-600" />
                                <div className="flex-1">
@@ -486,7 +486,7 @@ export default function AddProductPage() {
                                 <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">
                                    <Sparkles className="w-4 h-4" />
                                 </span>
-                                <span className="text-sm font-black uppercase tracking-widest">Promotion Mode</span>
+                                <span className="text-sm font-black uppercase tracking-widest">Sale / Discount</span>
                              </div>
                              <Checkbox 
                                 checked={isOnSale} 
@@ -549,15 +549,15 @@ export default function AddProductPage() {
                 {currentStep === 3 && (
                   <div className="space-y-12">
                     <div className="space-y-2">
-                       <h2 className="text-3xl font-black text-slate-900">Final Touches</h2>
-                       <p className="text-slate-500 font-medium">Define variants and special options.</p>
+                       <h2 className="text-2xl md:text-3xl font-black text-slate-900">Product Details</h2>
+                       <p className="text-slate-500 font-medium">Define sizes and special options.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                        <div className="space-y-10">
                           <div className="space-y-6">
                             <div className="flex items-center justify-between">
-                               <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Size Matrix</Label>
+                               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sizes</Label>
                                <Select value={denomination} onValueChange={(v: "US" | "EU" | "UK" | "General") => setDenomination(v)}>
                                   <SelectTrigger className="w-24 h-8 text-[10px] font-black uppercase tracking-widest border-none bg-slate-100 rounded-lg">
                                      <SelectValue />
@@ -585,7 +585,7 @@ export default function AddProductPage() {
                           </div>
 
                           <div className="space-y-4">
-                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Color Palette</Label>
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Colors</Label>
                              <div className="p-4 bg-slate-50 rounded-[2rem] border border-slate-100">
                                 <ColorPicker value={colors} onChange={setColors} maxColors={10} />
                              </div>
@@ -594,7 +594,7 @@ export default function AddProductPage() {
 
                        <div className="space-y-10">
                           <div className="space-y-4">
-                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Material & Craft</Label>
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Material & Care</Label>
                              <Select value={material} onValueChange={setMaterial}>
                                 <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 font-bold px-6">
                                    <SelectValue placeholder="Select primary material" />
@@ -614,13 +614,13 @@ export default function AddProductPage() {
                           </div>
 
                           <div className="space-y-4">
-                             <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Product Attributes</Label>
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">More Options</Label>
                              <div className="space-y-3">
                                 {[
                                   { id: 'unisex', label: 'Unisex Design', state: isUnisex, set: setIsUnisex, icon: <GripVertical className="w-4 h-4" /> },
-                                  { id: 'custom', label: 'Accept Customizations', state: isCustomizable, set: setIsCustomizable, icon: <Palette className="w-4 h-4 text-pink-500" /> },
-                                  { id: 'preorder', label: 'Enable Pre-order', state: isPreorder, set: setIsPreorder, icon: <Package className="w-4 h-4 text-blue-500" /> },
-                                  { id: 'showcase', label: 'Request SuperAdmin Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+                                  { id: 'custom', label: 'Customizable', state: isCustomizable, set: setIsCustomizable, icon: <Palette className="w-4 h-4 text-pink-500" /> },
+                                  { id: 'preorder', label: 'Pre-order', state: isPreorder, set: setIsPreorder, icon: <Package className="w-4 h-4 text-blue-500" /> },
+                                  { id: 'showcase', label: 'Request Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
                                 ].map(opt => (
                                   <div key={opt.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                                      <div className="flex items-center gap-3">
@@ -672,7 +672,7 @@ export default function AddProductPage() {
                  <Info className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                 <p className="text-sm font-black uppercase tracking-widest">Need help with your listing?</p>
+                 <p className="text-sm font-black uppercase tracking-widest">Need help?</p>
                  <p className="text-xs text-slate-400 font-medium tracking-tight">Professional sellers follow our high-converting guide.</p>
               </div>
            </div>

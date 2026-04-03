@@ -100,6 +100,17 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
         // Notify for each new one (up to 3 at once to avoid spam)
         for (let i = newCount - 1; i >= 0; i--) {
           const item = notifications[i];
+          
+          // Exclude order-related updates from browser notifications as per user request
+          const excludedFromBrowser = [
+            'ORDER_UPDATE', 
+            'SHIPPING_UPDATE', 
+            'DELIVERY_ARRIVAL', 
+            'DELIVERY_CONFIRMATION_REQUEST'
+          ];
+          
+          if (excludedFromBrowser.includes(item.type)) continue;
+
           new window.Notification(item.title, {
             body: item.message,
             icon: '/navlogo.png',

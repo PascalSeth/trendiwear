@@ -226,7 +226,7 @@ export default function ProductClient({
       
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 px-4 md:px-8 lg:px-12 pb-24 border-b border-stone-100">
          
-         <div className="lg:col-span-7 h-[65vh] lg:h-[min(80vh,850px)] lg:sticky lg:top-32 bg-[#F2F2F2] rounded-[2rem] overflow-hidden relative group shadow-2xl ring-1 ring-black/5">
+         <div className="lg:col-span-7 h-[50vh] sm:h-[60vh] lg:h-[min(80vh,850px)] lg:sticky lg:top-32 bg-[#F2F2F2] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden relative group shadow-2xl ring-1 ring-black/5">
             <AnimatePresence mode="wait">
                <motion.div 
                  key={activeImage}
@@ -251,15 +251,9 @@ export default function ProductClient({
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
-                  <div className="absolute bottom-12 left-10 space-y-4 max-w-[80%]">
-                     <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.5em] font-mono flex items-center gap-3">
-                       <div className="w-8 h-[1px] bg-white/20" />
-                       Code: {product.id.slice(0, 8)}
-                     </div>
                      <h1 className="text-4xl sm:text-5xl font-serif italic text-white tracking-tighter drop-shadow-lg">
                         {product.name}
                      </h1>
-                  </div>
                   {product.isPreorder && (
                     <div className="absolute top-10 left-10 px-5 py-2 bg-black/80 backdrop-blur-md rounded-full border border-white/20 z-30">
                        <span className="text-[9px] font-black text-white uppercase tracking-[0.3em]">Pre-order</span>
@@ -307,10 +301,10 @@ export default function ProductClient({
                      <span className="text-sm font-mono tracking-widest text-neutral-400 italic">BY {product.professional.professionalProfile?.businessName || "TRENDIZIP"}</span>
                      <BadgeCheck size={12} className="text-blue-500" />
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-serif leading-tight">{product.name}</h2>
-                  <div className="flex items-end gap-4 mt-2">
-                     <p className="text-4xl font-serif italic">GH₵ {product.price}</p>
-                     <span className="text-xs font-mono text-neutral-400 pb-1">Price includes VAT</span>
+                  <h2 className="text-3xl md:text-5xl font-serif leading-tight">{product.name}</h2>
+                  <div className="flex items-baseline gap-3 mt-1">
+                     <p className="text-3xl md:text-4xl font-serif italic">GH₵ {product.price}</p>
+                     <span className="text-[10px] font-mono text-neutral-400">VAT Incl.</span>
                   </div>
 
                   {/* Rating Summary added for visibility */}
@@ -325,7 +319,7 @@ export default function ProductClient({
                            />
                         ))}
                         <span className="text-[10px] font-black uppercase tracking-widest ml-2 border-b border-black/10 group-hover:border-black transition-all">
-                           {reviews.length} Buyer Tales
+                           {reviews.length} Reviews
                         </span>
                      </div>
                   </div>
@@ -337,13 +331,13 @@ export default function ProductClient({
                   )}
                </div>
 
-               <p className="text-stone-500 font-serif text-lg leading-relaxed italic border-l-[1px] border-stone-100 pl-8">
+               <p className="text-stone-500 font-serif text-base md:text-lg leading-relaxed italic border-l-[1px] border-stone-200 pl-4 md:pl-8">
                   {product.description}
                </p>
 
                {product.sizes.length > 0 && (
                  <div className="space-y-6 pt-8">
-                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Available Sizes</label>
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Sizes</label>
                     <div className="flex flex-wrap gap-3">
                        {product.sizes.map(size => (
                           <button 
@@ -363,7 +357,7 @@ export default function ProductClient({
 
                {product.colors.length > 0 && (
                  <div className="space-y-6 pt-8">
-                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Color Palette</label>
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Colors</label>
                     <div className="flex flex-wrap gap-5 px-1 py-2">
                        {product.colors.map(color => (
                           <button 
@@ -389,7 +383,7 @@ export default function ProductClient({
 
                <div className="space-y-8">
                   <div className="flex justify-between items-end">
-                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Order Quantity / {quantity}</label>
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Quantity</label>
                     <div className="flex flex-col items-end">
                       {product.isPreorder ? (
                         <span className="text-[9px] font-black uppercase tracking-widest text-blue-500">Available for Pre-order</span>
@@ -445,7 +439,7 @@ export default function ProductClient({
                         }
                         setIsChatOpen(true);
                       }}
-                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border border-stone-200 text-[10px] font-black uppercase tracking-widest hover:bg-stone-50 transition-all"
+                      className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-stone-200 text-[9px] font-black uppercase tracking-widest hover:bg-stone-50 transition-all"
                     >
                       <MessageSquare size={14} /> Message Seller
                     </button>
@@ -462,8 +456,8 @@ export default function ProductClient({
          <div className="w-full bg-[#FAFAF9] py-16 md:py-24 border-b border-stone-100 text-center relative overflow-hidden">
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 flex flex-col items-center gap-8 relative z-10">
                  <div className="space-y-4 max-w-2xl mx-auto">
-                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400 font-mono">The Showcase</p>
-                     <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-stone-900">In Motion</h3>
+                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400 font-mono">Video Demo</p>
+                     <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-stone-900">Product in Action</h3>
                  </div>
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
@@ -492,19 +486,19 @@ export default function ProductClient({
                      {product.professional.professionalProfile?.businessImage ? (
                         <NextImage 
                            src={product.professional.professionalProfile.businessImage} 
-                           alt="Atelier" 
+                           alt="Business" 
                            fill 
                            className="object-cover grayscale hover:grayscale-0 transition-all duration-700 hover:scale-105" 
                         />
                      ) : (
-                        <div className="w-full h-full bg-stone-50 flex items-center justify-center text-stone-300 italic serif text-2xl">Atelier</div>
+                        <div className="w-full h-full bg-stone-50 flex items-center justify-center text-stone-300 italic serif text-2xl">Business</div>
                      )}
                   </div>
                </motion.div>
 
                <div className="lg:col-span-7 space-y-8">
                   <div className="space-y-4">
-                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-red-900/40 font-mono">Designed By</p>
+                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-red-900/40 font-mono">Business Office</p>
                      <h3 className="text-4xl md:text-5xl font-serif italic tracking-tighter text-stone-900">
                         {product.professional.professionalProfile?.businessName}
                      </h3>
@@ -514,7 +508,7 @@ export default function ProductClient({
                   </p>
                   <div className="flex items-center gap-8 pt-4">
                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400">Provenance</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400">Location</p>
                         <div className="flex items-center gap-1.5 text-stone-950 font-mono text-xs uppercase tracking-widest mt-1">
                            <MapPin size={12} className="text-red-900" />
                            {product.professional.professionalProfile?.location || "Accra"}
@@ -525,7 +519,7 @@ export default function ProductClient({
                         href={`/tz/${product.professional.professionalProfile?.slug}`} 
                         className="group inline-flex h-12 px-8 bg-stone-950 text-white rounded-full items-center justify-center transition-all hover:bg-black hover:scale-[1.02] active:scale-95 shadow-lg shadow-stone-900/10"
                      >
-                        <span className="text-[10px] font-black uppercase tracking-widest">Visit Atelier</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">View Business</span>
                         <ArrowRight size={14} className="ml-3 group-hover:translate-x-1 transition-transform" />
                      </Link>
                   </div>
@@ -559,7 +553,7 @@ export default function ProductClient({
             
             <div className="lg:col-span-8 space-y-12">
                <div className="flex items-end justify-between border-b border-stone-200 pb-6">
-                  <h3 className="text-4xl font-serif italic tracking-tighter">Buyer Tales</h3>
+                  <h3 className="text-3xl md:text-4xl font-serif italic tracking-tighter">Customer Reviews</h3>
                   <div className="flex items-center gap-2">
                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-500">{reviews.length} Experiences</span>
                   </div>
@@ -688,7 +682,7 @@ export default function ProductClient({
                     ))
                   ) : (
                     <div className="py-16 text-center space-y-3 bg-white rounded-[2rem] border border-stone-100 shadow-sm">
-                      <p className="text-stone-300 text-4xl font-serif italic">No tales yet...</p>
+                      <p className="text-stone-300 text-3xl font-serif italic">No reviews yet...</p>
                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Be the first to share your experience with this piece.</p>
                     </div>
                   )}

@@ -298,32 +298,23 @@ const SuperAdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-4 md:px-6 py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
-                <p className="text-gray-600 mt-1 text-sm md:text-base">Manage your TrendiZip platform</p>
-              </div>
-              <div className="flex items-center space-x-2 md:space-x-4">
-                <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-                </button>
-                <button className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base">
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add New</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
-              </div>
+        {/* Page Content Header */}
+        <div className="px-4 md:px-8 pt-8 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">System Center</h1>
+              <p className="text-slate-500 font-medium text-sm mt-1">Super Admin Panel Control</p>
             </div>
+            <button className="flex h-11 items-center gap-2 px-5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-2xl shadow-xl shadow-violet-200/50 hover:shadow-2xl hover:shadow-violet-300/60 hover:-translate-y-0.5 transition-all text-sm md:text-base">
+              <Plus className="h-4.5 w-4.5" />
+              <span>Add New</span>
+            </button>
           </div>
-        </header>
+        </div>
 
         {/* Navigation Tabs */}
-        <nav className="bg-white px-6 py-3 border-b border-gray-200">
-          <div className="flex space-x-2 md:space-x-8 overflow-x-auto scrollbar-hide">
+        <nav className="px-4 md:px-8 py-4">
+          <div className="flex space-x-2 md:space-x-4 overflow-x-auto scrollbar-hide py-2">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'orders', label: 'Orders', icon: ShoppingBag },
@@ -340,8 +331,8 @@ const SuperAdminDashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'text-indigo-600 bg-indigo-50'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    ? 'text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md shadow-violet-200/40'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />

@@ -44,25 +44,8 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
         <div className="absolute -top-10 left-[20%] h-32 w-64 animate-blob rounded-full bg-violet-400/10 blur-[60px]" />
         <div className="absolute top-0 right-1/4 h-24 w-32 animate-pulse-slow rounded-full bg-cyan-300/10 blur-[40px] [animation-delay:4s]" />
       </div>
-      <div className="relative flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={onMenuClick}
-          className="group relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/40 bg-white/30 text-slate-600 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 hover:text-slate-900 lg:hidden"
-        >
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-violet-400/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-          <Menu className="h-5 w-5" />
-        </button>
+      <div className="relative flex items-center justify-between gap-4 px-3 py-3 sm:px-6 sm:py-4">
 
-        {/* Desktop Sidebar Toggle */}
-        <button
-          onClick={onDesktopToggleSidebar}
-          className="group relative hidden h-10 w-10 items-center justify-center rounded-xl border border-white/40 bg-white/30 text-slate-600 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 hover:text-slate-900 lg:flex"
-          aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-violet-400/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-          {isSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-        </button>
 
         {/* Search Bar */}
         <div className="hidden max-w-xl flex-1 md:flex">
@@ -89,22 +72,22 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 rounded-xl border border-white/40 bg-white/30 p-1.5 pr-4 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60">
+              <button className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/30 p-1 sm:p-1.5 sm:pr-4 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60">
                 <div className="relative">
                   {displayImage ? (
                     <Image
                       src={displayImage}
                       alt={displayName}
-                      width={34}
-                      height={34}
-                      className="h-[34px] w-[34px] rounded-full object-cover ring-2 ring-white/60"
+                      width={32}
+                      height={32}
+                      className="h-[32px] w-[32px] sm:h-[34px] sm:w-[34px] rounded-full object-cover ring-2 ring-white/60"
                     />
                   ) : (
-                    <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-violet-100 ring-2 ring-white/60">
-                      <User className="h-4.5 w-4.5 text-violet-600" />
+                    <div className="flex h-[32px] w-[32px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-violet-100 ring-2 ring-white/60">
+                      <User className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-violet-600" />
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full border-2 border-white bg-emerald-500 shadow-sm" />
                 </div>
                 <div className="hidden text-left md:block">
                   <p className="max-w-[140px] truncate text-sm font-semibold text-slate-900 leading-tight">{displayName}</p>

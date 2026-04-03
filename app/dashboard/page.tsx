@@ -184,7 +184,7 @@ function ProfessionalBusinessDashboard({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            
            {/* Metric Card 1: Revenue */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-indigo-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-500 hover:-translate-y-1">
+           <div className="group relative bg-white border border-white shadow-xl shadow-indigo-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-500 hover:-translate-y-1">
               <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-50 rounded-full blur-3xl group-hover:bg-indigo-100 transition-colors"></div>
               <div className="relative space-y-4">
                  <div className="flex justify-between items-start">
@@ -197,16 +197,16 @@ function ProfessionalBusinessDashboard({
                     </div>
                  </div>
                  <div>
-                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Total Revenue</h3>
-                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Total Revenue</h3>
+                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
                        {formatMoney(dashboardData?.metrics?.totalRevenue || professionalProfile.accountBalance)}
-                    </p>
+                     </p>
                  </div>
               </div>
            </div>
 
            {/* Metric Card 2: Orders */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-blue-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 hover:-translate-y-1">
+           <div className="group relative bg-white border border-white shadow-xl shadow-blue-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 hover:-translate-y-1">
               <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-blue-50 rounded-full blur-3xl group-hover:bg-blue-100 transition-colors"></div>
               <div className="relative space-y-4">
                  <div className="flex justify-between items-start">
@@ -216,16 +216,16 @@ function ProfessionalBusinessDashboard({
                     <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full border border-blue-100">Live</span>
                  </div>
                  <div>
-                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Fulfillment</h3>
-                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                       {dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}
-                    </p>
+                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Fulfillment</h3>
+                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                        {dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}
+                     </p>
                  </div>
               </div>
            </div>
 
            {/* Metric Card 3: Rating */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-amber-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-amber-200/50 transition-all duration-500 hover:-translate-y-1">
+           <div className="group relative bg-white border border-white shadow-xl shadow-amber-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-amber-200/50 transition-all duration-500 hover:-translate-y-1">
                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-amber-50 rounded-full blur-3xl group-hover:bg-amber-100 transition-colors"></div>
                <div className="relative space-y-4">
                   <div className="flex justify-between items-start">
@@ -235,11 +235,11 @@ function ProfessionalBusinessDashboard({
                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-full border border-amber-100">{dashboardData?.metrics?.totalReviews || 0} Reviews</span>
                   </div>
                   <div>
-                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Reputation</h3>
-                    <div className="flex items-baseline gap-2">
-                       <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                          {dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "N/A"}
-                       </p>
+                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Reputation</h3>
+                     <div className="flex items-baseline gap-2">
+                        <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                           {dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "N/A"}
+                        </p>
                        <div className="flex text-amber-400 gap-0.5">
                           {[1,2,3,4,5].map((star) => (
                              <Star key={star} className={`w-3.5 h-3.5 ${star <= (Math.round(dashboardData?.metrics?.avgRating || 0)) ? 'fill-current' : 'text-slate-100'}`} />
@@ -251,7 +251,7 @@ function ProfessionalBusinessDashboard({
            </div>
 
            {/* Metric Card 4: Customers */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-purple-100/30 rounded-3xl p-8 overflow-hidden hover:shadow-2xl hover:shadow-purple-200/50 transition-all duration-500 hover:-translate-y-1">
+           <div className="group relative bg-white border border-white shadow-xl shadow-purple-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-purple-200/50 transition-all duration-500 hover:-translate-y-1">
               <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-purple-50 rounded-full blur-3xl group-hover:bg-purple-100 transition-colors"></div>
               <div className="relative space-y-4">
                  <div className="flex justify-between items-start">
@@ -261,10 +261,10 @@ function ProfessionalBusinessDashboard({
                     <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-1.5 rounded-full border border-purple-100">Global</span>
                  </div>
                  <div>
-                    <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Trust Base</h3>
-                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                       {dashboardData?.metrics?.activeCustomers || 0}
-                    </p>
+                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Trust Base</h3>
+                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                        {dashboardData?.metrics?.activeCustomers || 0}
+                     </p>
                  </div>
               </div>
            </div>
