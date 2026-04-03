@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -590,7 +589,7 @@ export function CategoryTable() {
             <Button 
               variant="default" 
               size="sm" 
-              onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], collections: [], _count: { products: 0 } } as any)}
+              onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], collections: [], _count: { products: 0 } } as Category)}
               className="bg-blue-600 hover:bg-blue-700 h-8 px-2 sm:px-4 rounded-xl shadow-lg shadow-blue-100 font-bold shrink-0 items-center justify-center flex"
             >
               <Plus className="h-4 w-4 sm:mr-2" />

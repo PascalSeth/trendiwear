@@ -2,8 +2,7 @@ import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
 export default withAuth(
-  function middleware(_req) {
-    // console.log("token: ", _req.nextauth.token)
+  function middleware() {
     return NextResponse.next()
   },
   {

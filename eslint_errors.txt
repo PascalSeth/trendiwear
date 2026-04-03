@@ -1,0 +1,18 @@
+
+C:\Users\pasca\OneDrive\Desktop\trendiwear\app\dashboard\(pages)\catalogue\category\CategoryDataTable.tsx
+   25:3    error  'DropdownMenuCheckboxItem' is defined but never used  @typescript-eslint/no-unused-vars
+  593:165  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+
+C:\Users\pasca\OneDrive\Desktop\trendiwear\app\dashboard\components\DashboardTopBar.tsx
+  26:16  error  '_onMenuClick' is defined but never used                  @typescript-eslint/no-unused-vars
+  27:27  error  '_onDesktopToggleSidebar' is defined but never used       @typescript-eslint/no-unused-vars
+  28:23  error  '_isSidebarCollapsed' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\pasca\OneDrive\Desktop\trendiwear\middleware.ts
+  5:23  error  '_req' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\pasca\OneDrive\Desktop\trendiwear\next-env.d.ts
+  3:1  error  Do not use a triple slash reference for ./.next/types/routes.d.ts, use `import` style instead  @typescript-eslint/triple-slash-reference
+
+✖ 7 problems (7 errors, 0 warnings)
+

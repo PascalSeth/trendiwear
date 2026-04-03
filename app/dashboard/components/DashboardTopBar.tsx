@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, User } from 'lucide-react';
+import { Search, User, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -23,9 +23,9 @@ interface DashboardTopBarProps {
 }
 
 const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
-  onMenuClick: _onMenuClick,
-  onDesktopToggleSidebar: _onDesktopToggleSidebar,
-  isSidebarCollapsed: _isSidebarCollapsed = false,
+  onMenuClick,
+  onDesktopToggleSidebar,
+  isSidebarCollapsed = false,
   userInfo,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +45,29 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
         <div className="absolute top-0 right-1/4 h-24 w-32 animate-pulse-slow rounded-full bg-cyan-300/10 blur-[40px] [animation-delay:4s]" />
       </div>
       <div className="relative flex items-center justify-between gap-4 px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex items-center gap-2">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={onMenuClick}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm border border-white/40 shadow-sm transition-all hover:bg-white/60 active:scale-95 lg:hidden"
+            aria-label="Toggle Menu"
+          >
+            <Menu className="h-5 w-5 text-slate-700" />
+          </button>
+
+          {/* Desktop Sidebar Toggle */}
+          <button
+            onClick={onDesktopToggleSidebar}
+            className="hidden h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm border border-white/40 shadow-sm transition-all hover:bg-white/60 active:scale-95 lg:flex text-slate-700"
+            aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="h-5 w-5 animate-in fade-in zoom-in duration-300" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5 animate-in fade-in zoom-in duration-300" />
+            )}
+          </button>
+        </div>
 
 
         {/* Search Bar */}

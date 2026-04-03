@@ -1,8 +1,1 @@
-scripts/
-prisma/*.js
-check_profiles.js
-test_banks.js
-test_db.js
-tmp/
-lint_output.txt
-eslint_errors.txt
+next-env.d.ts
