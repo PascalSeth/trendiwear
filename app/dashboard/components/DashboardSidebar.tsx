@@ -267,6 +267,11 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
             )}
           >
             <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
+              <div className={cn(
+                'p-1.5 rounded-lg transition-colors',
+                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+              )}>
+                {item.icon}
               </div>
               {!collapsed && (
                 <div className="flex items-center gap-2">
