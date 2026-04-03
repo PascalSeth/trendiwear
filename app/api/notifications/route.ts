@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
       // Filter for customer/personal related notifications
       where.type = {
         in: [
+          "MESSAGE_RECEIVED",
+          "ORDER_UPDATE",
           "SHIPPING_UPDATE", 
           "DELIVERY_ARRIVAL", 
           "WISHLIST_SALE", 

@@ -68,6 +68,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
   const queryParams = new URLSearchParams({
     limit: '10',
     minimal: 'true',
+    unreadOnly: 'true',
   });
   if (context) queryParams.append('context', context);
   
