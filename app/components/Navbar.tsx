@@ -72,7 +72,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     if (clearedCategories.has(label)) return false;
     if (label === 'Messages') return unreadMessagesCount > 0;
     const types = CATEGORY_TYPES[label] || [];
-    return notifications.some((n: any) => types.includes(n.type));
+    return notifications.some((n: { type: string }) => types.includes(n.type));
   };
 
   const handleCategoryClick = async (label: string) => {

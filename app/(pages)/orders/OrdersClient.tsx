@@ -84,10 +84,10 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
   const unreadNotifications = notificationsData?.notifications || []
 
   const hasUnreadUpdate = (orderId: string) => {
-    return unreadNotifications.some((n: any) => {
+    return unreadNotifications.some((n: { isRead: boolean; data?: string | Record<string, unknown> }) => {
       if (n.isRead) return false
       try {
-        const data = typeof n.data === 'string' ? JSON.parse(n.data) : n.data
+        const data = typeof n.data === 'string' ? (JSON.parse(n.data) as Record<string, unknown>) : (n.data as Record<string, unknown>)
         return data?.orderId === orderId
       } catch {
         return false

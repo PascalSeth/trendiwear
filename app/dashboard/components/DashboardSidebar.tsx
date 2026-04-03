@@ -30,7 +30,7 @@ import { useState } from 'react';
 import { Role } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -59,8 +59,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
     const orderTypes = ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL', 'NEW_ORDER', 'DELIVERY_CONFIRMATION_REQUEST'];
     const bookingTypes = ['BOOKING_CONFIRMATION', 'BOOKING_UPDATE', 'NEW_BOOKING'];
     
-    if (type === 'orders') return unreadNotifications.some((n: any) => !n.isRead && orderTypes.includes(n.type));
-    if (type === 'bookings') return unreadNotifications.some((n: any) => !n.isRead && bookingTypes.includes(n.type));
+    if (type === 'orders') return unreadNotifications.some((n: { isRead: boolean; type: string }) => !n.isRead && orderTypes.includes(n.type));
+    if (type === 'bookings') return unreadNotifications.some((n: { isRead: boolean; type: string }) => !n.isRead && bookingTypes.includes(n.type));
     return false;
   };
 
