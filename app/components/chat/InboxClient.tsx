@@ -16,7 +16,6 @@ import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import { useSession } from 'next-auth/react';
-import { supabase } from '@/lib/supabase';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -62,7 +61,6 @@ interface Message {
       businessName?: string;
     };
   };
-  isRead: boolean;
 };
 
 export function InboxClient({ currentUserId, businessName }: { currentUserId: string, businessName?: string }) {
@@ -72,10 +70,6 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
-  
-  const [isOtherOnline, setIsOtherOnline] = useState(false);
-  const [isOtherTyping, setIsOtherTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 1. Fetch all conversations
   const { data: conversations, mutate: mutateConvs } = useSWR<Conversation[]>(
@@ -89,95 +83,12 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
     selectedId ? `/api/conversations/${selectedId}/messages` : null,
     fetcher,
     { 
-      refreshInterval: 15000, // Reduced polling frequency because we use Realtime
-      revalidateOnFocus: true,
+      refreshInterval: 5000,
+      revalidateOnFocus: false,
     }
   );
 
   const selectedConv = conversations?.find(c => c.id === selectedId);
-
-  // 3. Realtime Messaging & Presence
-  useEffect(() => {
-    if (!selectedId || !currentUserId) return;
-
-    const channelName = `conversation:${selectedId}`;
-    const channel = supabase.channel(channelName, {
-      config: {
-        presence: {
-          key: currentUserId,
-        },
-      },
-    });
-
-    // A. Handle Postgres Changes (New Messages & Read Receipts)
-    channel
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'Message',
-          filter: `conversationId=eq.${selectedId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-             // Avoid duplicate optimistic messages if possible
-             mutateMessages(); 
-             mutateConvs();
-          } else if (payload.eventType === 'UPDATE') {
-             // Handle Read Receipts
-             mutateMessages();
-          }
-        }
-      )
-      // B. Handle Presence (Online/Offline)
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const otherUserId = selectedConv?.professionalId === currentUserId 
-           ? selectedConv.customerId 
-           : selectedConv?.professionalId;
-        
-        const isOnline = Object.values(state).flat().some((p: Record<string, unknown>) => p.user_id === otherUserId || p.presence_ref);
-        // Note: In a real scenario, we'd include user_id in the presence payload
-        // For now, if there's > 1 person in the channel, someone else is online
-        const presenceCount = Object.keys(state).length;
-        setIsOtherOnline(presenceCount > 1 || isOnline);
-      })
-      // C. Handle Broadcast (Typing Indicators)
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (payload.userId !== currentUserId) {
-          setIsOtherTyping(true);
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => setIsOtherTyping(false), 3000);
-        }
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: currentUserId, online_at: new Date().toISOString() });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
-  }, [selectedId, currentUserId, selectedConv, mutateMessages, mutateConvs]);
-
-  // 4. Sync Read Status when opening/new messages arrive
-  useEffect(() => {
-    if (!selectedId) return;
-    
-    const markAsRead = async () => {
-      try {
-        await fetch(`/api/conversations/${selectedId}/read`, { method: 'PATCH' });
-        mutateMessages(); // Update UI
-      } catch (err) {
-        console.error("Failed to mark as read", err);
-      }
-    };
-
-    markAsRead();
-  }, [selectedId, messages?.length, mutateMessages]);
 
   // Auto-scroll on messages
   useEffect(() => {
@@ -194,20 +105,12 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
     setInputText('');
     setIsSending(true);
 
-    // Stop typing indicator on send
-    supabase.channel(`conversation:${selectedId}`).send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: currentUserId, isTyping: false },
-    });
-
     // Optimistic UI Update
     const optimisticMessage: Message = {
         id: Math.random().toString(),
         content: text,
         senderId: currentUserId,
         createdAt: new Date().toISOString(),
-        isRead: false,
         sender: {
             id: currentUserId,
             firstName: 'You',
@@ -374,17 +277,9 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
                       ? `${selectedConv.customer.firstName} ${selectedConv.customer.lastName}`
                       : (selectedConv.professional.professionalProfile?.businessName || `${selectedConv.professional.firstName} ${selectedConv.professional.lastName}`)}
                   </h3>
-                  <div className={cn(
-                    "flex items-center gap-1.5 transition-opacity duration-300",
-                    isOtherOnline ? "opacity-100" : "opacity-30 grayscale"
-                  )}>
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      isOtherOnline ? "bg-emerald-500 animate-pulse" : "bg-stone-400"
-                    )} />
-                    <span className="text-[10px] text-stone-500 uppercase tracking-[0.2em] font-mono">
-                      {isOtherTyping ? "Typing..." : (isOtherOnline ? "Online" : "Offline")}
-                    </span>
+                  <div className="flex items-center gap-1.5 grayscale opacity-50">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] text-stone-500 uppercase tracking-[0.2em] font-mono">Typing...</span>
                   </div>
                 </div>
               </div>
@@ -468,12 +363,7 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
                         isMe ? "justify-end" : "justify-start"
                       )}>
                         {format(new Date(msg.createdAt), 'HH:mm aaa')}
-                        {isMe && (
-                          <CheckCheck className={cn(
-                            "h-3 w-3",
-                            msg.isRead ? "text-emerald-500" : "text-stone-300"
-                          )} />
-                        )}
+                        {isMe && <CheckCheck className="h-3 w-3 text-emerald-500" />}
                       </div>
                     </div>
                   </motion.div>
@@ -493,15 +383,7 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
                 </Button>
                 <input 
                   value={inputText}
-                  onChange={(e) => {
-                    setInputText(e.target.value);
-                    // Broadcast typing status
-                    supabase.channel(`conversation:${selectedId}`).send({
-                      type: 'broadcast',
-                      event: 'typing',
-                      payload: { userId: currentUserId, isTyping: true },
-                    });
-                  }}
+                  onChange={(e) => setInputText(e.target.value)}
                   placeholder="Craft your message..."
                   className="flex-1 bg-transparent border-none outline-none text-sm md:text-base text-stone-800 placeholder:text-stone-400"
                 />

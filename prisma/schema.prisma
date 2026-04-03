@@ -57,7 +57,6 @@ model User {
   profileExtension           UserProfileExtension?
   recommendations            UserRecommendation[]
   searches                   UserSearch[]
-  lastSeenAt                 DateTime?
   wishlist                   WishlistItem[]
   servicePackages            ServicePackage[]
   reviewComments             ReviewReply[]
@@ -816,8 +815,6 @@ model Conversation {
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  typingUserId   String?
-  typingAt       DateTime?
   customer       User      @relation("CustomerConversations", fields: [customerId], references: [id])
   professional   User      @relation("ProfessionalConversations", fields: [professionalId], references: [id])
   messages       Message[]
