@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, FolderOpen, Package, MoreHorizontal, Edit, Trash2, Settings } from "lucide-react";
+import { ArrowUpDown, ChevronDown, FolderOpen, Package, MoreHorizontal, Edit, Trash2, Settings, Plus } from "lucide-react";
 import * as React from "react";
 import Image from "next/image";
 
@@ -76,14 +76,14 @@ export function CategoryTable() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch all categories (both parent and child categories)
         const response = await fetch("/api/categories");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch categories: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         setCategories(data || []);
       } catch (error) {
@@ -376,8 +376,8 @@ export function CategoryTable() {
     return (
       <div>
         <div
-          className={`flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg ${
-            level > 0 ? 'ml-6 border-l border-gray-200 pl-4' : ''
+          className={`group flex items-center gap-2 p-2 hover:bg-slate-50 transition-colors rounded-xl overflow-hidden min-w-0 ${
+            level > 0 ? `ml-0 border-l-2 border-slate-100 pl-2 sm:pl-6` : ''
           }`}
         >
           {children.length > 0 && (
@@ -409,22 +409,24 @@ export function CategoryTable() {
             )}
 
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{category.name}</span>
-                <Badge variant="outline" className="text-xs">
-                  {category._count.products} products
-                </Badge>
-                {category.collections.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {category.collections.length} collections
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
+                <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate text-sm">{category.name}</span>
+                <div className="flex items-center gap-1.5 whitespace-nowrap overflow-x-auto scrollbar-hide">
+                  <Badge variant="outline" className="text-[9px] font-bold py-0 h-4 md:h-5 whitespace-nowrap shrink-0">
+                    {category._count.products} Products
                   </Badge>
-                )}
+                  {category.collections.length > 0 && (
+                    <Badge variant="secondary" className="text-[9px] font-bold py-0 h-4 md:h-5 bg-slate-50 text-slate-500 whitespace-nowrap shrink-0">
+                      {category.collections.length} Collections
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">{category.description}</div>
+              <div className="text-xs text-slate-400 truncate max-md:hidden">{category.description}</div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Badge variant={category.isActive ? "default" : "destructive"} className="text-xs">
+              <Badge variant={category.isActive ? "default" : "destructive"} className="text-[9px] font-black uppercase px-2 py-0.5 whitespace-nowrap shrink-0 max-xs:hidden">
                 {category.isActive ? "Active" : "Inactive"}
               </Badge>
 
@@ -518,9 +520,9 @@ export function CategoryTable() {
           <div className="text-center">
             <div className="text-red-500 mb-2">Error loading categories</div>
             <div className="text-sm text-gray-500">{error}</div>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
               className="mt-4"
             >
               Retry
@@ -532,81 +534,69 @@ export function CategoryTable() {
   }
 
   return (
-    <div className="w-full">
-            <ProductCategorySheet
+    <div className="w-full max-w-full overflow-x-hidden">
+      <ProductCategorySheet
         categories={categories}
-  onCategoryAdded={(newCategory) => {
-    setCategories(prev => [...prev, newCategory]);
-  }}
-  categoryToEdit={editingCategory || undefined}
-  onCategoryUpdated={(updatedCategory) => {
-    setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
-    setEditingCategory(null);
-  }}
-  onClose={() => setEditingCategory(null)}  />
-      
-      <div className="flex flex-col gap-4 py-4">
+        onCategoryAdded={(newCategory) => {
+          setCategories(prev => [...prev, newCategory]);
+        }}
+        categoryToEdit={editingCategory || undefined}
+        onCategoryUpdated={(updatedCategory) => {
+          setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
+          setEditingCategory(null);
+        }}
+        onClose={() => setEditingCategory(null)} />
+
+      <div className="flex flex-col gap-3 py-4">
         <Input
-          placeholder="Filter categories..."
+          placeholder="Search categories..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="w-full h-11 rounded-xl border-slate-200 focus:ring-blue-500 font-medium bg-white"
         />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            Total: {categories.length}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Active: {categories.filter(c => c.isActive).length}
-          </Badge>
-
-          <div className="flex items-center border rounded-lg p-1 ml-auto">
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-              className="h-8 px-2 md:px-3 text-xs md:text-sm"
-            >
-              <span className="hidden sm:inline">Table View</span>
-              <span className="sm:hidden">Table</span>
-            </Button>
-            <Button
-              variant={viewMode === 'tree' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('tree')}
-              className="h-8 px-2 md:px-3 text-xs md:text-sm"
-            >
-              <span className="hidden sm:inline">Tree View</span>
-              <span className="sm:hidden">Tree</span>
-            </Button>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 min-w-0">
+             <Badge variant="outline" className="text-[10px] font-bold whitespace-nowrap shrink-0">
+                Total: {categories.length}
+             </Badge>
+             <Badge variant="outline" className="text-[10px] font-bold whitespace-nowrap shrink-0">
+                Active: {categories.filter(c => c.isActive).length}
+             </Badge>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <span className="hidden sm:inline">Columns</span>
-                <ChevronDown className="h-4 w-4 sm:ml-2" />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center border border-slate-200 rounded-xl p-0.5 bg-white shadow-sm overflow-hidden min-w-0">
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className={`h-7 px-2 text-[9px] font-black uppercase tracking-wider rounded-lg ${viewMode === 'table' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}
+              >
+                Table
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <Button
+                variant={viewMode === 'tree' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('tree')}
+                className={`h-7 px-2 text-[9px] font-black uppercase tracking-wider rounded-lg ${viewMode === 'tree' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}
+              >
+                Tree
+              </Button>
+            </div>
+
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], collections: [], _count: { products: 0 } } as any)}
+              className="bg-blue-600 hover:bg-blue-700 h-8 px-2 sm:px-4 rounded-xl shadow-lg shadow-blue-100 font-bold shrink-0 items-center justify-center flex"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Category</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -669,19 +659,19 @@ export function CategoryTable() {
       )}
 
       {viewMode === 'table' ? (
-        <div className="rounded-md border overflow-x-auto">
-          <Table className="w-full">
-            <TableHeader>
+        <div className="rounded-md border bg-white overflow-hidden">
+          <Table className="w-full hidden md:table">
+            <TableHeader className="bg-slate-50/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -695,8 +685,8 @@ export function CategoryTable() {
                     className="h-24 text-center"
                   >
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-                      <span className="ml-2">Loading categories...</span>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+                      <span className="ml-2 font-medium">Loading items...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -705,10 +695,10 @@ export function CategoryTable() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className={!row.original.isActive ? "opacity-60" : ""}
+                    className={!row.original.isActive ? "opacity-60" : "hover:bg-slate-50/50 transition-colors"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="py-4">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -723,10 +713,10 @@ export function CategoryTable() {
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    <div className="flex flex-col items-center justify-center">
-                      <Package className="h-8 w-8 text-gray-400 mb-2" />
-                      <span>No categories found.</span>
-                      <span className="text-sm text-gray-500 mt-1">
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Package className="h-10 w-10 text-slate-200 mb-2" />
+                      <span className="font-bold text-slate-900">No categories found.</span>
+                      <span className="text-sm text-slate-500 mt-1">
                         Create your first category to get started.
                       </span>
                     </div>
@@ -735,6 +725,86 @@ export function CategoryTable() {
               )}
             </TableBody>
           </Table>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900 mx-auto mb-2"></div>
+                <span className="text-sm font-medium text-slate-500">Loading categories...</span>
+              </div>
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => {
+                const category = row.original;
+                return (
+                  <div key={row.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors overflow-hidden">
+                    <div className="flex items-start justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {category.imageUrl ? (
+                          <div className="h-12 w-12 shrink-0 relative rounded-xl overflow-hidden shadow-sm ring-1 ring-black/5">
+                            <Image src={category.imageUrl} alt={category.name} fill className="object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-12 w-12 shrink-0 bg-slate-50 rounded-xl flex items-center justify-center ring-1 ring-black/5">
+                            <Package className="h-5 w-5 text-slate-300" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-black text-slate-900 leading-tight truncate">{category.name}</p>
+                          <p className="text-[10px] font-mono text-slate-400 mt-0.5 truncate">{category.slug}</p>
+                        </div>
+                      </div>
+                      <Badge variant={category.isActive ? "default" : "destructive"} className="text-[9px] font-black uppercase px-2 py-0.5 whitespace-nowrap shrink-0">
+                        {category.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-[9px] font-bold py-0 h-5 whitespace-nowrap shrink-0">
+                          {category._count.products} Products
+                        </Badge>
+                        {category.parent && (
+                          <Badge variant="secondary" className="text-[9px] font-bold py-0 h-5 bg-blue-50 text-blue-600 border-blue-100 whitespace-nowrap shrink-0">
+                            Inside: {category.parent.name}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingCategory(category)} className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl">
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(category.id)}>Copy ID</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              if (confirm(`Delete "${category.name}"?`)) {
+                                // Trigger delete logic from original action col
+                                fetch(`/api/categories/${category.id}`, { method: 'DELETE' })
+                                  .then(() => setCategories(prev => prev.filter(c => c.id !== category.id)));
+                              }
+                            }} className="text-red-600">Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="p-12 text-center">
+                <Package className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+                <p className="font-bold text-slate-900">No categories found</p>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="rounded-md border bg-white">
@@ -767,7 +837,7 @@ export function CategoryTable() {
           )}
         </div>
       )}
-      
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
         <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
