@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest) {
   try {
     const user = await requireAuth()
     const body = await request.json()
-    const { markAllAsRead } = body
+    const { markAllAsRead, types } = body
 
     if (markAllAsRead) {
       await prisma.notification.updateMany({
@@ -118,6 +118,19 @@ export async function PUT(request: NextRequest) {
       })
 
       return NextResponse.json({ message: "All notifications marked as read" })
+    }
+
+    if (types && Array.isArray(types)) {
+      await prisma.notification.updateMany({
+        where: { 
+          userId: user.id, 
+          isRead: false,
+          type: { in: types }
+        },
+        data: { isRead: true },
+      })
+
+      return NextResponse.json({ message: `Notifications for ${types.join(', ')} marked as read` })
     }
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400 })

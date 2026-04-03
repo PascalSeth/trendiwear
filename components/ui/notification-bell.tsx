@@ -210,7 +210,13 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                       return (
                         <button
                           key={notification.id}
-                          onClick={() => !notification.isRead && markAsRead(notification.id)}
+                          onClick={() => {
+                            if (!notification.isRead) markAsRead(notification.id);
+                            if (notification.type === 'MESSAGE_RECEIVED') {
+                              window.location.href = '/messages';
+                              setIsOpen(false);
+                            }
+                          }}
                           className={cn(
                             "w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-start gap-3",
                             !notification.isRead && "bg-blue-50/50"

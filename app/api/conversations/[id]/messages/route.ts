@@ -133,7 +133,7 @@ export async function POST(
       ? conversation.professional 
       : conversation.customer;
 
-    // Trigger notification
+    // Trigger Email Notification
     if (recipient && recipient.email) {
       try {
         await sendNewMessageEmail({
@@ -144,6 +144,24 @@ export async function POST(
         });
       } catch (emailErr) {
         console.error("Failed to send message email:", emailErr);
+      }
+    }
+
+    // Trigger Bell Notification
+    if (recipient) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: user.id === conversation.customerId ? conversation.professionalId : conversation.customerId,
+            type: 'MESSAGE_RECEIVED',
+            title: 'New Message',
+            message: `${message.sender.firstName} sent you a message: "${(content || "").substring(0, 30)}..."`,
+            isRead: false,
+            data: JSON.stringify({ conversationId: id })
+          }
+        });
+      } catch (notifErr) {
+        console.error("Failed to create message notification:", notifErr);
       }
     }
 

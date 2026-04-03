@@ -12,7 +12,7 @@ export async function GET() {
     const userId = userRoleCache.id;
 
     // Parallel fetch from multiple database tables
-    const [profile, cart, wishlistCount, notifications] = await Promise.all([
+    const [profile, cart, wishlistCount, notifications, unreadMessagesCount] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -39,8 +39,21 @@ export async function GET() {
       }),
       prisma.notification.findMany({
         where: { userId, isRead: false },
-        take: 5,
+        take: 50,
         orderBy: { createdAt: 'desc' }
+      }),
+      // Unread Messages (where current user is NOT the sender)
+      prisma.message.count({
+        where: {
+          isRead: false,
+          senderId: { not: userId },
+          conversation: {
+            OR: [
+              { customerId: userId },
+              { professionalId: userId }
+            ]
+          }
+        }
       })
     ]);
 
@@ -53,7 +66,8 @@ export async function GET() {
       wishlist: { count: wishlistCount },
       notifications: {
         unread: notifications,
-        hasMore: notifications.length >= 5
+        unreadMessagesCount,
+        hasMore: notifications.length >= 50
       },
       timestamp: new Date().toISOString()
     });

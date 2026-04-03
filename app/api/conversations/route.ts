@@ -113,3 +113,43 @@ export async function POST(req: Request) {
     return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
   }
 }
+
+/**
+ * PATCH /api/conversations
+ * Mark all unread messages as read for the current user.
+ */
+export async function PATCH() {
+  try {
+    const user = await requireAuth();
+
+    await prisma.$transaction([
+      prisma.message.updateMany({
+        where: {
+          isRead: false,
+          senderId: { not: user.id },
+          conversation: {
+            OR: [
+              { customerId: user.id },
+              { professionalId: user.id }
+            ]
+          }
+        },
+        data: { isRead: true }
+      }),
+      prisma.notification.updateMany({
+        where: {
+          userId: user.id,
+          isRead: false,
+          type: 'MESSAGE_RECEIVED'
+        },
+        data: { isRead: true }
+      })
+    ]);
+
+    return NextResponse.json({ message: "Conversations and notifications marked as read" });
+  } catch (error: unknown) {
+    const err = error as { message?: string; status?: number };
+    console.error("[CONVERSATIONS_PATCH]", error);
+    return new NextResponse(err.message || "Internal Error", { status: err.status || 500 });
+  }
+}

@@ -11,6 +11,10 @@ import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu, Calendar, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import useSWR, { useSWRConfig } from "swr";
+import { motion } from "framer-motion";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const CartSheetTrigger = dynamic(() => import("@/components/ui/cart-sheet-trigger").then(mod => ({ default: mod.CartSheetTrigger })), {
   ssr: false,
@@ -41,6 +45,61 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const { mutate } = useSWRConfig();
+  const { data: batchData } = useSWR(
+    user ? `/api/batch` : null,
+    fetcher,
+    { refreshInterval: 10000 }
+  );
+
+  const [clearedCategories, setClearedCategories] = useState<Set<string>>(new Set());
+
+  const notifications = batchData?.notifications?.unread || [];
+  const unreadMessagesCount = batchData?.notifications?.unreadMessagesCount || 0;
+  const unreadCount = notifications.length + unreadMessagesCount;
+
+  const CATEGORY_TYPES: Record<string, string[]> = {
+    'Messages': ['MESSAGE_RECEIVED'],
+    'Orders': ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL', 'DELIVERY_CONFIRMATION_REQUEST'],
+    'Bookings': ['BOOKING_CONFIRMATION'],
+    'Dashboard': ['PAYMENT_RECEIVED', 'PAYMENT_RELEASED', 'REVIEW_RECEIVED']
+  };
+
+  const hasUnreadCategory = (label: string) => {
+    if (clearedCategories.has(label)) return false;
+    if (label === 'Messages') return unreadMessagesCount > 0;
+    const types = CATEGORY_TYPES[label] || [];
+    return notifications.some((n: any) => types.includes(n.type));
+  };
+
+  const handleCategoryClick = async (label: string) => {
+    // Optimistic UI: Hide dot immediately
+    setClearedCategories(prev => new Set(prev).add(label));
+
+    // Persistence: Mark as read in DB
+    try {
+      if (label === 'Messages') {
+        // Special PATCH for messages API
+        await fetch('/api/conversations', { method: 'PATCH' });
+      }
+
+      // Also clear any general notification of this category
+      const types = CATEGORY_TYPES[label];
+      if (types && types.length > 0) {
+        await fetch('/api/notifications', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ types })
+        });
+      }
+      
+      // Force refresh batch data to reflect changes
+      mutate('/api/batch');
+    } catch (err) {
+      console.error('Failed to persist notification clearance:', err);
+    }
+  };
+
   const isActive = (path: string) => pathname === path;
 
   const getProfileUrl = (): string => {
@@ -53,7 +112,6 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     { href: "/tailors-designers", label: "Tailors & Designers" },
     { href: "/shopping", label: "Shopping" },
     { href: "/blog", label: "Blog" },
-    { href: "/messages", label: "Messages" },
     // { href: "/about", label: "About Us" },
   ];
 
@@ -121,7 +179,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 group">
+                <button className="flex items-center gap-3 group relative">
                   <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-2 group-hover:ring-stone-400 transition-all duration-300">
                     <Image
                       src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
@@ -131,6 +189,23 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                       className="w-full h-full object-cover"
                     />
                   </div>
+                  {unreadCount > 0 && !Array.from(clearedCategories).some(c => hasUnreadCategory(c)) && (
+                    <motion.span
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ 
+                        scale: [1, 1.2, 1],
+                        opacity: [1, 0.7, 1],
+                        backgroundColor: ['#ef4444', '#f87171', '#ef4444']
+                      }}
+                      transition={{ 
+                        repeat: Infinity, 
+                        duration: 3,
+                        ease: "easeInOut"
+                      }}
+                      className="absolute -top-0.5 -right-0.5 w-3 h-3 border-2 border-[#FAFAF9] rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)] z-10"
+                      style={{ willChange: 'transform, opacity' }}
+                    />
+                  )}
                 </button>
               </DropdownMenuTrigger>
 
@@ -155,10 +230,19 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     { icon: Calendar, label: 'Bookings', href: '/bookings' },
                     { icon: Heart, label: 'Wishlist', href: '/wishlist' },
                   ].map((item, idx) => (
-                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50">
-                      <Link href={item.href} className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
-                        <item.icon size={16} strokeWidth={1.5} />
-                        <span className="text-sm">{item.label}</span>
+                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 group/item">
+                      <Link 
+                        href={item.href} 
+                        onClick={() => handleCategoryClick(item.label)}
+                        className="flex items-center justify-between w-full px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon size={16} strokeWidth={1.5} />
+                          <span className="text-sm">{item.label}</span>
+                        </div>
+                        {hasUnreadCategory(item.label) && (
+                          <span className="w-1.5 h-1.5 bg-red-500 rounded-full group-hover/item:scale-125 transition-transform shadow-[0_0_5px_rgba(239,68,68,0.4)]" />
+                        )}
                       </Link>
                     </DropdownMenuItem>
                   ))}
@@ -167,10 +251,19 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                   {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
                     <>
                       <div className="h-px bg-stone-100 my-2 mx-5" />
-                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50">
-                        <Link href="/dashboard" className="flex items-center gap-3 px-5 py-2.5 text-stone-900 font-medium transition-colors">
-                          <Settings size={16} strokeWidth={1.5} />
-                          <span className="text-sm">Dashboard</span>
+                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 group/item">
+                        <Link 
+                          href="/dashboard" 
+                          onClick={() => handleCategoryClick('Dashboard')}
+                          className="flex items-center justify-between w-full px-5 py-2.5 text-stone-900 font-medium transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Settings size={16} strokeWidth={1.5} />
+                            <span className="text-sm">Dashboard</span>
+                          </div>
+                          {hasUnreadCategory('Dashboard') && (
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full group-hover/item:scale-125 transition-transform shadow-[0_0_5px_rgba(239,68,68,0.4)]" />
+                          )}
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -278,6 +371,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     <div className="pt-6 mt-6 border-t border-stone-100 space-y-6">
                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Personal Curation</p>
                       {[
+                        { icon: MessageSquare, label: 'Messages', href: '/messages' },
                         { icon: Package, label: 'Orders', href: '/orders' },
                         { icon: Calendar, label: 'Bookings', href: '/bookings' },
                         { icon: Heart, label: 'Wishlist', href: '/wishlist' },
@@ -285,10 +379,18 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                         <Link
                           key={idx}
                           href={item.href}
-                          onClick={() => setMobileMenuOpen(false)}
+                          onClick={() => {
+                            handleCategoryClick(item.label);
+                            setMobileMenuOpen(false);
+                          }}
                           className="flex items-center gap-4 text-stone-600 hover:text-stone-900 transition-all font-serif italic text-lg"
                         >
-                          <item.icon size={20} strokeWidth={1} />
+                          <div className="relative">
+                            <item.icon size={20} strokeWidth={1} />
+                            {hasUnreadCategory(item.label) && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#FF3B30] border-2 border-[#FAFAF9] rounded-full shadow-sm" />
+                            )}
+                          </div>
                           {item.label}
                         </Link>
                       ))}
