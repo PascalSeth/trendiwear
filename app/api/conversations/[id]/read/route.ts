@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
@@ -8,7 +8,7 @@ import { mapErrorToResponse } from '@/lib/api-utils'
  * Marks all messages in a conversation as read (those not sent by the current user)
  */
 export async function PATCH(
-  request: NextRequest,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

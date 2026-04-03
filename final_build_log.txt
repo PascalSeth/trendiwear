@@ -1,0 +1,211 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 21.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+Missing Supabase environment variables
+   Generating static pages (0/113) ...
+Missing Supabase environment variables
+   Generating static pages (28/113) 
+   Generating static pages (56/113) 
+   Generating static pages (84/113) 
+ ✓ Generating static pages (113/113)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size  First Load JS
+┌ ƒ /                                             18.2 kB         218 kB
+├ ○ /_not-found                                      1 kB         103 kB
+├ ƒ /addresses                                    11.3 kB         165 kB
+├ ƒ /api/addresses                                  374 B         102 kB
+├ ƒ /api/addresses/[id]                             374 B         102 kB
+├ ƒ /api/admin/badges                               374 B         102 kB
+├ ƒ /api/audit-logs                                 374 B         102 kB
+├ ƒ /api/auth/[...nextauth]                         374 B         102 kB
+├ ƒ /api/auth/creation                              374 B         102 kB
+├ ƒ /api/batch                                      374 B         102 kB
+├ ƒ /api/blogs                                      374 B         102 kB
+├ ƒ /api/blogs/[id]                                 374 B         102 kB
+├ ƒ /api/bookings                                   374 B         102 kB
+├ ƒ /api/bookings/[id]                              374 B         102 kB
+├ ƒ /api/cart                                       374 B         102 kB
+├ ƒ /api/cart/[id]                                  374 B         102 kB
+├ ƒ /api/categories                                 374 B         102 kB
+├ ƒ /api/categories/[id]                            374 B         102 kB
+├ ƒ /api/categories/parents                         374 B         102 kB
+├ ƒ /api/collections                                374 B         102 kB
+├ ƒ /api/collections/[id]                           374 B         102 kB
+├ ƒ /api/conversations                              374 B         102 kB
+├ ƒ /api/conversations/[id]/messages                374 B         102 kB
+├ ƒ /api/conversations/[id]/read                    374 B         102 kB
+├ ƒ /api/coupons                                    374 B         102 kB
+├ ƒ /api/cron/bookings-cleanup                      374 B         102 kB
+├ ƒ /api/currency                                   374 B         102 kB
+├ ƒ /api/dashboard                                  374 B         102 kB
+├ ƒ /api/dashboard/stats                            374 B         102 kB
+├ ƒ /api/delivery/pay                               374 B         102 kB
+├ ƒ /api/events                                     374 B         102 kB
+├ ƒ /api/events/[id]                                374 B         102 kB
+├ ƒ /api/GET/getTrendCategories                     374 B         102 kB
+├ ƒ /api/me                                         374 B         102 kB
+├ ƒ /api/measurements                               374 B         102 kB
+├ ƒ /api/notifications                              374 B         102 kB
+├ ƒ /api/notifications/[id]                         374 B         102 kB
+├ ƒ /api/orders                                     374 B         102 kB
+├ ƒ /api/orders/[id]                                374 B         102 kB
+├ ƒ /api/orders/[id]/confirm-delivery               374 B         102 kB
+├ ƒ /api/orders/[id]/manual-delivery                374 B         102 kB
+├ ƒ /api/orders/[id]/refund                         374 B         102 kB
+├ ƒ /api/orders/[id]/status                         374 B         102 kB
+├ ƒ /api/orders/[id]/yango-quote                    374 B         102 kB
+├ ƒ /api/orders/check-lapsed                        374 B         102 kB
+├ ƒ /api/outfit-inspirations                        374 B         102 kB
+├ ƒ /api/outfit-inspirations/[id]                   374 B         102 kB
+├ ƒ /api/payments/initialize                        374 B         102 kB
+├ ƒ /api/payments/momo-providers                    374 B         102 kB
+├ ƒ /api/payments/setup                             374 B         102 kB
+├ ƒ /api/payments/verify                            374 B         102 kB
+├ ƒ /api/payments/webhook                           374 B         102 kB
+├ ƒ /api/product-selection-filters                  374 B         102 kB
+├ ƒ /api/products                                   374 B         102 kB
+├ ƒ /api/products/[id]                              374 B         102 kB
+├ ƒ /api/products/[id]/duplicate                    374 B         102 kB
+├ ƒ /api/products/[id]/showcase                     374 B         102 kB
+├ ƒ /api/products/manage-tags                       374 B         102 kB
+├ ƒ /api/professional-analytics                     374 B         102 kB
+├ ƒ /api/professional-profiles                      374 B         102 kB
+├ ƒ /api/professional-profiles/[id]                 374 B         102 kB
+├ ƒ /api/professional-profiles/[id]/social-media    374 B         102 kB
+├ ƒ /api/professional-profiles/[id]/verify          374 B         102 kB
+├ ƒ /api/professional-profiles/slug/[slug]          374 B         102 kB
+├ ƒ /api/professional-profiles/slug/[slug]/shop     374 B         102 kB
+├ ƒ /api/professional-types                         374 B         102 kB
+├ ƒ /api/professional-types/[id]                    374 B         102 kB
+├ ƒ /api/reported-content                           374 B         102 kB
+├ ƒ /api/reported-content/[id]                      374 B         102 kB
+├ ƒ /api/reviews                                    374 B         102 kB
+├ ƒ /api/reviews/[id]                               374 B         102 kB
+├ ƒ /api/reviews/replies                            374 B         102 kB
+├ ƒ /api/riders                                     374 B         102 kB
+├ ƒ /api/riders/[id]                                374 B         102 kB
+├ ƒ /api/saved-outfits                              374 B         102 kB
+├ ƒ /api/service-categories                         374 B         102 kB
+├ ƒ /api/service-categories/[id]                    374 B         102 kB
+├ ƒ /api/service-packages                           374 B         102 kB
+├ ƒ /api/service-packages/[id]                      374 B         102 kB
+├ ƒ /api/services                                   374 B         102 kB
+├ ƒ /api/services/[id]                              374 B         102 kB
+├ ƒ /api/services/[id]/slots                        374 B         102 kB
+├ ƒ /api/services/[id]/variants                     374 B         102 kB
+├ ƒ /api/services/[id]/variants/[variantId]         374 B         102 kB
+├ ƒ /api/showcase-products                          374 B         102 kB
+├ ƒ /api/subscriptions/admin/all                    374 B         102 kB
+├ ƒ /api/subscriptions/admin/trials                 374 B         102 kB
+├ ƒ /api/subscriptions/manage                       374 B         102 kB
+├ ƒ /api/subscriptions/pay                          374 B         102 kB
+├ ƒ /api/subscriptions/tiers                        374 B         102 kB
+├ ƒ /api/subscriptions/tiers/[id]                   374 B         102 kB
+├ ƒ /api/subscriptions/trial                        374 B         102 kB
+├ ƒ /api/subscriptions/trial/setup                  374 B         102 kB
+├ ƒ /api/subscriptions/verify                       374 B         102 kB
+├ ƒ /api/survey                                     374 B         102 kB
+├ ƒ /api/survey/questions                           374 B         102 kB
+├ ƒ /api/system-settings                            374 B         102 kB
+├ ƒ /api/upload                                     374 B         102 kB
+├ ƒ /api/user/heartbeat                             374 B         102 kB
+├ ƒ /api/users                                      374 B         102 kB
+├ ƒ /api/users/[id]                                 374 B         102 kB
+├ ƒ /api/wishlist                                   374 B         102 kB
+├ ƒ /api/wishlist/[productId]                       374 B         102 kB
+├ ○ /auth/error                                   1.48 kB         107 kB
+├ ○ /auth/signin                                  6.41 kB         161 kB
+├ ○ /auth/signout                                   625 B         112 kB
+├ ○ /auth/verify-request                            374 B         102 kB
+├ ƒ /blog                                         8.44 kB         158 kB
+├ ƒ /blog/[id]                                     4.8 kB         154 kB
+├ ƒ /bookings                                     6.08 kB         242 kB
+├ ƒ /cart                                         7.08 kB         184 kB
+├ ƒ /checkout                                     10.1 kB         191 kB
+├ ƒ /dashboard                                    10.2 kB         166 kB
+├ ƒ /dashboard/analytics                           115 kB         277 kB
+├ ƒ /dashboard/bookings                           4.52 kB         252 kB
+├ ƒ /dashboard/catalogue/category                 11.1 kB         189 kB
+├ ƒ /dashboard/catalogue/collections              9.72 kB         197 kB
+├ ƒ /dashboard/catalogue/products                  9.7 kB         179 kB
+├ ƒ /dashboard/catalogue/products/add-product     12.2 kB         197 kB
+├ ƒ /dashboard/catalogue/products/edit/[id]       17.6 kB         166 kB
+├ ƒ /dashboard/customers                          4.36 kB         157 kB
+├ ƒ /dashboard/management/blogs                   8.68 kB         172 kB
+├ ƒ /dashboard/management/content                 4.62 kB         129 kB
+├ ƒ /dashboard/management/professional-types      4.09 kB         139 kB
+├ ƒ /dashboard/management/services                5.57 kB         169 kB
+├ ƒ /dashboard/management/subscriptions           6.13 kB         147 kB
+├ ƒ /dashboard/management/system                   5.5 kB         130 kB
+├ ƒ /dashboard/orders                             16.4 kB         203 kB
+├ ƒ /dashboard/professionals                      4.23 kB         121 kB
+├ ƒ /dashboard/riders                             5.59 kB         137 kB
+├ ƒ /dashboard/services                           12.1 kB         217 kB
+├ ƒ /dashboard/services/[id]/edit                 7.49 kB         192 kB
+├ ƒ /dashboard/services/categories/[id]/edit       6.4 kB         160 kB
+├ ƒ /dashboard/services/categories/new            6.53 kB         160 kB
+├ ƒ /dashboard/services/new                       7.45 kB         192 kB
+├ ƒ /dashboard/settings                           3.58 kB         166 kB
+├ ƒ /dashboard/showcase                           11.2 kB         235 kB
+├ ƒ /dashboard/subscription                       5.07 kB         118 kB
+├ ƒ /dashboard/subscription/current               4.08 kB         117 kB
+├ ƒ /dashboard/subscription/payment-complete      3.69 kB         116 kB
+├ ƒ /dashboard/trends/events                      9.68 kB         147 kB
+├ ƒ /dashboard/trends/outfit-inspirations         7.28 kB         167 kB
+├ ƒ /fashion-trends                               2.82 kB         152 kB
+├ ƒ /fashion-trends/[eventId]                     6.32 kB         176 kB
+├ ƒ /help                                         10.6 kB         121 kB
+├ ƒ /measurements                                    6 kB         143 kB
+├ ƒ /messages                                     36.1 kB         220 kB
+├ ƒ /orders                                       4.91 kB         169 kB
+├ ƒ /orders/[orderId]                             5.02 kB         169 kB
+├ ƒ /orders/[orderId]/payment-complete            4.18 kB         117 kB
+├ ƒ /professionals                                7.22 kB         115 kB
+├ ƒ /register-as-professional                     13.4 kB         180 kB
+├ ƒ /settings                                     9.98 kB         210 kB
+├ ƒ /shopping                                     4.52 kB         201 kB
+├ ƒ /shopping/categories/[id]                     5.13 kB         205 kB
+├ ƒ /shopping/products/[id]                         12 kB         220 kB
+├ ƒ /survey                                       4.12 kB         106 kB
+├ ƒ /tailors-designers                            8.51 kB         158 kB
+├ ƒ /tz/[slug]                                      10 kB         224 kB
+├ ƒ /tz/[slug]/book/[serviceId]                   8.55 kB         173 kB
+├ ƒ /tz/[slug]/shop                               10.5 kB         210 kB
+├ ƒ /u/[id]                                       7.48 kB         164 kB
+└ ƒ /wishlist                                     5.09 kB         143 kB
++ First Load JS shared by all                      102 kB
+  ├ chunks/1255-8befde0980f5cba9.js               45.6 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js           54.2 kB
+  └ other shared chunks (total)                   2.14 kB
+
+
+ƒ Middleware                                      61.4 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
