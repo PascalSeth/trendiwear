@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, User, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -23,9 +23,9 @@ interface DashboardTopBarProps {
 }
 
 const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
-  onMenuClick,
-  onDesktopToggleSidebar,
-  isSidebarCollapsed = false,
+  onMenuClick: _onMenuClick,
+  onDesktopToggleSidebar: _onDesktopToggleSidebar,
+  isSidebarCollapsed: _isSidebarCollapsed = false,
   userInfo,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
