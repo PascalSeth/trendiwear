@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+export const dynamic = 'force-dynamic'
 import { prisma } from "@/lib/prisma"
 import { requireRole } from "@/lib/auth"
 import { uploadFile } from "@/lib/upload"
