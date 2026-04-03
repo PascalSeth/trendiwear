@@ -5,7 +5,12 @@ export async function uploadFile(
   bucket: string,
   path: string
 ): Promise<string> {
-  const { data, error } = await supabaseAdmin.storage
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client is not initialized.');
+  }
+  const client = supabaseAdmin;
+
+  const { data, error } = await client.storage
     .from(bucket)
     .upload(path, file, {
       upsert: true,
@@ -15,7 +20,7 @@ export async function uploadFile(
     throw new Error(`Upload failed: ${error.message}`);
   }
 
-  const { data: urlData } = supabaseAdmin.storage
+  const { data: urlData } = client.storage
     .from(bucket)
     .getPublicUrl(data.path);
 
@@ -23,7 +28,12 @@ export async function uploadFile(
 }
 
 export async function deleteFile(bucket: string, path: string) {
-  const { error } = await supabaseAdmin.storage
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client is not initialized.');
+  }
+  const client = supabaseAdmin;
+
+  const { error } = await client.storage
     .from(bucket)
     .remove([path]);
 

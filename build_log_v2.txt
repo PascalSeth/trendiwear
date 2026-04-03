@@ -1,0 +1,38 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 24.3s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./lib/upload.ts:8:33
+Type error: 'supabaseAdmin' is possibly 'null'.
+
+[0m [90m  6 |[39m   path[33m:[39m string
+ [90m  7 |[39m )[33m:[39m [33mPromise[39m[33m<[39m[33mstring[39m[33m>[39m {
+[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m { data[33m,[39m error } [33m=[39m [36mawait[39m supabaseAdmin[33m.[39mstorage
+ [90m    |[39m                                 [31m[1m^[22m[39m
+ [90m  9 |[39m     [33m.[39m[36mfrom[39m(bucket)
+ [90m 10 |[39m     [33m.[39mupload(path[33m,[39m file[33m,[39m {
+ [90m 11 |[39m       upsert[33m:[39m [36mtrue[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
