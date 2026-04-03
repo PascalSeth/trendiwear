@@ -72,13 +72,28 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const { data, mutate } = useSWR(
-    `/api/orders?page=${currentPage}&limit=10`,
+    `/api/orders?page=${currentPage}&limit=10&view=buyer`,
     fetcher,
     { 
       fallbackData: { orders: initialOrders, pagination: { totalPages: total } },
       refreshInterval: 15000 
     }
   )
+
+  const { data: notificationsData } = useSWR('/api/notifications?limit=50', fetcher, { refreshInterval: 10000 })
+  const unreadNotifications = notificationsData?.notifications || []
+
+  const hasUnreadUpdate = (orderId: string) => {
+    return unreadNotifications.some((n: any) => {
+      if (n.isRead) return false
+      try {
+        const data = typeof n.data === 'string' ? JSON.parse(n.data) : n.data
+        return data?.orderId === orderId
+      } catch {
+        return false
+      }
+    })
+  }
 
   const orders = data?.orders || initialOrders
 
@@ -151,7 +166,17 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
                    <div className="flex-1 p-8 lg:p-12 space-y-10">
                       <div className="flex justify-between items-start">
                          <div className="space-y-2">
-                            <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Order Reference</span>
+                            <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest flex items-center gap-2">
+                               Order Reference
+                               {hasUnreadUpdate(order.id) && (
+                                 <motion.span 
+                                   initial={{ scale: 0 }}
+                                   animate={{ scale: [1, 1.2, 1] }}
+                                   transition={{ repeat: Infinity, duration: 2 }}
+                                   className="w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]" 
+                                 />
+                               )}
+                            </span>
                             <h3 className="text-xl font-mono text-stone-950">#{order.id.slice(-8).toUpperCase()}</h3>
                          </div>
                          <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-mono uppercase tracking-widest ${statusColors[order.status]}`}>

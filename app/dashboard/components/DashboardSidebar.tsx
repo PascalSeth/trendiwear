@@ -29,6 +29,10 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Role } from '@prisma/client';
 import { cn } from '@/lib/utils';
+import useSWR from 'swr';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 type DashboardSidebarProps = {
   role: Role;
@@ -41,11 +45,24 @@ interface NavItem {
   icon: React.ReactNode;
   children?: NavItem[];
   roles?: Role[];
+  badgeType?: 'orders' | 'bookings' | 'messages';
 }
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = false }) => {
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['Catalogue', 'Management']);
+
+  const { data: notificationsData } = useSWR('/api/notifications?limit=100', fetcher, { refreshInterval: 10000 });
+  const unreadNotifications = notificationsData?.notifications || [];
+
+  const hasUnread = (type: 'orders' | 'bookings' | 'messages') => {
+    const orderTypes = ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL', 'NEW_ORDER', 'DELIVERY_CONFIRMATION_REQUEST'];
+    const bookingTypes = ['BOOKING_CONFIRMATION', 'BOOKING_UPDATE', 'NEW_BOOKING'];
+    
+    if (type === 'orders') return unreadNotifications.some((n: any) => !n.isRead && orderTypes.includes(n.type));
+    if (type === 'bookings') return unreadNotifications.some((n: any) => !n.isRead && bookingTypes.includes(n.type));
+    return false;
+  };
 
   const isActive = (path: string) => pathname === path;
   const isParentActive = (children: NavItem[]) =>
@@ -93,6 +110,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
           label: 'Orders',
           href: '/dashboard/orders',
           icon: <ShoppingCart className="h-5 w-5" />,
+          badgeType: 'orders',
         },
         {
           label: 'Analytics',
@@ -108,6 +126,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
           label: 'Bookings',
           href: '/dashboard/bookings',
           icon: <Calendar className="h-5 w-5" />,
+          badgeType: 'bookings',
         },
         {
           label: 'Showcase',
@@ -248,13 +267,20 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
             )}
           >
             <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
-              <div className={cn(
-                'p-1.5 rounded-lg transition-colors',
-                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-              )}>
-                {item.icon}
               </div>
-              {!collapsed && <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>}
+              {!collapsed && (
+                <div className="flex items-center gap-2">
+                  <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>
+                  {item.badgeType && hasUnread(item.badgeType) && (
+                    <motion.div 
+                      layoutId={`badge-${item.label}`}
+                      className="w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  )}
+                </div>
+              )}
             </div>
             {!collapsed &&
               (isExpanded ? (
@@ -287,12 +313,27 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, collapsed = f
         title={collapsed ? item.label : undefined}
       >
         <div className={cn(
-          'p-1.5 rounded-lg transition-colors',
+          'p-1.5 rounded-lg transition-colors relative',
           active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
         )}>
           {item.icon}
+          {collapsed && item.badgeType && hasUnread(item.badgeType) && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+          )}
         </div>
-        {!collapsed && <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>}
+        {!collapsed && (
+          <div className="flex items-center gap-2">
+            <span className={cn(active ? 'font-bold' : 'font-medium')}>{item.label}</span>
+            {item.badgeType && hasUnread(item.badgeType) && (
+              <motion.div 
+                layoutId={`badge-${item.label}`}
+                className="w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            )}
+          </div>
+        )}
       </Link>
     );
   };

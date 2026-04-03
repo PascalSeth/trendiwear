@@ -60,9 +60,12 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
 
   const CATEGORY_TYPES: Record<string, string[]> = {
     'Messages': ['MESSAGE_RECEIVED'],
-    'Orders': ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL', 'DELIVERY_CONFIRMATION_REQUEST'],
-    'Bookings': ['BOOKING_CONFIRMATION'],
-    'Dashboard': ['PAYMENT_RECEIVED', 'PAYMENT_RELEASED', 'REVIEW_RECEIVED']
+    'Orders': ['ORDER_UPDATE', 'SHIPPING_UPDATE', 'DELIVERY_ARRIVAL'],
+    'Bookings': ['BOOKING_CONFIRMATION', 'BOOKING_UPDATE'],
+    'Dashboard': [
+      'PAYMENT_RECEIVED', 'PAYMENT_RELEASED', 'REVIEW_RECEIVED', 
+      'DELIVERY_CONFIRMATION_REQUEST', 'STOCK_ALERT'
+    ]
   };
 
   const hasUnreadCategory = (label: string) => {
@@ -418,10 +421,16 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                       {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
                         <Link
                           href="/dashboard"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block w-full py-3 mt-4 text-center text-sm font-mono uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+                          onClick={() => {
+                            handleCategoryClick('Dashboard');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="relative block w-full py-3 mt-4 text-center text-sm font-mono uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800 transition-colors"
                         >
                           Dashboard
+                          {hasUnreadCategory('Dashboard') && (
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                          )}
                         </Link>
                       )}
                       <button onClick={() => signOut()} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-600 hover:text-red-700">

@@ -56,7 +56,14 @@ const notificationColors: Record<string, string> = {
 // Component
 export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [permissionState, setPermissionState] = useState<string>('default');
   const lastNotifiedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermissionState(Notification.permission);
+    }
+  }, []);
   
   const queryParams = new URLSearchParams({
     limit: '10',
@@ -80,19 +87,43 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     // Trigger browser notification for new alerts
-    if (Notification.permission === 'granted' && notifications.length > 0) {
-      const latest = notifications[0];
-      if (lastNotifiedIdRef.current && lastNotifiedIdRef.current !== latest.id) {
-         new window.Notification(latest.title, {
-            body: latest.message,
+    if (permissionState === 'granted' && notifications.length > 0) {
+      if (lastNotifiedIdRef.current) {
+        // Find all notifications that arrived after the one we last alerted
+        const lastIdx = notifications.findIndex((n: Notification) => n.id === lastNotifiedIdRef.current);
+        
+        // If the last notified ID isn't in the list (too old), we just look at what's new
+        // Otherwise, everything from 0 to lastIdx-1 is "new"
+        const newCount = lastIdx === -1 ? Math.min(notifications.length, 3) : lastIdx;
+        
+        // Notify for each new one (up to 3 at once to avoid spam)
+        for (let i = newCount - 1; i >= 0; i--) {
+          const item = notifications[i];
+          new window.Notification(item.title, {
+            body: item.message,
             icon: '/navlogo.png',
-         });
+          });
+        }
       }
-      lastNotifiedIdRef.current = latest.id;
+      lastNotifiedIdRef.current = notifications[0].id;
     } else if (notifications.length > 0) {
       lastNotifiedIdRef.current = notifications[0].id;
     }
-  }, [notifications]);
+  }, [notifications, permissionState]);
+
+  const requestPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    
+    const permission = await window.Notification.requestPermission();
+    setPermissionState(permission);
+
+    if (permission === 'granted') {
+      new window.Notification('TrendiZip Alerts Enabled', {
+        body: 'You will now receive desktop notifications for new activity.',
+        icon: '/navlogo.png',
+      });
+    }
+  };
 
   const markAllAsRead = async () => {
     try {
@@ -183,9 +214,17 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                       Mark all read
                     </button>
                   )}
+                  {permissionState !== 'granted' && (
+                    <button
+                      onClick={requestPermission}
+                      className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1 ml-2"
+                    >
+                      Enable Desktop Alerts
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1 hover:bg-stone-100 rounded-full transition-colors"
+                    className="p-1 hover:bg-stone-100 rounded-full transition-colors ml-1"
                   >
                     <X size={16} className="text-stone-400" />
                   </button>

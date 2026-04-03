@@ -57,6 +57,14 @@ export async function GET() {
       })
     ]);
 
+    // Segment notifications into Buyer vs Professional activity
+    const professionalTypes = [
+      'PAYMENT_RECEIVED', 'REVIEW_RECEIVED', 'DELIVERY_CONFIRMATION_REQUEST', 
+      'PAYMENT_RELEASED', 'STOCK_ALERT', 'BOOKING_UPDATE', 'BOOKING_CONFIRMATION'
+    ];
+
+    const hasProfessionalActivity = notifications.some(n => professionalTypes.includes(n.type));
+
     return NextResponse.json({
       user: profile,
       cart: {
@@ -67,6 +75,7 @@ export async function GET() {
       notifications: {
         unread: notifications,
         unreadMessagesCount,
+        hasProfessionalActivity,
         hasMore: notifications.length >= 50
       },
       timestamp: new Date().toISOString()

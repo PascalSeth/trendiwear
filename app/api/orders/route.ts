@@ -51,17 +51,28 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
     const status = searchParams.get("status") as OrderStatus
+    const view = searchParams.get("view") // 'buyer' or 'seller'
 
     const where: Prisma.OrderWhereInput = {}
 
-    if (user.role === "CUSTOMER") {
+    // Explicit View Filtering
+    if (view === "buyer") {
       where.customerId = user.id
-    } else if (user.role === "PROFESSIONAL") {
-      where.items = {
-        some: { professionalId: user.id },
+    } else if (view === "seller") {
+      if (!["PROFESSIONAL", "ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
       }
-    } else if (!["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      where.items = { some: { professionalId: user.id } }
+    } else {
+      // Legacy / Default Behavior
+      if (user.role === "CUSTOMER") {
+        where.customerId = user.id
+      } else if (user.role === "PROFESSIONAL") {
+        where.items = { some: { professionalId: user.id } }
+      } else if (!["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+      // Admins (with no view specified) get everything for dashboards
     }
 
     if (status) where.status = status

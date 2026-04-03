@@ -11,8 +11,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { 
-  Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe 
+  Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe, Bell, BellOff, CheckCircle2 
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
 
 // --- Types ---
@@ -114,6 +115,33 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
   const [profile] = useState<UserProfile>(initialProfile)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<'profile' | 'business' | 'cover' | 'gallery' | null>(null)
+  const [permissionState, setPermissionState] = useState<string>('default')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermissionState(Notification.permission)
+    }
+  }, [])
+
+  const requestNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      toast.error('Notifications not supported in this browser')
+      return;
+    }
+    
+    const permission = await window.Notification.requestPermission();
+    setPermissionState(permission);
+
+    if (permission === 'granted') {
+      new window.Notification('TrendiZip Alerts Enabled', {
+        body: 'You will now receive desktop notifications for new activity.',
+        icon: '/navlogo.png',
+      });
+      toast.success('Desktop alerts enabled!')
+    } else if (permission === 'denied') {
+      toast.error('Permission denied. Please enable in browser settings.')
+    }
+  };
 
   const [personalForm, setPersonalForm] = useState({
     firstName: initialProfile.firstName || '',
@@ -589,6 +617,71 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                </div>
             </TabsContent>
           )}
+
+          <TabsContent value="notifications" className="space-y-12">
+             <div className="max-w-2xl mx-auto space-y-8">
+                <header className="text-center space-y-4">
+                   <h2 className="text-4xl font-serif italic text-stone-950">Broadcast Registry.</h2>
+                   <p className="text-stone-500 font-mono text-[10px] uppercase tracking-widest">Manage how the atelier communicates with you.</p>
+                </header>
+
+                <div className="bg-white p-10 rounded-[3rem] border border-stone-100 shadow-sm relative overflow-hidden group">
+                  {/* Decorative Gradient */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-50/50 blur-3xl -mr-16 -mt-16 rounded-full group-hover:bg-red-100/50 transition-colors duration-700" />
+                  
+                  <div className="relative flex flex-col md:flex-row items-center gap-8">
+                    <div className={cn(
+                      "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500",
+                      permissionState === 'granted' ? "bg-emerald-50 text-emerald-600 scale-110" : "bg-stone-50 text-stone-400"
+                    )}>
+                      {permissionState === 'granted' ? <Bell className="animate-pulse" size={32} /> : <BellOff size={32} />}
+                    </div>
+                    
+                    <div className="flex-1 text-center md:text-left space-y-2">
+                       <h3 className="text-xl font-serif font-medium text-stone-900">Desktop Activity Alerts</h3>
+                       <p className="text-sm text-stone-500 leading-relaxed max-w-sm">
+                         Receive real-time notifications for new messages, orders, and booking confirmations even when you are not actively looking at the site.
+                       </p>
+                    </div>
+
+                    <div className="w-full md:w-auto">
+                      {permissionState === 'granted' ? (
+                        <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100">
+                           <CheckCircle2 size={16} />
+                           <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Active</span>
+                        </div>
+                      ) : (
+                        <Button 
+                          onClick={requestNotificationPermission}
+                          className="w-full md:w-auto h-14 px-8 bg-stone-950 text-white rounded-2xl text-[10px] font-mono uppercase tracking-[0.2em] hover:bg-black transition-all shadow-lg hover:shadow-xl active:scale-95"
+                        >
+                          Enable Alerts
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {permissionState === 'denied' && (
+                    <div className="mt-8 p-4 bg-red-50 text-red-900 rounded-2xl text-xs font-mono text-center border border-red-100">
+                      Notifications are currently blocked by your browser. Please reset permissions in your address bar to enable alerts.
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-8 bg-stone-50 rounded-[2rem] border border-stone-100 space-y-4">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Email Updates</p>
+                    <p className="text-sm text-stone-600 italic font-serif">Always Active</p>
+                    <p className="text-[10px] text-stone-400 leading-relaxed font-mono">Critical alerts regarding your account and transactions are sent via email for your records.</p>
+                  </div>
+                  <div className="p-8 bg-stone-50 rounded-[2rem] border border-stone-100 space-y-4">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Activity Bell</p>
+                    <p className="text-sm text-stone-600 italic font-serif">Always Active</p>
+                    <p className="text-[10px] text-stone-400 leading-relaxed font-mono">The in-app notification center tracks all your digital footprints across the platform.</p>
+                  </div>
+                </div>
+             </div>
+          </TabsContent>
 
           <TabsContent value="payments">
              <div className="max-w-2xl mx-auto space-y-8">
