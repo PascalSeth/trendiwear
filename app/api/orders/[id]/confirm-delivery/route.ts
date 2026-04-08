@@ -83,27 +83,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             userId: profId,
             type: 'DELIVERY_ARRIVAL',
             title: 'Delivery Confirmed!',
-            message: `Customer has confirmed receipt of Order #${id.slice(-8).toUpperCase()}. Payout of GHS ${sellerTotal.toFixed(2)} has been initiated. Funds will show in your account in 24 to 48 hours.`,
+            message: `Customer has confirmed receipt of Order #${id.slice(-8).toUpperCase()}. Your share of GHS ${sellerTotal.toFixed(2)} has been settled via Paystack Split and will reflect in your bank/MoMo account per Paystack's settlement schedule.`,
             data: JSON.stringify({ orderId: id, amount: sellerTotal }),
           },
         })
-
-        // 2. Initiate Paystack Transfer (Payout) if recipient code exists
-        if (profProfile?.paystackSubaccountCode) {
-          try {
-            await initiateTransfer({
-              source: "balance",
-              amount: toPesewas(sellerTotal),
-              recipient: profProfile.paystackSubaccountCode,
-              reason: `Payout for Order #${id.slice(-8).toUpperCase()}`,
-              reference: generateReference('POUT')
-            })
-            console.log(`Successfully initiated payout of ${sellerTotal} to professional ${profId}`)
-          } catch (payoutError) {
-            console.error(`Failed to initiate payout for professional ${profId}:`, payoutError)
-            // Note: In a production app, we would log this to a 'FailedPayouts' table for retry
-          }
-        }
       }
 
       return updated
