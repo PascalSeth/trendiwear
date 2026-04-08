@@ -10,6 +10,14 @@ export default async function Page() {
       include: {
         _count: {
           select: { products: true }
+        },
+        children: {
+          where: { isActive: true },
+          include: {
+            _count: {
+              select: { products: true }
+            }
+          }
         }
       },
       orderBy: { order: 'asc' }
@@ -74,9 +82,22 @@ export default async function Page() {
   // The current product list uses the professionalProfile.rating as a proxy, 
   // but we can compute specific product stars here if we want absolute precision.
 
+  // Process categories to include total product count (Parent + All Children)
+  const processedCategories = categories.map((cat: any) => {
+    const directProducts = cat._count?.products || 0;
+    const childrenProducts = cat.children?.reduce((sum: number, child: any) => sum + (child._count?.products || 0), 0) || 0;
+    
+    return {
+      ...cat,
+      _count: {
+        products: directProducts + childrenProducts
+      }
+    };
+  });
+
   // Hydrate the client component with clean, serialized data
   const initialData = JSON.parse(JSON.stringify({
-    categories,
+    categories: processedCategories,
     featuredProducts,
     trendingProducts
   }));
