@@ -16,6 +16,12 @@ export default async function Page() {
           lastName: true,
           profileImage: true,
           email: true,
+          professionalServices: {
+            select: {
+              price: true,
+            },
+            take: 10,
+          },
           _count: {
             select: {
               products: true,

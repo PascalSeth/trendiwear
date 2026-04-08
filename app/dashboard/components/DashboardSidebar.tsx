@@ -72,6 +72,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
     children.some((child) => child.href && pathname.startsWith(child.href));
 
   const isSuperAdmin = (userRole: Role) => userRole === 'SUPER_ADMIN';
+  const isAdmin = (userRole: Role) => userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
   const isProfessional = (userRole: Role) => userRole === 'PROFESSIONAL';
 
   const toggleMenu = (label: string) => {
@@ -140,113 +141,117 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
     }
 
     // Admin/SuperAdmin navigation
-    const adminItems: NavItem[] = [
-      ...baseItems,
-      {
-        label: 'Catalogue',
-        icon: <Layers className="h-5 w-5" />,
-        children: [
-          {
-            label: 'Categories',
-            href: '/dashboard/catalogue/category',
-            icon: <Warehouse className="h-4 w-4" />,
-          },
-          {
-            label: 'Collections',
-            href: '/dashboard/catalogue/collections',
-            icon: <Layers className="h-4 w-4" />,
-          },
-          {
-            label: 'Products',
-            href: '/dashboard/catalogue/products',
-            icon: <Shirt className="h-4 w-4" />,
-          },
-        ],
-      },
-      {
-        label: 'Orders',
-        href: '/dashboard/orders',
-        icon: <ShoppingCart className="h-5 w-5" />,
-      },
-      {
-        label: 'Services',
-        href: '/dashboard/services',
-        icon: <Briefcase className="h-5 w-5" />,
-      },
-      {
-        label: 'Customers',
-        href: '/dashboard/customers',
-        icon: <Users className="h-5 w-5" />,
-      },
-      {
-        label: 'Professionals',
-        href: '/dashboard/professionals',
-        icon: <Users className="h-5 w-5" />,
-      },
-      {
-        label: 'Trends',
-        icon: <TrendingUp className="h-5 w-5" />,
-        children: [
-          {
-            label: 'Events',
-            href: '/dashboard/trends/events',
-            icon: <Calendar className="h-4 w-4" />,
-          },
-          {
-            label: 'Outfit Inspirations',
-            href: '/dashboard/trends/outfit-inspirations',
-            icon: <Sparkles className="h-4 w-4" />,
-          },
-        ],
-      },
-    ];
+    if (isAdmin(role)) {
+      const adminItems: NavItem[] = [
+        ...baseItems,
+        {
+          label: 'Catalogue',
+          icon: <Layers className="h-5 w-5" />,
+          children: [
+            {
+              label: 'Categories',
+              href: '/dashboard/catalogue/category',
+              icon: <Warehouse className="h-4 w-4" />,
+            },
+            {
+              label: 'Collections',
+              href: '/dashboard/catalogue/collections',
+              icon: <Layers className="h-4 w-4" />,
+            },
+            {
+              label: 'Products',
+              href: '/dashboard/catalogue/products',
+              icon: <Shirt className="h-4 w-4" />,
+            },
+          ],
+        },
+        {
+          label: 'Orders',
+          href: '/dashboard/orders',
+          icon: <ShoppingCart className="h-5 w-5" />,
+        },
+        {
+          label: 'Services',
+          href: '/dashboard/services',
+          icon: <Briefcase className="h-5 w-5" />,
+        },
+        {
+          label: 'Customers',
+          href: '/dashboard/customers',
+          icon: <Users className="h-5 w-5" />,
+        },
+        {
+          label: 'Professionals',
+          href: '/dashboard/professionals',
+          icon: <Users className="h-5 w-5" />,
+        },
+        {
+          label: 'Trends',
+          icon: <TrendingUp className="h-5 w-5" />,
+          children: [
+            {
+              label: 'Events',
+              href: '/dashboard/trends/events',
+              icon: <Calendar className="h-4 w-4" />,
+            },
+            {
+              label: 'Outfit Inspirations',
+              href: '/dashboard/trends/outfit-inspirations',
+              icon: <Sparkles className="h-4 w-4" />,
+            },
+          ],
+        },
+      ];
 
-    // Add Management section for Super Admins
-    if (isSuperAdmin(role)) {
-      adminItems.push({
-        label: 'Management',
-        icon: <Settings className="h-5 w-5" />,
-        children: [
-          {
-            label: 'Official Blog',
-            href: '/dashboard/management/blogs',
-            icon: <FileText className="h-4 w-4" />,
-          },
-          {
-            label: 'Services',
-            href: '/dashboard/management/services',
-            icon: <Briefcase className="h-4 w-4" />,
-          },
-          {
-            label: 'Subscriptions',
-            href: '/dashboard/management/subscriptions',
-            icon: <CreditCard className="h-4 w-4" />,
-          },
-          {
-            label: 'Professional Types',
-            href: '/dashboard/management/professional-types',
-            icon: <Users className="h-4 w-4" />,
-          },
-          {
-            label: 'Content Moderation',
-            href: '/dashboard/management/content',
-            icon: <Bell className="h-4 w-4" />,
-          },
-          {
-            label: 'Showcase',
-            href: '/dashboard/showcase',
-            icon: <Star className="h-4 w-4" />,
-          },
-          {
-            label: 'System Settings',
-            href: '/dashboard/management/system',
-            icon: <Settings className="h-4 w-4" />,
-          },
-        ],
-      });
+      // Add Management section for Super Admins
+      if (isSuperAdmin(role)) {
+        adminItems.push({
+          label: 'Management',
+          icon: <Settings className="h-5 w-5" />,
+          children: [
+            {
+              label: 'Official Blog',
+              href: '/dashboard/management/blogs',
+              icon: <FileText className="h-4 w-4" />,
+            },
+            {
+              label: 'Services',
+              href: '/dashboard/management/services',
+              icon: <Briefcase className="h-4 w-4" />,
+            },
+            {
+              label: 'Subscriptions',
+              href: '/dashboard/management/subscriptions',
+              icon: <CreditCard className="h-4 w-4" />,
+            },
+            {
+              label: 'Professional Types',
+              href: '/dashboard/management/professional-types',
+              icon: <Users className="h-4 w-4" />,
+            },
+            {
+              label: 'Content Moderation',
+              href: '/dashboard/management/content',
+              icon: <Bell className="h-4 w-4" />,
+            },
+            {
+              label: 'Showcase',
+              href: '/dashboard/showcase',
+              icon: <Star className="h-4 w-4" />,
+            },
+            {
+              label: 'System Settings',
+              href: '/dashboard/management/system',
+              icon: <Settings className="h-4 w-4" />,
+            },
+          ],
+        });
+      }
+
+      return adminItems;
     }
 
-    return adminItems;
+    return baseItems;
   };
 
   const navItems = getNavItems();

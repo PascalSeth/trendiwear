@@ -498,7 +498,7 @@ const ProfileClient = ({ profile, slug, isOwner }: ProfileClientProps) => {
                    </Link>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
                    {profile.featuredProducts?.map((product, index) => (
                      <motion.div 
                        initial={{ opacity: 0, scale: 0.95 }}

@@ -2,7 +2,8 @@
 import DashboardShell from './DashboardShell';
 import { getCurrentUser } from '@/lib/auth';
 import { Role } from '@prisma/client';
-import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { redirect, notFound } from 'next/navigation';
 
 export interface UserInfo {
   name: string;
@@ -22,6 +23,8 @@ interface ServerDashboardShellProps {
 
 const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => {
   const user = await getCurrentUser();
+  const headerList = await headers();
+  const pathname = headerList.get('x-pathname') || '';
 
   // Redirect if not authenticated
   if (!user) {
@@ -30,6 +33,32 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
 
   // Extract role from user data with proper type casting
   const role: Role = user?.role || Role.CUSTOMER;
+
+  // 1. Minimum dashboard access: Only allow staff and professionals in the dashboard
+  if (role === Role.CUSTOMER) {
+    notFound();
+  }
+
+  // 2. Granular sub-path security: Ensure users can't access pages outside their role
+  // These checks match the middleware logic for bulletproof security
+  if (pathname.startsWith('/dashboard')) {
+    // 2.1 Super Admin Only: Management tools
+    if (pathname.startsWith('/dashboard/management') && role !== Role.SUPER_ADMIN) {
+      notFound();
+    }
+
+    // 2.2 Admin/Super Admin Only paths
+    const adminOnlyPaths = [
+      '/dashboard/customers',
+      '/dashboard/professionals',
+      '/dashboard/trends',
+      '/dashboard/catalogue/category',
+      '/dashboard/catalogue/collections'
+    ];
+    if (adminOnlyPaths.some(p => pathname.startsWith(p)) && !(role === Role.ADMIN || role === Role.SUPER_ADMIN)) {
+      notFound();
+    }
+  }
 
   // Build user info for display
   // For SUPER_ADMIN, show TrendiZip as the business name
