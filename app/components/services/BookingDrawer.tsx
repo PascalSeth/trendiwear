@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Clock, X, AlertCircle, Loader2, Check, Sparkles, HelpCircle, Zap, ArrowRight, ArrowLeft, Calendar } from 'lucide-react';
+import { Clock, X, AlertCircle, Loader2, Check, Gem, HelpCircle, BadgeCheck, ArrowRight, ArrowLeft, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,7 +214,7 @@ export const BookingDrawer: React.FC<BookingDrawerProps> = ({
                         <h1 className="text-3xl font-serif font-bold text-stone-900 leading-tight">{service.name}</h1>
                         <div className="flex items-center gap-4 text-[10px] font-black text-stone-400 tracking-widest uppercase">
                             <span className="flex items-center gap-1.5 text-amber-600">
-                              <Zap className="w-3.5 h-3.5 fill-current" /> {professionalName}
+                              <BadgeCheck className="w-3.5 h-3.5 fill-current" /> {professionalName}
                             </span>
                             <span className="flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" /> {effectiveDuration} MIN
@@ -254,7 +254,7 @@ export const BookingDrawer: React.FC<BookingDrawerProps> = ({
                     {service.addons && service.addons.length > 0 && (
                       <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-widest text-stone-900 flex items-center gap-2">
-                           <Sparkles size={14} className="text-amber-500" /> Premium Upgrades
+                           <Gem size={14} className="text-amber-500" /> Premium Upgrades
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
                           {service.addons.map((addon: ServiceAddon) => (
@@ -393,7 +393,7 @@ export const BookingDrawer: React.FC<BookingDrawerProps> = ({
                   >
                     <div className="text-center py-6">
                        <div className="w-20 h-20 bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                          <Sparkles size={32} className="text-amber-400" />
+                          <Gem size={32} className="text-amber-400" />
                        </div>
                        <h2 className="text-2xl font-serif font-bold text-stone-900 uppercase tracking-tight">Final Summary</h2>
                        <p className="text-xs text-stone-400 font-medium uppercase tracking-widest mt-2">Ready to submit for approval</p>

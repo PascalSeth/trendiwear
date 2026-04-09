@@ -23,7 +23,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, Upload, X, Clock, DollarSign, Home, FileText, Sparkles, ImageIcon } from "lucide-react";
+import { Plus, Upload, X, Clock, DollarSign, Home, FileText, Activity, Archive, ImageIcon } from "lucide-react";
 import Image from "next/image";
 
 type ServiceCategory = {
@@ -273,7 +273,7 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
         <SheetHeader className="pb-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl">
-              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <Archive className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
               <SheetTitle className="text-xl">{serviceToEdit ? 'Edit Service' : 'Create New Service'}</SheetTitle>
@@ -464,7 +464,7 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${formData.isActive ? 'bg-emerald-100' : 'bg-slate-100'}`}>
-                  <Sparkles size={16} className={formData.isActive ? 'text-emerald-600' : 'text-slate-400'} />
+                  <Activity size={16} className={formData.isActive ? 'text-emerald-600' : 'text-slate-400'} />
                 </div>
                 <div>
                   <Label htmlFor="isActive" className="text-sm font-medium text-slate-700 cursor-pointer">

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Star, Store, X, SlidersHorizontal,
   Grid3X3, LayoutGrid, ChevronDown, Search, ShoppingBag,
-  Sparkles, TrendingUp, Percent, ArrowRight, Check
+  Clock, Flame, Percent, ArrowRight, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -1063,7 +1063,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
         )}
 
         {/* Toolbar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4 mb-8 sticky top-4 z-30">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             
             {/* Search */}
@@ -1089,7 +1089,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
                 label="New Arrivals"
                 isActive={quickFilter === 'new'}
                 onClick={() => setQuickFilter('new')}
-                icon={Sparkles}
+                icon={Clock}
               />
               <FilterChip
                 label="On Sale"
@@ -1101,7 +1101,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
                 label="Trending"
                 isActive={quickFilter === 'trending'}
                 onClick={() => setQuickFilter('trending')}
-                icon={TrendingUp}
+                icon={Flame}
               />
             </div>
 
@@ -1162,10 +1162,10 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
         {/* Product Grid */}
         {filteredProducts.length > 0 ? (
           <div className={cn(
-            "grid gap-6 mb-16",
+            "grid gap-4 sm:gap-6 mb-16",
             viewMode === 'grid'
               ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"
-              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           )}>
             {filteredProducts.map((product, index) => (
               <ProductCard key={product.id} item={product} index={index} />

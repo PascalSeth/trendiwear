@@ -14,15 +14,14 @@ import {
   Wallet, 
   ShoppingBag, 
   Star, 
-  Zap, 
+  Activity, 
   Plus, 
   Package, 
   BarChart3, 
   Trophy, 
-  Activity, 
   Users,
   User,
-  Sparkles,
+  Archive,
   Calendar
 } from "lucide-react";
 
@@ -278,9 +277,9 @@ function ProfessionalBusinessDashboard({
               <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
                 <h3 className="text-lg font-black text-slate-900 mb-8 flex items-center justify-between">
                    <span className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-amber-500 fill-amber-500" /> Quick Flow
+                    <Activity className="w-5 h-5 text-amber-500" /> Quick Flow
                    </span>
-                   <Sparkles className="w-4 h-4 text-violet-400" />
+                   <Archive className="w-4 h-4 text-violet-400" />
                 </h3>
                 <div className="space-y-4">
                    <Link href="/dashboard/catalogue/products/add-product" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-violet-600 border border-slate-100 hover:border-violet-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-violet-200/40">

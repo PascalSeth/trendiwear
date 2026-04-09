@@ -7,7 +7,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { 
   Upload, X, Video, ChevronRight, ChevronLeft, 
   Check, Info, Tag, Package, Palette, Image as ImageIcon, 
-  GripVertical, Loader2, Sparkles, DollarSign
+  GripVertical, Loader2, DollarSign, Award, Gem
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -215,7 +215,7 @@ export default function AddProductPage() {
         <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600" />
+              <Package className="w-5 h-5 text-blue-600" />
               New Product
             </h1>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Step {currentStep + 1} / {STEPS.length}</p>
@@ -484,7 +484,7 @@ export default function AddProductPage() {
                           <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
                                 <span className="p-2 bg-orange-100 text-orange-600 rounded-xl">
-                                   <Sparkles className="w-4 h-4" />
+                                   <Gem className="w-4 h-4" />
                                 </span>
                                 <span className="text-sm font-black uppercase tracking-widest">Sale / Discount</span>
                              </div>
@@ -620,7 +620,7 @@ export default function AddProductPage() {
                                   { id: 'unisex', label: 'Unisex Design', state: isUnisex, set: setIsUnisex, icon: <GripVertical className="w-4 h-4" /> },
                                   { id: 'custom', label: 'Customizable', state: isCustomizable, set: setIsCustomizable, icon: <Palette className="w-4 h-4 text-pink-500" /> },
                                   { id: 'preorder', label: 'Pre-order', state: isPreorder, set: setIsPreorder, icon: <Package className="w-4 h-4 text-blue-500" /> },
-                                  { id: 'showcase', label: 'Request Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+                                  { id: 'showcase', label: 'Request Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Award className="w-4 h-4 text-amber-500" /> },
                                 ].map(opt => (
                                   <div key={opt.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                                      <div className="flex items-center gap-3">

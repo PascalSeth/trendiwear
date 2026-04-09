@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Bell, Package, Heart, ShoppingBag, DollarSign, Truck, Star, X, Check, CheckCheck, Sparkles } from 'lucide-react';
+import { Bell, Package, Heart, ShoppingBag, DollarSign, Truck, Star, X, Check, CheckCheck, Lightbulb, Gem } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -22,10 +22,10 @@ interface Notification {
 const notificationIcons: Record<string, React.ElementType> = {
   ORDER_UPDATE: Package,
   BOOKING_CONFIRMATION: Check,
-  NEW_INSPIRATION: Sparkles,
+  NEW_INSPIRATION: Lightbulb,
   PAYMENT_RECEIVED: DollarSign,
   REVIEW_RECEIVED: Star,
-  PROMOTION: Sparkles,
+  PROMOTION: Gem,
   SYSTEM_UPDATE: Bell,
   DELIVERY_CONFIRMATION_REQUEST: Truck,
   PAYMENT_RELEASED: DollarSign,

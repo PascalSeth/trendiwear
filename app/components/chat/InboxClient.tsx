@@ -5,7 +5,7 @@ import {
   Search, MessageSquare, Send, 
   MoreVertical, Phone, Video,
   CheckCheck, Loader2, Filter,
-  ArrowLeft, ShoppingBag, Zap, Image as ImageIcon
+  ArrowLeft, ShoppingBag, Clock, Image as ImageIcon
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -397,7 +397,7 @@ export function InboxClient({ currentUserId, businessName }: { currentUserId: st
               </form>
               <div className="mt-4 flex items-center justify-center gap-8 text-[9px] uppercase font-mono tracking-[0.3em] text-stone-300">
                 <span className="flex items-center gap-2"><ShoppingBag size={10}/> Order Inquiry</span>
-                <span className="flex items-center gap-2"><Zap size={10}/> Instant Reply</span>
+                <span className="flex items-center gap-2"><Clock size={10}/> Instant Reply</span>
               </div>
             </div>
           </>

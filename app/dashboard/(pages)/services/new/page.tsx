@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Clock, DollarSign, Home, ImageIcon, Save, Sparkles, Upload, X, Plus, Trash2, HelpCircle } from "lucide-react";
+import { ArrowLeft, Clock, DollarSign, Home, ImageIcon, Save, Lightbulb, Upload, X, Plus, Trash2, HelpCircle, Gem } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -255,7 +255,7 @@ export default function NewServicePage() {
           {/* Quick Tip */}
           <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-6 text-white shadow-xl flex items-start gap-4">
             <div className="p-2 bg-white/20 rounded-xl">
-              <Sparkles size={20} />
+              <Lightbulb size={20} />
             </div>
             <div>
               <h3 className="font-bold text-lg text-white">How it works</h3>
@@ -428,7 +428,7 @@ export default function NewServicePage() {
             <div className="space-y-4 pt-6 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles size={18} className="text-amber-500" />
+                  <Gem size={18} className="text-amber-500" />
                   Upsell Add-ons
                 </Label>
                 <Button 

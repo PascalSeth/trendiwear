@@ -154,6 +154,22 @@ model ProfessionalProfile {
   store                  Store?
   subscriptionHistory    SubscriptionPayment[]
   documents              VerificationDocument[]
+  portfolioCollections   PortfolioCollection[]
+}
+
+model PortfolioCollection {
+  id             String              @id @default(uuid())
+  professionalId String
+  name           String
+  description    String?
+  images         String[]            @default([])
+  coverImage     String?
+  order          Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
 }
 
 model DeliveryZone {

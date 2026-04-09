@@ -37,6 +37,7 @@ async function getProfileBySlug(slug: string) {
       businessImage: true,
       coverImage: true,
       galleryImages: true,
+      portfolioCollections: true,
       bio: true,
       location: true,
       latitude: true,
@@ -88,8 +89,9 @@ async function getProfileBySlug(slug: string) {
         businessName: true,
         businessImage: true,
         coverImage: true,
-        galleryImages: true,
-        bio: true,
+      galleryImages: true,
+      portfolioCollections: true,
+      bio: true,
         location: true,
         latitude: true,
         longitude: true,
@@ -148,6 +150,7 @@ async function getProfileBySlug(slug: string) {
       businessImage: true,
       coverImage: true,
       galleryImages: true,
+      portfolioCollections: true,
       bio: true,
       location: true,
       latitude: true,
@@ -257,6 +260,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
     businessImage: profileData.businessImage || undefined,
     coverImage: profileData.coverImage || undefined,
     galleryImages: profileData.galleryImages || undefined,
+    portfolioCollections: (profileData as any).portfolioCollections || undefined,
     bio: profileData.bio || undefined,
     rating: profileData.rating || undefined,
     totalReviews: profileData.totalReviews || undefined,
@@ -295,6 +299,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
 
   // Hydrate everything to the client
   const initialData = JSON.parse(JSON.stringify(profile));
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
-  return <ProfileClient profile={initialData} slug={slug} isOwner={isOwner} />;
+  return (
+    <ProfileClient 
+      profile={initialData} 
+      slug={slug} 
+      isOwner={isOwner} 
+      baseUrl={isOwner ? baseUrl : undefined} 
+    />
+  );
 }

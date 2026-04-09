@@ -29,7 +29,7 @@ import {
   BarChart3,
   Clock,
   Target,
-  Zap,
+  Activity,
   Calendar,
   ShoppingBag
 } from "lucide-react";
@@ -392,7 +392,7 @@ export default function AnalyticsPage() {
                   {analytics.seasonalInsights && analytics.seasonalInsights.length > 0 ? analytics.seasonalInsights.map((insight, index) => (
                     <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
                       <div className="flex items-start gap-3">
-                        <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <Activity className="h-5 w-5 text-blue-600 mt-0.5" />
                         <div>
                           <h4 className="font-medium text-sm text-blue-900">{insight.title}</h4>
                           <p className="text-xs text-blue-700 mt-1">{insight.description}</p>
@@ -690,7 +690,7 @@ export default function AnalyticsPage() {
 
                   <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
                     <div className="flex items-start gap-3">
-                      <Zap className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <Activity className="h-5 w-5 text-blue-600 mt-0.5" />
                       <div>
                         <h4 className="font-medium text-sm text-blue-900">Active Promotions</h4>
                         <p className="text-xs text-blue-700 mt-1">

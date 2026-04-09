@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
           businessName: true,
           businessImage: true,
           galleryImages: true,
+          portfolioCollections: true,
           experience: true,
           bio: true,
           location: true,
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
           businessName: true,
           businessImage: true,
           galleryImages: true,
+          portfolioCollections: true,
           specializationId: true,
           experience: true,
           bio: true,
@@ -215,6 +217,7 @@ export async function GET(request: NextRequest) {
         socialMedia: true,
         store: true,
         deliveryZones: true,
+        portfolioCollections: true,
       },
     })
     console.log("Fetched professional profile:", profile)

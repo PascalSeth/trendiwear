@@ -2,7 +2,21 @@ import React, { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import AuthPageClient from '@/app/auth/signin/AuthPageClient'
 
-export default async function AuthPage() {
+import { redirect } from 'next/navigation'
+import { getServerSession } from 'next-auth'
+import { authOptions } from "@/lib/auth-config"
+
+export default async function AuthPage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string }
+}) {
+  const session = await getServerSession(authOptions)
+  
+  if (session) {
+    redirect(searchParams.callbackUrl || '/')
+  }
+
   // Fetch real-time stats from Prisma
   const [productCount, proCount] = await Promise.all([
     prisma.product.count({ where: { isActive: true } }),

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, CheckCircle2, ChevronDown, ChevronUp, CreditCard, Package, ArrowRight, X, Sparkles, Check } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, ChevronDown, ChevronUp, CreditCard, Package, ArrowRight, X, BadgeCheck, Check } from 'lucide-react';
 import Link from 'next/link';
 
 interface SetupGuideProps {
@@ -105,7 +105,7 @@ export default function SetupGuide({
             <div className="flex-1">
               <h3 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 {isAllComplete ? "You're All Set!" : "Setup Your Virtual Store"}
-                {isAllComplete && <Sparkles className="w-5 h-5 text-amber-500" />}
+                {isAllComplete && <BadgeCheck className="w-5 h-5 text-amber-500" />}
               </h3>
               <p className="text-slate-500 text-sm mt-1">
                 {isAllComplete 

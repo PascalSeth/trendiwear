@@ -11,10 +11,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { 
-  Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe, Bell, BellOff, CheckCircle2 
+  Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe, Bell, BellOff, CheckCircle2,
+  Plus, Trash2, Edit3, ChevronDown, ChevronUp, FolderPlus
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
+import { useSession } from 'next-auth/react'
 
 // --- Types ---
 interface DayHours {
@@ -63,6 +65,16 @@ interface ProfessionalProfile {
   slug?: string
   socialMedia?: SocialMedia[]
   paymentSetupComplete?: boolean
+  portfolioCollections?: PortfolioCollection[]
+}
+
+interface PortfolioCollection {
+  id: string
+  name: string
+  description?: string
+  images: string[]
+  coverImage?: string
+  order: number
 }
 
 interface SocialMedia {
@@ -116,6 +128,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<'profile' | 'business' | 'cover' | 'gallery' | null>(null)
   const [permissionState, setPermissionState] = useState<string>('default')
+  const { update } = useSession()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -171,6 +184,11 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
   const [socialMedia, setSocialMedia] = useState<SocialMedia[]>((pp?.socialMedia || []).map(s => ({ platform: s.platform, url: s.url })))
 
   const [businessHours, setBusinessHours] = useState<BusinessHours>(parseAvailability(pp?.availability))
+  const [portfolioCollections, setPortfolioCollections] = useState<PortfolioCollection[]>(pp?.portfolioCollections || [])
+  const [isAddingCollection, setIsAddingCollection] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState('')
+  const [expandedCollection, setExpandedCollection] = useState<string | null>(null)
+
   const isProfessional = ['PROFESSIONAL', 'ADMIN', 'SUPER_ADMIN'].includes(initialProfile.role)
 
   const savePersonalInfo = async () => {
@@ -181,7 +199,16 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(personalForm),
       })
-      if (res.ok) toast.success('Personal info saved')
+      if (res.ok) {
+        // Sync session image if profile image was updated
+        await update({
+          name: `${personalForm.firstName} ${personalForm.lastName}`,
+          firstName: personalForm.firstName,
+          lastName: personalForm.lastName,
+          image: personalForm.profileImage,
+        })
+        toast.success('Personal info saved')
+      }
     } catch {
       toast.error('Failed to save')
     } finally {
@@ -316,6 +343,89 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
     }))
   }
 
+  // --- Portfolio Collection Logic ---
+  const createCollection = async () => {
+    if (!newCollectionName.trim()) return
+    try {
+      const res = await fetch('/api/professional-profiles/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCollectionName })
+      })
+      if (res.ok) {
+        const newCollection = await res.json()
+        setPortfolioCollections([...portfolioCollections, newCollection])
+        setNewCollectionName('')
+        setIsAddingCollection(false)
+        setExpandedCollection(newCollection.id)
+        toast.success('Collection created')
+      }
+    } catch {
+      toast.error('Failed to create collection')
+    }
+  }
+
+  const deleteCollection = async (id: string) => {
+    try {
+      const res = await fetch(`/api/professional-profiles/collections?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setPortfolioCollections(portfolioCollections.filter(c => c.id !== id))
+        toast.success('Collection removed')
+      }
+    } catch {
+      toast.error('Failed to delete')
+    }
+  }
+
+  const updateCollection = async (id: string, updates: Partial<PortfolioCollection>) => {
+    try {
+      const collection = portfolioCollections.find(c => c.id === id)
+      if (!collection) return
+      
+      const res = await fetch('/api/professional-profiles/collections', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...collection, ...updates })
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setPortfolioCollections(portfolioCollections.map(c => c.id === id ? updated : c))
+      }
+    } catch {
+      toast.error('Failed to update')
+    }
+  }
+
+  const handleCollectionUpload = async (e: React.ChangeEvent<HTMLInputElement>, collectionId: string) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    
+    setUploadingImage('gallery')
+    try {
+      const uploadedUrls: string[] = []
+      const uploadPromises = files.map(async (file) => {
+        const fd = new FormData(); fd.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (res.ok) {
+          const data = await res.json()
+          uploadedUrls.push(data.url)
+        }
+      })
+      await Promise.all(uploadPromises)
+      
+      const collection = portfolioCollections.find(c => c.id === collectionId)
+      if (collection && uploadedUrls.length > 0) {
+        updateCollection(collectionId, { 
+          images: [...collection.images, ...uploadedUrls] 
+        })
+        toast.success(`Added ${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''}`)
+      }
+    } finally {
+      setUploadingImage(null)
+      e.target.value = ''
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] pt-24 lg:pt-32 pb-20">
       <div className="max-w-5xl mx-auto px-6">
@@ -438,28 +548,166 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                      <Textarea value={businessForm.bio} onChange={e => setBusinessForm({...businessForm, bio: e.target.value})} className="min-h-[150px] rounded-3xl p-6 font-serif italic text-lg" />
                   </div>
 
-                  {/* Portfolio / Gallery Registry */}
+                  {/* Portfolio Collections Registry */}
                   <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
-                    <header className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center text-white">
-                        <ImageIcon size={14} />
+                    <header className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center text-white">
+                          <ImageIcon size={14} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-serif font-medium">Portfolio Collections</h3>
+                          <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Group works into editorial lookbooks</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-serif font-medium">Portfolio Gallery</h3>
-                        <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Showcase your best work</p>
-                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-full font-mono text-[9px] uppercase tracking-widest h-10 px-4"
+                        onClick={() => setIsAddingCollection(true)}
+                      >
+                        <Plus size={14} className="mr-2" /> New Collection
+                      </Button>
                     </header>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {businessForm.galleryImages.map((img, i) => (
-                        <div key={i} className="relative aspect-[3/4] rounded-2xl overflow-hidden group bg-stone-100">
-                          <Image src={img} alt={`Gallery ${i}`} fill className="object-cover" />
-                          <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold leading-none flex items-center justify-center">×</button>
+
+                    {isAddingCollection && (
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-stone-50 p-6 rounded-3xl border border-dashed border-stone-200 space-y-4">
+                        <Input 
+                          placeholder="Collection Name (e.g., Bridal Gala 2024)" 
+                          value={newCollectionName}
+                          onChange={e => setNewCollectionName(e.target.value)}
+                          className="h-12 rounded-xl"
+                        />
+                        <div className="flex justify-end gap-3">
+                           <Button type="button" variant="ghost" className="text-[10px] uppercase font-mono h-10 px-4" onClick={() => setIsAddingCollection(false)}>Cancel</Button>
+                           <Button type="button" className="text-[10px] uppercase font-mono h-10 px-4 bg-stone-900" onClick={createCollection}>Create</Button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    <div className="space-y-4">
+                      {portfolioCollections.map((collection) => (
+                        <div key={collection.id} className="border border-stone-100 rounded-3xl overflow-hidden group/coll bg-white">
+                          <div 
+                            className="p-5 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
+                            onClick={() => setExpandedCollection(expandedCollection === collection.id ? null : collection.id)}
+                          >
+                            <div className="flex items-center gap-4">
+                               <div className="w-12 h-16 rounded-lg bg-stone-100 overflow-hidden relative border border-stone-200">
+                                  {collection.coverImage || (collection.images && collection.images[0]) ? (
+                                    <Image src={collection.coverImage || collection.images[0]} alt="" fill className="object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-stone-300"><ImageIcon size={16}/></div>
+                                  )}
+                               </div>
+                               <div>
+                                  <h4 className="text-sm font-serif font-medium text-stone-900">{collection.name}</h4>
+                                  <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">{collection.images.length} Items</p>
+                               </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                               <button 
+                                onClick={(e) => { e.stopPropagation(); deleteCollection(collection.id); }}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/coll:opacity-100"
+                               >
+                                 <Trash2 size={14} />
+                               </button>
+                               {expandedCollection === collection.id ? <ChevronUp size={16} className="text-stone-400"/> : <ChevronDown size={16} className="text-stone-400"/>}
+                            </div>
+                          </div>
+
+                          <AnimatePresence>
+                            {expandedCollection === collection.id && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden border-t border-stone-100"
+                              >
+                                <div className="p-6 space-y-6 bg-stone-50/50">
+                                  <div className="space-y-2">
+                                     <Label className="text-[9px] font-mono uppercase text-stone-400 tracking-widest">Description (Optional)</Label>
+                                     <Textarea 
+                                      value={collection.description || ''} 
+                                      onChange={e => updateCollection(collection.id, { description: e.target.value })}
+                                      className="min-h-[80px] rounded-2xl bg-white text-sm"
+                                      placeholder="Tell the story of this collection..."
+                                     />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    {collection.images.map((img, i) => (
+                                      <div key={i} className="relative aspect-[3/4] rounded-xl overflow-hidden group/img bg-stone-200">
+                                         <Image src={img} alt="" fill className="object-cover" />
+                                         <button 
+                                          type="button" 
+                                          onClick={() => updateCollection(collection.id, { images: collection.images.filter((_, idx) => idx !== i) })}
+                                          className="absolute top-1 right-1 bg-black/50 text-white w-5 h-5 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
+                                         >
+                                           ×
+                                         </button>
+                                         <button 
+                                          type="button" 
+                                          onClick={() => updateCollection(collection.id, { coverImage: img })}
+                                          className={cn(
+                                            "absolute bottom-1 right-1 px-2 py-1 rounded-md text-[8px] font-mono uppercase tracking-tighter transition-all",
+                                            collection.coverImage === img ? "bg-emerald-500 text-white" : "bg-black/50 text-white opacity-0 group-hover/img:opacity-100 hover:bg-black"
+                                          )}
+                                         >
+                                           {collection.coverImage === img ? 'Cover' : 'Set Cover'}
+                                         </button>
+                                      </div>
+                                    ))}
+                                    <div className="relative aspect-[3/4] rounded-xl border border-dashed border-stone-300 hover:border-stone-500 transition-colors flex flex-col items-center justify-center cursor-pointer bg-white">
+                                      {uploadingImage === 'gallery' ? (
+                                        <Loader2 className="animate-spin text-stone-400" size={16}/>
+                                      ) : (
+                                        <>
+                                          <Plus size={16} className="text-stone-300 mb-1"/>
+                                          <span className="text-[8px] font-mono uppercase text-stone-400">Add Works</span>
+                                        </>
+                                      )}
+                                      <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleCollectionUpload(e, collection.id)} />
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ))}
-                      <div className="relative aspect-[3/4] rounded-2xl border-2 border-dashed border-stone-200 hover:border-stone-400 transition-colors bg-stone-50 flex items-center justify-center cursor-pointer overflow-hidden">
-                        {uploadingImage === 'gallery' ? <Loader2 className="w-6 h-6 animate-spin text-stone-400" /> : <div className="text-center"><Camera className="w-6 h-6 mx-auto mb-2 text-stone-300" /><span className="text-[10px] font-mono uppercase text-stone-400">Add Photos</span></div>}
-                        <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleGalleryUpload} />
-                      </div>
+
+                      {portfolioCollections.length === 0 && !isAddingCollection && (
+                        <div className="py-12 flex flex-col items-center justify-center text-stone-300 border border-dashed border-stone-200 rounded-[2rem]">
+                           <FolderPlus size={32} className="mb-4 opacity-20" />
+                           <p className="text-[10px] font-mono uppercase tracking-[0.2em] font-medium">Archive Empty</p>
+                           <p className="text-[9px] font-mono uppercase tracking-widest mt-1">Start by creating your first work group</p>
+                        </div>
+                      )}
+
+                      {/* Legacy Gallery Link/Warning */}
+                      {businessForm.galleryImages.length > 0 && (
+                        <div className="mt-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center justify-between">
+                           <div className="flex items-center gap-3">
+                              <ImageIcon className="text-amber-600" size={16}/>
+                              <p className="text-[10px] font-mono text-amber-800 uppercase tracking-widest leading-relaxed">
+                                You have {businessForm.galleryImages.length} legacy images. Please reorganize them into collections for visibility.
+                              </p>
+                           </div>
+                           <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-[9px] uppercase font-mono text-amber-900 h-8"
+                            onClick={() => {
+                              // Optional: Automated migration helper logic here if needed
+                              toast.info("Manually add these to your new collections above.")
+                            }}
+                           >
+                              Dismiss
+                           </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

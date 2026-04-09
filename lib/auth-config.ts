@@ -161,6 +161,8 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as Role
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
+        session.user.name = token.name as string
+        session.user.image = token.image as string
       }
       return session
     },
@@ -202,9 +204,13 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Allow updating role in token if trigger is update
-      if (trigger === "update" && session?.role) {
-        token.role = session.role
+      // Allow updating fields in token if trigger is update
+      if (trigger === "update" && session) {
+        if (session.role) token.role = session.role
+        if (session.firstName) token.firstName = session.firstName
+        if (session.lastName) token.lastName = session.lastName
+        if (session.name) token.name = session.name
+        if (session.image) token.image = session.image
       }
 
       return token

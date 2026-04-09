@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Upload, X, Sparkles, ImageIcon, Save, Check } from "lucide-react";
+import { ArrowLeft, Upload, X, Lightbulb, ImageIcon, Save, Check, Users } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -179,7 +179,7 @@ export default function NewServiceCategoryPage() {
           {/* Quick Tip */}
           <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 flex items-start gap-4">
             <div className="p-2 bg-white/20 rounded-xl">
-              <Sparkles size={20} />
+              <Lightbulb size={20} />
             </div>
             <div>
               <h3 className="font-bold text-lg">What is a category?</h3>
@@ -212,7 +212,7 @@ export default function NewServiceCategoryPage() {
               <div className="space-y-4 p-6 bg-slate-50 rounded-2xl border border-slate-200">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
-                    <Sparkles size={16} />
+                    <Users size={16} />
                   </div>
                   <Label className="text-base font-bold text-slate-900">
                     Who is this for? *

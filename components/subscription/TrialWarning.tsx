@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, Clock, Zap } from 'lucide-react'
+import { AlertCircle, Clock, Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -34,7 +34,7 @@ export function TrialWarning({ daysRemaining, onDismiss }: TrialWarningProps) {
             ) : isExpiringSoon ? (
               <Clock className="w-6 h-6 text-yellow-600" />
             ) : (
-              <Zap className="w-6 h-6 text-blue-600" />
+              <Award className="w-6 h-6 text-blue-600" />
             )}
             <CardTitle
               className={`${

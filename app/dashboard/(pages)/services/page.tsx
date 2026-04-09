@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, LayoutGrid, List, Clock, DollarSign,
   Home, Store, Calendar, Edit2, Trash2, MoreVertical,
-  Sparkles, X, Check, Plus, FolderOpen, Image as ImageIcon
+  Scissors, X, Check, Plus, FolderOpen, Image as ImageIcon, Layers, Inbox, Archive
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,7 +65,7 @@ function ServicesPage() {
   const isManagementAllowed = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
 
   const tabs = [
-    { id: 'services' as const, label: 'Services', icon: Sparkles },
+    { id: 'services' as const, label: 'Services', icon: Scissors },
     ...(isManagementAllowed ? [{ id: 'categories' as const, label: 'Categories', icon: LayoutGrid }] : [])
   ]
 
@@ -298,7 +298,7 @@ function ServicesPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Sparkles size={60} />
+                    <Archive size={60} />
                   </div>
                   <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
                     Quick Guide
@@ -350,7 +350,7 @@ function ServicesPage() {
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
-                <Sparkles className="w-6 h-6 text-white" />
+                <Layers className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className="text-sm text-slate-500 font-medium">Total Services</p>
@@ -533,7 +533,7 @@ function ServicesPage() {
         ) : filteredServices.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200/60 p-12 text-center">
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-10 h-10 text-slate-400" />
+              <Inbox className="w-10 h-10 text-slate-400" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">No services found</h3>
             <p className="text-slate-500 mb-6">
@@ -795,7 +795,7 @@ function ServicesPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
-                    <Sparkles className="w-6 h-6 text-white" />
+                    <Layers className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-sm text-slate-500 font-medium">Total Services</p>

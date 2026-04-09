@@ -310,7 +310,7 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
 
           <motion.div 
             layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-20 relative z-10"
+            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-x-8 gap-y-12 md:gap-y-20 relative z-10"
           >
             <AnimatePresence mode="popLayout">
               {(activeTab === 'featured' ? featuredProducts : trendingProducts).map((product, index) => (

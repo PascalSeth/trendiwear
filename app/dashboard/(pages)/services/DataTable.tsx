@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign, Zap } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign, Layers } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -113,7 +113,7 @@ const getColumns = (
       const variants = row.original.variants || [];
       return (
         <Badge variant="outline" className="flex items-center gap-1 w-fit">
-          <Zap className="w-3 h-3" />
+          <Layers className="w-3 h-3" />
           {variants.length} tier{variants.length !== 1 ? 's' : ''}
         </Badge>
       );
@@ -200,7 +200,7 @@ const getColumns = (
               Edit Service
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setVariantsService(service)}>
-              <Zap className="mr-2 h-4 w-4" />
+              <Layers className="mr-2 h-4 w-4" />
               Manage Variants
             </DropdownMenuItem>
             <DropdownMenuSeparator />

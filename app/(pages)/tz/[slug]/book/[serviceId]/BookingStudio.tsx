@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Clock, AlertCircle, Loader2, Check, Sparkles, 
+  Clock, AlertCircle, Loader2, Check, Gem, Sun,
   ArrowRight, Calendar as CalendarIcon,
   ChevronLeft, Camera, CreditCard, Wallet, Hourglass
 } from 'lucide-react';
@@ -300,7 +300,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                                  >
                                     <div className="flex items-center gap-6">
                                        <div className={cn("p-4 rounded-3xl transition-colors", selectedAddonIds.has(addon.id) ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-300")}>
-                                          <Sparkles size={20} />
+                                          <Gem size={20} />
                                        </div>
                                        <div>
                                           <p className="text-xs font-black uppercase tracking-widest text-stone-900">{addon.name}</p>
@@ -471,7 +471,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                             className="absolute inset-0 scale-125 opacity-20"
                           >
-                             <Sparkles size={160} className="text-stone-900" />
+                             <Sun size={160} className="text-stone-900" />
                           </motion.div>
                           <div className="relative w-40 h-40 bg-stone-900 text-emerald-400 rounded-full flex items-center justify-center shadow-3xl shadow-stone-200">
                              <Check size={80} strokeWidth={3} />

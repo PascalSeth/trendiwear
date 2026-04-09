@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Upload, X, ImageIcon, Save, Loader2, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Upload, X, ImageIcon, Save, Loader2, Users, Check } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -226,7 +226,7 @@ export default function EditServiceCategoryPage() {
               <div className="space-y-4 p-6 bg-slate-50 rounded-2xl border border-slate-200">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
-                    <Sparkles size={16} />
+                    <Users size={16} />
                   </div>
                   <Label className="text-base font-bold text-slate-900">
                     Who is this for? *

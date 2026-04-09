@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Plus, Sparkles, Loader2, Trash2, Pencil, Tag, Filter } from "lucide-react";
+import { Plus, Compass, Loader2, Trash2, Pencil, Tag, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -303,7 +303,7 @@ export default function OutfitInspirationsTrendsPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5" /> Outfit Inspirations
+            <Compass className="h-5 w-5" /> Outfit Inspirations
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Curated Pinterest-style looks, linked to events and products.

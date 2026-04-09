@@ -10,6 +10,11 @@ export default withAuth(
     const token = req.nextauth.token;
     const role = token?.role as string;
     
+    if (pathname.startsWith('/auth/signin') && token) {
+      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl") || "/";
+      return NextResponse.redirect(new URL(callbackUrl, req.url));
+    }
+
     // Dashboard routes require specific roles
     if (pathname.startsWith('/dashboard')) {
       // 1. Minimum dashboard access (not a regular customer)
@@ -43,7 +48,11 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Always allow access to /auth routes so we can handle guest-only logic in the middleware body
+        if (req.nextUrl.pathname.startsWith('/auth')) return true;
+        return !!token;
+      },
     },
     pages: {
       signIn: '/auth/signin',
@@ -59,6 +68,7 @@ export const config = {
     "/orders/:path*", 
     "/wishlist/:path*", 
     "/measurements/:path*", 
-    "/addresses/:path*"
+    "/addresses/:path*",
+    "/auth/signin"
   ]
 }

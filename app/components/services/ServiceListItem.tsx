@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ChevronDown, Sparkles, ArrowRight, Star } from 'lucide-react';
+import { Clock, ChevronDown, Home, ArrowRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ServiceWithVariants, ServiceVariant } from './ServiceCard';
 
@@ -84,7 +84,7 @@ export const ServiceListItem: React.FC<ServiceListItemProps> = ({
               
               {service.isHomeService && (
                 <div className="flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest">
-                   <Sparkles size={12} />
+                   <Home size={12} />
                    <span>At-Home Service</span>
                 </div>
               )}

@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import Image from 'next/image'
-import { ShieldCheck, Zap } from 'lucide-react'
+import { ShieldCheck, MousePointer2 } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 /**
@@ -51,6 +51,14 @@ export default function AuthPageClient({
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
 
+  const { status } = useSession()
+  
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace(searchParams.get('callbackUrl') || '/')
+    }
+  }, [status, router, searchParams])
+
   useEffect(() => {
     const m = searchParams.get('mode')
     if (m === 'signup') {
@@ -69,7 +77,8 @@ export default function AuthPageClient({
 
   const handleGoogleSignIn = () => {
     setLoading(true)
-    signIn('google', { callbackUrl: '/' })
+    const callbackUrl = searchParams.get('callbackUrl') || '/'
+    signIn('google', { callbackUrl })
   }
 
   return (
@@ -192,7 +201,7 @@ export default function AuthPageClient({
             <div className="mt-12 space-y-4">
               {[
                 { icon: <ShieldCheck className="w-4 h-4" />, text: 'Secure authentication by Google' },
-                { icon: <Zap className="w-4 h-4" />, text: 'One click access, no password needed' },
+                { icon: <MousePointer2 className="w-4 h-4" />, text: 'One click access, no password needed' },
               ].map((item, i) => (
                 <motion.div 
                   key={i}

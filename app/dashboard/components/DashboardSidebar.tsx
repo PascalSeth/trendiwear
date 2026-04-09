@@ -13,7 +13,7 @@ import {
   Star,
   TrendingUp,
   Calendar,
-  Sparkles,
+  Compass,
   ChevronDown,
   ChevronRight,
   Home,
@@ -197,7 +197,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
             {
               label: 'Outfit Inspirations',
               href: '/dashboard/trends/outfit-inspirations',
-              icon: <Sparkles className="h-4 w-4" />,
+              icon: <Compass className="h-4 w-4" />,
             },
           ],
         },

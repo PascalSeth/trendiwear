@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, AlertCircle, Loader2, Zap, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, Loader2, Award, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -255,7 +255,7 @@ export function SubscriptionStatusBadge({ role }: { role?: Role }) {
               {isLowDays ? (
                 <AlertCircle className={`h-4 w-4 text-orange-600 ${isPulse ? 'animate-pulse' : ''}`} />
               ) : (
-                <Zap className="h-4 w-4 text-blue-600" />
+                <Award className="h-4 w-4 text-blue-600" />
               )}
               <span className={`text-xs font-bold tracking-wide hidden sm:inline ${
                 isLowDays ? 'text-orange-700' : 'text-blue-700'
@@ -274,7 +274,7 @@ export function SubscriptionStatusBadge({ role }: { role?: Role }) {
           }`}
         >
           <DropdownMenuLabel className={`font-semibold ${isLowDays ? 'text-orange-900' : 'text-blue-900'}`}>
-            {isLowDays ? '⏰ Trial Ending Soon' : '✨ Free Trial Active'}
+            {isLowDays ? '⏰ Trial Ending Soon' : '✦ Free Trial Active'}
           </DropdownMenuLabel>
           <DropdownMenuSeparator className={isLowDays ? 'bg-orange-200' : 'bg-blue-200'} />
           <div className="p-3 space-y-3">
