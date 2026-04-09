@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { ProductCard } from '@/components/common/ProductCard';
 import { CategoryNavigator } from './components/CategoryNavigator';
-import { ShoppingBag, ArrowRight, Star, Plus } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Plus } from 'lucide-react';
 
 // --- Types ---
 interface Category {
@@ -52,6 +52,10 @@ interface Product {
       isVerified?: boolean;
     };
   };
+  stockQuantity: number;
+  sizes: string[];
+  colors: string[];
+  createdAt: string | Date;
   _count: {
     wishlistItems: number;
     reviews: number;
@@ -171,11 +175,9 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
                     Enter Atelier <ArrowRight size={14} />
                   </motion.button>
                 </Link>
-                <div className="max-w-xs">
                   <p className="text-sm font-serif italic text-stone-500 leading-relaxed">
-                    Connecting discerning individuals with the world's most talented independent artisans and tailors.
+                    Connecting discerning individuals with the world&apos;s most talented independent artisans and tailors.
                   </p>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -266,7 +268,7 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
                       src={col.imageUrl || "/placeholder-collection.jpg"} 
                       alt={col.name}
                       fill
-                      className="object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+                      className="object-cover transition-transform duration-[1500ms] group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
                     
@@ -381,17 +383,7 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
           >
             <AnimatePresence mode="popLayout">
               {(activeTab === 'featured' ? featuredProducts : trendingProducts).map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.5, delay: index * 0.05 }}
-                  className="bg-white/80 backdrop-blur-xl p-2 rounded-2xl border border-stone-200/50 hover:border-amber-200/50 transition-all group shadow-2xl shadow-stone-200/40"
-                >
-                  <ProductCard item={product as any} index={index} />
-                </motion.div>
+                  <ProductCard key={product.id} item={product as unknown as Parameters<typeof ProductCard>[0]['item']} index={index} />
               ))}
             </AnimatePresence>
           </motion.div>

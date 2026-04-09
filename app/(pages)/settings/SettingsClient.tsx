@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { 
   Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe, Bell, BellOff, CheckCircle2,
-  Plus, Trash2, Edit3, ChevronDown, ChevronUp, FolderPlus
+  Plus, Trash2, ChevronDown, ChevronUp, FolderPlus
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
@@ -302,46 +302,6 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
     }
   }
 
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
-    
-    setUploadingImage('gallery')
-    try {
-      const uploadedUrls: string[] = []
-      
-      const uploadPromises = files.map(async (file) => {
-        const fd = new FormData(); 
-        fd.append('file', file)
-        const res = await fetch('/api/upload', { method: 'POST', body: fd })
-        if (res.ok) {
-          const data = await res.json()
-          uploadedUrls.push(data.url)
-        } else {
-          toast.error(`Failed to upload ${file.name}`)
-        }
-      })
-      
-      await Promise.all(uploadPromises)
-      
-      if (uploadedUrls.length > 0) {
-        setBusinessForm(p => ({ ...p, galleryImages: [...p.galleryImages, ...uploadedUrls] }))
-        toast.success(`Added ${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''} to gallery`)
-      }
-    } catch {
-      toast.error('Upload process failed')
-    } finally {
-      setUploadingImage(null)
-      e.target.value = '' // Reset input
-    }
-  }
-
-  const removeGalleryImage = (index: number) => {
-    setBusinessForm(p => ({
-      ...p,
-      galleryImages: p.galleryImages.filter((_, i) => i !== index)
-    }))
-  }
 
   // --- Portfolio Collection Logic ---
   const createCollection = async () => {

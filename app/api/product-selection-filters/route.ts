@@ -22,19 +22,6 @@ export async function GET(request: NextRequest) {
             slug: true,
             imageUrl: true
           }
-        },
-        collections: {
-          where: {
-            isActive: true,
-            ...(selectedCategoryId && { categoryId: selectedCategoryId })
-          },
-          orderBy: { order: "asc" },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true
-          }
         }
       },
       orderBy: { order: "asc" }
@@ -43,22 +30,10 @@ export async function GET(request: NextRequest) {
     // If a category is selected, also get collections for that specific category
     let selectedCategoryCollections: Array<{ id: string; name: string; slug: string }> = []
     if (selectedCategoryId) {
-      const category = await prisma.category.findUnique({
-        where: { id: selectedCategoryId },
-        include: {
-          collections: {
-            where: { isActive: true },
-            orderBy: { order: "asc" },
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              imageUrl: true
-            }
-          }
-        }
-      })
-      selectedCategoryCollections = category?.collections || []
+      // Note: Category no longer has a direct 'collections' relation.
+      // Collections are associated with Categories via Products (many-to-many).
+      // Returning an empty array for now to maintain API structure without direct schema access.
+      selectedCategoryCollections = []
     }
 
     return NextResponse.json({

@@ -67,7 +67,7 @@ export async function GET(
             name: true,
           },
         },
-        collection: {
+        collections: {
           select: {
             name: true,
           },

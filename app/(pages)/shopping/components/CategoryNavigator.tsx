@@ -1,8 +1,7 @@
-'use client';
-
-import React, { useRef, useEffect, useState } from 'react';
+'use client'
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 interface Category {
@@ -20,8 +19,6 @@ interface CategoryNavigatorProps {
 }
 
 export const CategoryNavigator = ({ categories }: CategoryNavigatorProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
   const [isFixed, setIsFixed] = useState(false);
 
   // Monitor scroll for sticking the navigator
@@ -40,23 +37,22 @@ export const CategoryNavigator = ({ categories }: CategoryNavigatorProps) => {
   return (
     <div className="relative h-32 lg:h-40 my-12">
       <motion.div
-        className={`w-full z-40 py-6 transition-all duration-500 ${
-          isFixed 
-            ? 'fixed top-20 left-0 bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm' 
+        className={`w-full z-40 py-6 transition-all duration-500 ${isFixed
+            ? 'fixed top-20 left-0 bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm'
             : 'relative'
-        }`}
+          }`}
       >
         <div className="max-w-[1600px] mx-auto px-6 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-8 min-w-max pb-4">
             {categories.map((cat, i) => (
-              <Link 
-                key={cat.id} 
+              <Link
+                key={cat.id}
                 href={`/shopping/categories/${cat.id}`}
                 className="group flex items-center gap-4 hover:opacity-100 transition-opacity"
               >
                 <div className="relative w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden border border-stone-100 group-hover:border-stone-900 transition-colors duration-500">
-                  <Image 
-                    src={cat.imageUrl || "/placeholder-category.jpg"} 
+                  <Image
+                    src={cat.imageUrl || "/placeholder-category.jpg"}
                     alt={cat.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"

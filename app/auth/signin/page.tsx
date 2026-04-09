@@ -9,12 +9,13 @@ import { authOptions } from "@/lib/auth-config"
 export default async function AuthPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string }
+  searchParams: Promise<{ callbackUrl?: string }>
 }) {
+  const { callbackUrl } = await searchParams;
   const session = await getServerSession(authOptions)
   
   if (session) {
-    redirect(searchParams.callbackUrl || '/')
+    redirect(callbackUrl || '/')
   }
 
   // Fetch real-time stats from Prisma

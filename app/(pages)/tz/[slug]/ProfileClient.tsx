@@ -467,7 +467,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             className="max-w-7xl mx-auto rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative group bg-stone-100"
           >
             {profile.location.embedUrl ? (
-              <div className="aspect-[21/6] w-full grayscale hover:grayscale-0 transition-all duration-[1.5s] ease-out">
+              <div className="aspect-[21/6] w-full grayscale hover:grayscale-0 transition-all duration-[1500ms] ease-out">
                 <iframe
                   src={profile.location.embedUrl}
                   width="100%"
@@ -594,7 +594,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                                 alt={`${selectedCollection.name} ${i}`} 
                                 width={800} 
                                 height={1000} 
-                                className="w-full h-auto object-cover transition-all duration-[1.5s] ease-out group-hover:scale-[1.05] md:grayscale md:hover:grayscale-0" 
+                                className="w-full h-auto object-cover transition-all duration-[1500ms] ease-out group-hover:scale-[1.05] md:grayscale md:hover:grayscale-0" 
                               />
                             </div>
                             

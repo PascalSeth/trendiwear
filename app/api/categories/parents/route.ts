@@ -15,10 +15,9 @@ export async function GET(request: NextRequest) {
     const categories = await prisma.category.findMany({
       where,
       include: {
-        collections: {
+        children: {
           where: { isActive: true },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true }
+          select: { id: true, name: true, slug: true }
         },
         ...(includeProducts && {
           products: {

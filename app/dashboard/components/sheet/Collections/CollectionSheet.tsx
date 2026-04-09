@@ -37,6 +37,7 @@ interface Collection {
   isFeatured: boolean;
   order: number;
   createdAt: string;
+  updatedAt: string;
 
   _count: {
     products: number;
@@ -183,7 +184,8 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
       const collection: Collection = {
         ...collectionFromAPI,
         isActive: collectionFromAPI.isActive ?? true,
-        _count: { products: 0 },
+        updatedAt: collectionFromAPI.updatedAt || new Date().toISOString(),
+        _count: { products: collectionFromAPI._count?.products ?? 0 },
       };
 
       if (collectionToEdit && onCollectionUpdated) {

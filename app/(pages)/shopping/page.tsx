@@ -94,10 +94,16 @@ export default async function Page() {
   // The current product list uses the professionalProfile.rating as a proxy, 
   // but we can compute specific product stars here if we want absolute precision.
 
+  interface CategoryWithProducts {
+    _count?: { products: number };
+    children?: Array<{ _count?: { products: number } }>;
+  }
+
   // Process categories to include total product count (Parent + All Children)
-  const processedCategories = categories.map((cat: any) => {
-    const directProducts = cat._count?.products || 0;
-    const childrenProducts = cat.children?.reduce((sum: number, child: any) => sum + (child._count?.products || 0), 0) || 0;
+  const processedCategories = categories.map((cat) => {
+    const c = cat as unknown as CategoryWithProducts;
+    const directProducts = c._count?.products || 0;
+    const childrenProducts = c.children?.reduce((sum: number, child) => sum + (child._count?.products || 0), 0) || 0;
     
     return {
       ...cat,
