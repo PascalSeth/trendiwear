@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
       where.categoryId = { in: categoryIds };
     }
-    if (collectionId) where.collectionId = collectionId
+    if (collectionId) where.collections = { some: { id: collectionId } }
     if (professionalId) where.professionalId = professionalId
 
     if (search) {
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
         where: effectiveWhere,
         include: {
           category: true,
-          collection: true,
+          collections: true,
           professional: {
             select: {
               id: true,
@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
       images,
       videoUrl,
       categoryId,
-      collectionId,
+      collectionIds,
       sizes,
       colors,
       material,
@@ -399,7 +399,7 @@ export async function POST(request: NextRequest) {
         images,
         videoUrl,
         categoryId,
-        collectionId,
+        collections: collectionIds && collectionIds.length > 0 ? { connect: collectionIds.map((id: string) => ({ id })) } : undefined,
         professionalId: user.id,
         sizes,
         colors,
@@ -423,7 +423,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         category: true,
-        collection: true,
+        collections: true,
         professional: {
           select: {
             firstName: true,

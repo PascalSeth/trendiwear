@@ -40,10 +40,7 @@ import {
 } from "@/components/ui/table";
 import CollectionSheet from "@/app/dashboard/components/sheet/Collections/CollectionSheet";
 
-type Category = {
-  id: string;
-  name: string;
-};
+
 
 type Collection = {
   id: string;
@@ -51,17 +48,13 @@ type Collection = {
   slug: string;
   description?: string;
   imageUrl?: string;
-  categoryId?: string;
   season?: "SPRING" | "SUMMER" | "FALL" | "WINTER" | "ALL_SEASON";
   isActive: boolean;
   isFeatured: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;
-  category?: {
-    id: string;
-    name: string;
-  };
+
   _count: {
     products: number;
   };
@@ -69,7 +62,7 @@ type Collection = {
 
 export function CollectionsTable() {
   const [collections, setCollections] = React.useState<Collection[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
+
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [editingCollection, setEditingCollection] = React.useState<Collection | null>(null);
@@ -138,13 +131,7 @@ export function CollectionsTable() {
       </div>
     ),
   },
-  {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => (
-      <span className="text-sm">{row.original.category?.name || "N/A"}</span>
-    ),
-  },
+
   {
     accessorKey: "season",
     header: "Season",
@@ -272,21 +259,14 @@ export function CollectionsTable() {
         const collectionsData = await collectionsResponse.json();
         setCollections(collectionsData || []);
 
-        // Fetch categories
-        const categoriesResponse = await fetch("/api/categories");
-        if (!categoriesResponse.ok) {
-          const errorData = await categoriesResponse.json();
-          throw new Error(errorData.error || "Failed to fetch categories");
-        }
-        const categoriesData = await categoriesResponse.json();
-        setCategories(categoriesData || []);
+
 
         setError(null);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError(error instanceof Error ? error.message : "Failed to fetch data");
         setCollections([]);
-        setCategories([]);
+        setCollections([]);
         toast.error(error instanceof Error ? error.message : "Failed to fetch data", {
           description: "Please try again later.",
         });
@@ -352,7 +332,6 @@ export function CollectionsTable() {
   return (
     <div className="w-full">
       <CollectionSheet
-        categories={categories}
         onCollectionAdded={handleCollectionAdded}
         collectionToEdit={editingCollection || undefined}
         onCollectionUpdated={(updatedCollection) => {

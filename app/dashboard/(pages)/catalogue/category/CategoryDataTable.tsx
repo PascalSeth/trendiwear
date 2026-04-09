@@ -55,10 +55,7 @@ type Category = {
     id: string;
     name: string;
   }>;
-  collections: Array<{
-    id: string;
-    name: string;
-  }>;
+
   _count: {
     products: number;
   };
@@ -262,12 +259,7 @@ export function CategoryTable() {
                 {category.children.length} subcategories
               </div>
             )}
-            {category.collections.length > 0 && (
-              <div className="flex items-center text-sm text-purple-600">
-                <Package className="h-3 w-3 mr-1" />
-                {category.collections.length} collections
-              </div>
-            )}
+
           </div>
         );
       },
@@ -414,11 +406,7 @@ export function CategoryTable() {
                   <Badge variant="outline" className="text-[9px] font-bold py-0 h-4 md:h-5 whitespace-nowrap shrink-0">
                     {category._count.products} Products
                   </Badge>
-                  {category.collections.length > 0 && (
-                    <Badge variant="secondary" className="text-[9px] font-bold py-0 h-4 md:h-5 bg-slate-50 text-slate-500 whitespace-nowrap shrink-0">
-                      {category.collections.length} Collections
-                    </Badge>
-                  )}
+
                 </div>
               </div>
               <div className="text-xs text-slate-400 truncate max-md:hidden">{category.description}</div>
@@ -589,7 +577,7 @@ export function CategoryTable() {
             <Button 
               variant="default" 
               size="sm" 
-              onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], collections: [], _count: { products: 0 } } as Category)}
+              onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], _count: { products: 0 } } as Category)}
               className="bg-blue-600 hover:bg-blue-700 h-8 px-2 sm:px-4 rounded-xl shadow-lg shadow-blue-100 font-bold shrink-0 items-center justify-center flex"
             >
               <Plus className="h-4 w-4 sm:mr-2" />

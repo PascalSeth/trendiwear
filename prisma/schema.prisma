@@ -301,7 +301,6 @@ model Product {
   images               String[]
   videoUrl             String?
   categoryId           String
-  collectionId         String?
   professionalId       String
   sizes                String[]
   colors               String[]
@@ -336,7 +335,7 @@ model Product {
   orderItems           OrderItem[]
   outfitProducts       OutfitProduct[]
   category             Category             @relation(fields: [categoryId], references: [id])
-  collection           Collection?          @relation(fields: [collectionId], references: [id])
+  collections          Collection[]
   professional         User                 @relation(fields: [professionalId], references: [id])
   analytics            ProductAnalytics?
   performance          ProductPerformance?
@@ -346,19 +345,19 @@ model Product {
 }
 
 model Category {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  slug        String       @unique
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
   description String?
   imageUrl    String?
   parentId    String?
-  isActive    Boolean      @default(true)
-  order       Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  parent      Category?    @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[]   @relation("CategoryHierarchy")
-  collections Collection[]
+  level       Int        @default(0)
+  isActive    Boolean    @default(true)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
   products    Product[]
 }
 
@@ -368,14 +367,12 @@ model Collection {
   slug        String    @unique
   description String?
   imageUrl    String?
-  categoryId  String
   season      Season?
   isActive    Boolean   @default(true)
   isFeatured  Boolean   @default(false)
   order       Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  category    Category  @relation(fields: [categoryId], references: [id])
   products    Product[]
 }
 
@@ -694,7 +691,7 @@ model CartItem {
 }
 
 model Review {
-  id           String     @id @default(uuid())
+  id           String        @id @default(uuid())
   userId       String
   targetId     String
   targetType   ReviewType
@@ -703,15 +700,15 @@ model Review {
   title        String?
   comment      String?
   images       String[]
-  isVerified   Boolean    @default(false)
-  helpfulCount Int        @default(0)
+  isVerified   Boolean       @default(false)
+  helpfulCount Int           @default(0)
   replyText    String?
   replyUserId  String?
   repliedAt    DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  replyUser    User?      @relation("ReviewReplier", fields: [replyUserId], references: [id])
-  user         User       @relation("ReviewAuthor", fields: [userId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  replyUser    User?         @relation("ReviewReplier", fields: [replyUserId], references: [id])
+  user         User          @relation("ReviewAuthor", fields: [userId], references: [id])
   replies      ReviewReply[]
 
   @@unique([userId, targetId, targetType])

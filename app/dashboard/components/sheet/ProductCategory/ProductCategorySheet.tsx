@@ -53,6 +53,8 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
     order: 0,
   });
 
+  const isEditing = Boolean(categoryToEdit && categoryToEdit.id);
+
   React.useEffect(() => {
     if (categoryToEdit) {
       setFormData({
@@ -68,6 +70,21 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
       setIsOpen(true);
     }
   }, [categoryToEdit]);
+
+  // Auto-calculate order for new categories based on current parent selection
+  React.useEffect(() => {
+    if (!isEditing && isOpen) {
+      const parentIdMatches = (c: Category) => 
+        formData.parentId === "none" || formData.parentId === "" 
+          ? !c.parentId 
+          : c.parentId === formData.parentId;
+
+      const siblings = categories.filter(parentIdMatches);
+      const maxOrder = siblings.length > 0 ? Math.max(...siblings.map(c => c.order || 0)) : -1;
+      
+      setFormData(prev => ({ ...prev, order: maxOrder + 1 }));
+    }
+  }, [formData.parentId, isEditing, isOpen, categories]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -162,11 +179,11 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
         imageUrl,
         parentId: formData.parentId === "none" ? undefined : formData.parentId || undefined,
         order: formData.order,
-        ...(categoryToEdit ? {} : { isActive: true }), // Only set isActive for new categories
+        ...(isEditing ? {} : { isActive: true }), // Only set isActive for new categories
       };
 
-      const url = categoryToEdit ? `/api/categories/${categoryToEdit.id}` : "/api/categories";
-      const method = categoryToEdit ? "PUT" : "POST";
+      const url = isEditing ? `/api/categories/${categoryToEdit!.id}` : "/api/categories";
+      const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
@@ -178,7 +195,7 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || `Failed to ${categoryToEdit ? 'update' : 'create'} category`);
+        throw new Error(error.error || `Failed to ${isEditing ? 'update' : 'create'} category`);
       }
 
       const categoryFromAPI = await response.json();
@@ -190,18 +207,17 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
           ? categories.find((cat) => cat.id === categoryFromAPI.parentId)
           : undefined,
         children: [],
-        collections: [],
         _count: { products: 0 },
       };
 
-      if (categoryToEdit && onCategoryUpdated) {
+      if (isEditing && onCategoryUpdated) {
         onCategoryUpdated(category);
       } else {
         onCategoryAdded(category);
       }
 
       // Reset form only for new categories
-      if (!categoryToEdit) {
+      if (!isEditing) {
         setFormData({
           name: "",
           slug: "",
@@ -213,10 +229,10 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
         setImagePreview(null);
       }
 
-      alert(`Category ${categoryToEdit ? 'updated' : 'created'} successfully!`);
+      alert(`Category ${isEditing ? 'updated' : 'created'} successfully!`);
     } catch (error) {
-      console.error(`Error ${categoryToEdit ? 'updating' : 'creating'} category:`, error);
-      alert(error instanceof Error ? error.message : `Failed to ${categoryToEdit ? 'update' : 'create'} category`);
+      console.error(`Error ${categoryToEdit?.id ? 'updating' : 'creating'} category:`, error);
+      alert(error instanceof Error ? error.message : `Failed to ${categoryToEdit?.id ? 'update' : 'create'} category`);
     } finally {
       setIsLoading(false);
     }
@@ -234,9 +250,9 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
       </SheetTrigger>
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{categoryToEdit ? 'Edit Product Category' : 'Add Product Category'}</SheetTitle>
+          <SheetTitle>{categoryToEdit?.id ? 'Edit Product Category' : 'Add Product Category'}</SheetTitle>
           <SheetDescription>
-            {categoryToEdit ? 'Update the product category details.' : 'Create a new product category to organize your products.'}
+            {categoryToEdit?.id ? 'Update the product category details.' : 'Create a new product category to organize your products.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -381,7 +397,7 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
             onClick={handleSubmit}
             disabled={isLoading || !formData.name.trim()}
           >
-            {isLoading ? (categoryToEdit ? "Updating..." : "Creating...") : (categoryToEdit ? "Update Category" : "Create Category")}
+            {isLoading ? (categoryToEdit?.id ? "Updating..." : "Creating...") : (categoryToEdit?.id ? "Update Category" : "Create Category")}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -27,7 +27,7 @@ type Product = {
   images: string[];
   videoUrl?: string;
   categoryId: string;
-  collectionId?: string;
+
   sizes: SizeOption[];
   colors: string[];
   material?: string;
@@ -49,10 +49,10 @@ type Product = {
     id: string;
     name: string;
   };
-  collection?: {
+  collections?: {
     id: string;
     name: string;
-  };
+  }[];
 };
 
 function EditProductPage() {
@@ -74,10 +74,10 @@ function EditProductPage() {
   }>>([]);
   const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Array<{ id: string; name: string; slug: string; imageUrl?: string }>>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedCollection, setSelectedCollection] = useState<string>("");
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [currency, setCurrency] = useState<string>("GHS");
   const [selectedCategoryImage, setSelectedCategoryImage] = useState<string>("");
-  const [selectedCollectionImage, setSelectedCollectionImage] = useState<string>("");
+
   const [colors, setColors] = useState<string[]>([]);
   const [material, setMaterial] = useState<string>("");
   const [careInstructions, setCareInstructions] = useState<string>("");
@@ -114,7 +114,7 @@ function EditProductPage() {
           setProduct(productData);
           // Pre-fill form with existing data
           setSelectedCategory(productData.categoryId);
-          setSelectedCollection(productData.collectionId || "");
+          setSelectedCollections(productData.collections?.map((c: { id: string }) => c.id) || []);
           setSelectedSizes(productData.sizes || []);
           setColors(productData.colors || []);
           setMaterial(productData.material || "");
@@ -176,15 +176,7 @@ function EditProductPage() {
     }
   }, [selectedCategory, parentCategories]);
 
-  // Update selected collection image when collection changes
-  useEffect(() => {
-    if (selectedCollection) {
-      const collection = selectedCategoryCollections.find(col => col.id === selectedCollection);
-      setSelectedCollectionImage(collection?.imageUrl || "");
-    } else {
-      setSelectedCollectionImage("");
-    }
-  }, [selectedCollection, selectedCategoryCollections]);
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -272,7 +264,7 @@ function EditProductPage() {
         images: uploadedUrls,
         videoUrl: finalVideoUrl || undefined,
         categoryId: selectedCategory,
-        collectionId: selectedCollection || undefined,
+        collectionIds: selectedCollections,
         sizes: selectedSizes,
         colors,
         material: material || undefined,
@@ -544,7 +536,7 @@ function EditProductPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">Category</label>
-                  <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSelectedCollection(""); }} required>
+                  <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSelectedCollections([]); }} required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -572,28 +564,23 @@ function EditProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Collection</label>
-                  <Select value={selectedCollection} onValueChange={setSelectedCollection} disabled={selectedCategoryCollections.length === 0}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={selectedCategoryCollections.length === 0 ? "Select category first" : "Select collection"} />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Collections</label>
+                  {selectedCategoryCollections.length === 0 ? (
+                    <div className="w-full px-3 py-2 border border-neutral-300 rounded text-sm text-neutral-500 bg-neutral-50">
+                        Select category first
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
                       {selectedCategoryCollections.map((collection) => (
-                        <SelectItem key={collection.id} value={collection.id}>
+                        <button
+                          key={collection.id}
+                          type="button"
+                          onClick={() => setSelectedCollections(prev => prev.includes(collection.id) ? prev.filter(id => id !== collection.id) : [...prev, collection.id])}
+                          className={`px-3 py-1.5 rounded border text-sm transition-colors ${selectedCollections.includes(collection.id) ? 'bg-neutral-900 border-neutral-900 text-white' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-400'}`}
+                        >
                           {collection.name}
-                        </SelectItem>
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCollectionImage && (
-                    <div className="mt-3">
-                      <Image
-                        src={selectedCollectionImage}
-                        alt="Selected collection"
-                        width={400}
-                        height={128}
-                        className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
-                      />
                     </div>
                   )}
                 </div>

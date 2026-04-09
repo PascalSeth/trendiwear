@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import ProfileClient, { ProfessionalProfile } from './ProfileClient';
+import ProfileClient, { ProfessionalProfile, PortfolioCollection } from './ProfileClient';
 
 // Generate metadata for SEO with instant data access
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -260,7 +260,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
     businessImage: profileData.businessImage || undefined,
     coverImage: profileData.coverImage || undefined,
     galleryImages: profileData.galleryImages || undefined,
-    portfolioCollections: (profileData as any).portfolioCollections || undefined,
+    portfolioCollections: (profileData as unknown as { portfolioCollections?: PortfolioCollection[] }).portfolioCollections || undefined,
     bio: profileData.bio || undefined,
     rating: profileData.rating || undefined,
     totalReviews: profileData.totalReviews || undefined,

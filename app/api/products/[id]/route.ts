@@ -61,7 +61,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       include: {
         category: true,
-        collection: true,
+        collections: true,
         professional: {
           select: {
             id: true,
@@ -166,7 +166,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const updateData: Prisma.ProductUpdateInput = { ...body }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { collectionIds, collectionId, ...restBody } = body
+    const updateData: Prisma.ProductUpdateInput = { ...restBody }
+    
+    if (collectionIds !== undefined) {
+      updateData.collections = {
+        set: collectionIds.map((id: string) => ({ id }))
+      }
+    }
+
     if (body.price) updateData.price = Number.parseFloat(body.price)
     if (body.stockQuantity !== undefined) updateData.stockQuantity = Number.parseInt(body.stockQuantity)
     if (body.estimatedDelivery !== undefined) updateData.estimatedDelivery = Number.parseInt(body.estimatedDelivery)
@@ -184,7 +193,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       data: updateData,
       include: {
         category: true,
-        collection: true,
+        collections: true,
         professional: {
           select: {
             firstName: true,

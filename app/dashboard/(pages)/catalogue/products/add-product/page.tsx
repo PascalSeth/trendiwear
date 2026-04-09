@@ -40,7 +40,7 @@ export default function AddProductPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedCollection, setSelectedCollection] = useState("");
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("GHS");
   const [stockQuantity, setStockQuantity] = useState("0");
@@ -163,7 +163,7 @@ export default function AddProductPage() {
         images: imgUrls,
         videoUrl: finalVideoUrl || undefined,
         categoryId: selectedCategory,
-        collectionId: selectedCollection || undefined,
+        collectionIds: selectedCollections,
         sizes: selectedSizes,
         colors,
         material: material || undefined,
@@ -335,19 +335,25 @@ export default function AddProductPage() {
                         </div>
 
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Collection (Optional)</Label>
-                          <Select value={selectedCollection} onValueChange={setSelectedCollection} disabled={selectedCategoryCollections.length === 0}>
-                            <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 font-bold px-6">
-                               <SelectValue placeholder={selectedCategoryCollections.length === 0 ? "No collections" : "Select collection"} />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                {selectedCategoryCollections.map((col: { id: string; name: string }) => (
-                                  <SelectItem key={col.id} value={col.id} className="rounded-xl py-3 font-medium">
+                          <Label className="text-[10px] font-black uppercase tracking-widest mb-1 text-slate-400">Collections (Optional)</Label>
+                          {selectedCategoryCollections.length === 0 ? (
+                            <div className="h-14 rounded-2xl border-2 border-slate-100 flex items-center px-6 text-slate-400 text-sm font-medium">
+                                No collections available
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                               {selectedCategoryCollections.map((col: { id: string; name: string }) => (
+                                 <button
+                                    key={col.id}
+                                    type="button"
+                                    onClick={() => setSelectedCollections(prev => prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id])}
+                                    className={`px-4 py-2 rounded-xl border-2 transition-all font-black text-xs ${selectedCollections.includes(col.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                                 >
                                     {col.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
+                                 </button>
+                               ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -5,10 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Star, MapPin, Clock,
+  Star, MapPin,
   ArrowRight, ShoppingBag, MessageSquare, Scissors,
   Globe, Instagram, Facebook, Settings, BadgeCheck, Archive,
-  ChevronLeft, LayoutGrid, X, Maximize2, Minimize2, Flame, Copy, Check
+  ChevronLeft, X, Copy, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductCard } from '@/components/common/ProductCard';
@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { ChatDrawer } from '@/app/components/chat/ChatDrawer';
+import { AtelierBackground } from '@/app/components/creative/AtelierBackground';
 
 // --- TYPES ---
 interface DayHours {
@@ -254,10 +255,18 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 pb-32 font-sans selection:bg-stone-200 snap-y snap-proximity md:snap-none">
+    <div className="min-h-screen text-stone-900 pb-32 font-sans selection:bg-stone-200 relative overflow-x-hidden">
+      
+      {/* 1. LAYER 0: Base Page Color */}
+      <div className="fixed inset-0 z-[-2] bg-[#FAFAF9]" />
+
+      {/* 2. LAYER 1: Professional Squiggle Background */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+        <AtelierBackground />
+      </div>
       
       {/* 1. CINEMATIC HERO */}
-      <div className="relative w-full h-[70vh] lg:h-[80vh] overflow-hidden snap-start">
+      <div className="relative w-full h-[70vh] lg:h-[80vh] overflow-hidden snap-start z-10">
         <motion.div 
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
@@ -400,7 +409,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
       </div>
 
       {/* 2. THE ATELIER FOUNDATION (Bio & Concept) */}
-      <section className="bg-[#FAFAF9] pt-16 pb-12 px-6">
+      <section className="pt-16 pb-12 px-6 relative z-10">
         <div className="max-w-5xl mx-auto text-center space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -450,7 +459,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
 
       {/* 3. THE ARRIVAL PANORAMA (Map) */}
       {profile.location && (
-        <section className="px-6 pb-24">
+        <section className="px-6 pb-24 relative z-10">
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -486,7 +495,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
       )}
 
       {/* 4. THE EXHIBITION WORKSPACE (Tabs) */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* Navigation Horizon (Moved out of sticky for better flow) */}
         <div className="flex justify-center mb-12">
           <div className="bg-white/80 backdrop-blur-xl border border-stone-200/60 p-1.5 rounded-full shadow-2xl flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
@@ -528,7 +537,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-[#FAFAF9] relative z-10"
+                className="relative z-10"
               >
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-4">
@@ -696,7 +705,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                  animate={{ opacity: 1, y: 0, scale: 1 }}
                  exit={{ opacity: 0, scale: 0.98 }}
                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                 className="space-y-12 bg-[#FAFAF9] relative z-10"
+                 className="space-y-12 relative z-10"
                >
                  <div className="flex items-end justify-between border-b border-stone-200 pb-4">
                    <div>
@@ -742,7 +751,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-[#FAFAF9] relative z-10"
+                className="relative z-10"
               >
                 <div className="mb-10 border-b border-stone-200 pb-4">
                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Consultation & Bespoke</span>
@@ -807,7 +816,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-[#FAFAF9] relative z-10"
+                className="relative z-10"
               >
                 <div className="flex items-end justify-between border-b border-stone-200 pb-8 mb-16">
                    <div>
@@ -888,6 +897,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
         professionalImage={profileImage}
         currentUserId={session?.user?.id || ''}
       />
+
       {/* 5. THE LIGHTBOX VERNISSAGE (Archival Viewer) */}
       <AnimatePresence>
         {selectedImageIndex !== null && selectedCollection && (

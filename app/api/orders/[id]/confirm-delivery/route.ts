@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
-import { initiateTransfer, toPesewas, generateReference } from '@/lib/paystack'
 
 // POST: Customer confirms they have received the order
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const professionalIds = [...new Set(order.items.map(i => i.professionalId))]
       for (const profId of professionalIds) {
         // Find professional profile and recipient code
-        const profProfile = await tx.professionalProfile.findUnique({
+        await tx.professionalProfile.findUnique({
           where: { userId: profId },
           select: { paystackSubaccountCode: true, businessName: true }
         })

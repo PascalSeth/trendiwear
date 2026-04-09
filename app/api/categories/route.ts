@@ -22,11 +22,6 @@ export async function GET(request: NextRequest) {
           orderBy: { order: "asc" },
           select: { id: true, name: true }
         },
-        collections: {
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true }
-        },
         ...(includeProducts && {
           products: {
             where: { isActive: true, isInStock: true },
@@ -73,8 +68,26 @@ export async function POST(request: NextRequest) {
       isActive?: boolean
     } = body
 
+    let level = 0;
+    if (parentId) {
+       const parentCat = await prisma.category.findUnique({ where: { id: parentId } });
+       if (parentCat) {
+          level = parentCat.level + 1;
+       }
+    }
+
+    let finalOrder = order;
+    if (order === 0 || order === undefined) {
+      const maxOrderCat = await prisma.category.findFirst({
+        where: { parentId: parentId || null },
+        orderBy: { order: 'desc' },
+        select: { order: true }
+      });
+      finalOrder = maxOrderCat ? maxOrderCat.order + 1 : 0;
+    }
+
     const category = await prisma.category.create({
-      data: { name, slug, description, imageUrl, parentId, order: order || 0, isActive: isActive ?? true },
+      data: { name, slug, description, imageUrl, parentId, level, order: finalOrder, isActive: isActive ?? true },
       include: { parent: true, children: true },
     })
 

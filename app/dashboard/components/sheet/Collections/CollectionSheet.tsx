@@ -26,42 +26,30 @@ import {
 import { Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
-interface Category {
-  id: string;
-  name: string;
-}
-
 interface Collection {
   id: string;
   name: string;
   slug: string;
   description?: string;
   imageUrl?: string;
-  categoryId?: string;
   season?: "SPRING" | "SUMMER" | "FALL" | "WINTER" | "ALL_SEASON";
   isActive: boolean;
   isFeatured: boolean;
   order: number;
   createdAt: string;
-  updatedAt: string;
-  category?: {
-    id: string;
-    name: string;
-  };
+
   _count: {
     products: number;
   };
 }
 
 interface CollectionSheetProps {
-  categories: Category[];
   onCollectionAdded: (collection: Collection) => void;
   collectionToEdit?: Collection;
   onCollectionUpdated?: (collection: Collection) => void;
 }
 
 const CollectionSheet: React.FC<CollectionSheetProps> = ({
-  categories = [],
   onCollectionAdded,
   collectionToEdit,
   onCollectionUpdated,
@@ -73,7 +61,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
     name: "",
     slug: "",
     description: "",
-    categoryId: "",
     season: "",
     isFeatured: false,
     order: 0,
@@ -85,7 +72,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
         name: collectionToEdit.name,
         slug: collectionToEdit.slug,
         description: collectionToEdit.description || "",
-        categoryId: collectionToEdit.categoryId || "",
         season: collectionToEdit.season || "",
         isFeatured: collectionToEdit.isFeatured,
         order: collectionToEdit.order,
@@ -170,7 +156,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
         slug: formData.slug || generateSlug(formData.name),
         description: formData.description || undefined,
         imageUrl,
-        categoryId: formData.categoryId === "none" ? undefined : formData.categoryId || undefined,
         season: formData.season || undefined,
         isFeatured: formData.isFeatured,
         order: formData.order,
@@ -198,9 +183,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
       const collection: Collection = {
         ...collectionFromAPI,
         isActive: collectionFromAPI.isActive ?? true,
-        category: collectionFromAPI.categoryId
-          ? categories.find((cat) => cat.id === collectionFromAPI.categoryId)
-          : undefined,
         _count: { products: 0 },
       };
 
@@ -216,7 +198,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
           name: "",
           slug: "",
           description: "",
-          categoryId: "",
           season: "",
           isFeatured: false,
           order: 0,
@@ -295,27 +276,6 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Category</Label>
-            <Select
-              value={formData.categoryId}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, categoryId: value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Category</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-2">
             <Label>Season</Label>

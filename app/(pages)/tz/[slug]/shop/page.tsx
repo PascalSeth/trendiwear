@@ -168,16 +168,16 @@ function CategoryCard({
       {/* Category Info */}
       <div className="text-left">
         <h3 className={cn(
-          "font-medium text-sm whitespace-nowrap transition-colors duration-300",
+          "font-bold text-[10px] uppercase tracking-widest whitespace-nowrap transition-colors duration-300",
           isActive ? "text-white" : "text-stone-900"
         )}>
           {category.name}
         </h3>
         <p className={cn(
-          "text-xs whitespace-nowrap",
-          isActive ? "text-white/70" : "text-stone-500"
+          "font-mono text-[9px] uppercase tracking-widest whitespace-nowrap",
+          isActive ? "text-white/60" : "text-stone-400"
         )}>
-          {category._count.products} {category._count.products === 1 ? 'item' : 'items'}
+          {category._count.products} Arch.
         </p>
       </div>
       {/* Active indicator */}
@@ -526,13 +526,13 @@ function FilterChip({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+        "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest transition-all duration-300 flex-shrink-0",
         isActive
-          ? "bg-stone-900 text-white shadow-lg"
-          : "bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:shadow-md"
+          ? "bg-stone-900 text-white shadow-xl shadow-stone-200 border-stone-900"
+          : "bg-white border border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-900"
       )}
     >
-      {Icon && <Icon size={14} />}
+      {Icon && <Icon size={12} />}
       {label}
     </button>
   );
@@ -563,10 +563,13 @@ function SortDropdown({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-lg text-sm font-medium text-stone-700 hover:border-stone-400 transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-6 py-4 bg-stone-100 rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest text-stone-900 hover:bg-stone-200 transition-all border border-stone-200/50"
       >
-        <span>{currentOption?.label}</span>
-        <ChevronDown size={16} className={cn("transition-transform", isOpen && "rotate-180")} />
+        <div className="flex items-center gap-3">
+          <Clock size={14} className="text-stone-400" />
+          <span>{currentOption?.label}</span>
+        </div>
+        <ChevronDown size={14} className={cn("transition-transform duration-500", isOpen && "rotate-180")} />
       </button>
       
       <AnimatePresence>
@@ -1029,23 +1032,27 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         
-        {/* Categories */}
+        {/* Categories - Mobile Fade Container */}
         {categories.length > 0 && (
-          <section className="mb-6">
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+          <section className="mb-8 relative group">
+            {/* Soft Fades for scroll signaling */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-stone-50 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-stone-50 to-transparent z-10 pointer-events-none" />
+            
+            <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar scroll-smooth px-1">
               {/* All button */}
               <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 onClick={() => setActiveCategory(null)}
                 className={cn(
-                  "flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 flex-shrink-0 font-medium text-sm",
+                  "flex items-center gap-2 px-6 py-3.5 rounded-full transition-all duration-500 flex-shrink-0 font-mono text-[10px] uppercase tracking-widest",
                   !activeCategory 
-                    ? "bg-stone-900 text-white shadow-lg" 
-                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                    ? "bg-stone-900 text-white shadow-xl shadow-stone-200" 
+                    : "bg-white border border-stone-200 text-stone-600 hover:border-stone-400"
                 )}
               >
-                <Grid3X3 size={16} />
+                <Grid3X3 size={14} />
                 All
               </motion.button>
               
@@ -1062,89 +1069,98 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
           </section>
         )}
 
-        {/* Toolbar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        {/* Toolbar - Redesigned for Mobile Professionalism */}
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-stone-100 p-4 md:p-6 mb-10">
+          <div className="flex flex-col gap-6">
             
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-stone-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-200"
-              />
-            </div>
-
-            {/* Quick Filters */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              <FilterChip
-                label="All"
-                isActive={quickFilter === 'all'}
-                onClick={() => setQuickFilter('all')}
-              />
-              <FilterChip
-                label="New Arrivals"
-                isActive={quickFilter === 'new'}
-                onClick={() => setQuickFilter('new')}
-                icon={Clock}
-              />
-              <FilterChip
-                label="On Sale"
-                isActive={quickFilter === 'sale'}
-                onClick={() => setQuickFilter('sale')}
-                icon={Percent}
-              />
-              <FilterChip
-                label="Trending"
-                isActive={quickFilter === 'trending'}
-                onClick={() => setQuickFilter('trending')}
-                icon={Flame}
-              />
-            </div>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-3 ml-auto">
-              {/* View Mode Toggle */}
-              <div className="hidden md:flex items-center bg-stone-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    "p-2 rounded-md transition-colors",
-                    viewMode === 'grid' ? "bg-white shadow-sm" : "hover:bg-stone-200"
-                  )}
-                >
-                  <Grid3X3 size={18} className={viewMode === 'grid' ? 'text-stone-900' : 'text-stone-500'} />
-                </button>
-                <button
-                  onClick={() => setViewMode('large')}
-                  className={cn(
-                    "p-2 rounded-md transition-colors",
-                    viewMode === 'large' ? "bg-white shadow-sm" : "hover:bg-stone-200"
-                  )}
-                >
-                  <LayoutGrid size={18} className={viewMode === 'large' ? 'text-stone-900' : 'text-stone-500'} />
-                </button>
+            {/* Top Row: Search (Full width on mobile) */}
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="relative flex-1 group">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-stone-900 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search archival products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-6 py-4 bg-stone-50 border border-transparent rounded-2xl text-sm font-serif focus:bg-white focus:border-stone-200 focus:ring-0 transition-all placeholder:text-stone-400"
+                />
               </div>
 
-              {/* Filters Button */}
+              {/* Desktop Only Actions Box */}
+              <div className="hidden lg:flex items-center gap-3">
+                <div className="flex items-center bg-stone-100 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "p-2.5 rounded-lg transition-all",
+                      viewMode === 'grid' ? "bg-white shadow-sm ring-1 ring-stone-900/5" : "text-stone-400 hover:text-stone-600"
+                    )}
+                  >
+                    <Grid3X3 size={18} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('large')}
+                    className={cn(
+                      "p-2.5 rounded-lg transition-all",
+                      viewMode === 'large' ? "bg-white shadow-sm ring-1 ring-stone-900/5" : "text-stone-400 hover:text-stone-600"
+                    )}
+                  >
+                    <LayoutGrid size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row: Controls Grid (Mobile Balanced) */}
+            <div className="grid grid-cols-2 lg:flex lg:items-center gap-3">
+              {/* Filter Button */}
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-stone-100 rounded-lg text-sm font-medium text-stone-700 hover:bg-stone-200 transition-colors"
+                className="flex items-center justify-center gap-3 px-6 py-4 bg-stone-100 rounded-2xl text-[10px] font-mono font-bold uppercase tracking-widest text-stone-900 hover:bg-stone-200 transition-all border border-stone-200/50 group"
               >
-                <SlidersHorizontal size={16} />
-                <span className="hidden sm:inline">Filters</span>
+                <SlidersHorizontal size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+                Filter
                 {(filters.colors.length > 0 || filters.sizes.length > 0 || filters.onSale || filters.rating !== null) && (
-                  <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-xs flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-[9px] flex items-center justify-center animate-in zoom-in">
                     {[filters.colors.length > 0, filters.sizes.length > 0, filters.onSale, filters.rating !== null].filter(Boolean).length}
                   </span>
                 )}
               </button>
 
-              {/* Sort */}
-              <SortDropdown value={sortOption} onChange={setSortOption} />
+              {/* Sort Dropdown - Full width in its grid cell */}
+              <div className="w-full flex">
+                <SortDropdown value={sortOption} onChange={setSortOption} />
+              </div>
+
+              {/* Quick Filter Chips - Pushed to own row on mobile via flex-wrap or separate div */}
+              <div className="col-span-2 lg:flex-1 relative group mt-2 lg:mt-0">
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none lg:hidden" />
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                  <FilterChip
+                    label="All"
+                    isActive={quickFilter === 'all'}
+                    onClick={() => setQuickFilter('all')}
+                  />
+                  <FilterChip
+                    label="New"
+                    isActive={quickFilter === 'new'}
+                    onClick={() => setQuickFilter('new')}
+                    icon={Clock}
+                  />
+                  <FilterChip
+                    label="Sale"
+                    isActive={quickFilter === 'sale'}
+                    onClick={() => setQuickFilter('sale')}
+                    icon={Percent}
+                  />
+                  <FilterChip
+                    label="Popular"
+                    isActive={quickFilter === 'trending'}
+                    onClick={() => setQuickFilter('trending')}
+                    icon={Flame}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

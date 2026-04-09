@@ -16,10 +16,7 @@ export type Category = {
     id: string;
     name: string;
   }>;
-  collections: Array<{
-    id: string;
-    name: string;
-  }>;
+
   _count: {
     products: number;
   };

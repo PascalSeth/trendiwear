@@ -14,7 +14,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       where: { id, isActive: true },
       include: {
         category: { select: { name: true } },
-        collection: { select: { name: true } },
+        collections: { select: { name: true } },
         professional: {
           select: {
             id: true,

@@ -36,11 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             },
           },
         },
-        collections: {
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, slug: true }
-        },
+
         _count: {
           select: {
             products: { where: { isActive: true, isInStock: true } },
@@ -56,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let products: (Prisma.ProductGetPayload<{
       include: {
         category: { select: { id: true, name: true, slug: true } },
-        collection: { select: { id: true, name: true, slug: true } },
+        collections: { select: { id: true, name: true, slug: true } },
         professional: {
           select: {
             id: true,
@@ -113,7 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             category: {
               select: { id: true, name: true, slug: true }
             },
-            collection: {
+            collections: {
               select: { id: true, name: true, slug: true }
             },
             professional: {

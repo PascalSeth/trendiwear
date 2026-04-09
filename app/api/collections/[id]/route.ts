@@ -8,10 +8,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+
     const collection = await prisma.collection.findUnique({
       where: { id },
       include: {
-        category: true,
         _count: {
           select: {
             products: { where: { isActive: true, isInStock: true } },
@@ -24,7 +24,45 @@ export async function GET(
       return NextResponse.json({ error: "Collection not found" }, { status: 404 })
     }
 
-    return NextResponse.json(collection)
+    // Fetch products belonging to this collection
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        isInStock: true,
+        collections: { some: { id } }
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true }
+        },
+        professional: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            professionalProfile: {
+              select: {
+                businessName: true,
+                businessImage: true,
+                rating: true,
+                isVerified: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            wishlistItems: true,
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    })
+
+    return NextResponse.json({
+      collection,
+      products
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
@@ -45,7 +83,6 @@ export async function PUT(
       slug,
       description,
       imageUrl,
-      categoryId,
       season,
       isFeatured,
       order,
@@ -55,7 +92,6 @@ export async function PUT(
       slug?: string
       description?: string
       imageUrl?: string
-      categoryId?: string
       season?: "SPRING" | "SUMMER" | "FALL" | "WINTER" | "ALL_SEASON"
       isFeatured?: boolean
       order?: number
@@ -69,13 +105,11 @@ export async function PUT(
         ...(slug && { slug }),
         ...(description !== undefined && { description }),
         ...(imageUrl !== undefined && { imageUrl }),
-        ...(categoryId !== undefined && { categoryId }),
         ...(season && { season }),
         ...(isFeatured !== undefined && { isFeatured }),
         ...(order !== undefined && { order }),
         ...(isActive !== undefined && { isActive }),
       },
-      include: { category: true },
     })
 
     return NextResponse.json(collection)

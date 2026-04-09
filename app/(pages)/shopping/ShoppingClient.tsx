@@ -19,6 +19,17 @@ interface Category {
   };
 }
 
+interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
+  _count: {
+    products: number;
+  };
+}
+
 interface Product {
   id: string;
   name: string;
@@ -52,11 +63,12 @@ interface ShoppingClientProps {
     categories: Category[];
     featuredProducts: Product[];
     trendingProducts: Product[];
+    collections: Collection[];
   };
 }
 
 export default function ShoppingClient({ initialData }: ShoppingClientProps) {
-  const { categories, featuredProducts, trendingProducts } = initialData;
+  const { categories, featuredProducts, trendingProducts, collections } = initialData;
   const [activeTab, setActiveTab] = useState<'featured' | 'trending'>('featured');
 
   return (
@@ -225,8 +237,63 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
         <CategoryNavigator categories={categories} />
       </section>
 
+      {/* ── THE COLLECTIONS GALLERY ── */}
+      {collections.length > 0 && (
+        <section id="collections" className="py-32 px-6 max-w-[1800px] mx-auto overflow-hidden relative">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 relative z-10">
+            <div className="max-w-xl text-stone-900">
+              <span className="text-amber-700 text-[10px] font-mono uppercase tracking-[0.4em] mb-4 block">Limited Series</span>
+              <h2 className="text-5xl md:text-7xl font-serif leading-none tracking-tighter text-stone-900">Iconic <span className="italic font-light text-stone-400">Collections.</span></h2>
+            </div>
+            <p className="max-w-xs text-sm font-serif italic text-stone-500 leading-relaxed">
+              Discover specially curated artistic directions and seasonal signatures, crafted with an unwavering commitment to refinement.
+            </p>
+          </div>
+
+          <div className="flex gap-10 overflow-x-auto no-scrollbar pb-12 -mx-6 px-6 lg:mx-0 lg:px-0">
+            {collections.map((col, i) => (
+              <motion.div
+                key={col.id}
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.8 }}
+                className="shrink-0 group pointer-events-auto"
+              >
+                <Link href={`/shopping/collections/${col.id}`}>
+                  <div className="relative w-[300px] md:w-[500px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-700 group-hover:scale-[0.98]">
+                    <Image 
+                      src={col.imageUrl || "/placeholder-collection.jpg"} 
+                      alt={col.name}
+                      fill
+                      className="object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+                    
+                    <div className="absolute inset-x-0 bottom-0 p-10 flex flex-col items-start translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
+                      <div className="flex items-center gap-3 mb-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <div className="w-8 h-px bg-white/40" />
+                         <span className="text-white/60 text-[10px] font-mono uppercase tracking-widest">
+                           {col._count.products} Product Masterpieces
+                         </span>
+                      </div>
+                      <h3 className="text-3xl md:text-5xl font-serif text-white mb-6 leading-none">
+                        {col.name}
+                      </h3>
+                      <button className="bg-white text-stone-900 text-[9px] font-mono uppercase tracking-widest px-8 py-4 rounded-full hover:bg-stone-900 hover:text-white transition-all shadow-xl">
+                        View Collection
+                      </button>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── THE DIRECTORY (CARDS) ── */}
-      <section id="collections" className="py-24 px-6 max-w-[1800px] mx-auto overflow-hidden relative">
+      <section className="py-24 px-6 max-w-[1800px] mx-auto overflow-hidden relative">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 relative z-10">
           <div className="max-w-xl text-stone-900">
             <span className="text-amber-700 text-[10px] font-mono uppercase tracking-[0.4em] mb-4 block">The Directory</span>

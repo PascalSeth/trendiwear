@@ -15,7 +15,7 @@ export async function POST(
       where: { id: productId },
       include: {
         category: true,
-        collection: true,
+        collections: true,
       },
     });
 
@@ -39,7 +39,7 @@ export async function POST(
         images: originalProduct.images,
         videoUrl: originalProduct.videoUrl,
         categoryId: originalProduct.categoryId,
-        collectionId: originalProduct.collectionId,
+        collections: { connect: originalProduct.collections.map((c: { id: string }) => ({ id: c.id })) },
         professionalId: originalProduct.professionalId,
         sizes: originalProduct.sizes,
         colors: originalProduct.colors,
@@ -65,7 +65,7 @@ export async function POST(
         category: {
             select: { name: true }
         },
-        collection: {
+        collections: {
             select: { name: true }
         },
         professional: {

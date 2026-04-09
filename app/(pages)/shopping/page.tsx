@@ -3,7 +3,7 @@ import ShoppingClient from './ShoppingClient';
 
 export default async function Page() {
   // Fetch all primary data in parallel on the server
-  const [categories, featuredProducts, trendingProducts] = await Promise.all([
+  const [categories, featuredProducts, trendingProducts, collections] = await Promise.all([
     // Parent Categories (Top level)
     prisma.category.findMany({
       where: { parentId: null, isActive: true },
@@ -75,6 +75,18 @@ export default async function Page() {
       },
       orderBy: { viewCount: 'desc' },
       take: 8
+    }),
+
+    // Collections
+    prisma.collection.findMany({
+      where: { isActive: true },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      },
+      orderBy: { order: 'asc' },
+      take: 5
     })
   ]);
 
@@ -99,7 +111,8 @@ export default async function Page() {
   const initialData = JSON.parse(JSON.stringify({
     categories: processedCategories,
     featuredProducts,
-    trendingProducts
+    trendingProducts,
+    collections
   }));
 
   return <ShoppingClient initialData={initialData} />;
