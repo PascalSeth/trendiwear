@@ -273,8 +273,11 @@ export async function POST(request: NextRequest) {
       socialMedia?: Prisma.SocialMediaCreateWithoutProfessionalInput[]
     } = body
 
-    // Optional payment setup fields (automated flow)
+    // Enforce mandatory payment setup fields
     const { momoNumber, momoProvider } = body as { momoNumber?: string; momoProvider?: string }
+    if (!momoNumber || !momoProvider) {
+      return NextResponse.json({ error: 'Mobile Money Number and Provider are required for registration.' }, { status: 400 })
+    }
 
     let profile;
 

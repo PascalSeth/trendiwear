@@ -309,6 +309,8 @@ model Product {
   estimatedDelivery    Int?
   isCustomizable       Boolean              @default(false)
   tags                 ProductTag[]
+  styleTags            StylePreference[]
+  keywords             String[]
   isUnisex             Boolean              @default(true)
   isActive             Boolean              @default(true)
   isInStock            Boolean              @default(true)
@@ -346,7 +348,7 @@ model Product {
 
 model Category {
   id          String     @id @default(uuid())
-  name        String     @unique
+  name        String
   slug        String     @unique
   description String?
   imageUrl    String?
@@ -496,6 +498,7 @@ model Event {
   description        String?
   imageUrl           String?
   dressCodes         String[]
+  searchKeywords     String[]
   seasonality        Season[]
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())

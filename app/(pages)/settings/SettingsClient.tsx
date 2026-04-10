@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -41,6 +42,7 @@ interface UserProfile {
   lastName: string
   email: string
   phone?: string
+  image?: string
   profileImage?: string
   role: string
   professionalProfile?: ProfessionalProfile
@@ -124,6 +126,7 @@ function parseAvailability(availability: string | null | undefined): BusinessHou
 }
 
 export default function SettingsClient({ initialProfile, specializations }: SettingsClientProps) {
+  const router = useRouter();
   const [profile] = useState<UserProfile>(initialProfile)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<'profile' | 'business' | 'cover' | 'gallery' | null>(null)
@@ -160,7 +163,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
     firstName: initialProfile.firstName || '',
     lastName: initialProfile.lastName || '',
     phone: initialProfile.phone || '',
-    profileImage: initialProfile.profileImage || '',
+    profileImage: initialProfile.profileImage || initialProfile.image || '',
   })
 
   const pp = initialProfile.professionalProfile
@@ -189,7 +192,9 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
   const [newCollectionName, setNewCollectionName] = useState('')
   const [expandedCollection, setExpandedCollection] = useState<string | null>(null)
 
-  const isProfessional = ['PROFESSIONAL', 'ADMIN', 'SUPER_ADMIN'].includes(initialProfile.role)
+  const isProfessionalRole = ['PROFESSIONAL', 'ADMIN', 'SUPER_ADMIN'].includes(initialProfile.role)
+  const hasProfessionalProfile = !!initialProfile.professionalProfile
+  const isProfessional = isProfessionalRole && hasProfessionalProfile
 
   const savePersonalInfo = async () => {
     setSaving(true)
@@ -390,54 +395,105 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
     <div className="min-h-screen bg-[#FAFAF9] pt-24 lg:pt-32 pb-20">
       <div className="max-w-5xl mx-auto px-6">
         <header className="mb-12 border-b border-stone-200 pb-8">
-           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-red-950 mb-4">User Settings</p>
-           <h1 className="text-4xl md:text-6xl font-serif italic text-stone-950">Identity Archives.</h1>
+           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-red-950 mb-4">App Settings</p>
+           <h1 className="text-4xl md:text-6xl font-serif italic text-stone-950">Settings.</h1>
         </header>
 
         <Tabs defaultValue="profile" className="space-y-12">
           <TabsList className="flex gap-8 bg-transparent border-b border-stone-100 h-auto p-0 rounded-none overflow-x-auto whitespace-nowrap scrollbar-hide">
-             {['profile', 'business', 'payments', 'notifications'].map(tab => (
-               <TabsTrigger 
-                 key={tab} 
-                 value={tab} 
-                 className="px-0 py-4 text-[10px] font-mono uppercase tracking-[0.2em] data-[state=active]:text-black data-[state=active]:border-b-2 data-[state=active]:border-black bg-transparent rounded-none transition-all"
-               >
-                 {tab}
-               </TabsTrigger>
-             ))}
+             {['profile', 'business', 'payments', 'notifications'].map(tab => {
+                if ((tab === 'business' || tab === 'payments') && !isProfessional) return null;
+                return (
+                  <TabsTrigger 
+                    key={tab} 
+                    value={tab} 
+                    className="px-0 py-4 text-[10px] font-mono uppercase tracking-[0.2em] data-[state=active]:text-black data-[state=active]:border-b-2 data-[state=active]:border-black bg-transparent rounded-none transition-all relative group/tab"
+                  >
+                    {tab}
+                    <motion.span 
+                      className="absolute bottom-0 left-0 w-full h-[1px] bg-stone-900 origin-left scale-x-0 group-hover/tab:scale-x-100 transition-transform duration-300" 
+                    />
+                  </TabsTrigger>
+                );
+             })}
           </TabsList>
 
           <TabsContent value="profile" className="space-y-12">
-             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-4">
-                   <div className="relative aspect-square rounded-3xl overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5">
-                      <Image src={personalForm.profileImage || "/placeholder-avatar.jpg"} alt="User" fill className="object-cover transition-all duration-700 group-hover:scale-110" />
-                      <label className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer">
-                         {uploadingImage === 'profile' ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" />}
-                         <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'profile')} />
-                      </label>
-                   </div>
-                </div>
-                <div className="lg:col-span-8 space-y-8">
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">First Name</Label>
-                         <Input value={personalForm.firstName} onChange={e => setPersonalForm({...personalForm, firstName: e.target.value})} className="bg-white border-stone-200 h-14 rounded-2xl" />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                 <div className="lg:col-span-4 space-y-8">
+                    <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5 shadow-2xl">
+                       <Image 
+                        src={personalForm.profileImage || profile.image || "/placeholder-avatar.jpg"} 
+                        alt="User" 
+                        fill 
+                        className="object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0" 
+                       />
+                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent opacity-60" />
+                       <label className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-[2px]">
+                          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110">
+                            {uploadingImage === 'profile' ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" size={24} />}
+                          </div>
+                          <span className="text-[10px] font-mono text-white uppercase tracking-[0.2em]">Upload Photo</span>
+                          <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'profile')} />
+                       </label>
+                    </div>
+
+                    {!isProfessional && (
+                      <div className="p-8 rounded-[2rem] bg-stone-900 text-white space-y-6 relative overflow-hidden group/cta">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-3xl -mr-16 -mt-16 rounded-full transition-colors group-hover/cta:bg-red-500/20" />
+                        <div className="relative space-y-4">
+                          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Professional Account</p>
+                          <h3 className="text-2xl font-serif italic leading-tight">Upgrade to Professional.</h3>
+                          <p className="text-xs text-stone-400 leading-relaxed font-mono">Unlock business tools, portfolio hosting, and payment settings.</p>
+                          <Button 
+                            onClick={() => router.push('/register-as-professional')} 
+                            className="w-full h-12 bg-white text-stone-950 rounded-full text-[10px] font-mono uppercase tracking-widest hover:bg-stone-200"
+                          >
+                            Get Started
+                          </Button>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Last Name</Label>
-                         <Input value={personalForm.lastName} onChange={e => setPersonalForm({...personalForm, lastName: e.target.value})} className="bg-white border-stone-200 h-14 rounded-2xl" />
+                    )}
+                 </div>
+                 <div className="lg:col-span-8 space-y-12">
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-2 gap-8">
+                         <div className="space-y-4">
+                            <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">First Name</Label>
+                            <Input value={personalForm.firstName} onChange={e => setPersonalForm({...personalForm, firstName: e.target.value})} className="bg-white border-stone-100 h-16 rounded-2xl px-6 focus:ring-0 focus:border-stone-900 transition-all text-lg font-serif italic" />
+                         </div>
+                         <div className="space-y-4">
+                            <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Last Name</Label>
+                            <Input value={personalForm.lastName} onChange={e => setPersonalForm({...personalForm, lastName: e.target.value})} className="bg-white border-stone-100 h-16 rounded-2xl px-6 focus:ring-0 focus:border-stone-900 transition-all text-lg font-serif italic" />
+                         </div>
                       </div>
-                   </div>
-                   <div className="space-y-2">
-                      <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Email (Permanent)</Label>
-                      <Input value={profile.email} disabled className="bg-stone-50 border-stone-200 h-14 rounded-2xl opacity-50 font-mono text-xs" />
-                   </div>
-                   <Button onClick={savePersonalInfo} disabled={saving} className="w-full h-16 bg-stone-950 text-white rounded-full text-[10px] font-mono uppercase tracking-[0.3em] hover:bg-black transition-all">
-                      {saving ? "Archiving..." : "Update Archive"}
-                   </Button>
-                </div>
-             </div>
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Email Address</Label>
+                         <div className="relative">
+                            <Input value={profile.email} disabled className="bg-stone-50 border-stone-100 h-16 rounded-2xl px-6 opacity-60 font-mono text-sm" />
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2">
+                               <CheckCircle2 size={16} className="text-emerald-500" />
+                            </div>
+                         </div>
+                      </div>
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Phone Number</Label>
+                         <Input value={personalForm.phone} onChange={e => setPersonalForm({...personalForm, phone: e.target.value})} className="bg-white border-stone-100 h-16 rounded-2xl px-6 focus:ring-0 focus:border-stone-900 transition-all font-mono" placeholder="+1 (000) 000-0000" />
+                      </div>
+                    </div>
+
+                    <div className="pt-8 border-t border-stone-100">
+                      <Button onClick={savePersonalInfo} disabled={saving} className="w-full h-20 bg-stone-950 text-white rounded-[2rem] text-xs font-mono uppercase tracking-[0.4em] hover:bg-black transition-all shadow-xl hover:shadow-2xl active:scale-[0.98]">
+                         {saving ? (
+                           <div className="flex items-center gap-3">
+                             <Loader2 className="animate-spin" size={16} />
+                             <span>Archiving...</span>
+                           </div>
+                         ) : "Save Changes"}
+                      </Button>
+                    </div>
+                 </div>
+              </div>
           </TabsContent>
 
           {isProfessional && (
@@ -451,64 +507,57 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                      </label>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Business Name</Label>
-                        <Input value={businessForm.businessName} onChange={e => setBusinessForm({...businessForm, businessName: e.target.value})} className="h-14 rounded-2xl" />
-                     </div>
-                     
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Specialization</Label>
-                        <select
-                          value={businessForm.specializationId}
-                          onChange={e => setBusinessForm({...businessForm, specializationId: e.target.value})}
-                          className="w-full h-14 rounded-2xl border border-stone-200 px-4 bg-white text-sm outline-none focus:border-stone-900 transition-colors"
-                        >
-                           <option value="" disabled>Select your craft</option>
-                           {specializations?.map(spec => (
-                             <option key={spec.id} value={spec.id}>{spec.name}</option>
-                           ))}
-                        </select>
-                     </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Business Name</Label>
+                         <Input value={businessForm.businessName} onChange={e => setBusinessForm({...businessForm, businessName: e.target.value})} className="h-16 rounded-2xl border-stone-100 px-6 text-lg font-serif italic" />
+                      </div>
+                      
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Category</Label>
+                         <div className="relative">
+                           <select
+                             value={businessForm.specializationId}
+                             onChange={e => setBusinessForm({...businessForm, specializationId: e.target.value})}
+                             className="w-full h-16 rounded-2xl border border-stone-100 px-6 bg-white text-sm outline-none focus:border-stone-900 transition-all appearance-none font-mono"
+                           >
+                              <option value="" disabled>Select your craft</option>
+                              {specializations?.map(spec => (
+                                <option key={spec.id} value={spec.id}>{spec.name}</option>
+                              ))}
+                           </select>
+                           <ChevronDown size={16} className="absolute right-6 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" />
+                         </div>
+                      </div>
 
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Atelier Slug</Label>
-                        <div className="flex">
-                           <span className="h-14 flex items-center px-4 bg-stone-100 border border-r-0 border-stone-200 rounded-l-2xl text-[10px] font-mono">/tz/</span>
-                           <Input value={businessForm.slug} onChange={e => setBusinessForm({...businessForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} className="h-14 rounded-l-none rounded-r-2xl" />
-                        </div>
-                     </div>
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Profile URL (Slug)</Label>
+                         <div className="flex group/slug">
+                            <span className="h-16 flex items-center px-6 bg-stone-50 border border-r-0 border-stone-100 rounded-l-2xl text-[10px] font-mono text-stone-400 transition-colors group-focus-within/slug:border-stone-900 group-focus-within/slug:text-stone-900">/tz/</span>
+                            <Input value={businessForm.slug} onChange={e => setBusinessForm({...businessForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} className="h-16 rounded-l-none rounded-r-2xl border-stone-100 px-6 font-mono text-sm" />
+                         </div>
+                      </div>
 
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Experience (Years)</Label>
-                        <Input type="number" min="0" value={businessForm.experience} onChange={e => setBusinessForm({...businessForm, experience: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl" />
-                     </div>
-                  </div>
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Experience</Label>
+                         <div className="relative">
+                            <Input type="number" min="0" value={businessForm.experience} onChange={e => setBusinessForm({...businessForm, experience: parseInt(e.target.value) || 0})} className="h-16 rounded-2xl border-stone-100 px-6 font-mono" />
+                            <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-mono uppercase tracking-widest text-stone-300">Years</span>
+                         </div>
+                      </div>
+                   </div>
 
-                  <div className="space-y-4">
-                     <div className="flex items-center justify-between">
-                        <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Business Bio</Label>
-                        <div className="flex gap-2">
-                          <button 
-                            type="button"
-                            onClick={() => applyPreset('9-5')}
-                            className="text-[10px] font-mono px-3 py-1.5 bg-stone-100 border border-stone-200 hover:border-stone-400 transition-colors uppercase tracking-widest rounded-lg"
-                          >
-                            Weekdays
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => applyPreset('24/7')}
-                            className="text-[10px] font-mono px-3 py-1.5 bg-stone-100 border border-stone-200 hover:border-stone-400 transition-colors uppercase tracking-widest rounded-lg"
-                          >
-                            24/7
-                          </button>
-                        </div>
-                     </div>
-                     <Textarea value={businessForm.bio} onChange={e => setBusinessForm({...businessForm, bio: e.target.value})} className="min-h-[150px] rounded-3xl p-6 font-serif italic text-lg" />
-                  </div>
+                   <div className="space-y-6">
+                      <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Business Bio</Label>
+                      <Textarea 
+                        value={businessForm.bio} 
+                        onChange={e => setBusinessForm({...businessForm, bio: e.target.value})} 
+                        className="min-h-[200px] rounded-[2rem] p-8 font-serif italic text-xl border-stone-100 bg-white leading-relaxed focus:border-stone-900 transition-all" 
+                        placeholder="Describe your business..."
+                      />
+                   </div>
 
-                  {/* Portfolio Collections Registry */}
+                  {/* Portfolio Collections */}
                   <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
                     <header className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -517,7 +566,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                         </div>
                         <div>
                           <h3 className="text-sm font-serif font-medium">Portfolio Collections</h3>
-                          <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Group works into editorial lookbooks</p>
+                          <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Showcase your work in collections</p>
                         </div>
                       </div>
                       <Button 
@@ -678,8 +727,8 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                         <Clock size={14} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-serif font-medium">Availability Registry</h3>
-                        <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Set your atelier hours</p>
+                        <h3 className="text-sm font-serif font-medium">Business Hours</h3>
+                        <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Set your shop hours</p>
                       </div>
                     </header>
 
@@ -743,15 +792,15 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                     </div>
                   </div>
 
-                   {/* Social Registry */}
+                   {/* Social Media */}
                    <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
                       <header className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-900 border border-stone-200">
                           <Link2 size={14} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-serif font-medium">Digital Presence</h3>
-                          <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Connect your social platforms</p>
+                          <h3 className="text-sm font-serif font-medium">Social Media</h3>
+                          <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Connect your digital profiles</p>
                         </div>
                       </header>
 
@@ -819,18 +868,25 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                       </div>
                    </div>
 
-                   <Button onClick={saveBusinessInfo} disabled={saving} className="w-full h-16 bg-stone-950 text-white rounded-full text-[10px] font-mono uppercase tracking-[0.3em] hover:bg-black transition-all">
-                      Save Business Profile
-                  </Button>
+                   <div className="pt-12 border-t border-stone-100">
+                      <Button onClick={saveBusinessInfo} disabled={saving} className="w-full h-20 bg-stone-950 text-white rounded-[2rem] text-xs font-mono uppercase tracking-[0.4em] hover:bg-black transition-all shadow-xl hover:shadow-2xl active:scale-[0.98]">
+                         {saving ? (
+                           <div className="flex items-center gap-3">
+                             <Loader2 className="animate-spin" size={16} />
+                             <span>Archiving Registry...</span>
+                           </div>
+                         ) : "Save Business Settings"}
+                      </Button>
+                   </div>
                </div>
             </TabsContent>
           )}
 
           <TabsContent value="notifications" className="space-y-12">
              <div className="max-w-2xl mx-auto space-y-8">
-                <header className="text-center space-y-4">
-                   <h2 className="text-4xl font-serif italic text-stone-950">Broadcast Registry.</h2>
-                   <p className="text-stone-500 font-mono text-[10px] uppercase tracking-widest">Manage how the atelier communicates with you.</p>
+                <header className="text-center space-y-4 mb-20">
+                   <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-red-950">Notifications</p>
+                   <h2 className="text-4xl md:text-6xl font-serif italic text-stone-950">Alerts.</h2>
                 </header>
 
                 <div className="bg-white p-10 rounded-[3rem] border border-stone-100 shadow-sm relative overflow-hidden group">
@@ -893,9 +949,9 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
 
           <TabsContent value="payments">
              <div className="max-w-2xl mx-auto space-y-8">
-                <header className="text-center space-y-4">
-                   <h2 className="text-3xl font-serif italic">Monetization Registry.</h2>
-                   <p className="text-stone-500 font-mono text-[10px] uppercase tracking-widest">Connect your bank or wallet to receive payouts.</p>
+                <header className="text-center space-y-4 mb-20">
+                   <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-red-950">Payments</p>
+                   <h2 className="text-4xl md:text-6xl font-serif italic text-stone-950">Payouts.</h2>
                 </header>
                 <PaymentSetupForm />
              </div>

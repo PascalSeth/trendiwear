@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Heart, Share2, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Heart, Share2, X, Loader2, ShoppingBag, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,6 +20,19 @@ interface TrendEvent {
   imageUrl: string | null;
   seasonality: string[];
   dressCodes: string[];
+  searchKeywords?: string[];
+  suggestedProducts?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    images: string[];
+    professional: {
+      professionalProfile: {
+        businessName: string | null;
+      } | null;
+    } | null;
+  }>;
   _count: {
     outfitInspirations: number;
   };
@@ -295,6 +308,77 @@ export default function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Suggested Products Section - Discovery Engine */}
+      {event.suggestedProducts && event.suggestedProducts.length > 0 && (
+        <div className="bg-neutral-50 border-t border-neutral-100 mt-24">
+          <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-24">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <Sparkles size={16} className="text-amber-500" />
+                  <h2 className="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">
+                    Smart Discovery
+                  </h2>
+                </div>
+                <h3 className="text-3xl md:text-4xl font-serif font-medium text-neutral-900">
+                  Shop styles from our sellers
+                </h3>
+                <p className="text-neutral-500 mt-2 font-light">
+                  Products automatically matched for {event.name} based on tags and vibes.
+                </p>
+              </div>
+              
+              <Link 
+                href="/shopping"
+                className="group flex items-center gap-2 text-xs uppercase tracking-widest font-medium text-neutral-900 border-b border-neutral-900 pb-1 w-fit"
+              >
+                Browse All Marketplace <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
+              {event.suggestedProducts.map((product) => (
+                <Link 
+                  key={product.id}
+                  href={`/shopping/products/${product.id}`}
+                  className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-neutral-100 flex flex-col h-full"
+                >
+                  <div className="aspect-[4/5] relative overflow-hidden">
+                    <Image
+                      src={product.images[0] || '/placeholder-product.jpg'}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
+                    
+                    <div className="absolute bottom-3 right-3 translate-y-8 group-hover:translate-y-0 transition-transform duration-300">
+                      <div className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center">
+                        <ShoppingBag size={14} className="text-neutral-900" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 flex flex-col flex-grow">
+                    <p className="text-[10px] text-neutral-400 uppercase tracking-widest mb-1 truncate">
+                      {product.professional?.professionalProfile?.businessName || 'Boutique'}
+                    </p>
+                    <h4 className="font-serif text-sm font-medium text-neutral-900 line-clamp-1 mb-2">
+                      {product.name}
+                    </h4>
+                    <div className="mt-auto pt-2 border-t border-neutral-50 flex items-center justify-between">
+                      <span className="font-mono text-xs font-semibold">
+                        {product.currency} {product.price.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Outfit Detail Modal */}
       <AnimatePresence>

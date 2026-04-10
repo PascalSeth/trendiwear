@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Upload, ChevronDown, Check, Instagram, Linkedin, Scissors, Palette, Store, Layers, Camera, User, Info, Facebook, Globe } from "lucide-react";
 import Image from "next/image";
@@ -64,6 +66,8 @@ const DAY_LABELS: Record<keyof BusinessHours, string> = {
 };
 
 export default function RegisterProfessionalForm() {
+  const router = useRouter();
+  const { update } = useSession();
   // --- State (Preserved) ---
   const [formData, setFormData] = useState({
     businessName: "",
@@ -214,8 +218,8 @@ export default function RegisterProfessionalForm() {
         return;
       }
       
-      if ((formData.momoNumber && !formData.momoProvider) || (!formData.momoNumber && formData.momoProvider)) {
-        toast.error('Both Mobile Money Provider and Number are required if you want to set up payouts.');
+      if (!formData.momoNumber || !formData.momoProvider) {
+        toast.error('Mobile Money Provider and Number are required for automated payouts.');
         setIsSubmitting(false);
         return;
       }
@@ -287,6 +291,10 @@ export default function RegisterProfessionalForm() {
 
       const isUpdate = response.status === 200;
       toast.success(`Profile ${isUpdate ? 'updated' : 'created'} successfully!`);
+
+      // 4. Refresh session to update role and navigate to dashboard
+      await update({ role: "PROFESSIONAL" });
+      router.push("/dashboard");
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -397,7 +405,7 @@ export default function RegisterProfessionalForm() {
 
               {/* Progress Indicator */}
               <div className="flex items-center justify-between mb-16 font-mono text-xs tracking-widest text-stone-400">
-                <span className={currentStep >= 1 ? "text-stone-900 transition-colors" : ""}>01. IDENTITY</span>
+                <span className={currentStep >= 1 ? "text-stone-900 transition-colors" : ""}>01. BASIC INFO</span>
                 <div className="h-px w-24 bg-stone-200 relative">
                   <motion.div
                     className="absolute inset-0 bg-stone-900"
@@ -406,7 +414,7 @@ export default function RegisterProfessionalForm() {
                     transition={{ duration: 0.5 }}
                   />
                 </div>
-                <span className={currentStep >= 2 ? "text-stone-900 transition-colors" : ""}>02. PORTFOLIO</span>
+                <span className={currentStep >= 2 ? "text-stone-900 transition-colors" : ""}>02. BUSINESS DETAILS</span>
               </div>
 
               <AnimatePresence mode="wait" initial={false}>
@@ -426,8 +434,8 @@ export default function RegisterProfessionalForm() {
                   {currentStep === 1 && (
                     <div className="space-y-10">
                       <div className="space-y-1">
-                        <h2 className="text-3xl font-serif text-stone-900 mb-2">Basic Identity</h2>
-                        <p className="text-stone-500 text-sm">Tell us who you are.</p>
+                        <h2 className="text-3xl font-serif text-stone-900 mb-2">Basic Info</h2>
+                        <p className="text-stone-500 text-sm">Tell us about yourself and your business.</p>
                       </div>
 
                       <div className="space-y-8">
@@ -528,7 +536,7 @@ export default function RegisterProfessionalForm() {
 
                         <div className="grid grid-cols-2 gap-8">
                           <div className="group">
-                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Experience (Years)</Label>
+                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Years of Experience</Label>
                             <Input
                               type="number"
                               min="0"
@@ -538,7 +546,7 @@ export default function RegisterProfessionalForm() {
                             />
                           </div>
                           <div className="group">
-                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-4 block">Portfolio Archive</Label>
+                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-4 block">Business Image</Label>
                             <div className="relative group/upload">
                               {businessImagePreview ? (
                                 <motion.div 
@@ -565,7 +573,7 @@ export default function RegisterProfessionalForm() {
                                     <Upload size={20} />
                                   </div>
                                   <div className="space-y-1">
-                                    <p className="text-sm font-serif text-stone-600">Select Portfolio Masterpiece</p>
+                                    <p className="text-sm font-serif text-stone-600">Select business cover photo</p>
                                     <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">PNG, JPG up to 10MB</p>
                                   </div>
                                   <input
@@ -599,17 +607,17 @@ export default function RegisterProfessionalForm() {
                   {currentStep === 2 && (
                     <div className="space-y-10">
                       <div className="space-y-1">
-                        <h2 className="text-3xl font-serif text-stone-900 mb-2">Professional Details</h2>
-                        <p className="text-stone-500 text-sm">The finer points of your craft.</p>
+                        <h2 className="text-3xl font-serif text-stone-900 mb-2">More About Your Business</h2>
+                        <p className="text-stone-500 text-sm">Help customers find and book your services.</p>
                       </div>
 
                       <div className="space-y-8">
                         <div className="group">
-                          <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Bio</Label>
+                          <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Tell us about your business</Label>
                           <Textarea
                             value={formData.bio}
                             onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                            placeholder="Briefly describe your aesthetic..."
+                            placeholder="Describe what you do and your experience..."
                             rows={4}
                             className="bg-transparent border-b border-stone-300 rounded-none px-0 py-3 text-stone-900 placeholder-stone-300 focus:border-stone-900 focus:ring-0 resize-none"
                           />
@@ -617,7 +625,7 @@ export default function RegisterProfessionalForm() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div className="group">
-                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Portfolio URL</Label>
+                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Link to your work (Instagram, Website, etc.)</Label>
                             <Input
                               type="url"
                               value={formData.portfolioUrl}
@@ -626,7 +634,7 @@ export default function RegisterProfessionalForm() {
                             />
                           </div>
                           <div className="group">
-                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Spotlight Video</Label>
+                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Introduction Video (YouTube/Vimeo)</Label>
                             <Input
                               type="url"
                               value={formData.spotlightVideoUrl}
@@ -637,7 +645,7 @@ export default function RegisterProfessionalForm() {
 
                           <div className="group space-y-3">
                             <div className="flex items-center justify-between">
-                              <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Mobile Money Provider</Label>
+                              <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Mobile Money Provider <span className="text-red-500">*</span></Label>
                               <button
                                 type="button"
                                 onClick={() => setShowMomoInfo(!showMomoInfo)}
@@ -670,7 +678,7 @@ export default function RegisterProfessionalForm() {
                                 onChange={(e) => setFormData(prev => ({ ...prev, momoProvider: e.target.value }))}
                                 className="w-full bg-transparent text-stone-900 outline-none"
                               >
-                                <option value="">Select provider (optional)</option>
+                                <option value="">Select provider</option>
                                 {momoProviders.map(p => (
                                   <option key={p.code} value={p.code}>{p.displayName}</option>
                                 ))}
@@ -679,12 +687,12 @@ export default function RegisterProfessionalForm() {
                           </div>
 
                           <div className="group">
-                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Mobile Money Number</Label>
+                            <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 mb-2 block">Mobile Money Number <span className="text-red-500">*</span></Label>
                             <Input
                               type="tel"
                               value={formData.momoNumber}
                               onChange={(e) => setFormData(prev => ({ ...prev, momoNumber: e.target.value }))}
-                              placeholder="e.g. 0241234567 (optional)"
+                              placeholder="e.g. 0241234567"
                               className="bg-transparent border-b border-stone-300 rounded-none px-0 py-3 text-stone-900 placeholder-stone-300 focus:border-stone-900 focus:ring-0"
                             />
                           </div>
@@ -714,7 +722,7 @@ export default function RegisterProfessionalForm() {
                                 <div className="pt-6 space-y-6">
                                   <div className="group space-y-6">
                                      <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Availability Registry</Label>
+                                        <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Opening Hours</Label>
                                         <div className="flex gap-2">
                                           <button 
                                             type="button"
@@ -791,7 +799,7 @@ export default function RegisterProfessionalForm() {
                                   </div>
 
                                   <div className="group space-y-6">
-                                    <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Digital Presence (Socials)</Label>
+                                    <Label className="text-xs font-mono uppercase tracking-widest text-stone-400 block">Social Media Links</Label>
                                     
                                     <div className="flex gap-4 p-2 bg-stone-100/50 rounded-2xl w-fit">
                                       {[

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { requireRole } from "@/lib/auth"
 import { uploadFile } from "@/lib/upload"
 import type { Season } from "@prisma/client"
@@ -30,7 +31,41 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
 
-    return NextResponse.json(event)
+    // DISCOVERY ENGINE: Find products that match this event's vibe
+    let suggestedProducts: any[] = [];
+    if (event.searchKeywords && event.searchKeywords.length > 0) {
+      suggestedProducts = await prisma.product.findMany({
+        where: {
+          isActive: true,
+          isInStock: true,
+          OR: [
+            { keywords: { hasSome: event.searchKeywords } },
+            ...event.searchKeywords.map((keyword: string) => ({
+              OR: [
+                { name: { contains: keyword, mode: 'insensitive' as Prisma.QueryMode } },
+                { description: { contains: keyword, mode: 'insensitive' as Prisma.QueryMode } },
+              ]
+            }))
+          ]
+        },
+        take: 12,
+        include: {
+          professional: {
+            select: {
+              professionalProfile: {
+                select: { businessName: true, businessImage: true }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    return NextResponse.json({
+      ...event,
+      suggestedProducts
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
@@ -51,6 +86,7 @@ export async function PUT(
     let description: string | undefined
     let imageUrl: string | undefined
     let dressCodes: string[]
+    let searchKeywords: string[]
     let seasonality: Season[]
 
     if (contentType.includes("multipart/form-data")) {
@@ -60,6 +96,7 @@ export async function PUT(
       description = formData.get("description") as string | undefined
       const imageFile = formData.get("image") as File | null
       dressCodes = JSON.parse(formData.get("dressCodes") as string || "[]")
+      searchKeywords = JSON.parse(formData.get("searchKeywords") as string || "[]")
       seasonality = JSON.parse(formData.get("seasonality") as string || "[]")
 
       if (imageFile) {
@@ -74,6 +111,7 @@ export async function PUT(
       description = body.description
       imageUrl = body.imageUrl
       dressCodes = body.dressCodes || []
+      searchKeywords = body.searchKeywords || []
       seasonality = body.seasonality || []
     }
 
@@ -84,6 +122,7 @@ export async function PUT(
         description,
         imageUrl,
         dressCodes,
+        searchKeywords,
         seasonality,
       },
       include: {

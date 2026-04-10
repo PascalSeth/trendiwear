@@ -28,7 +28,17 @@ export async function GET(){
                 email: session.user.email,
                 firstName: session.user.firstName || session.user.name?.split(' ')[0] || '',
                 lastName: session.user.lastName || session.user.name?.split(' ').slice(1).join(' ') || '',
-                profileImage: session.user.image || null,
+                image: session.user.image || null, // Standard NextAuth field
+                profileImage: session.user.image || null, // Custom field used in UI
+            }
+        })
+    } else if (!dbUser.profileImage && session.user.image) {
+        // Migration/Sync: if user exists but profileImage is missing, sync it from the session/image
+        dbUser = await prisma.user.update({
+            where: { id: dbUser.id },
+            data: { 
+                profileImage: session.user.image,
+                image: session.user.image // Ensure both are set
             }
         })
     }

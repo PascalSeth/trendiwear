@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { suggestTags } from "@/lib/fashion-engine";
+import { Sparkles } from "lucide-react";
 
 // --- Types ---
 type SizeOption =
@@ -62,6 +64,11 @@ export default function AddProductPage() {
   const [discountStartDate, setDiscountStartDate] = useState("");
   const [discountEndDate, setDiscountEndDate] = useState("");
   const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
+
+  // --- Discovery Preview ---
+  const discoveryPreview = useMemo(() => {
+    return suggestTags(name, description);
+  }, [name, description]);
 
   // --- Data States ---
   interface CategoryWithChildren {
@@ -314,6 +321,38 @@ export default function AddProductPage() {
                           className="w-full h-32 rounded-[2rem] border-2 border-slate-100 focus:border-blue-600 focus:ring-4 focus:ring-blue-50 text-md font-medium px-6 py-4 transition-all resize-none"
                         />
                       </div>
+
+                      {/* Discovery Engine Preview */}
+                      {(discoveryPreview.styles.length > 0 || discoveryPreview.keywords.length > 0) && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-5 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[2rem] border border-blue-100/50"
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Smart Discovery Preview</span>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            {discoveryPreview.keywords.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {discoveryPreview.keywords.map(kw => (
+                                  <span key={kw} className="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-slate-700 shadow-sm border border-blue-100">
+                                    {kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <p className="text-[10px] text-blue-400 font-medium leading-relaxed italic">
+                              Our engine has automatically identified these themes. Your product will show up in event collections matching these vibes!
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-3">

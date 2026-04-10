@@ -26,6 +26,7 @@ type User = {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  profileImage?: string | null;
 };
 
 type NavbarProps = {
@@ -185,7 +186,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 <button className="flex items-center gap-3 group relative">
                   <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-2 group-hover:ring-stone-400 transition-all duration-300">
                     <Image
-                      src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                      src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                       alt="User"
                       width={36}
                       height={36}
@@ -407,7 +408,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
                         <Image
-                          src={user.image ?? "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                          src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                           alt="User"
                           width={40}
                           height={40}

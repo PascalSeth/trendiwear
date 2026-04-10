@@ -60,7 +60,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { firstName, lastName, phone, profileImage, isActive, role } = body
-    const updateData: Prisma.UserUpdateInput = { firstName, lastName, phone, profileImage }
+    const updateData: Prisma.UserUpdateInput = { 
+      firstName, 
+      lastName, 
+      phone, 
+      profileImage,
+      image: profileImage // Keep NextAuth image field in sync with custom profileImage
+    }
 
     if (["ADMIN", "SUPER_ADMIN"].includes(currentUser.role)) {
       if (isActive !== undefined) updateData.isActive = isActive

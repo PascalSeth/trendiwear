@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
+import { suggestTags } from "@/lib/fashion-engine"
 import type { Prisma } from "@prisma/client"
 
 // Helper function to calculate effective price with discount
@@ -174,6 +175,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updateData.collections = {
         set: collectionIds.map((id: string) => ({ id }))
       }
+    }
+
+    // DISCOVERY ENGINE: Auto-update tags if name or description changed
+    if (body.name !== undefined || body.description !== undefined) {
+      const newName = body.name !== undefined ? body.name : existingProduct.name;
+      const newDescription = body.description !== undefined ? body.description : existingProduct.description;
+      const autoTags = suggestTags(newName, newDescription);
+      updateData.styleTags = autoTags.styles;
+      updateData.keywords = autoTags.keywords;
     }
 
     if (body.price) updateData.price = Number.parseFloat(body.price)

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
 import { AnalyticsTracker } from "@/lib/analytics"
+import { suggestTags } from "@/lib/fashion-engine"
 import type { Prisma, ProductTag } from "@prisma/client"
 
 // Helper function to calculate effective price with discount
@@ -389,6 +390,9 @@ export async function POST(request: NextRequest) {
       isPreorder,
     } = body
 
+    // 1. Run the "Free AI" Fashion Engine to suggest tags & styles
+    const autoTags = suggestTags(name, description)
+
     const finalTags = ['NEW' as ProductTag, ...(tags || [])]
     const product = await prisma.product.create({
       data: {
@@ -408,6 +412,9 @@ export async function POST(request: NextRequest) {
         estimatedDelivery: estimatedDelivery ? Number.parseInt(estimatedDelivery) : null,
         isCustomizable: Boolean(isCustomizable),
         tags: finalTags,
+        // Auto-discovered styles and keywords
+        styleTags: autoTags.styles,
+        keywords: autoTags.keywords,
         isUnisex: Boolean(isUnisex),
         submittedForShowcase: Boolean(submittedForShowcase),
         submittedAt: submittedForShowcase ? new Date() : null,

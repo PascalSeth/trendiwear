@@ -142,6 +142,7 @@ export async function updateUserProfile(userId: string, data: {
     where: { id: userId },
     data: {
       ...data,
+      image: data.profileImage || undefined, // Sync NextAuth image field
       updatedAt: new Date()
     }
   })

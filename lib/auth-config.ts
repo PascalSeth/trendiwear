@@ -14,6 +14,7 @@ declare module "next-auth" {
       email: string
       name: string
       image?: string
+      profileImage?: string
       firstName?: string
       lastName?: string
       role: Role
@@ -30,6 +31,7 @@ declare module "next-auth" {
     role: Role
     firstName?: string
     lastName?: string
+    profileImage?: string
   }
 }
 
@@ -85,7 +87,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image,
+          image: user.profileImage || user.image,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
@@ -162,7 +164,8 @@ export const authOptions: NextAuthOptions = {
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
         session.user.name = token.name as string
-        session.user.image = token.image as string
+        session.user.image = (token.image || token.profileImage) as string
+        session.user.profileImage = (token.profileImage || token.image) as string
       }
       return session
     },
@@ -177,6 +180,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.firstName = user.firstName
         token.lastName = user.lastName
+        token.profileImage = user.profileImage || user.image
 
         // Ensure we have the correct role from the database if it's an OAuth sign-in
         // or if the role returned by the provider is the default 'CUSTOMER'
@@ -195,12 +199,14 @@ export const authOptions: NextAuthOptions = {
       if (!token.role && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, firstName: true, lastName: true }
+          select: { role: true, firstName: true, lastName: true, image: true, profileImage: true }
         })
         if (dbUser) {
           token.role = dbUser.role
           token.firstName = dbUser.firstName
           token.lastName = dbUser.lastName
+          token.image = dbUser.profileImage || dbUser.image
+          token.profileImage = dbUser.profileImage || dbUser.image
         }
       }
 
@@ -210,7 +216,10 @@ export const authOptions: NextAuthOptions = {
         if (session.firstName) token.firstName = session.firstName
         if (session.lastName) token.lastName = session.lastName
         if (session.name) token.name = session.name
-        if (session.image) token.image = session.image
+        if (session.image) {
+          token.image = session.image
+          token.profileImage = session.image
+        }
       }
 
       return token
