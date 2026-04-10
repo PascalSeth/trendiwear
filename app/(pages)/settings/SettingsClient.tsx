@@ -253,19 +253,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
     setBusinessHours(newHours);
   };
 
-  const applyPreset = (preset: '9-5' | '24/7' | 'closed') => {
-    const newHours = { ...businessHours };
-    if (preset === '9-5') {
-      Object.keys(newHours).forEach(day => {
-        newHours[day as keyof BusinessHours] = { enabled: !['saturday', 'sunday'].includes(day), open: '09:00', close: '17:00' };
-      });
-    } else if (preset === '24/7') {
-      Object.keys(newHours).forEach(day => {
-        newHours[day as keyof BusinessHours] = { enabled: true, open: '00:00', close: '23:59' };
-      });
-    }
-    setBusinessHours(newHours);
-  };
+  // Removed unused applyPreset to fix ESLint error
 
   const updateSocialMedia = (platform: string, url: string) => {
     const exists = socialMedia.find(s => s.platform === platform);

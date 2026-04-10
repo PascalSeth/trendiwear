@@ -47,7 +47,7 @@ export default function TermsPage() {
       <section>
         <h2>5. Smart Discovery & Content</h2>
         <p>
-          Users may not use automated tools to scrape our curated "Fashion Discovery" data. This unique mapping of styles and trends is the proprietary intellectual technology of Trendizip. Replicating our discovery algorithms for external use is strictly prohibited.
+          Users may not use automated tools to scrape our curated &quot;Fashion Discovery&quot; data. This unique mapping of styles and trends is the proprietary intellectual technology of Trendizip. Replicating our discovery algorithms for external use is strictly prohibited.
         </p>
       </section>
 

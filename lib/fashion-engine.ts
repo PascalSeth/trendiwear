@@ -82,11 +82,11 @@ export function suggestTags(name: string, description: string | null = "") {
 /**
  * Calculates a match score (0-100) between a product and an event.
  */
-export function calculateMatchScore(product: any, event: any): number {
-  if (!event.searchKeywords || event.searchKeywords.length === 0) return 0;
+export function calculateMatchScore(product: Record<string, unknown>, event: Record<string, unknown>): number {
+  if (!event.searchKeywords || !Array.isArray(event.searchKeywords) || event.searchKeywords.length === 0) return 0;
   
-  const productText = `${product.name} ${product.description || ""} ${product.keywords?.join(" ") || ""}`.toLowerCase();
-  const eventKeywords = event.searchKeywords.map((k: string) => k.toLowerCase());
+  const productText = `${product.name} ${product.description || ""} ${Array.isArray(product.keywords) ? product.keywords.join(" ") : ""}`.toLowerCase();
+  const eventKeywords = (event.searchKeywords as string[]).map((k: string) => k.toLowerCase());
   
   let matchCount = 0;
   eventKeywords.forEach((keyword: string) => {

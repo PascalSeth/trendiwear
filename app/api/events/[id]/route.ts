@@ -32,7 +32,7 @@ export async function GET(
     }
 
     // DISCOVERY ENGINE: Find products that match this event's vibe
-    let suggestedProducts: any[] = [];
+    let suggestedProducts: unknown[] = [];
     if (event.searchKeywords && event.searchKeywords.length > 0) {
       suggestedProducts = await prisma.product.findMany({
         where: {

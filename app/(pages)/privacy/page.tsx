@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <section>
         <h2>3. Localized Style Intelligence</h2>
         <p>
-          Our <strong>Fashion Discovery Engine</strong> uses keyword heuristic mapping to categorize products into "vibes" (e.g., Avant-Garde, Minimalist, Royal). This data is used to personalize your feed and is never sold to third-party advertisers. We value your taste as your intellectual property.
+          Our <strong>Fashion Discovery Engine</strong> uses keyword heuristic mapping to categorize products into &quot;vibes&quot; (e.g., Avant-Garde, Minimalist, Royal). This data is used to personalize your feed and is never sold to third-party advertisers. We value your taste as your intellectual property.
         </p>
       </section>
 
