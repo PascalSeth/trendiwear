@@ -27,9 +27,9 @@ interface ShowcaseProduct {
   price: number
   currency: string
   images: string[]
-  category: {
+  categories: {
     name: string
-  }
+  }[]
   professional: {
     firstName: string
     lastName: string
@@ -137,7 +137,7 @@ export default function ShowcaseDataTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{product.category.name}</Badge>
+                  <Badge variant="outline">{product.categories?.[0]?.name || "Uncategorized"}</Badge>
                 </TableCell>
                 <TableCell>{product.currency} {product.price}</TableCell>
                 <TableCell>

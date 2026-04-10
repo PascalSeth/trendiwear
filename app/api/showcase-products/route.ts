@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.product.findMany({
       where: whereClause,
       include: {
-        category: true,
+        categories: true,
         professional: {
           select: {
             id: true,
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.findUnique({
       where: { id: productId },
       include: {
-        category: true,
+        categories: true,
         professional: {
           select: {
             id: true,
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
         submittedAt: product.submittedAt || new Date(), // Keep original submission time if already submitted
       },
       include: {
-        category: true,
+        categories: true,
         professional: {
           select: {
             firstName: true,
@@ -277,7 +277,7 @@ export async function DELETE(request: NextRequest) {
         approvedBy: null,
       },
       include: {
-        category: true,
+        categories: true,
         professional: {
           select: {
             firstName: true,

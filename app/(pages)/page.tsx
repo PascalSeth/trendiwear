@@ -14,10 +14,10 @@ interface ShowcaseProduct {
   images: string[];
   price: number;
   currency: string;
-  category: {
+  categories: {
     id: string;
     name: string;
-  };
+  }[];
   professional: {
     id: string;
     firstName: string;
@@ -74,7 +74,7 @@ export default async function Page() {
         isShowcaseApproved: true,
       },
       include: {
-        category: true,
+        categories: true,
         professional: {
           select: {
             id: true,

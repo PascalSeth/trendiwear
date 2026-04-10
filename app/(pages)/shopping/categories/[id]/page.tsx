@@ -58,10 +58,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     where: {
       isActive: true,
       isInStock: true,
-      categoryId: { in: allCategoryIds }
+      categories: { 
+        some: { 
+          id: { in: allCategoryIds } 
+        } 
+      }
     },
     include: {
-      category: {
+      categories: {
+        select: { id: true, name: true, slug: true }
+      },
+      collections: {
         select: { id: true, name: true, slug: true }
       },
       professional: {

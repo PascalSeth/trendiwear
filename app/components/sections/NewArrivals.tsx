@@ -65,7 +65,7 @@ function NewArrivals() {
             createdAt: string;
             tags?: string[];
             avgRating?: number;
-            category: { name: string };
+            categories: { name: string }[];
             collection?: { name: string };
             professional: {
               firstName: string;
@@ -108,7 +108,7 @@ function NewArrivals() {
             sellerProfilePicUrl: product.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg',
             isVerified: product.professional.professionalProfile?.isVerified || false,
             isTrendiZip: sellerName === 'TrendiZip',
-            category: product.category.name,
+            category: product.categories?.[0]?.name || "Fashion",
             rating: product.avgRating || 0,
             views: product.viewCount,
             likes: product._count.wishlistItems,

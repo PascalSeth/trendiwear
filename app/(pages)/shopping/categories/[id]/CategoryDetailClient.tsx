@@ -49,11 +49,16 @@ interface Product {
   soldCount: number;
   stockQuantity: number;
   createdAt: string | Date;
-  categoryId: string;
-  category: {
+  categories: Array<{
+    id: string;
     name: string;
     slug: string;
-  };
+  }>;
+  collections: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
   professional: {
     id: string;
     firstName: string;
@@ -290,7 +295,7 @@ export default function CategoryDetailClient({
 
   // Filter products by subcategory
   const filteredProducts = products.filter(product => {
-    if (selectedSubcategoryId && product.categoryId !== selectedSubcategoryId) return false;
+    if (selectedSubcategoryId && !product.categories?.some(c => c.id === selectedSubcategoryId)) return false;
     if (filters.minPrice && product.price < parseFloat(filters.minPrice)) return false;
     if (filters.maxPrice && product.price > parseFloat(filters.maxPrice)) return false;
     if (filters.colors.length > 0 && !filters.colors.some(color => product.colors?.includes(color))) return false;
@@ -531,7 +536,7 @@ export default function CategoryDetailClient({
                 </div>
 
                 <div className="flex items-center gap-6 w-full md:w-auto">
-                  <div className="flex items-center gap-4 group cursor-pointer bg-stone-900/5 px-6 py-3 rounded-full hover:bg-stone-900/10 transition-colors">
+                   <div className="flex items-center gap-4 group cursor-pointer bg-stone-900/5 px-6 py-3 rounded-full hover:bg-stone-900/10 transition-colors">
                     <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-stone-500">Chronology /</span>
                     <select
                       value={`${filters.sortBy}_${filters.sortOrder}`}

@@ -36,10 +36,16 @@ interface Product {
   stockQuantity: number;
   createdAt: string | Date;
   categoryId: string;
-  category: {
+  categories: {
+    id: string;
     name: string;
     slug: string;
-  };
+  }[];
+  collections: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
   professional: {
     id: string;
     firstName: string;

@@ -94,10 +94,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (categoryId) {
-      // If categoryId is provided, include products from the category and all its children
-      const categoryIds = [categoryId];
-
-      // Get all child category IDs recursively
+      // Get all child ID's recursively for the selected category
       const getAllChildIds = async (parentId: string): Promise<string[]> => {
         const children = await prisma.category.findMany({
           where: { parentId, isActive: true },
@@ -109,9 +106,13 @@ export async function GET(request: NextRequest) {
       };
 
       const childIds = await getAllChildIds(categoryId);
-      categoryIds.push(...childIds);
+      const allTargetCategoryIds = [categoryId, ...childIds];
 
-      where.categoryId = { in: categoryIds };
+      // Update filtering to find products associated with ANY of these categories
+      where.OR = [
+        { categoryId: { in: allTargetCategoryIds } },
+        { categories: { some: { id: { in: allTargetCategoryIds } } } }
+      ]
     }
     if (collectionId) where.collections = { some: { id: collectionId } }
     if (professionalId) where.professionalId = professionalId
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
       prisma.product.findMany({
         where: effectiveWhere,
         include: {
-          category: true,
+          categories: true,
           collections: true,
           professional: {
             select: {
@@ -369,6 +370,7 @@ export async function POST(request: NextRequest) {
       images,
       videoUrl,
       categoryId,
+      categoryIds, // Array of ID's
       collectionIds,
       sizes,
       colors,
@@ -402,7 +404,10 @@ export async function POST(request: NextRequest) {
         stockQuantity: Number.parseInt(stockQuantity || '0'),
         images,
         videoUrl,
-        categoryId,
+        categoryId: categoryId || (categoryIds && categoryIds[0]), // Legacy fallback
+        categories: (categoryIds && categoryIds.length > 0) 
+          ? { connect: categoryIds.map((id: string) => ({ id })) } 
+          : (categoryId ? { connect: [{ id: categoryId }] } : undefined),
         collections: collectionIds && collectionIds.length > 0 ? { connect: collectionIds.map((id: string) => ({ id })) } : undefined,
         professionalId: user.id,
         sizes,
@@ -429,7 +434,7 @@ export async function POST(request: NextRequest) {
         isPreorder: Boolean(isPreorder),
       },
       include: {
-        category: true,
+        categories: true,
         collections: true,
         professional: {
           select: {

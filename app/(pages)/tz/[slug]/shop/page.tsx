@@ -42,10 +42,10 @@ interface Product {
   soldCount: number;
   stockQuantity: number;
   isPreorder?: boolean;
-  category: {
+  categories: {
     name: string;
     slug: string;
-  };
+  }[];
   collection?: {
     name: string;
   };
@@ -732,7 +732,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
 
     // Category filter
     if (activeCategory) {
-      result = result.filter(p => p.category.name.toLowerCase().replace(/\s+/g, '-') === activeCategory);
+      result = result.filter(p => p.categories.some(c => c.name.toLowerCase().replace(/\s+/g, '-') === activeCategory));
     }
 
     // Search filter
@@ -741,7 +741,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
       result = result.filter(p => 
         p.name.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
-        p.category.name.toLowerCase().includes(query)
+        p.categories.some(c => c.name.toLowerCase().includes(query))
       );
     }
 

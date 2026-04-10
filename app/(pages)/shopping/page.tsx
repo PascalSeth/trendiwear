@@ -27,7 +27,8 @@ export default async function Page() {
     prisma.product.findMany({
       where: { isActive: true, isInStock: true },
       include: {
-        category: { select: { name: true } },
+        categories: { select: { id: true, name: true, slug: true } },
+        collections: { select: { id: true, name: true, slug: true } },
         professional: {
           select: {
             firstName: true,
@@ -54,7 +55,8 @@ export default async function Page() {
     prisma.product.findMany({
       where: { isActive: true, isInStock: true },
       include: {
-        category: { select: { name: true } },
+        categories: { select: { id: true, name: true, slug: true } },
+        collections: { select: { id: true, name: true, slug: true } },
         professional: {
           select: {
             firstName: true,

@@ -85,6 +85,9 @@ export function PaymentSetupForm() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error("This Mobile Money number is already in use by another professional. Please use a unique number.");
+        }
         throw new Error(data.error || 'Failed to setup payment')
       }
 

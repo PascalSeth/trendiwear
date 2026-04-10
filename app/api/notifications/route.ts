@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // OPTIMIZATION: Only count total if NOT in 'minimal' mode (typically for the bell dropdown)
+    // We already have where = { userId, isRead: false } often if unreadOnly is true
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
@@ -57,8 +58,9 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       }),
       !minimal ? prisma.notification.count({ where }) : Promise.resolve(0),
+      // Fix circular reference: Calculate unread count independently
       prisma.notification.count({
-        where: { ...where, isRead: false },
+        where: { userId: user.id, isRead: false },
       }),
     ])
 

@@ -62,8 +62,9 @@ export async function GET(
         isInStock: true,
       },
       include: {
-        category: {
+        categories: {
           select: {
+            id: true,
             name: true,
           },
         },
@@ -111,10 +112,17 @@ export async function GET(
       }
     })
 
-    // Get unique categories from products with images
-    const categories = Array.from(
-      new Set(products.map(product => product.categoryId))
-    ).map(async (categoryId) => {
+    // Get unique categories from all associated products
+    interface CategoryItem {
+      id: string;
+      name: string;
+    }
+    const catIdSet = new Set<string>();
+    products.forEach(p => {
+      p.categories.forEach((c: CategoryItem) => catIdSet.add(c.id));
+    });
+
+    const categories = Array.from(catIdSet).map(async (categoryId) => {
       const category = await prisma.category.findUnique({
         where: { id: categoryId },
         select: { id: true, name: true, slug: true, imageUrl: true }
@@ -124,7 +132,7 @@ export async function GET(
         name: category?.name || 'Unknown',
         slug: category?.slug || 'unknown',
         imageUrl: category?.imageUrl || null,
-        productCount: products.filter(p => p.categoryId === categoryId).length,
+        productCount: products.filter(p => p.categories.some((c: CategoryItem) => c.id === categoryId)).length,
       };
     });
 

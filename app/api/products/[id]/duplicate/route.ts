@@ -14,7 +14,7 @@ export async function POST(
     const originalProduct = await prisma.product.findUnique({
       where: { id: productId },
       include: {
-        category: true,
+        categories: true,
         collections: true,
       },
     });
@@ -39,6 +39,7 @@ export async function POST(
         images: originalProduct.images,
         videoUrl: originalProduct.videoUrl,
         categoryId: originalProduct.categoryId,
+        categories: { connect: originalProduct.categories.map((c: { id: string }) => ({ id: c.id })) },
         collections: { connect: originalProduct.collections.map((c: { id: string }) => ({ id: c.id })) },
         professionalId: originalProduct.professionalId,
         sizes: originalProduct.sizes,
@@ -62,7 +63,7 @@ export async function POST(
         isShowcaseApproved: false,
       },
       include: {
-        category: {
+        categories: {
             select: { name: true }
         },
         collections: {

@@ -13,7 +13,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     prisma.product.findUnique({
       where: { id, isActive: true },
       include: {
-        category: { select: { name: true } },
+        categories: { select: { name: true } },
         collections: { select: { name: true } },
         professional: {
           select: {

@@ -22,9 +22,9 @@ interface Product {
   price: number
   currency: string
   images: string[]
-  category: {
+  categories: {
     name: string
-  }
+  }[]
   professional: {
     firstName: string
     lastName: string
@@ -160,7 +160,11 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
                               `${product.professional.firstName} ${product.professional.lastName}`}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant="outline">{product.category.name}</Badge>
+                          <div className="flex flex-wrap gap-1">
+                            {product.categories?.map((cat, i) => (
+                              <Badge key={i} variant="outline">{cat.name}</Badge>
+                            ))}
+                          </div>
                           <span className="text-sm font-medium">{product.currency} {product.price}</span>
                         </div>
                       </div>

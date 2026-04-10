@@ -81,6 +81,8 @@ model Address {
   updatedAt DateTime    @updatedAt
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders    Order[]
+
+  @@index([userId])
 }
 
 model Measurement {
@@ -131,7 +133,7 @@ model ProfessionalProfile {
   spotlightVideoUrl      String?
   creditScore            Float                  @default(0)
   paystackSubaccountCode String?
-  momoNumber             String?
+  momoNumber             String?                @unique
   momoProvider           String?
   paymentSetupComplete   Boolean                @default(false)
   trialStartDate         DateTime?
@@ -300,7 +302,8 @@ model Product {
   stockQuantity        Int                  @default(0)
   images               String[]
   videoUrl             String?
-  categoryId           String
+  categoryId           String?
+  categories           Category[]           @relation("ProductCategories")
   professionalId       String
   sizes                String[]
   colors               String[]
@@ -336,7 +339,6 @@ model Product {
   cartItems            CartItem[]
   orderItems           OrderItem[]
   outfitProducts       OutfitProduct[]
-  category             Category             @relation(fields: [categoryId], references: [id])
   collections          Collection[]
   professional         User                 @relation(fields: [professionalId], references: [id])
   analytics            ProductAnalytics?
@@ -344,6 +346,8 @@ model Product {
   socialPosts          SocialPost[]
   recommendations      UserRecommendation[]
   wishlistItems        WishlistItem[]
+
+  @@index([professionalId])
 }
 
 model Category {
@@ -360,7 +364,7 @@ model Category {
   updatedAt   DateTime   @updatedAt
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
+  products    Product[]  @relation("ProductCategories")
 }
 
 model Collection {
@@ -593,6 +597,9 @@ model Order {
   coupons                   OrderCoupon[]
   items                     OrderItem[]
   paymentEscrow             PaymentEscrow?
+
+  @@index([customerId])
+  @@index([paystackReference])
 }
 
 model OrderItem {
@@ -676,6 +683,7 @@ model WishlistItem {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@index([userId])
 }
 
 model CartItem {
@@ -756,6 +764,9 @@ model Notification {
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
 }
 
 model ProductAnalytics {
@@ -836,6 +847,8 @@ model Conversation {
   messages       Message[]
 
   @@unique([customerId, professionalId])
+  @@index([customerId])
+  @@index([professionalId])
 }
 
 model Message {
@@ -848,6 +861,9 @@ model Message {
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId, isRead])
 }
 
 model TrendingSearch {
@@ -1398,6 +1414,10 @@ enum StylePreference {
   ROMANTIC
   EDGY
   PREPPY
+  TRADITIONAL
+  CULTURAL
+  WELLNESS
+  MODEST
 }
 
 enum ProductTag {

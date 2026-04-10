@@ -1,16 +1,22 @@
 'use client';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Upload, X, Video, HelpCircle, ArrowLeft, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { MultiCategoryPicker } from "@/app/components/MultiCategoryPicker";
+
+import { 
+  Upload, X, Video, ChevronRight, ChevronLeft, 
+  Check, Tag, Package, Palette, Image as ImageIcon, 
+  Loader2, DollarSign, Award,
+  Save, Plus
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { suggestTags } from "@/lib/fashion-engine";
-import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 type SizeOption =
   | "US 2" | "US 4" | "US 6" | "US 8" | "US 10" | "US 12" | "US 14" | "US 16"
@@ -18,96 +24,122 @@ type SizeOption =
   | "UK 6" | "UK 8" | "UK 10" | "UK 12" | "UK 14" | "UK 16" | "UK 18" | "UK 20"
   | "XS" | "S" | "M" | "L" | "XL" | "XXL";
 
-type ProductTag = "NEW" | "TRENDING" | "BESTSELLER" | "SALE" | "LIMITED_EDITION" | "CUSTOM_MADE" | "ECO_FRIENDLY" | "HANDMADE" | "FEATURED";
-
-type Product = {
+interface Category {
   id: string;
   name: string;
-  description: string;
-  price: number;
-  currency: string;
-  stockQuantity: number;
-  images: string[];
-  videoUrl?: string;
-  categoryId: string;
+  slug: string;
+}
 
-  sizes: SizeOption[];
-  colors: string[];
-  material?: string;
-  careInstructions?: string;
-  estimatedDelivery?: number;
-  isCustomizable: boolean;
-  tags: ProductTag[];
-  isUnisex: boolean;
-  submittedForShowcase: boolean;
-  isShipped: boolean;
-  discountPercentage?: string;
-  discountPrice?: string;
-  discountStartDate?: string;
-  discountEndDate?: string;
-  isOnSale: boolean;
-  allowPickup: boolean;
-  allowDelivery: boolean;
-  category: {
-    id: string;
-    name: string;
-  };
-  collections?: {
-    id: string;
-    name: string;
-  }[];
-};
+interface ParentCategory extends Category {
+  children: Category[];
+}
 
-function EditProductPage() {
+interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+const STEPS = [
+  { id: 'basics', title: 'Basics', icon: <Tag className="w-5 h-5" /> },
+  { id: 'media', title: 'Media', icon: <ImageIcon className="w-5 h-5" /> },
+  { id: 'pricing', title: 'Pricing', icon: <DollarSign className="w-5 h-5" /> },
+  { id: 'details', title: 'Details', icon: <Palette className="w-5 h-5" /> },
+];
+
+export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
 
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  // --- Form State ---
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("GHS");
+  const [stockQuantity, setStockQuantity] = useState("0");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string>("");
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState("");
   const [selectedSizes, setSelectedSizes] = useState<SizeOption[]>([]);
   const [denomination, setDenomination] = useState<"US" | "EU" | "UK" | "General">("US");
-  const [parentCategories, setParentCategories] = useState<Array<{
-    id: string;
-    name: string;
-    children: Array<{ id: string; name: string; slug: string; imageUrl?: string }>;
-    collections: Array<{ id: string; name: string; slug: string; imageUrl?: string }>;
-  }>>([]);
-  const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Array<{ id: string; name: string; slug: string; imageUrl?: string }>>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-  const [currency, setCurrency] = useState<string>("GHS");
-  const [selectedCategoryImage, setSelectedCategoryImage] = useState<string>("");
-
   const [colors, setColors] = useState<string[]>([]);
-  const [material, setMaterial] = useState<string>("");
-  const [careInstructions, setCareInstructions] = useState<string>("");
-  const [isCustomizable, setIsCustomizable] = useState<boolean>(false);
-  const [selectedTags, setSelectedTags] = useState<ProductTag[]>([]);
-  const [isUnisex, setIsUnisex] = useState<boolean>(true);
-  const [submittedForShowcase, setSubmittedForShowcase] = useState<boolean>(false);
-  const [isShipped, setIsShipped] = useState<boolean>(false);
-  const [discountPercentage, setDiscountPercentage] = useState<string>("");
-  const [discountPrice, setDiscountPrice] = useState<string>("");
-  const [discountStartDate, setDiscountStartDate] = useState<string>("");
-  const [discountEndDate, setDiscountEndDate] = useState<string>("");
-  const [isOnSale, setIsOnSale] = useState<boolean>(false);
-  const [allowPickup, setAllowPickup] = useState<boolean>(true);
-  const [allowDelivery, setAllowDelivery] = useState<boolean>(true);
-  const [isPreorder, setIsPreorder] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [fetchLoading, setFetchLoading] = useState<boolean>(true);
-  const [product, setProduct] = useState<Product | null>(null);
+  const [material, setMaterial] = useState("");
+  const [careInstructions, setCareInstructions] = useState("");
+  const [isCustomizable, setIsCustomizable] = useState(false);
+  const [isUnisex, setIsUnisex] = useState(true);
+  const [isOnSale, setIsOnSale] = useState(false);
+  const [isPreorder, setIsPreorder] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState("");
+  // Removed unused discountStartDate/EndDate state
+  const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // --- Real-time form states for discovery engine ---
-  const [currentName, setCurrentName] = useState("");
-  const [currentDescription, setCurrentDescription] = useState("");
-
+  // --- Discovery Preview ---
   const discoveryPreview = useMemo(() => {
-    return suggestTags(currentName, currentDescription);
-  }, [currentName, currentDescription]);
+    return suggestTags(name, description);
+  }, [name, description]);
+
+  // --- Data States ---
+  const [parentCategories, setParentCategories] = useState<ParentCategory[]>([]);
+  const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Collection[]>([]);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setFetchLoading(true);
+      try {
+        // 1. Fetch Product
+        const pRes = await fetch(`/api/products/${productId}`);
+        if (!pRes.ok) throw new Error("Failed to fetch product");
+        const productData = await pRes.json();
+        
+        setName(productData.name || "");
+        setDescription(productData.description || "");
+        
+        // Multi-category support: use 'categories' array if present, otherwise fallback to 'categoryId'
+        const catIds = productData.categories?.map((c: Category) => c.id) || (productData.categoryId ? [productData.categoryId] : []);
+        setSelectedCategoryIds(catIds);
+        
+        setSelectedCollections(productData.collections?.map((c: Collection) => c.id) || []);
+        setSelectedSizes(productData.sizes || []);
+        setColors(productData.colors || []);
+        setMaterial(productData.material || "");
+        setCareInstructions(productData.careInstructions || "");
+        setIsCustomizable(productData.isCustomizable || false);
+        setIsUnisex(productData.isUnisex || true);
+        setSubmittedForShowcase(productData.submittedForShowcase || false);
+        setIsOnSale(productData.isOnSale || false);
+        setDiscountPercentage(productData.discountPercentage?.toString() || "");
+        setIsPreorder(productData.isPreorder || false);
+        setUploadedImageUrls(productData.images || []);
+        setUploadedVideoUrl(productData.videoUrl || "");
+        setPrice(productData.price?.toString() || "0");
+        setCurrency(productData.currency || "GHS");
+        setStockQuantity(productData.stockQuantity?.toString() || "0");
+
+        // 2. Fetch Filters (Categories/Collections)
+        const mainCatId = catIds[0] || "";
+        const fUrl = mainCatId ? `/api/product-selection-filters?categoryId=${mainCatId}` : "/api/product-selection-filters";
+        const fRes = await fetch(fUrl);
+        const fData = await fRes.json();
+        setParentCategories(fData.parentCategories);
+        setSelectedCategoryCollections(fData.selectedCategoryCollections);
+      } catch (err) {
+        console.error(err);
+        router.push('/dashboard/catalogue/products');
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+    fetchAll();
+  }, [productId, router]);
 
   const sizeOptions = {
     US: ["US 2", "US 4", "US 6", "US 8", "US 10", "US 12", "US 14", "US 16"] as SizeOption[],
@@ -116,842 +148,757 @@ function EditProductPage() {
     General: ["XS", "S", "M", "L", "XL", "XXL"] as SizeOption[],
   };
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await fetch(`/api/products/${productId}`);
-        if (response.ok) {
-          const productData = await response.json();
-          setProduct(productData);
-          // Pre-fill form with existing data
-          setCurrentName(productData.name || "");
-          setCurrentDescription(productData.description || "");
-          setSelectedCategory(productData.categoryId);
-          setSelectedCollections(productData.collections?.map((c: { id: string }) => c.id) || []);
-          setSelectedSizes(productData.sizes || []);
-          setColors(productData.colors || []);
-          setMaterial(productData.material || "");
-          setCareInstructions(productData.careInstructions || "");
-          setIsCustomizable(productData.isCustomizable || false);
-          setSelectedTags(productData.tags || []);
-          setIsUnisex(productData.isUnisex || true);
-          setSubmittedForShowcase(productData.submittedForShowcase || false);
-          setIsShipped(productData.estimatedDelivery ? true : false);
-          setDiscountPercentage(productData.discountPercentage || "");
-          setDiscountPrice(productData.discountPrice || "");
-          setDiscountStartDate(productData.discountStartDate || "");
-           setDiscountEndDate(productData.discountEndDate || "");
-          setIsOnSale(productData.isOnSale || false);
-          setAllowPickup(productData.allowPickup ?? true);
-          setAllowDelivery(productData.allowDelivery ?? true);
-          setIsPreorder(productData.isPreorder ?? false);
-          setUploadedImageUrls(productData.images || []);
-          setUploadedVideoUrl(productData.videoUrl || "");
-          setCurrency(productData.currency || "GHS");
-        } else {
-          alert('Failed to fetch product data');
-          router.push('/dashboard/catalogue/products');
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        alert('An error occurred while fetching product data');
-        router.push('/dashboard/catalogue/products');
-      } finally {
-        setFetchLoading(false);
-      }
-    };
-
-    const fetchFilters = async () => {
-      const url = selectedCategory ? `/api/product-selection-filters?categoryId=${selectedCategory}` : "/api/product-selection-filters";
-      const res = await fetch(url);
-      const data = await res.json();
-      setParentCategories(data.parentCategories);
-      setSelectedCategoryCollections(data.selectedCategoryCollections);
-    };
-
-    fetchProduct();
-    fetchFilters();
-  }, [productId, router, selectedCategory]);
-
-  // Update selected category image when category changes
-  useEffect(() => {
-    if (selectedCategory) {
-      // Find the selected category across all parent categories
-      for (const parent of parentCategories) {
-        const category = parent.children.find(child => child.id === selectedCategory);
-        if (category) {
-          setSelectedCategoryImage(category.imageUrl || "");
-          break;
-        }
-      }
-    } else {
-      setSelectedCategoryImage("");
-    }
-  }, [selectedCategory, parentCategories]);
-
-
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-
-    const totalImages = uploadedImageUrls.length + selectedImages.length + files.length;
-    if (totalImages > 4) {
-      alert(`You can only upload up to 4 images. Currently ${uploadedImageUrls.length + selectedImages.length} selected.`);
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    const oversizedFiles = files.filter(file => file.size > maxSize);
-    if (oversizedFiles.length > 0) {
-      alert(`Some images are too large. Maximum size per image is 5MB.`);
-      return;
-    }
-
-    // Store files locally
-    setSelectedImages((prev) => [...prev, ...files]);
-
-    // Create preview URLs for display
-    const previewUrls = files.map((file) => URL.createObjectURL(file));
-    setUploadedImageUrls((prev) => [...prev, ...previewUrls]);
+    if (uploadedImageUrls.length + selectedImages.length + files.length > 4) return;
+    setSelectedImages(prev => [...prev, ...files]);
+    const urls = files.map(f => URL.createObjectURL(f));
+    setUploadedImageUrls(prev => [...prev, ...urls]);
   };
 
-  const handleSizeSelection = (size: SizeOption) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
-    );
-  };
-
-  const handleTagSelection = (tag: ProductTag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // First, upload all selected images
-      let uploadedUrls: string[] = product?.images || [];
-      if (selectedImages.length > 0) {
-        const uploadPromises = selectedImages.map(async (file) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
-          const result = await response.json();
-          return result.url;
-        });
-
-        const newUrls = await Promise.all(uploadPromises);
-        uploadedUrls = [...uploadedUrls, ...newUrls];
-      }
-
-      // Upload video if selected
-      let finalVideoUrl = product?.videoUrl || "";
-      if (selectedVideo) {
-        const formData = new FormData();
-        formData.append('file', selectedVideo);
-        formData.append('bucket', 'videos');
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) throw new Error(`Video upload failed: ${response.statusText}`);
-        const result = await response.json();
-        finalVideoUrl = result.url;
-      }
-
-      const formData = new FormData(e.target as HTMLFormElement);
-      const data = {
-        name: formData.get('name') as string,
-        description: formData.get('description') as string,
-        price: formData.get('price') as string,
-        currency,
-        stockQuantity: isShipped ? undefined : formData.get('stockQuantity') as string,
-        images: uploadedUrls,
-        videoUrl: finalVideoUrl || undefined,
-        categoryId: selectedCategory,
-        collectionIds: selectedCollections,
-        sizes: selectedSizes,
-        colors,
-        material: material || undefined,
-        careInstructions: careInstructions || undefined,
-        estimatedDelivery: isShipped ? parseInt(formData.get('estimatedArrivalTime') as string) : undefined,
-        isCustomizable,
-        tags: selectedTags,
-        isUnisex,
-        submittedForShowcase,
-        discountPercentage: discountPercentage || undefined,
-        discountPrice: discountPrice || undefined,
-        discountStartDate: discountStartDate || undefined,
-        discountEndDate: discountEndDate || undefined,
-        isOnSale,
-        allowPickup,
-        allowDelivery,
-        isPreorder,
-      };
-
-      const response = await fetch(`/api/products/${productId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        alert('Product updated successfully!');
-        router.push('/dashboard/catalogue/products');
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('An error occurred while updating the product.');
-    } finally {
-      setLoading(false);
+  const removeImage = (index: number) => {
+    // Determine if it was an existing image or a new one
+    const existingCount = uploadedImageUrls.length - selectedImages.length;
+    if (index < existingCount) {
+       // It's an existing image being removed
+       setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
+    } else {
+       // It's a new image being removed
+       const newIdx = index - existingCount;
+       setSelectedImages(prev => prev.filter((_, i) => i !== newIdx));
+       setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (selectedVideo) {
-      alert('Only one video can be uploaded per product.');
-      return;
-    }
-
-    const maxSize = 50 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert('Video file is too large. Maximum size is 50MB.');
-      return;
-    }
-
-    // Store video file locally
+    if (file.size > 50 * 1024 * 1024) return;
     setSelectedVideo(file);
-
-    // Create preview URL for display
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedVideoUrl(previewUrl);
+    setUploadedVideoUrl(URL.createObjectURL(file));
   };
+
+  const nextStep = () => {
+    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      // Logic for keeping existing URLs and uploading new ones
+      const existingCount = uploadedImageUrls.length - selectedImages.length;
+      const keepUrls = uploadedImageUrls.slice(0, existingCount);
+      
+      const newImgUrls = await Promise.all(selectedImages.map(async file => {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        return data.url;
+      }));
+
+      const finalImages = [...keepUrls, ...newImgUrls];
+
+      let finalVideoUrl = uploadedVideoUrl;
+      if (selectedVideo) {
+        const fd = new FormData();
+        fd.append('file', selectedVideo);
+        fd.append('bucket', 'videos');
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        finalVideoUrl = data.url;
+      }
+
+      const productData = {
+        name,
+        description,
+        price,
+        currency,
+        stockQuantity: parseInt(stockQuantity),
+        images: finalImages,
+        videoUrl: finalVideoUrl || undefined,
+        categoryIds: selectedCategoryIds,
+        collectionIds: selectedCollections,
+        sizes: selectedSizes,
+        colors,
+        material: material || undefined,
+        careInstructions: careInstructions || undefined,
+        isCustomizable,
+        isUnisex,
+        isPreorder,
+        submittedForShowcase,
+        discountPercentage: discountPercentage || undefined,
+        isOnSale,
+      };
+
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+
+      if (res.ok) {
+        setShowSuccessModal(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canGoNext = useMemo(() => {
+    if (currentStep === 0) return name && description && selectedCategoryIds.length > 0;
+    if (currentStep === 1) return uploadedImageUrls.length > 0;
+    if (currentStep === 2) return price && currency;
+    return true;
+  }, [currentStep, name, description, selectedCategoryIds, uploadedImageUrls, price, currency]);
 
   if (fetchLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading product...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Product not found</p>
-          <Link href="/dashboard/catalogue/products" className="text-blue-600 hover:underline mt-2 inline-block">
-            Back to products
-          </Link>
-        </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="mb-8 flex items-center gap-4">
-          <Link href="/dashboard/catalogue/products" className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">Edit Product</h1>
-            <p className="text-sm text-neutral-500 mt-1">Update your product information</p>
+    <div className="bg-[#F8FAFC] flex flex-col relative">
+      <div className="flex flex-col min-w-0">
+        {/* Horizontal Progress Stepper */}
+        <div className="relative bg-white border-b border-slate-200 px-6 py-4">
+          <div className="max-w-5xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-slate-900 rounded-lg text-white">
+                <Package className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-black uppercase tracking-widest text-slate-900">Product Studio</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {STEPS.map((step, i) => (
+                <button
+                   key={step.id}
+                   onClick={() => i <= currentStep && setCurrentStep(i)}
+                   className="flex items-center gap-2 group"
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                    i === currentStep 
+                      ? 'bg-blue-600 text-white shadow-lg' 
+                      : i < currentStep 
+                        ? 'bg-blue-50 text-blue-600' 
+                        : 'bg-slate-50 text-slate-300'
+                  }`}>
+                    {i < currentStep ? <Check className="w-4 h-4" /> : step.icon}
+                  </div>
+                  <span className={`hidden md:block text-[10px] font-black uppercase tracking-widest transition-colors ${
+                    i === currentStep ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
+                  }`}>
+                    {step.title}
+                  </span>
+                  {i < STEPS.length - 1 && (
+                    <div className="h-px w-4 bg-slate-200 ml-2" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => router.back()}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
+        <div className="max-w-5xl mx-auto w-full px-6 pt-12 pb-6 lg:pt-20 lg:pb-8">
+          
+          <motion.div key={currentStep + "header"} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 lg:mb-20">
+             <div className="flex items-center gap-3 mb-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Editing Product — Step {currentStep + 1}</span>
+                <div className="h-px w-12 bg-blue-200" />
+             </div>
+             <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                {currentStep === 0 && "Update the identity."}
+                {currentStep === 1 && "Refine the presentation."}
+                {currentStep === 2 && "Update the value."}
+                {currentStep === 3 && "Fine-tune the details."}
+             </h1>
+          </motion.div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="bg-white border border-neutral-200 rounded-lg shadow-sm">
-            <div className="p-8 space-y-10">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Product Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={currentName}
-                      onChange={(e) => setCurrentName(e.target.value)}
-                      placeholder="Enter product name"
-                      required
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                    />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              {/* STEP 1: BASICS (The Soul) */}
+              {currentStep === 0 && (
+                <div className="flex flex-col gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Column: Focused Identity */}
+                    <div className="lg:col-span-8 space-y-8">
+                      {/* Identity Bento Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-8">
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Creation Identity</Label>
+                          <Input 
+                            placeholder="What is the name of this piece?"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="h-16 rounded-2xl border-slate-100 focus:border-blue-600 text-xl font-bold px-6 bg-slate-50/30"
+                          />
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">The Story</Label>
+                            <span className="text-[10px] font-bold text-slate-300 italic">{description.length}/1000</span>
+                          </div>
+                          <textarea 
+                            rows={6}
+                            placeholder="Describe the fit, the fabric, and the feeling..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full rounded-2xl border border-slate-100 focus:border-blue-600 p-6 text-base font-medium leading-relaxed bg-slate-50/30 shadow-none resize-none transition-all outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Intelligence & Collections */}
+                    <div className="lg:col-span-4 space-y-8">
+                      {/* AI Insights Card */}
+                      <div className="p-8 bg-slate-900 rounded-[2rem] text-white relative overflow-hidden">
+                        <Sparkles className="absolute top-6 right-6 w-5 h-5 text-blue-400 animate-pulse" />
+                        <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 opacity-60">Discovery Preview</h3>
+                        
+                        {(discoveryPreview.styles.length > 0 || discoveryPreview.keywords.length > 0) ? (
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                              {discoveryPreview.keywords.map(kw => (
+                                <span key={kw} className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-bold text-blue-100 backdrop-blur-md">
+                                  {kw}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                              Automated search indexing active.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="h-20 flex items-center justify-center text-center">
+                            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider italic">Input intelligence active...</p>
+                          </div>
+                        )}
+                        <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl" />
+                      </div>
+
+                      {/* Collections Bento Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Curated Collections</Label>
+                        <div className="space-y-2">
+                          {selectedCategoryCollections.length > 0 ? (
+                            selectedCategoryCollections.map(col => (
+                              <button
+                                key={col.id}
+                                onClick={() => setSelectedCollections(prev => prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id])}
+                                className={`w-full text-left px-5 py-4 rounded-xl border transition-all flex items-center justify-between group ${
+                                  selectedCollections.includes(col.id) 
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-md' 
+                                    : 'bg-slate-50 border-transparent text-slate-500 hover:border-slate-200'
+                                }`}
+                              >
+                                <span className="text-[10px] font-black uppercase tracking-widest">{col.name}</span>
+                                {selectedCollections.includes(col.id) ? (
+                                  <Check className="w-4 h-4 text-blue-400" />
+                                ) : (
+                                  <Plus className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="p-8 bg-slate-50/50 rounded-xl border border-dashed border-slate-100 text-center">
+                              <Package className="w-5 h-5 text-slate-200 mx-auto mb-2" />
+                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Select Category First</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Description</label>
-                    <textarea
-                      name="description"
-                      rows={5}
-                      value={currentDescription}
-                      onChange={(e) => setCurrentDescription(e.target.value)}
-                      placeholder="Product description and key features"
-                      required
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 resize-none"
-                    />
-                  </div>
-
-                  {/* Discovery Engine Preview */}
-                  {(discoveryPreview.styles.length > 0 || discoveryPreview.keywords.length > 0) && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 bg-gradient-to-br from-indigo-50/50 to-blue-50/50 rounded-xl border border-blue-100/50"
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Smart Discovery Vibes</span>
+                  {/* BOTTOM ROW: Taxonomy & Filters (Full Width) */}
+                  <div className="w-full">
+                    <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <Tag className="w-3 h-3 text-blue-600" />
+                        </div>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Taxonomy & Filters</Label>
                       </div>
                       
-                      <div className="space-y-3">
+                      <MultiCategoryPicker 
+                        parentCategories={parentCategories}
+                        selectedCategoryIds={selectedCategoryIds}
+                        onChange={setSelectedCategoryIds}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: MEDIA (The Visuals) */}
+              {currentStep === 1 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: Focused Hero Gallery */}
+                  <div className="lg:col-span-8 bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm space-y-10">
+                    <div className="flex items-center justify-between border-b border-slate-50 pb-8">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900">Hero Gallery</h3>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Refine the presentation</p>
+                      </div>
+                      <div className="px-4 py-2 bg-slate-50 rounded-xl">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{uploadedImageUrls.length} / 4 Images</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-6">
+                      {/* Hero Image (Slot 1) */}
+                      <div className="col-span-4 lg:col-span-2 aspect-[4/5] relative rounded-3xl overflow-hidden group shadow-2xl shadow-slate-100 ring-4 ring-slate-50">
+                        {uploadedImageUrls[0] ? (
+                          <>
+                            <Image src={uploadedImageUrls[0]} alt="Main Preview" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute top-6 right-6 flex gap-2">
+                               <span className="bg-white/90 backdrop-blur-md text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-slate-900 border border-white/20">Cover</span>
+                               <button onClick={() => removeImage(0)} className="bg-rose-500 text-white p-2 rounded-lg shadow-lg hover:bg-rose-600 transition-all">
+                                  <X className="w-4 h-4" />
+                               </button>
+                            </div>
+                          </>
+                        ) : (
+                          <label className="w-full h-full flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-slate-50 transition-all border-4 border-dashed border-slate-100 rounded-3xl group/label">
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover/label:bg-blue-600 group-hover/label:text-white transition-all scale-110">
+                              <Upload className="w-8 h-8" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Mandatory Hero Slot</span>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Secondary Grid */}
+                      <div className="col-span-4 lg:col-span-2 grid grid-cols-2 gap-4">
+                        {[1, 2, 3].map((idx) => (
+                           <div key={idx} className="aspect-[4/5] relative rounded-2xl overflow-hidden group border-2 border-slate-50 bg-slate-50/10">
+                              {uploadedImageUrls[idx] ? (
+                                <>
+                                  <Image src={uploadedImageUrls[idx]} alt={`Preview ${idx}`} fill className="object-cover" />
+                                  <button onClick={() => removeImage(idx)} className="absolute top-3 right-3 p-1.5 bg-white/90 rounded-lg shadow-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
+                                     <X className="w-3 h-3" />
+                                  </button>
+                                </>
+                              ) : (
+                                <label className="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all group/sub">
+                                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center group-hover/sub:bg-blue-50 group-hover/sub:text-blue-600 transition-all">
+                                    <Plus className="w-5 h-5" />
+                                  </div>
+                                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Add Image</span>
+                                </label>
+                              )}
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Video & Performance */}
+                  <div className="lg:col-span-4 space-y-8">
+                     <div className="p-8 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-6">
+                        <div className="flex items-center gap-2 mb-2">
+                           <Video className="w-4 h-4 text-blue-600" />
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-blue-900">In-Motion Experience</Label>
+                        </div>
+                        
+                        {uploadedVideoUrl ? (
+                           <div className="aspect-square rounded-[1.5rem] overflow-hidden relative group ring-4 ring-white shadow-xl">
+                              <video src={uploadedVideoUrl} className="w-full h-full object-cover" autoPlay muted loop />
+                              <button onClick={() => {setUploadedVideoUrl(""); setSelectedVideo(null);}} className="absolute top-4 right-4 p-2 bg-white/90 text-rose-500 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                                 <X className="w-4 h-4" />
+                              </button>
+                           </div>
+                        ) : (
+                           <label className="aspect-square rounded-[1.5rem] border-4 border-dashed border-blue-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-blue-100/50 transition-all group/video">
+                              <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} />
+                              <div className="w-14 h-14 rounded-full bg-white text-blue-400 flex items-center justify-center group-hover/video:scale-110 transition-transform shadow-sm">
+                                <Video className="w-6 h-6" />
+                              </div>
+                              <div className="text-center">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Upload Video</p>
+                                 <p className="text-[8px] text-blue-400 font-bold uppercase mt-1">Short Loops · MP4 preferred</p>
+                              </div>
+                           </label>
+                        )}
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: PRICING (The Value) */}
+              {currentStep === 2 && (
+                <div className="max-w-4xl space-y-8">
+                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                      {/* Price Bento Block */}
+                      <div className="md:col-span-7 bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-8">
+                         <div className="flex items-center gap-2">
+                           <DollarSign className="w-4 h-4 text-slate-400" />
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valuation</Label>
+                         </div>
+                         
+                         <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                               <Label className="text-[10px] font-bold text-slate-400">Currency</Label>
+                               <select 
+                                  value={currency} 
+                                  onChange={(e) => setCurrency(e.target.value)}
+                                  className="w-full h-14 bg-slate-50 px-6 rounded-xl font-black text-sm outline-none border border-transparent focus:border-blue-600 transition-all cursor-pointer"
+                               >
+                                  <option value="GHS">GHS (Cedis)</option>
+                                  <option value="USD">USD (Dollars)</option>
+                                  <option value="EUR">EUR (Euros)</option>
+                               </select>
+                            </div>
+                            <div className="space-y-3">
+                               <Label className="text-[10px] font-bold text-slate-400">Retail Price</Label>
+                               <div className="relative">
+                                  <input 
+                                    type="number"
+                                    value={price}
+                                    onChange={(e) => setPrice(e.target.value)}
+                                    className="w-full h-14 bg-slate-50 border border-transparent focus:border-blue-600 rounded-xl outline-none px-6 text-xl font-black transition-all"
+                                    placeholder="0.00"
+                                  />
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* Stock Bento Block */}
+                      <div className="md:col-span-5 bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-8">
+                         <div className="flex items-center gap-2">
+                           <Package className="w-4 h-4 text-slate-400" />
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inventory</Label>
+                         </div>
+                         <div className="space-y-3">
+                           <Label className="text-[10px] font-bold text-slate-400">In-Stock Quantity</Label>
+                           <input 
+                              type="number"
+                              value={stockQuantity}
+                              onChange={(e) => setStockQuantity(e.target.value)}
+                              className="w-full h-14 bg-slate-50 border border-transparent focus:border-blue-600 rounded-xl outline-none px-6 text-xl font-black transition-all"
+                           />
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Promotion Bento Block */}
+                   <div className="p-8 bg-gradient-to-br from-orange-50/50 to-amber-50/50 rounded-[2.5rem] border border-orange-100 space-y-8">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white rounded-2xl shadow-sm text-orange-600 ring-4 ring-orange-50/50">
+                               <Award className="w-5 h-5" />
+                            </div>
+                            <div>
+                               <h3 className="text-lg font-black text-slate-900 leading-tight">Flash Sale Campaign</h3>
+                               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Special promotional pricing</p>
+                            </div>
+                         </div>
+                         <div 
+                           onClick={() => setIsOnSale(!isOnSale)}
+                           className={`w-14 h-8 rounded-full transition-all cursor-pointer p-1 ${isOnSale ? 'bg-orange-600' : 'bg-slate-200'}`}
+                         >
+                            <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform ${isOnSale ? 'translate-x-6' : 'translate-x-0'}`} />
+                         </div>
+                      </div>
+                      
+                      <AnimatePresence>
+                         {isOnSale && (
+                           <motion.div 
+                             initial={{ height: 0, opacity: 0 }}
+                             animate={{ height: 'auto', opacity: 1 }}
+                             exit={{ height: 0, opacity: 0 }}
+                             className="space-y-6 pt-6 border-t border-orange-200/30 overflow-hidden"
+                           >
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                 <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Discount %</Label>
+                                    <div className="relative">
+                                       <Input 
+                                         value={discountPercentage} 
+                                         onChange={e => setDiscountPercentage(e.target.value)} 
+                                         className="h-14 rounded-xl bg-white border border-orange-100 font-black text-xl px-6 focus:ring-orange-200" 
+                                         placeholder="20" 
+                                       />
+                                       <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-orange-200">%</span>
+                                    </div>
+                                 </div>
+                                 <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Final Price</Label>
+                                    <div className="h-14 rounded-xl bg-slate-900 flex items-center px-6 text-white text-xl font-black shadow-inner shadow-black/20">
+                                       {currency} {(parseFloat(price) * (1 - (parseFloat(discountPercentage) || 0) / 100)).toFixed(2)}
+                                    </div>
+                                 </div>
+                              </div>
+                           </motion.div>
+                         )}
+                      </AnimatePresence>
+                   </div>
+                </div>
+              )}
+
+              {/* STEP 4: DETAILS (The Tailoring) */}
+              {currentStep === 3 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                   {/* Left Column: Sizing & Colors */}
+                   <div className="lg:col-span-7 space-y-8">
+                      {/* Sizing Bento Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-8">
+                        {/* Grouped Size Summary */}
+                        <div className="space-y-6">
+                           <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-slate-400" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Selected Matrix</Label>
+                              </div>
+                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedSizes.length} Variants</span>
+                           </div>
+
+                           <div className="flex flex-wrap gap-6">
+                              {Object.entries(sizeOptions).map(([denom, sizes]) => {
+                                 const selectedInDenom = selectedSizes.filter(s => (sizes as string[]).includes(s));
+                                 if (selectedInDenom.length === 0) return null;
+                                 return (
+                                   <div key={denom} className="space-y-3">
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block ml-1">{denom} System</span>
+                                      <div className="flex flex-wrap gap-2">
+                                         <AnimatePresence mode="popLayout">
+                                            {selectedInDenom.map(size => (
+                                              <motion.button
+                                                key={size}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.8 }}
+                                                onClick={() => setSelectedSizes(prev => prev.filter(s => s !== size))}
+                                                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-tight flex items-center gap-2 border border-blue-100/50 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all group"
+                                              >
+                                                 {size}
+                                                 <X className="w-3 h-3 opacity-40 group-hover:opacity-100" />
+                                              </motion.button>
+                                            ))}
+                                         </AnimatePresence>
+                                      </div>
+                                   </div>
+                                 );
+                              })}
+                              {selectedSizes.length === 0 && (
+                                <div className="py-4 w-full flex items-center justify-center border-2 border-dashed border-slate-50 rounded-2xl">
+                                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">No sizes defined yet...</p>
+                                </div>
+                              )}
+                           </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                           <div className="flex items-center gap-2">
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Denomination Focus</Label>
+                           </div>
+                           <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+                              {["US", "EU", "UK", "General"].map(t => (
+                                <button 
+                                 key={t}
+                                 onClick={() => setDenomination(t as "US" | "EU" | "UK" | "General")}
+                                 className={`px-3 py-1.5 rounded-md text-[8px] font-black uppercase transition-all ${denomination === t ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                           </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                           {sizeOptions[denomination].map(size => (
+                             <button
+                                key={size}
+                                onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])}
+                                className={`h-12 rounded-xl border transition-all flex items-center justify-center text-[10px] font-black ${
+                                  selectedSizes.includes(size) 
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' 
+                                    : 'bg-slate-50 border-transparent text-slate-400 hover:border-slate-200'
+                                }`}
+                             >
+                                {size}
+                             </button>
+                           ))}
+                        </div>
+                      </div>
+
+                      {/* Color Bento Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                         <div className="flex items-center gap-2">
+                           <Palette className="w-4 h-4 text-slate-400" />
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Chromatics</Label>
+                         </div>
+                         <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-50">
+                            <ColorPicker value={colors} onChange={setColors} />
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Right Column: Materials & Options */}
+                   <div className="lg:col-span-5 space-y-8">
+                      {/* Material Bento Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Material Composition</Label>
                         <div className="flex flex-wrap gap-2">
-                          {discoveryPreview.keywords.map(kw => (
-                            <span key={kw} className="px-2.5 py-1 bg-white rounded-md text-[10px] font-bold text-slate-700 shadow-sm border border-blue-100">
-                              {kw}
-                            </span>
-                          ))}
+                           {["Silk", "Cotton", "Linen", "Leather", "Lace", "Organza", "Wool", "Denim"].map(m => (
+                             <button
+                                key={m}
+                                onClick={() => setMaterial(m)}
+                                className={`px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${
+                                  material === m 
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100' 
+                                    : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'
+                                }`}
+                             >
+                                {m}
+                             </button>
+                           ))}
                         </div>
-                        <p className="text-[10px] text-blue-400 font-medium">
-                          These keywords help your product show up automatically in relevant event collections.
-                        </p>
                       </div>
-                    </motion.div>
-                  )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Price</label>
-                      <div className="flex gap-2">
-                        <Select value={currency} onValueChange={setCurrency}>
-                          <SelectTrigger className="w-20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="GHS">GHS</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="GBP">GBP</SelectItem>
-                            <SelectItem value="KES">KES</SelectItem>
-                            <SelectItem value="CAD">CAD</SelectItem>
-                            <SelectItem value="AUD">AUD</SelectItem>
-                            <SelectItem value="JPY">JPY</SelectItem>
-                            <SelectItem value="CNY">CNY</SelectItem>
-                            <SelectItem value="INR">INR</SelectItem>
-                            <SelectItem value="BRL">BRL</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input
-                          type="number"
-                          name="price"
-                          defaultValue={product.price}
-                          placeholder="0.00"
-                          step="0.01"
-                          required
-                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
+                      {/* Options List Block */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
+                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Creative Toggles</Label>
+                         <div className="space-y-3">
+                            {[
+                              { id: 'custom', label: 'Customizable Request', state: isCustomizable, set: setIsCustomizable, icon: <Save className="w-3 h-3" /> },
+                              { id: 'unisex', label: 'Gender Neutral', state: isUnisex, set: setIsUnisex, icon: <Check className="w-3 h-3" /> },
+                              { id: 'preorder', label: 'Early Access', state: isPreorder, set: setIsPreorder, icon: <Loader2 className="w-3 h-3" /> },
+                              { id: 'showcase', label: 'Marketplace Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-3 h-3" /> },
+                            ].map(opt => (
+                              <button
+                                key={opt.id}
+                                onClick={() => opt.set(!opt.state)}
+                                className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                                  opt.state 
+                                    ? 'bg-blue-50/50 border-blue-100 text-blue-900' 
+                                    : 'bg-slate-50 border-transparent text-slate-400 opacity-60'
+                                }`}
+                              >
+                                 <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${opt.state ? 'bg-white text-blue-600 shadow-sm' : 'bg-slate-100'}`}>
+                                       {opt.icon}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{opt.label}</span>
+                                 </div>
+                                 <div className={`w-10 h-6 rounded-full p-1 transition-all ${opt.state ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${opt.state ? 'translate-x-4' : 'translate-x-0'}`} />
+                                 </div>
+                              </button>
+                            ))}
+                         </div>
                       </div>
-                    </div>
-
-                    {!isShipped && (
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Stock</label>
-                        <input
-                          type="number"
-                          name="stockQuantity"
-                          defaultValue={product.stockQuantity}
-                          placeholder="0"
-                          required
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    )}
-                  </div>
+                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Images ({uploadedImageUrls.length}/4)</label>
-                  <div className="border border-dashed border-neutral-300 rounded p-6 text-center hover:border-neutral-400 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={uploadedImageUrls.length >= 4}
-                    />
-                    <label htmlFor="image-upload" className={`cursor-pointer block ${uploadedImageUrls.length >= 4 ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                      <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                      <p className="text-xs text-neutral-600">Click to upload</p>
-                      <p className="text-xs text-neutral-400 mt-1">Up to 5MB each</p>
-                    </label>
-                  </div>
-
-                  {uploadedImageUrls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      {uploadedImageUrls.map((url, index) => (
-                        <div key={index} className="relative group aspect-square">
-                          <Image
-                            src={url}
-                            alt={`Product ${index + 1}`}
-                            fill
-                            className="w-full h-full object-cover rounded border border-neutral-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
-                            }}
-                            className="absolute top-1 right-1 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3 text-neutral-600" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Video Upload */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Video (Optional)</label>
-                <div className="border border-dashed border-neutral-300 rounded p-6 text-center hover:border-neutral-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoUpload}
-                    className="hidden"
-                    id="video-upload"
-                    disabled={!!selectedVideo}
-                  />
-                  <label htmlFor="video-upload" className={`cursor-pointer block ${uploadedVideoUrl ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                    <Video className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                    <p className="text-xs text-neutral-600">{selectedVideo ? 'Video selected' : 'Upload video'}</p>
-                    <p className="text-xs text-neutral-400 mt-1">Up to 50MB</p>
-                  </label>
-                </div>
-
-                {uploadedVideoUrl && (
-                  <div className="relative group mt-3 flex justify-center">
-                    <div className="relative max-w-md">
-                      <video src={uploadedVideoUrl} controls className="w-60 h-48 rounded border border-neutral-200" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedVideo(null);
-                          setUploadedVideoUrl('');
-                        }}
-                        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3 text-neutral-600" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Category & Collection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Category</label>
-                  <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSelectedCollections([]); }} required>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {parentCategories.flatMap((parent) =>
-                        parent.children.map((child) => (
-                          <SelectItem key={child.id} value={child.id}>
-                            {parent.name} / {child.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {selectedCategoryImage && (
-                    <div className="mt-3">
-                      <Image
-                        src={selectedCategoryImage}
-                        alt="Selected category"
-                        width={400}
-                        height={128}
-                        className="w-full h-32 object-contain rounded-lg border border-neutral-200 shadow-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Collections</label>
-                  {selectedCategoryCollections.length === 0 ? (
-                    <div className="w-full px-3 py-2 border border-neutral-300 rounded text-sm text-neutral-500 bg-neutral-50">
-                        Select category first
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCategoryCollections.map((collection) => (
-                        <button
-                          key={collection.id}
-                          type="button"
-                          onClick={() => setSelectedCollections(prev => prev.includes(collection.id) ? prev.filter(id => id !== collection.id) : [...prev, collection.id])}
-                          className={`px-3 py-1.5 rounded border text-sm transition-colors ${selectedCollections.includes(collection.id) ? 'bg-neutral-900 border-neutral-900 text-white' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-400'}`}
-                        >
-                          {collection.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Sizes */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-3">Sizes</label>
-                <div className="mb-4">
-                  <Select value={denomination} onValueChange={(value) => setDenomination(value as "US" | "EU" | "UK" | "General")}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">US</SelectItem>
-                      <SelectItem value="EU">EU</SelectItem>
-                      <SelectItem value="UK">UK</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {sizeOptions[denomination].map((size) => (
-                    <label
-                      key={size}
-                      className={`px-4 py-2 border rounded text-sm cursor-pointer transition-colors ${
-                        selectedSizes.includes(size)
-                          ? 'border-neutral-900 bg-neutral-900 text-white'
-                          : 'border-neutral-300 hover:border-neutral-400'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSizes.includes(size)}
-                        onChange={() => handleSizeSelection(size)}
-                        className="hidden"
-                      />
-                      {size}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Discount/Promotion Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-3">Discount & Promotions</label>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Discount Percentage (%)</label>
-                      <input
-                        type="number"
-                        value={discountPercentage}
-                        onChange={(e) => setDiscountPercentage(e.target.value)}
-                        placeholder="20"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Fixed Discount Price</label>
-                      <div className="flex gap-2">
-                        <Select value={currency} onValueChange={() => {}}>
-                          <SelectTrigger className="w-20">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </Select>
-                        <input
-                          type="number"
-                          value={discountPrice}
-                          onChange={(e) => setDiscountPrice(e.target.value)}
-                          placeholder="0.00"
-                          step="0.01"
-                          min="0"
-                          className="flex-1 px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Start Date</label>
-                        <input
-                          type="datetime-local"
-                          value={discountStartDate}
-                          onChange={(e) => setDiscountStartDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">End Date</label>
-                        <input
-                          type="datetime-local"
-                          value={discountEndDate}
-                          onChange={(e) => setDiscountEndDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={isOnSale} onCheckedChange={() => setIsOnSale((prev) => !prev)} />
-                      <span className="text-sm text-neutral-700">Mark as On Sale</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button type="button" className="inline-flex">
-                            <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                          <p className="text-sm text-neutral-600">
-                            <strong>On Sale:</strong> This product will be prominently displayed as on sale. You can set either a percentage discount or a fixed discounted price.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200" />
-
-              {/* Additional Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Colors</label>
-                    <ColorPicker value={colors} onChange={setColors} maxColors={10} />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Material</label>
-                    <Select value={material} onValueChange={setMaterial}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select material" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 overflow-y-auto">
-                        <SelectItem value="Cotton">Cotton</SelectItem>
-                        <SelectItem value="Polyester">Polyester</SelectItem>
-                        <SelectItem value="Wool">Wool</SelectItem>
-                        <SelectItem value="Silk">Silk</SelectItem>
-                        <SelectItem value="Linen">Linen</SelectItem>
-                        <SelectItem value="Denim">Denim</SelectItem>
-                        <SelectItem value="Leather">Leather</SelectItem>
-                        <SelectItem value="Satin">Satin</SelectItem>
-                        <SelectItem value="Velvet">Velvet</SelectItem>
-                        <SelectItem value="Chiffon">Chiffon</SelectItem>
-                        <SelectItem value="Lace">Lace</SelectItem>
-                        <SelectItem value="Spandex">Spandex</SelectItem>
-                        <SelectItem value="Nylon">Nylon</SelectItem>
-                        <SelectItem value="Rayon">Rayon</SelectItem>
-                        <SelectItem value="Acrylic">Acrylic</SelectItem>
-                        <SelectItem value="Cashmere">Cashmere</SelectItem>
-                        <SelectItem value="Mohair">Mohair</SelectItem>
-                        <SelectItem value="Angora">Angora</SelectItem>
-                        <SelectItem value="Tulle">Tulle</SelectItem>
-                        <SelectItem value="Organza">Organza</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Care Instructions</label>
-                    <textarea
-                      value={careInstructions}
-                      onChange={(e) => setCareInstructions(e.target.value)}
-                      rows={3}
-                      placeholder="Washing and care guidelines"
-                      className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-3">Options</label>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isUnisex} onCheckedChange={() => setIsUnisex((prev) => !prev)} />
-                          <span className="text-neutral-700">Unisex</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex">
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Unisex:</strong> This product can be worn by both men and women. It will appear in search results for all genders.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isCustomizable} onCheckedChange={() => setIsCustomizable((prev) => !prev)} />
-                          <span className="text-neutral-700">Customizable</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Customizable:</strong> Customers can request customizations like different colors, sizes, or modifications. You&apos;ll receive customization requests through the platform.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={submittedForShowcase} onCheckedChange={() => setSubmittedForShowcase((prev) => !prev)} />
-                          <span className="text-neutral-700">Request showcase approval</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Request showcase approval:</strong> Submit your product for review by super administrators. If approved, your product will be featured prominently on the platform, increasing visibility and potential sales. You can check the status in the Showcase section.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={isShipped} onCheckedChange={() => setIsShipped((prev) => !prev)} />
-                          <span className="text-neutral-700">Custom order (shipped)</span>
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="inline-flex" >
-                              <HelpCircle className="w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-help" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <p className="text-sm text-neutral-600">
-                              <strong>Custom order (shipped):</strong> This is a made-to-order item that will be produced after purchase. You&apos;ll need to provide an estimated delivery time, and stock quantity won&apos;t be required.
-                            </p>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm pt-2 border-t border-neutral-100">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={allowPickup} onCheckedChange={() => setAllowPickup((prev) => !prev)} />
-                          <span className="text-neutral-700">Allow Pickup</span>
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={allowDelivery} onCheckedChange={() => setAllowDelivery((prev) => !prev)} />
-                          <span className="text-neutral-700">Allow Delivery</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {isShipped && (
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">Estimated Delivery (days)</label>
-                      <input
-                        type="number"
-                        name="estimatedArrivalTime"
-                        defaultValue={product.estimatedDelivery}
-                        placeholder="7"
-                        min={1}
-                        required={isShipped}
-                        className="w-full px-3 py-2 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-3">Tags</label>
-                    <div className="flex flex-wrap gap-2">
-                      {["LIMITED_EDITION", "HANDMADE", "CUSTOM_MADE"].map((tag) => (
-                        <label
-                          key={tag}
-                          className={`px-3 py-1.5 border rounded text-xs cursor-pointer transition-colors ${
-                            selectedTags.includes(tag as ProductTag)
-                              ? 'border-neutral-900 bg-neutral-900 text-white'
-                              : 'border-neutral-300 hover:border-neutral-400'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag as ProductTag)}
-                            onChange={() => handleTagSelection(tag as ProductTag)}
-                            className="hidden"
-                          />
-                          {tag.replace('_', ' ')}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-neutral-200 px-8 py-4 bg-neutral-50 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-neutral-900 text-white text-sm font-medium rounded hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? 'Updating...' : 'Update Product'}
-              </button>
-            </div>
-          </div>
-        </form>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
+
+      {/* Navigation Dock (Static at bottom) */}
+      <div className="relative mt-4 mb-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-6">
+         <div className="bg-slate-900/90 backdrop-blur-2xl px-3 py-3 rounded-full flex items-center justify-between shadow-2xl border border-white/10 overflow-hidden relative group">
+            <Button variant="ghost" onClick={prevStep} disabled={currentStep === 0 || loading} className="text-white hover:bg-white/10 rounded-full h-12 w-12 p-0 transition-all disabled:opacity-20">
+               <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <div className="flex-1 flex flex-col items-center">
+              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1">{STEPS[currentStep].title}</span>
+              <div className="flex gap-1.5">{STEPS.map((_, i) => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === currentStep ? 'w-6 bg-blue-500' : 'w-1 bg-white/20'}`} />)}</div>
+            </div>
+            {currentStep === STEPS.length - 1 ? (
+              <Button onClick={handleSubmit} disabled={loading || !canGoNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 px-6 font-black uppercase tracking-widest text-[10px] group/btn">
+                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Save <Save className="w-4 h-4 ml-2 group-hover/btn:translate-y-[-2px] transition-transform" /></>}
+              </Button>
+            ) : (
+              <Button onClick={nextStep} disabled={!canGoNext} className="bg-white hover:bg-slate-100 text-slate-900 rounded-full h-12 w-24 p-0 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 group/btn">Next <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" /></Button>
+            )}
+            <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:left-[200%] transition-all duration-1000 pointer-events-none" />
+         </div>
+      </div>
+
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => router.push('/dashboard/catalogue/products')}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+              
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                  <Check className="w-10 h-10" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif text-slate-900 italic">Saved.</h3>
+                  <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                    Your changes have been successfully applied to this creation.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 w-full gap-3 pt-4">
+                  <Button
+                    onClick={() => setShowSuccessModal(false)}
+                    className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                  >
+                    Continue Editing
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push('/dashboard/catalogue/products')}
+                    className="h-14 text-slate-400 hover:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Back to Catalogue
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
-export default EditProductPage;

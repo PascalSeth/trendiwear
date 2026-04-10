@@ -32,7 +32,7 @@ export async function GET(
         collections: { some: { id } }
       },
       include: {
-        category: {
+        categories: {
           select: { id: true, name: true, slug: true }
         },
         professional: {

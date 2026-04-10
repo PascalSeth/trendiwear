@@ -111,6 +111,20 @@ export async function POST(request: NextRequest) {
     }
     
     const formattedPhone = phoneValidation.formatted
+
+    // Proactive Uniqueness Check
+    const conflictingProfile = await prisma.professionalProfile.findFirst({
+      where: { 
+        momoNumber: formattedPhone,
+        userId: { not: user.id }
+      }
+    })
+
+    if (conflictingProfile) {
+      return NextResponse.json({ 
+        error: 'This Mobile Money number is already in use by another professional. Please use a unique number.' 
+      }, { status: 409 })
+    }
     
     // Prepare Transfer Recipient payload
     const recipientPayload = {

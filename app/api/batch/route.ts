@@ -13,6 +13,7 @@ export async function GET() {
 
     // Parallel fetch from multiple database tables
     const [profile, cart, wishlistCount, notifications, unreadMessagesCount] = await Promise.all([
+      // Profile: Critical data for dashboard
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -26,23 +27,29 @@ export async function GET() {
           }
         }
       }),
+      // Cart: Essential for navigation bar
       prisma.cartItem.findMany({
         where: { userId },
-        include: {
+        select: {
+          id: true,
+          quantity: true,
           product: {
-            select: { name: true, price: true, currency: true, images: true }
+            select: { price: true }
           }
         }
       }),
+      // Wishlist: Count only
       prisma.wishlistItem.count({
         where: { userId }
       }),
+      // Notifications: Limited to most recent unread
       prisma.notification.findMany({
         where: { userId, isRead: false },
-        take: 50,
-        orderBy: { createdAt: 'desc' }
+        take: 10, // Reduced from 50 to 10 for faster menu loading
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, type: true, title: true, createdAt: true }
       }),
-      // Unread Messages (where current user is NOT the sender)
+      // Unread Messages: Optimized via indexing
       prisma.message.count({
         where: {
           isRead: false,

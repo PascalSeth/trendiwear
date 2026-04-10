@@ -38,10 +38,16 @@ interface Product {
   currency: string;
   images: string[];
   videoUrl?: string;
-  category: {
+  categories: Array<{
+    id: string;
     name: string;
     slug: string;
-  };
+  }>;
+  collections: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
   professional: {
     firstName: string;
     lastName: string;

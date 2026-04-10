@@ -17,7 +17,8 @@ interface ProductCardProps {
     images: string[];
     price: number;
     currency: string;
-    category: string | { name: string; slug: string };
+    categories?: { name: string; slug: string }[];
+    category?: string | { name: string; slug: string };
     isNew?: boolean;
     isPreorder?: boolean;
     estimatedDelivery?: number;
@@ -107,7 +108,7 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
   const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
   const isVerified = item.professional.professionalProfile?.isVerified || false;
   const isTrendiZip = sellerName === 'TrendiZip';
-  const categoryName = typeof item.category === 'string' ? item.category : item.category.name;
+  const categoryName = item.categories?.[0]?.name || (typeof item.category === 'string' ? item.category : item.category?.name) || 'Fashion';
   const hasVariations = (item.sizes?.length || 0) > 0 || (item.colors?.length || 0) > 0;
   
   // Calculate if the product is 'NEW' (less than 7 days old)

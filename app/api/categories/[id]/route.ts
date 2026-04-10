@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     let products: (Prisma.ProductGetPayload<{
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        categories: { select: { id: true, name: true, slug: true } },
         collections: { select: { id: true, name: true, slug: true } },
         professional: {
           select: {
@@ -99,14 +99,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const where: Prisma.ProductWhereInput = {
         isActive: true,
         isInStock: true,
-        categoryId: { in: allCategoryIds },
+        categories: { some: { id: { in: allCategoryIds } } },
       }
 
       const [productsData, total] = await Promise.all([
         prisma.product.findMany({
           where,
           include: {
-            category: {
+            categories: {
               select: { id: true, name: true, slug: true }
             },
             collections: {

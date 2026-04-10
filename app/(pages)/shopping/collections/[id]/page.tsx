@@ -28,7 +28,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       collections: { some: { id } }
     },
     include: {
-      category: {
+      categories: {
+        select: { id: true, name: true, slug: true }
+      },
+      collections: {
         select: { id: true, name: true, slug: true }
       },
       professional: {

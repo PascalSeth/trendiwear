@@ -17,6 +17,8 @@ interface TrendEvent {
     outfitInspirations: number;
   };
 }
+// Define the high-impact "Vibes" we want to prioritize for the Moodboard
+const PRIORITY_VIBES = ["Traditional", "Owambe", "Street", "Festival", "Brunch", "Date", "Formal"];
 
 function FashionInspo() {
   const [events, setEvents] = useState<TrendEvent[]>([]);
@@ -29,7 +31,14 @@ function FashionInspo() {
         if (res.ok) {
           const data = await res.json();
           const eventsArray = Array.isArray(data) ? data : [];
-          setEvents(eventsArray);
+          
+          // Smart Curation: Filter for priority vibes and limit to a balanced number (e.g., 7)
+          const curatedEvents = eventsArray
+            .filter(e => PRIORITY_VIBES.includes(e.name))
+            .sort((a, b) => PRIORITY_VIBES.indexOf(a.name) - PRIORITY_VIBES.indexOf(b.name))
+            .slice(0, 7);
+
+          setEvents(curatedEvents);
         }
       } catch (error) {
         console.error("Failed to fetch events:", error);
@@ -41,17 +50,16 @@ function FashionInspo() {
     fetchEvents();
   }, []);
 
-  // Helper to assign random "scatter" styles based on index
+  // Optimized Artistic Scatter for 7 Curated Items
   const getScatterClass = (index: number) => {
-    switch (index % 8) {
-      case 0: return 'md:col-span-2 md:row-span-2'; // Hero Item
-      case 1: return 'md:col-span-1 md:row-span-1 translate-y-12 -rotate-1'; // Shifted Down
-      case 2: return 'md:col-span-1 md:row-span-2 -translate-y-6 rotate-1'; // Tall, shifted up
-      case 3: return 'md:col-span-2 md:row-span-1 translate-y-4'; // Wide
-      case 4: return 'md:col-span-1 md:row-span-1 translate-y-16 rotate-1'; // Shifted down
-      case 5: return 'md:col-span-1 md:row-span-1'; // Normal
-      case 6: return 'md:col-span-1 md:row-span-2'; // Tall
-      case 7: return 'md:col-span-1 md:row-span-1 -translate-y-8'; // Shifted Up
+    switch (index) {
+      case 0: return 'md:col-span-2 md:row-span-2 z-10'; // Hero (Traditional)
+      case 1: return 'md:col-span-1 md:row-span-2 translate-y-20 -rotate-2'; // Tall Offset (Owambe)
+      case 2: return 'md:col-span-1 md:row-span-1 -translate-x-4 rotate-3'; // Top Right (Street)
+      case 3: return 'md:col-span-1 md:row-span-1 translate-x-8 translate-y-12'; // Mid Right
+      case 4: return 'md:col-span-1 md:row-span-1 -translate-y-12 rotate-1'; // Bottom Floating
+      case 5: return 'md:col-span-2 md:row-span-1 translate-y-32 -translate-x-20 z-20'; // Bottom Wide Overlay
+      case 6: return 'md:col-span-1 md:row-span-2 -translate-y-40 translate-x-24 rotate-3'; // Far Right Tall
       default: return '';
     }
   };
@@ -61,7 +69,7 @@ function FashionInspo() {
       
       {/* Subtle Pattern Background */}
       <div className="fixed inset-0 pointer-events-none opacity-40" 
-        style={{ backgroundImage: 'rad-gradient(#d6d3d1 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+        style={{ backgroundImage: 'radial-gradient(#d6d3d1 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       </div>
 
       <div className="max-w-[1600px] mx-auto relative z-10">
@@ -69,7 +77,7 @@ function FashionInspo() {
         <header className="mb-20 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-stone-200 pb-12">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <span className="font-mono text-xs uppercase tracking-widest text-stone-400">Lookbook 2024</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-stone-400">Curated Vibe Collection</span>
               <div className="h-px w-12 bg-stone-400"></div>
             </div>
             <h1 className="text-6xl md:text-8xl font-serif font-medium text-stone-900 leading-[0.9]">
@@ -78,7 +86,7 @@ function FashionInspo() {
           </div>
           <div className="max-w-sm text-right hidden md:block mt-6">
             <p className="font-serif text-lg italic text-stone-600 leading-relaxed">
-              A curated collection of aesthetics, textures, and forms defining the current season.
+              Explore the textures, tones, and traditions defining our current high-fashion ecosystem.
             </p>
           </div>
         </header>
@@ -91,17 +99,21 @@ function FashionInspo() {
         ) : events.length === 0 ? (
           <div className="py-32 text-center">
             <p className="text-stone-500 font-serif text-xl italic mb-4">
-              No events yet. Check back soon for curated looks.
+              Curating your inspiration... Check back momentarily.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[280px] gap-6 pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[220px] gap-8 pb-48">
             {events.map((event, index) => (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ 
+                  duration: 0.8, 
+                  delay: index * 0.15,
+                  ease: [0.21, 0.45, 0.32, 0.9]
+                }}
                 key={event.id}
                 className={cn(
                   "group relative cursor-pointer",
@@ -110,40 +122,42 @@ function FashionInspo() {
               >
                 <Link href={`/fashion-trends/${event.id}`} className="block absolute inset-0">
                   {/* The "Polaroid" / "Cutout" Container */}
-                  <div className="absolute inset-0 bg-white border border-stone-200 shadow-xl transition-transform duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl">
+                  <div className="absolute inset-0 bg-white border border-stone-200 p-2 shadow-sm transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-1 group-hover:shadow-2xl z-10">
                     <div className="relative w-full h-full overflow-hidden bg-stone-100">
                       {event.imageUrl ? (
                         <Image
                           src={event.imageUrl}
                           alt={event.name}
                           fill
-                          className="object-cover transition-all duration-700 grayscale group-hover:grayscale-0 group-hover:scale-105"
+                          className="object-cover transition-all duration-1000 grayscale group-hover:grayscale-0 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-                          <span className="font-serif text-8xl text-stone-400/50">{event.name.charAt(0)}</span>
+                        <div className="w-full h-full bg-gradient-to-br from-stone-50 to-stone-200 flex items-center justify-center border-b-[40px] border-white">
+                          <span className="font-serif text-[12vw] md:text-8xl text-stone-300 font-light mix-blend-multiply opacity-50 tracking-tighter">
+                            {event.name}
+                          </span>
                         </div>
                       )}
                       
                       {/* Dark Overlay on Hover for Text Readability */}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-multiply" />
+                      <div className="absolute inset-0 bg-stone-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-multiply" />
 
                       {/* Content Overlay */}
-                      <div className="absolute inset-0 p-6 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 p-6 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         <div className="flex justify-between items-start">
-                          <span className="bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-stone-900">
-                            {String(index + 1).padStart(2, '0')}
+                          <span className="bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-stone-900">
+                            Ref.{String(index + 1).padStart(2, '0')}
                           </span>
-                          <span className="bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-stone-900">
-                            {event._count.outfitInspirations} {event._count.outfitInspirations === 1 ? 'Look' : 'Looks'}
+                          <span className="bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-stone-900">
+                            {event._count.outfitInspirations} Looks
                           </span>
                         </div>
                         <div>
-                          <h3 className="text-2xl md:text-3xl font-serif text-white font-medium leading-none drop-shadow-sm">
+                          <h3 className="text-3xl font-serif text-white font-medium leading-none mb-2">
                             {event.name}
                           </h3>
                           {event.description && (
-                            <p className="text-white/90 text-sm mt-2 font-light line-clamp-2">
+                            <p className="text-white/80 text-xs font-light line-clamp-2 max-w-[80%] uppercase tracking-widest font-mono">
                               {event.description}
                             </p>
                           )}
@@ -154,9 +168,9 @@ function FashionInspo() {
                 </Link>
                 
                 {/* Static Content (Visible when not hovered) - Floating outside the "card" */}
-                <div className="absolute -bottom-6 left-6 z-20 pointer-events-none transition-opacity duration-300 group-hover:opacity-0">
-                  <span className="bg-stone-900 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest">
-                    {event.name.split(' ')[0]}
+                <div className="absolute top-4 -left-4 z-20 pointer-events-none transition-all duration-500 group-hover:opacity-0 group-hover:-translate-x-4">
+                  <span className="bg-stone-900 text-white px-4 py-2 text-[10px] font-mono uppercase tracking-[0.3em] shadow-lg">
+                    {event.name}
                   </span>
                 </div>
               </motion.div>

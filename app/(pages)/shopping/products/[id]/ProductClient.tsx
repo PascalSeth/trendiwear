@@ -46,12 +46,16 @@ interface Product {
   viewCount: number
   soldCount: number
   createdAt: string
-  category: {
+  categories: {
+    id: string
     name: string
-  }
-  collection?: {
+    slug: string
+  }[]
+  collections: {
+    id: string
     name: string
-  }
+    slug: string
+  }[]
   professional: {
     id: string
     userId: string

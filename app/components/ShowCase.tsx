@@ -33,10 +33,10 @@ interface APIProduct {
   description: string | null;
   tags: string[];
   isTrendiZip: boolean;
-  category: {
+  categories: {
     id: string;
     name: string;
-  };
+  }[];
   professional: {
     id: string;
     firstName: string;
@@ -88,7 +88,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
       price: p.price,
       currency: p.currency || 'GHS',
       image: p.images?.[0] || '/placeholder.jpg',
-      category: p.category?.name || 'Fashion',
+      category: p.categories?.[0]?.name || 'Fashion',
       rating: p.averageRating || 0,
       reviews: p._count?.reviews || 0,
       badge: p.tags?.[0] || undefined,

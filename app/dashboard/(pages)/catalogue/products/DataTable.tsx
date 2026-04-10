@@ -53,9 +53,9 @@ type Product = {
   viewCount: number;
   soldCount: number;
   createdAt: string;
-  category: {
+  categories: {
     name: string;
-  };
+  }[];
   collection?: {
     name: string;
   };
@@ -325,7 +325,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sm md:text-base truncate">{row.getValue("name")}</div>
-            <div className="text-xs md:text-sm text-gray-500 truncate">{row.original.category.name}</div>
+            <div className="text-xs md:text-sm text-gray-500 truncate">{row.original.categories?.[0]?.name || "Uncategorized"}</div>
           </div>
         </div>
       ),
@@ -594,7 +594,11 @@ export function ProductTable({ initialData }: ProductTableProps) {
                 <div className="space-y-3">
                   <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h2>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">{selectedProduct.category.name}</Badge>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.categories?.map((cat, i) => (
+                        <Badge key={i} className="bg-blue-100 text-blue-800 hover:bg-blue-100">{cat.name}</Badge>
+                      ))}
+                    </div>
                     {selectedProduct.collection && (
                       <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">{selectedProduct.collection.name}</Badge>
                     )}

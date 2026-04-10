@@ -61,7 +61,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
+        categories: true,
         collections: true,
         professional: {
           select: {
@@ -168,12 +168,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { collectionIds, collectionId, ...restBody } = body
+    const { collectionIds, collectionId, categoryIds, categoryId, ...restBody } = body
     const updateData: Prisma.ProductUpdateInput = { ...restBody }
     
     if (collectionIds !== undefined) {
       updateData.collections = {
         set: collectionIds.map((id: string) => ({ id }))
+      }
+    }
+
+    if (categoryIds !== undefined) {
+      updateData.categories = {
+        set: categoryIds.map((id: string) => ({ id }))
+      }
+      // Also update legacy field if provided
+      if (categoryIds.length > 0) {
+        updateData.categoryId = categoryIds[0]
+      }
+    } else if (categoryId !== undefined) {
+      updateData.categoryId = categoryId
+      updateData.categories = {
+        set: [{ id: categoryId }]
       }
     }
 
@@ -202,7 +217,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       data: updateData,
       include: {
-        category: true,
+        categories: true,
         collections: true,
         professional: {
           select: {

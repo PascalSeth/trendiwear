@@ -19,9 +19,9 @@ interface ShowcaseProduct {
   price: number
   currency: string
   images: string[]
-  category: {
+  categories: {
     name: string
-  }
+  }[]
   professional: {
     firstName: string
     lastName: string
@@ -42,9 +42,9 @@ interface CurrentShowcaseProduct {
   price: number
   currency: string
   images: string[]
-  category: {
+  categories: {
     name: string
-  }
+  }[]
   professional: {
     firstName: string
     lastName: string
@@ -307,7 +307,7 @@ export default function ShowcaseManagementPage() {
                                 `${product.professional.firstName} ${product.professional.lastName}`}
                           </p>
                           <div className="flex items-center space-x-4 mt-2">
-                            <Badge variant="outline">{product.category.name}</Badge>
+                            <Badge variant="outline">{product.categories?.[0]?.name || "Uncategorized"}</Badge>
                             <span className="text-lg font-semibold">{product.currency} {product.price}</span>
                             <span className="text-sm text-muted-foreground">
                               Submitted {new Date(product.submittedAt).toLocaleDateString()}
