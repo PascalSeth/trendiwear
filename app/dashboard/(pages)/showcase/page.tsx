@@ -23,6 +23,7 @@ interface ShowcaseProduct {
     name: string
   }[]
   professional: {
+    id: string
     firstName: string
     lastName: string
     professionalProfile?: {
@@ -46,6 +47,7 @@ interface CurrentShowcaseProduct {
     name: string
   }[]
   professional: {
+    id: string
     firstName: string
     lastName: string
     professionalProfile?: {
@@ -232,8 +234,8 @@ export default function ShowcaseManagementPage() {
                 Manage products currently displayed in the showcase
               </p>
             </div>
-            {userRole === 'SUPER_ADMIN' && (
-              <AddToShowcaseDialog onAdd={handleAddToShowcase} />
+            {['SUPER_ADMIN', 'ADMIN', 'PROFESSIONAL'].includes(userRole) && (
+              <AddToShowcaseDialog onAdd={handleAddToShowcase} userRole={userRole} />
             )}
             </div>
           </div>
@@ -243,6 +245,8 @@ export default function ShowcaseManagementPage() {
             products={showcaseProducts}
             onRemove={handleRemoveFromShowcase}
             loading={showcaseLoading}
+            userRole={userRole}
+            currentUserId={session?.user?.id}
           />
           </div>
         </TabsContent>

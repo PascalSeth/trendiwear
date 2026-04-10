@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight, Heart, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- API-driven types ---
 interface TrendEvent {
@@ -50,17 +50,16 @@ function FashionInspo() {
     fetchEvents();
   }, []);
 
-  // Optimized Artistic Scatter for 7 Curated Items
-  const getScatterClass = (index: number) => {
-    switch (index) {
-      case 0: return 'md:col-span-2 md:row-span-2 z-10'; // Hero (Traditional)
-      case 1: return 'md:col-span-1 md:row-span-2 translate-y-20 -rotate-2'; // Tall Offset (Owambe)
-      case 2: return 'md:col-span-1 md:row-span-1 -translate-x-4 rotate-3'; // Top Right (Street)
-      case 3: return 'md:col-span-1 md:row-span-1 translate-x-8 translate-y-12'; // Mid Right
-      case 4: return 'md:col-span-1 md:row-span-1 -translate-y-12 rotate-1'; // Bottom Floating
-      case 5: return 'md:col-span-2 md:row-span-1 translate-y-32 -translate-x-20 z-20'; // Bottom Wide Overlay
-      case 6: return 'md:col-span-1 md:row-span-2 -translate-y-40 translate-x-24 rotate-3'; // Far Right Tall
-      default: return '';
+  const getHeightClass = (index: number) => {
+    // Artistic vertical rhythm: varying aspect ratios for the masonry look
+    const remainder = index % 5;
+    switch (remainder) {
+      case 0: return 'aspect-[3/4]'; // Tall
+      case 1: return 'aspect-[1/1]'; // Square
+      case 2: return 'aspect-[4/5]'; // Standard Portrait
+      case 3: return 'aspect-[3/2]'; // Landscape
+      case 4: return 'aspect-[2/3]'; // Extra Tall
+      default: return 'aspect-[3/4]';
     }
   };
 
@@ -80,7 +79,7 @@ function FashionInspo() {
               <span className="font-mono text-xs uppercase tracking-widest text-stone-400">Curated Vibe Collection</span>
               <div className="h-px w-12 bg-stone-400"></div>
             </div>
-            <h1 className="text-6xl md:text-8xl font-serif font-medium text-stone-900 leading-[0.9]">
+            <h1 className="text-7xl md:text-9xl font-serif font-medium text-stone-900 leading-[0.85] -tracking-widest">
               Moodboard
             </h1>
           </div>
@@ -91,7 +90,7 @@ function FashionInspo() {
           </div>
         </header>
 
-        {/* SCATTERED LAYOUT GRID */}
+        {/* MASONRY WATERFALL CONTAINER */}
         {loading ? (
           <div className="flex items-center justify-center py-32">
             <Loader2 className="h-10 w-10 animate-spin text-stone-400" />
@@ -103,78 +102,100 @@ function FashionInspo() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[220px] gap-8 pb-48">
-            {events.map((event, index) => (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ 
-                  duration: 0.8, 
-                  delay: index * 0.15,
-                  ease: [0.21, 0.45, 0.32, 0.9]
-                }}
-                key={event.id}
-                className={cn(
-                  "group relative cursor-pointer",
-                  getScatterClass(index)
-                )}
-              >
-                <Link href={`/fashion-trends/${event.id}`} className="block absolute inset-0">
-                  {/* The "Polaroid" / "Cutout" Container */}
-                  <div className="absolute inset-0 bg-white border border-stone-200 p-2 shadow-sm transition-all duration-500 group-hover:-translate-y-4 group-hover:rotate-1 group-hover:shadow-2xl z-10">
-                    <div className="relative w-full h-full overflow-hidden bg-stone-100">
-                      {event.imageUrl ? (
-                        <Image
-                          src={event.imageUrl}
-                          alt={event.name}
-                          fill
-                          className="object-cover transition-all duration-1000 grayscale group-hover:grayscale-0 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-stone-50 to-stone-200 flex items-center justify-center border-b-[40px] border-white">
-                          <span className="font-serif text-[12vw] md:text-8xl text-stone-300 font-light mix-blend-multiply opacity-50 tracking-tighter">
-                            {event.name}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Dark Overlay on Hover for Text Readability */}
-                      <div className="absolute inset-0 bg-stone-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-multiply" />
+          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-8 space-y-8 pb-48">
+            <AnimatePresence mode="popLayout">
+              {events.map((event, index) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ 
+                    duration: 0.8, 
+                    delay: index * 0.1,
+                    ease: [0.21, 0.45, 0.32, 0.9]
+                  }}
+                  key={event.id}
+                  className={cn(
+                    "group relative cursor-pointer break-inside-avoid mb-8",
+                    getHeightClass(index)
+                  )}
+                >
+                  <Link href={`/fashion-trends/${event.id}`} className="block absolute inset-0">
+                    {/* LUXURY EDITORIAL FRAME (PASS-PARTOUT) */}
+                    <div className="absolute inset-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-1000 group-hover:shadow-[0_20px_50px_rgb(0,0,0,0.08)] overflow-hidden border border-stone-100">
+                      {/* THE INNER FLOATING IMAGE */}
+                      <div className="absolute inset-[10px] md:inset-[15px] bg-stone-50 overflow-hidden">
+                        {event.imageUrl ? (
+                          <Image
+                            src={event.imageUrl}
+                            alt={event.name}
+                            fill
+                            className="object-cover transition-all duration-[1200ms] grayscale group-hover:grayscale-0 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center p-8">
+                            <span className="font-serif text-[10vw] md:text-8xl text-stone-200/50 -rotate-12 mix-blend-multiply whitespace-nowrap">{event.name}</span>
+                          </div>
+                        )}
+                        
+                        {/* OVERLAY CONTENT (Sequential Reveal) */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                      {/* Content Overlay */}
-                      <div className="absolute inset-0 p-6 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div className="flex justify-between items-start">
-                          <span className="bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-stone-900">
-                            Ref.{String(index + 1).padStart(2, '0')}
-                          </span>
-                          <span className="bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-stone-900">
-                            {event._count.outfitInspirations} Looks
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="text-3xl font-serif text-white font-medium leading-none mb-2">
-                            {event.name}
-                          </h3>
-                          {event.description && (
-                            <p className="text-white/80 text-xs font-light line-clamp-2 max-w-[80%] uppercase tracking-widest font-mono">
-                              {event.description}
-                            </p>
-                          )}
+                        <div className="absolute inset-0 p-6 flex flex-col justify-between">
+                          {/* Top Metadata */}
+                          <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 transform -translate-y-4 group-hover:translate-y-0">
+                              <span className="text-[7px] font-mono text-white tracking-[0.4em] uppercase bg-stone-900/40 px-2 py-1 backdrop-blur-[2px] border border-white/10">
+                                {event.seasonality?.[0] || 'Omni-Season'}
+                              </span>
+                              <span className="text-[7px] font-mono text-white/50 tracking-[0.4em] uppercase mt-1">
+                                REF.{String(index + 1).padStart(2, '0')}
+                              </span>
+                          </div>
+
+                          {/* Bottom Content */}
+                          <div className="space-y-4">
+                            <h3 className="text-2xl md:text-3xl font-serif text-white font-medium leading-[0.85] italic opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-200 transform translate-y-8 group-hover:translate-y-0">
+                              {event.name}
+                            </h3>
+                            
+                            <div className="flex flex-wrap gap-2 opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-300 transform translate-y-4 group-hover:translate-y-0">
+                              <span className="text-[7px] font-mono text-white/90 tracking-[0.4em] border-l border-white/30 pl-3 uppercase">
+                                {event.dressCodes?.[0] || 'Vibe'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-4 pt-2 text-white opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-500 transform translate-y-2 group-hover:translate-y-0">
+                              <span className="text-[8px] font-mono uppercase tracking-[0.5em] border-b border-white/30 pb-1.5">
+                                Explore
+                              </span>
+                              <div className="h-8 w-8 border border-white/20 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-stone-900 transition-all duration-500">
+                                <ArrowUpRight size={12} />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  </Link>
+                  
+                  {/* STATIC MINI LABELS */}
+                  <div className="absolute top-0 right-0 p-6 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:scale-90">
+                     <span className="text-[8px] font-mono text-stone-400 tracking-[0.5em] uppercase border-r border-stone-200 pr-4">
+                       {String(index + 1).padStart(2, '0')}
+                     </span>
                   </div>
-                </Link>
-                
-                {/* Static Content (Visible when not hovered) - Floating outside the "card" */}
-                <div className="absolute top-4 -left-4 z-20 pointer-events-none transition-all duration-500 group-hover:opacity-0 group-hover:-translate-x-4">
-                  <span className="bg-stone-900 text-white px-4 py-2 text-[10px] font-mono uppercase tracking-[0.3em] shadow-lg">
-                    {event.name}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+
+                  <div className="absolute bottom-0 left-0 p-8 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:-translate-x-8">
+                     <h4 className="text-[9px] font-mono text-stone-900 tracking-[0.5em] uppercase leading-none">
+                       {event.name}
+                     </h4>
+                     <span className="text-[7px] font-mono text-stone-400 tracking-[0.4em] uppercase mt-2 block">
+                       {event._count.outfitInspirations} Looks
+                     </span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
 

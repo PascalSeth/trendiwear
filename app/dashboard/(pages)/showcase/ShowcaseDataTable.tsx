@@ -31,6 +31,7 @@ interface ShowcaseProduct {
     name: string
   }[]
   professional: {
+    id: string
     firstName: string
     lastName: string
     professionalProfile?: {
@@ -54,12 +55,16 @@ interface ShowcaseDataTableProps {
   products: ShowcaseProduct[]
   onRemove: (productId: string) => void
   loading: boolean
+  currentUserId?: string
+  userRole?: string
 }
 
 export default function ShowcaseDataTable({
   products,
   onRemove,
   loading,
+  currentUserId,
+  userRole,
 }: ShowcaseDataTableProps) {
   const [removing, setRemoving] = useState<string | null>(null)
 
@@ -131,9 +136,14 @@ export default function ShowcaseDataTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="text-sm">
-                    {product.professional.professionalProfile?.businessName ||
-                      `${product.professional.firstName} ${product.professional.lastName}`}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">
+                      {product.professional.professionalProfile?.businessName ||
+                        `${product.professional.firstName} ${product.professional.lastName}`}
+                    </span>
+                    {product.professional.id === currentUserId && (
+                      <Badge variant="secondary" className="bg-stone-100 text-[10px] uppercase tracking-tighter">Owner</Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -183,14 +193,16 @@ export default function ShowcaseDataTable({
                         <Eye className="mr-2 h-4 w-4" />
                         View Product
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleRemove(product.id)}
-                        disabled={removing === product.id}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remove from Showcase
-                      </DropdownMenuItem>
+                      {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
+                        <DropdownMenuItem
+                          onClick={() => handleRemove(product.id)}
+                          disabled={removing === product.id}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove from Showcase
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

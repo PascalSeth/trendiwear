@@ -30,13 +30,15 @@ export async function GET(request: NextRequest) {
           ],
         }
       } 
-      // PROFESSIONAL can only see their own products (regardless of approval status)
+      // PROFESSIONAL can see all approved (live showcase) + their own pending/rejected ones
       else if (user.role === "PROFESSIONAL") {
         whereClause = {
-          professionalId: user.id,
           OR: [
             { isShowcaseApproved: true },
-            { submittedForShowcase: true },
+            { 
+              professionalId: user.id,
+              submittedForShowcase: true 
+            },
           ],
         }
       } 
@@ -211,12 +213,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Product must be active and in stock to be showcased" }, { status: 400 })
     }
 
-    // Mark as submitted for showcase (pending approval)
+    // Mark as submitted for showcase
+    // Super admins and admins can directly approve products
+    const isApproved = user.role === "SUPER_ADMIN" || user.role === "ADMIN"
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
         submittedForShowcase: true,
-        submittedAt: product.submittedAt || new Date(), // Keep original submission time if already submitted
+        submittedAt: product.submittedAt || new Date(),
+        isShowcaseApproved: isApproved,
+        approvedAt: isApproved ? new Date() : (product.approvedAt || null),
+        approvedBy: isApproved ? user.id : (product.approvedBy || null),
       },
       include: {
         categories: true,

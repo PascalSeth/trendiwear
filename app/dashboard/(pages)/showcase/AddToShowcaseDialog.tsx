@@ -39,9 +39,11 @@ interface Product {
 
 interface AddToShowcaseDialogProps {
   onAdd: (productId: string) => void
+  userRole: string
 }
 
-export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps) {
+export default function AddToShowcaseDialog({ onAdd, userRole }: AddToShowcaseDialogProps) {
+  const isProfessional = userRole === 'PROFESSIONAL'
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [products, setProducts] = useState<Product[]>([])
@@ -107,14 +109,16 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Add Product to Showcase
+          {isProfessional ? 'Request Showcase' : 'Add Product to Showcase'}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Add Product to Showcase</DialogTitle>
+          <DialogTitle>{isProfessional ? 'Request Showcase' : 'Add Product to Showcase'}</DialogTitle>
           <DialogDescription>
-            Select a product to add to the showcase. Only active, in-stock products not already in showcase are shown.
+            {isProfessional 
+              ? 'Request a showcase for one of your products. Your submission will be reviewed by an administrator.'
+              : 'Select a product to add to the showcase. Only active, in-stock products not already in showcase are shown.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,7 +178,10 @@ export default function AddToShowcaseDialog({ onAdd }: AddToShowcaseDialogProps)
                       disabled={adding === product.id}
                       size="sm"
                     >
-                      {adding === product.id ? 'Adding...' : 'Add to Showcase'}
+                      {adding === product.id 
+                        ? 'Processing...' 
+                        : (isProfessional ? 'Submit Request' : 'Add to Showcase')
+                      }
                     </Button>
                   </div>
                 ))}
