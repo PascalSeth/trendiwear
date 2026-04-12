@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { createSlug } from "@/lib/utils";
 
 interface Collection {
   id: string;
@@ -83,18 +84,12 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
     }
   }, [collectionToEdit]);
 
-  const generateSlug = (name: string): string => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
 
   const handleNameChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
       name: value,
-      slug: generateSlug(value),
+      slug: createSlug(value),
     }));
   };
 
@@ -154,7 +149,7 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
 
       const collectionData = {
         name: formData.name,
-        slug: formData.slug || generateSlug(formData.name),
+        slug: formData.slug || createSlug(formData.name),
         description: formData.description || undefined,
         imageUrl,
         season: formData.season || undefined,

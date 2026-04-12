@@ -7,29 +7,69 @@
 
    Creating an optimized production build ...
 
-[1m[33mwarn[39m[22m - The class `duration-[1.5s]` is ambiguous and matches multiple utilities.
-[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1.5s&rsqb;` to silence this warning.
-
 [1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
 [1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
 
-[1m[33mwarn[39m[22m - The class `duration-[2.5s]` is ambiguous and matches multiple utilities.
-[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2.5s&rsqb;` to silence this warning.
+[1m[33mwarn[39m[22m - The class `duration-[1200ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1200ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1500ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1500ms&rsqb;` to silence this warning.
 
 [1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
 [1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
 
 [1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
 [1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
- ✓ Compiled successfully in 43s
+
+[1m[33mwarn[39m[22m - The class `duration-[3s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;3s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 50s
    Linting and checking validity of types ...
 
 Failed to compile.
 
-./app/api/user/heartbeat/route.ts
-10:28  Error: 'request' is defined but never used.  @typescript-eslint/no-unused-vars
+./app/(pages)/checkout/page.tsx
+5:64  Error: 'CreditCard' is defined but never used.  @typescript-eslint/no-unused-vars
+702:19  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+702:26  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+702:31  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+702:38  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
 
-./app/components/chat/InboxClient.tsx
-20:10  Error: 'RealtimeChannel' is defined but never used.  @typescript-eslint/no-unused-vars
+./app/(pages)/orders/OrdersClient.tsx
+17:11  Error: 'OrderItem' is defined but never used.  @typescript-eslint/no-unused-vars
+93:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:47  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:89  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(pages)/orders/[orderId]/OrderDetailClient.tsx
+194:21  Error: 'cfg' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/orders/check-lapsed/route.ts
+3:10  Error: 'refundTransaction' is defined but never used.  @typescript-eslint/no-unused-vars
+3:29  Error: 'toPesewas' is defined but never used.  @typescript-eslint/no-unused-vars
+46:15  Error: 'sellerAmount' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/orders/[id]/confirm-delivery/route.ts
+26:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+39:55  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:54  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/api/orders/[id]/manual-delivery/route.ts
+15:13  Error: 'riderId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/orders/[id]/status/route.ts
+101:35  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/components/checkout/PickupMap.tsx
+6:10  Error: 'MapPin' is defined but never used.  @typescript-eslint/no-unused-vars
+29:9  Error: 'mapInstanceRef' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+29:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+33:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+43:7  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+47:7  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+49:9  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+56:9  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

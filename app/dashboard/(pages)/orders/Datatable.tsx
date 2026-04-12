@@ -51,14 +51,13 @@ type Order = {
   status: string;
   paymentStatus: string;
   deliveryMethod: string;
-  trackingNumber?: string;
   notes?: string;
   yangoQuotePrice?: number;
   yangoStatus?: string;
   riderName?: string;
   riderPhone?: string;
   manualDeliveryFee?: number;
-  readyForDeliveryAt?: string;
+  trackingNumber?: string;
   riderId?: string;
   createdAt: string;
   customer: {
@@ -80,13 +79,31 @@ type Order = {
     size?: string;
     color?: string;
     price: number;
+    status: string;
+    deliveryFee?: number;
+    isPreorder?: boolean;
+    estimatedDelivery?: number | null;
     product: {
       name: string;
       images: string[];
       currency: string;
+      professional: {
+        professionalProfile: {
+          businessName: string;
+          location: string;
+          latitude: number;
+          longitude: number;
+        } | null;
+      };
     };
   }>;
-  deliveryConfirmation?: { status: string };
+  deliveryConfirmations?: Array<{ 
+    professionalId: string;
+    status: string;
+    customerConfirmed: boolean;
+    riderName?: string;
+    riderPhone?: string;
+  }>;
   paymentEscrow?: { status: string };
 };
 
@@ -122,14 +139,19 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 const WORKFLOW_TABS = [
   { id: "all", label: "All Orders", count: (d: Order[]) => d.length },
-  { id: "action", label: "Action Required", count: (d: Order[]) => d.filter(o => ["PENDING", "CONFIRMED", "PROCESSING"].includes(o.status)).length },
-  { id: "delivery", label: "Awaiting Dispatch", count: (d: Order[]) => d.filter(o => ["READY_FOR_DELIVERY", "READY_FOR_PICKUP", "AWAITING_DELIVERY_PAYMENT"].includes(o.status)).length },
-  { id: "transit", label: "In Transit", count: (d: Order[]) => d.filter(o => o.status === "SHIPPED").length },
-  { id: "completed", label: "Completed", count: (d: Order[]) => d.filter(o => o.status === "DELIVERED").length },
+  { id: "action", label: "Action Required", count: (d: Order[]) => d.filter(o => ["PENDING", "CONFIRMED", "PROCESSING"].includes(o.items[0]?.status || o.status)).length },
+  { id: "delivery", label: "Awaiting Dispatch", count: (d: Order[]) => d.filter(o => ["READY_FOR_DELIVERY", "READY_FOR_PICKUP", "AWAITING_DELIVERY_PAYMENT"].includes(o.items[0]?.status || o.status)).length },
+  { id: "transit", label: "In Transit", count: (d: Order[]) => d.filter(o => (o.items[0]?.status || o.status) === "SHIPPED").length },
+  { id: "completed", label: "Completed", count: (d: Order[]) => d.filter(o => (o.items[0]?.status || o.status) === "DELIVERED").length },
 ];
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, method }: { status: string, method?: string }) {
   const cfg = STATUS_CONFIG[status] ?? { label: status, color: "text-slate-600", bg: "bg-slate-50/50", border: "border-slate-100", icon: <AlertCircle className="w-3 h-3" /> };
+  
+  let label = cfg.label;
+  if (status === 'DELIVERED' && method === 'PICKUP') label = "Collected";
+  if (status === 'READY_FOR_PICKUP') label = "Pickup Ready";
+
   return (
     <motion.span 
       initial={{ scale: 0.9, opacity: 0 }}
@@ -137,7 +159,7 @@ function StatusBadge({ status }: { status: string }) {
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shadow-sm ${cfg.color} ${cfg.bg} ${cfg.border}`}
     >
       {cfg.icon}
-      {cfg.label}
+      {label}
     </motion.span>
   );
 }
@@ -169,7 +191,8 @@ function OrderDetailSheet({
 
   const currency = order.items[0]?.product.currency || "GHS";
   const activeTimelineSteps = ['PENDING', 'CONFIRMED', 'PROCESSING', 'READY_FOR_DELIVERY', 'SHIPPED', 'DELIVERED'];
-  const currentStepIndex = activeTimelineSteps.indexOf(order.status);
+  const packageStatus = order.items[0]?.status || order.status;
+  const currentStepIndex = activeTimelineSteps.indexOf(packageStatus);
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -178,8 +201,8 @@ function OrderDetailSheet({
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b px-8 py-6 flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">Order Record</span>
-              <StatusBadge status={order.status} />
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">Order Record</span>
+               <StatusBadge status={order.items[0]?.status || order.status} method={order.deliveryMethod} />
             </div>
             <SheetTitle className="text-2xl font-serif italic text-stone-900 flex items-center gap-2">
               #{order.id.slice(-8).toUpperCase()}
@@ -233,7 +256,7 @@ function OrderDetailSheet({
                    <div className="w-12 h-12 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-serif italic text-lg shadow-inner">
                       {order.customer.firstName[0]}{order.customer.lastName[0]}
                    </div>
-                   <div className="min-w-0">
+                   <div className="min-w-0 flex-1">
                       <p className="font-bold text-stone-900 truncate">{order.customer.firstName} {order.customer.lastName}</p>
                       <p className="text-xs text-stone-500 truncate">{order.customer.email}</p>
                    </div>
@@ -249,23 +272,50 @@ function OrderDetailSheet({
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Delivery Information</h3>
-                <div className="bg-stone-50/50 border border-stone-100 rounded-3xl p-6 space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">
+                  {order.deliveryMethod === 'PICKUP' ? 'Pickup Information' : 'Delivery Information'}
+                </h3>
+                <div className={`bg-stone-50/50 border rounded-3xl p-6 space-y-4 ${order.deliveryMethod === 'PICKUP' ? 'border-amber-200 bg-amber-50/30' : 'border-stone-100'}`}>
                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white border border-stone-100 flex items-center justify-center text-stone-600 shadow-sm shrink-0">
+                      <div className={`w-10 h-10 rounded-xl bg-white border flex items-center justify-center shadow-sm shrink-0 ${order.deliveryMethod === 'PICKUP' ? 'border-amber-200 text-amber-600' : 'border-stone-100 text-stone-600'}`}>
                          <MapPin size={18} />
                       </div>
-                      <div className="text-sm text-stone-600 leading-relaxed font-serif italic py-1">
-                         {order.address?.street},<br />
-                         {order.address?.city}, {order.address?.state}, {order.address?.country}
+                      <div className="flex-1 min-w-0">
+                         <div className="text-sm text-stone-900 leading-relaxed font-serif italic py-1">
+                            {order.deliveryMethod === 'PICKUP' ? (
+                              <>
+                                <span className="font-bold block not-italic mb-1">{order.items[0]?.product?.professional?.professionalProfile?.businessName || 'Seller Location'}</span>
+                                {order.items[0]?.product?.professional?.professionalProfile?.location || 'Contact seller for exact pickup location'}
+                              </>
+                            ) : (
+                              <>
+                                {order.address?.street},<br />
+                                {order.address?.city}, {order.address?.state}, {order.address?.country}
+                              </>
+                            )}
+                         </div>
+                         {order.deliveryMethod === 'PICKUP' && order.items[0]?.product.professional.professionalProfile?.latitude && (
+                           <Button
+                             variant="link"
+                             className="p-0 h-auto text-[10px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 mt-2"
+                             onClick={() => {
+                               const profile = order.items[0]?.product.professional.professionalProfile;
+                               if (profile) {
+                                 window.open(`https://www.google.com/maps/search/?api=1&query=${profile.latitude},${profile.longitude}`, '_blank');
+                               }
+                             }}
+                           >
+                             View on Map →
+                           </Button>
+                         )}
                       </div>
                    </div>
                    <div className="flex items-center gap-3 pt-4 border-t border-stone-200/50">
-                      <div className={`p-2 rounded-lg ${order.deliveryMethod === 'PICKUP' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                      <div className={`p-2 rounded-lg ${order.deliveryMethod === 'PICKUP' ? 'bg-amber-100 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
                          {order.deliveryMethod === 'PICKUP' ? <Package size={14} /> : <Truck size={14} />}
                       </div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">
-                         {order.deliveryMethod === 'PICKUP' ? 'Customer Pickup' : 'Express Delivery'}
+                         {order.deliveryMethod === 'PICKUP' ? 'Self-Pickup' : 'Standard Delivery'}
                       </p>
                    </div>
                 </div>
@@ -277,23 +327,46 @@ function OrderDetailSheet({
               <section className="space-y-4">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Acquisition Summary</h3>
                 <div className="bg-white border border-stone-200 rounded-[2.5rem] p-8 shadow-sm space-y-6">
-                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-200">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="flex gap-4 p-2 rounded-2xl hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-100">
-                           <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-stone-50 shrink-0 border border-stone-100">
-                              <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt="" fill className="object-cover" />
-                           </div>
-                           <div className="min-w-0 flex-1 py-1">
-                              <p className="text-xs font-bold text-stone-900 truncate">{item.product.name}</p>
-                              <div className="flex gap-2 mt-1">
-                                 <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">Qty: {item.quantity}</span>
-                                 {item.size && <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">{item.size}</span>}
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-200">
+                      {order.items.map((item) => {
+                        const isItemPreorder = item.isPreorder;
+                        const targetShipDate = item.estimatedDelivery 
+                          ? new Date(new Date(order.createdAt).getTime() + item.estimatedDelivery * 24 * 60 * 60 * 1000)
+                          : null;
+
+                        return (
+                          <div key={item.id} className="flex flex-col gap-2 p-2 rounded-2xl hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-100">
+                            <div className="flex gap-4">
+                              <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-stone-50 shrink-0 border border-stone-100">
+                                 <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt="" fill className="object-cover" />
                               </div>
-                              <p className="text-[10px] font-black text-stone-900 mt-2">{currency} {item.price.toFixed(2)}</p>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
+                              <div className="min-w-0 flex-1 py-1">
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-xs font-bold text-stone-900 truncate">{item.product.name}</p>
+                                    {isItemPreorder && (
+                                      <Badge variant="outline" className="text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1.5 h-4">Pre-order</Badge>
+                                    )}
+                                 </div>
+                                 <div className="flex gap-2 mt-1">
+                                    <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">Qty: {item.quantity}</span>
+                                    {item.size && <span className="text-[8px] font-black uppercase bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-md">{item.size}</span>}
+                                 </div>
+                                 <p className="text-[10px] font-black text-stone-900 mt-2">{currency} {item.price.toFixed(2)}</p>
+                              </div>
+                            </div>
+                            {isItemPreorder && targetShipDate && (
+                              <div className="mx-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3 h-3 text-blue-600" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-900">Est. Shipment</span>
+                                </div>
+                                <span className="text-[9px] font-bold text-blue-600">{targetShipDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                    <div className="pt-6 border-t border-stone-100 space-y-3">
                       <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Subtotal</span><span className="text-stone-900">{currency} {order.subtotal.toFixed(2)}</span></div>
                       <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Platform & Tax</span><span className="text-stone-900">{currency} {(order.platformFee + order.tax).toFixed(2)}</span></div>
@@ -313,24 +386,24 @@ function OrderDetailSheet({
                    <p className="text-[10px] uppercase font-bold tracking-widest text-stone-400 underline decoration-stone-700 underline-offset-4">Concierge tools are synchronized live</p>
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
-                   {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
+                   {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
                      <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
                        <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" disabled={!!loading}>
                          <Truck className="w-4 h-4 mr-2" /> Fulfill Order
                        </Button>
                      </ManualDeliveryDialog>
                    )}
-                   {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
+                   {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
                      <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
                        <Package className="w-4 h-4 mr-2" /> Mark Ready
                      </Button>
                    )}
-                   {order.status === "READY_FOR_DELIVERY" && (
+                   {packageStatus === "READY_FOR_DELIVERY" && (
                      <Button size="lg" className="rounded-full px-8 bg-emerald-500 hover:bg-emerald-600 text-white transition-all font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("SHIPPED")} disabled={!!loading}>
                        <SendHorizontal className="w-4 h-4 mr-2" /> Ship Now
                      </Button>
                    )}
-                   {!["CANCELLED", "DELIVERED", "REFUNDED"].includes(order.status) && (
+                   {!["CANCELLED", "DELIVERED", "REFUNDED"].includes(packageStatus) && (
                      <Button size="lg" variant="ghost" className="rounded-full px-8 text-stone-500 hover:text-rose-500 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("CANCELLED")} disabled={!!loading}>
                         <Ban className="w-4 h-4 mr-2" /> Cancel
                      </Button>
@@ -365,10 +438,11 @@ function QuickActions({
     setLoading(null);
   };
 
+  const packageStatus = order.items[0]?.status || order.status;
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Orders arrive as PROCESSING after payment — show Yango/Pickup directly */}
-      {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
+      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
         <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
           <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md shadow-teal-100 border-none transition-all hover:scale-105 active:scale-95" disabled={!!loading}>
             {loading === "READY_FOR_DELIVERY" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Truck className="w-3.5 h-3.5 mr-1.5" />}
@@ -376,24 +450,24 @@ function QuickActions({
           </Button>
         </ManualDeliveryDialog>
       )}
-      {(order.status === "PROCESSING" || order.status === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
+      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
         <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-100 border-none transition-all hover:scale-105 active:scale-95" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
           {loading === "READY_FOR_PICKUP" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5 mr-1.5" />}
           Ready
         </Button>
       )}
-      {order.status === "AWAITING_DELIVERY_PAYMENT" && (
+      {packageStatus === "AWAITING_DELIVERY_PAYMENT" && (
         <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 animate-pulse">
            <Clock className="w-3 h-3" /> Awaiting Payment
         </span>
       )}
-      {order.status === "READY_FOR_DELIVERY" && (
+      {packageStatus === "READY_FOR_DELIVERY" && (
         <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-md shadow-emerald-100 border-none transition-all hover:scale-105 active:scale-95" onClick={() => act("SHIPPED")} disabled={!!loading}>
           {loading === "SHIPPED" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5 mr-1.5" />}
           Ship
         </Button>
       )}
-      {order.status === "SHIPPED" && (
+      {packageStatus === "SHIPPED" && (
         <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
            <Truck className="w-3 h-3" /> In Transit
         </span>
@@ -452,7 +526,17 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         showToast(`Order updated to: ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`);
         await fetchOrders();
         // Update selectedOrder if it's the same one
-        setSelectedOrder((prev) => prev?.id === orderId ? { ...prev, status: newStatus, ...(extra?.trackingNumber ? { trackingNumber: extra.trackingNumber } : {}), ...(extra?.notes ? { notes: extra.notes } : {}) } : prev);
+        setSelectedOrder((prev) => {
+          if (prev?.id !== orderId) return prev;
+          const updatedItems = prev.items.map(item => ({ ...item, status: newStatus }));
+          return { 
+            ...prev, 
+            status: newStatus, 
+            items: updatedItems,
+            ...(extra?.trackingNumber ? { trackingNumber: extra.trackingNumber } : {}), 
+            ...(extra?.notes ? { notes: extra.notes } : {}) 
+          };
+        });
       } else {
         const data = await response.json();
         showToast(data.error || "Failed to update order.");
@@ -472,6 +556,12 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       if (response.ok) {
         showToast("Delivery details saved and customer notified!");
         await fetchOrders();
+        // Update selectedOrder locally to reflect the new fulfillment state
+        setSelectedOrder((prev) => {
+          if (prev?.id !== orderId) return prev;
+          const updatedItems = prev.items.map(item => ({ ...item, status: "READY_FOR_DELIVERY" }));
+          return { ...prev, status: "READY_FOR_DELIVERY", items: updatedItems };
+        });
       } else {
         const data = await response.json();
         showToast(data.error || "Failed to save delivery details.");
@@ -515,14 +605,22 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     {
       accessorKey: "id",
       header: "Order",
-      cell: ({ row }) => (
-        <div>
-          <button onClick={() => openOrder(row.original)} className="font-mono text-sm font-medium text-blue-600 hover:underline">
-            #{row.original.id.slice(-8).toUpperCase()}
-          </button>
-          <div className="text-xs text-gray-400">{new Date(row.original.createdAt).toLocaleDateString()}</div>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const hasPreorder = row.original.items.some(item => item.isPreorder);
+        return (
+          <div className="space-y-1">
+            <button onClick={() => openOrder(row.original)} className="font-mono text-sm font-medium text-blue-600 hover:underline block">
+              #{row.original.id.slice(-8).toUpperCase()}
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">{new Date(row.original.createdAt).toLocaleDateString()}</div>
+              {hasPreorder && (
+                <Badge variant="outline" className="h-4 px-1.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-200 ring-1 ring-blue-100">Pre-order</Badge>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       id: "customer",
@@ -570,7 +668,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <StatusBadge status={row.original.items[0]?.status || row.original.status} method={row.original.deliveryMethod} />,
     },
     {
       id: "fulfillment",
@@ -629,7 +727,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
   const stats = {
     total: data.length,
     pending: data.filter((o) => o.status === "PENDING").length,
-    processing: data.filter((o) => ["CONFIRMED", "PROCESSING"].includes(o.status)).length,
+    processing: data.filter((o) => ["CONFIRMED", "PROCESSING", "READY_FOR_DELIVERY", "READY_FOR_PICKUP", "SHIPPED"].includes(o.status)).length,
     delivered: data.filter((o) => o.status === "DELIVERED").length,
     cancelled: data.filter((o) => o.status === "CANCELLED").length,
     revenue: data.filter((o) => o.paymentStatus === "PAID").reduce((s, o) => s + (o.totalPrice ?? 0), 0),

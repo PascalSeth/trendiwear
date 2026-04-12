@@ -22,6 +22,7 @@ interface Product {
   seller_url: string;
   seller_image: string;
   isTrendiZip: boolean;
+  isPreorder: boolean;
 }
 
 interface APIProduct {
@@ -55,6 +56,7 @@ interface APIProduct {
     orderItems: number;
     reviews: number;
   };
+  isPreorder: boolean;
   averageRating: number;
 }
 
@@ -72,7 +74,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
       ? 'TrendiZip'
       : p.professional?.professionalProfile?.businessName || 
         `${p.professional?.firstName || ''} ${p.professional?.lastName || ''}`.trim() || 
-        'Artisan';
+        'Seller';
     const sellerImage = isTrendiZip
       ? '/logo3d.jpg'
       : p.professional?.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
@@ -91,12 +93,13 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
       category: p.categories?.[0]?.name || 'Fashion',
       rating: p.averageRating || 0,
       reviews: p._count?.reviews || 0,
-      badge: p.tags?.[0] || undefined,
       description: p.description || '',
       seller: sellerName,
       seller_url: sellerUrl,
       seller_image: sellerImage,
       isTrendiZip,
+      isPreorder: p.isPreorder || false,
+      badge: p.isPreorder ? "Pre-order" : (p.tags?.[0] || undefined),
     };
   }, []);
 
@@ -162,7 +165,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
         <div className="text-center max-w-md px-6">
           <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400 block mb-4">Showcase</span>
           <h2 className="text-2xl font-serif text-stone-900 mb-2">Coming Soon</h2>
-          <p className="text-stone-500 text-sm">Curated pieces from our finest artisans will appear here.</p>
+          <p className="text-stone-500 text-sm">Curated pieces from our finest sellers will appear here.</p>
         </div>
       </div>
     );
@@ -264,7 +267,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
                     </div>
                     <div className="overflow-hidden">
                        <p className="font-serif text-sm text-stone-900 leading-none truncate">{product.seller}</p>
-                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">{product.isTrendiZip ? 'Official Store' : 'Artisan'}</p>
+                       <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">{product.isTrendiZip ? 'Official Store' : 'Seller'}</p>
                     </div>
                  </div>
                  {!product.isTrendiZip && (
@@ -388,7 +391,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
             {/* Seller Card */}
             <div className="border border-stone-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                 <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400">{product.isTrendiZip ? 'Official Store' : 'The Artisan'}</span>
+                 <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400">{product.isTrendiZip ? 'Official Store' : 'The Seller'}</span>
                  {!product.isTrendiZip && (
                    <Link 
                       href={product.seller_url} 

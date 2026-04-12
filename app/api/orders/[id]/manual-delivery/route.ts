@@ -12,17 +12,16 @@ export async function POST(
     const user = await requireAuth()
     const { id: orderId } = await params
     const body = await request.json()
-    const { riderId, riderName, riderPhone, manualDeliveryFee, trackingNumber } = body
+    const { riderName, riderPhone, manualDeliveryFee, trackingNumber } = body
 
-    // 1. Fetch order to verify professional
+    // 1. Fetch order and professional profile
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
         customer: true,
         items: {
-          include: {
-            product: true
-          }
+          where: { professionalId: user.id },
+          include: { product: true }
         },
       },
     })
@@ -31,50 +30,83 @@ export async function POST(
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    // Verify user is the professional for at least one item
-    const isProfessionalForOrder = order.items.some(item => item.professionalId === user.id)
-    if (!isProfessionalForOrder && !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    if (order.items.length === 0 && !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      return NextResponse.json({ error: "Unauthorized or no items for this professional in this order" }, { status: 403 })
     }
 
-    // 2. Update Order with Manual Delivery Details
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        riderName,
-        riderPhone,
-        manualDeliveryFee: manualDeliveryFee ? parseFloat(manualDeliveryFee) : 0,
-        trackingNumber: trackingNumber || order.trackingNumber,
-        status: "READY_FOR_DELIVERY",
-        readyForDeliveryAt: new Date(),
-        riderId: riderId || null,
+    // 2. Perform Targeted Updates in a Transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // A. Update specific OrderItems
+      await tx.orderItem.updateMany({
+        where: { 
+          orderId, 
+          professionalId: user.id 
+        },
+        data: { 
+          status: "READY_FOR_DELIVERY",
+          deliveryFee: manualDeliveryFee ? parseFloat(manualDeliveryFee.toString()) : 0
+        }
+      })
+
+      // B. Upsert DeliveryConfirmation with Fulfillment Details
+      const confirmation = await tx.deliveryConfirmation.upsert({
+        where: {
+          orderId_professionalId: {
+            orderId,
+            professionalId: user.id
+          }
+        },
+        create: {
+          orderId,
+          professionalId: user.id,
+          customerId: order.customerId,
+          status: "PENDING",
+          riderName,
+          riderPhone,
+          trackingNumber,
+          confirmationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 48 hours
+        },
+        update: {
+          riderName,
+          riderPhone,
+          trackingNumber,
+          status: "PENDING",
+           // Reset customer confirmation if it was already confirmed but re-dispatched
+          customerConfirmed: false,
+          confirmedAt: null
+        }
+      })
+
+      // C. Update global order status if applicable
+      // Determine if overall order should move to READY_FOR_DELIVERY
+      // We do this if it was PROCESSING or CONFIRMED
+      if (order.status === 'PROCESSING' || order.status === 'CONFIRMED') {
+         await tx.order.update({
+           where: { id: orderId },
+           data: { status: 'READY_FOR_DELIVERY' }
+         })
       }
+
+      return confirmation
     })
 
     // 3. Send Notification Email to Customer
     if (order.customer.email) {
-      // Get seller name
       const profile = await prisma.professionalProfile.findUnique({
         where: { userId: user.id },
         select: { businessName: true }
       });
       const sellerName = profile?.businessName || `${user.firstName} ${user.lastName}`;
 
-      // Format items for email
-      const items = order.items.map(item => ({
-        name: item.product.name,
-        quantity: item.quantity
-      }));
-
       await sendDeliveryUpdateEmail({
         to: order.customer.email,
         orderId: order.id,
         riderName,
         riderPhone,
-        deliveryPrice: parseFloat(manualDeliveryFee) || 0,
-        trackingNumber: trackingNumber || order.trackingNumber || undefined,
+        deliveryPrice: parseFloat(manualDeliveryFee?.toString() || "0"),
+        trackingNumber: trackingNumber || undefined,
         sellerName,
-        items,
+        items: order.items.map(item => ({ name: item.product.name, quantity: item.quantity })),
       })
     }
 
@@ -88,11 +120,12 @@ export async function POST(
       data: {
         userId: order.customerId,
         type: 'ORDER_UPDATE',
-        title: 'Order Ready for Delivery!',
-        message: `Order #${order.id.slice(-8).toUpperCase()} from ${sellerNameFinal} is ready for delivery.${riderName ? ` Rider: ${riderName}` : ''}`,
+        title: 'Package Ready for Delivery!',
+        message: `A package from ${sellerNameFinal} (Order #${order.id.slice(-8).toUpperCase()}) is ready for delivery.${riderName ? ` Rider: ${riderName}` : ''}`,
         data: JSON.stringify({ 
           orderId: order.id, 
           status: 'READY_FOR_DELIVERY',
+          professionalId: user.id,
           riderName,
           riderPhone,
           trackingNumber
@@ -102,7 +135,7 @@ export async function POST(
 
     return NextResponse.json({ 
       success: true, 
-      order: updatedOrder
+      confirmation: result
     })
 
   } catch (error) {

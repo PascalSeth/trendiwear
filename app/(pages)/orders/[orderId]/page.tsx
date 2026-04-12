@@ -31,7 +31,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
           }
         }
       },
-      deliveryConfirmation: true,
+      deliveryConfirmations: true,
       paymentEscrow: true,
     }
   });

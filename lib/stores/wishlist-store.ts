@@ -7,6 +7,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 
 export interface WishlistProduct {
   id: string
+  slug?: string
   name: string
   price: number
   currency: string

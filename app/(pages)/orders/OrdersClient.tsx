@@ -13,33 +13,38 @@ import useSWR from 'swr'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-// --- Types ---
-interface OrderItem {
-  id: string
-  quantity: number
-  price: number
-  size?: string
-  color?: string
-  product: {
-    name: string
-    images: string[]
-    price: number
-    currency: string
-  }
-}
 
 interface Order {
   id: string
   status: string
   totalPrice: number
   createdAt: string
+  deliveryMethod: 'DELIVERY' | 'PICKUP'
   address: {
     street: string
     city: string
     state: string
     country: string
   }
-  items: OrderItem[]
+  items: Array<{
+    id: string
+    quantity: number
+    status?: string
+    professionalId?: string
+    product: {
+      name: string
+      images: string[]
+      professionalId: string
+      professional: {
+        professionalProfile: {
+          businessName: string
+          location: string
+          latitude: number
+          longitude: number
+        } | null
+      }
+    }
+  }>
 }
 
 interface OrdersClientProps {
@@ -52,8 +57,9 @@ const statusColors: Record<string, string> = {
   'PENDING': 'bg-amber-50 text-amber-600 border-amber-100',
   'PAID': 'bg-emerald-50 text-emerald-600 border-emerald-100',
   'PROCESSING': 'bg-blue-50 text-blue-600 border-blue-100',
+  'READY_FOR_PICKUP': 'bg-amber-50 text-amber-600 border-amber-100',
   'SHIPPED': 'bg-violet-50 text-violet-600 border-violet-100',
-  'DELIVERED': 'bg-stone-50 text-stone-600 border-stone-100',
+  'DELIVERED': 'bg-emerald-50 text-emerald-600 border-emerald-100',
   'CANCELLED': 'bg-rose-50 text-rose-600 border-rose-100',
 }
 
@@ -62,10 +68,25 @@ const StatusIcon = ({ status }: { status: string }) => {
     case 'PENDING': return <Clock size={14} />
     case 'PAID': return <CreditCard size={14} />
     case 'PROCESSING': return <Package size={14} />
+    case 'READY_FOR_PICKUP': return <Package size={14} />
     case 'SHIPPED': return <Truck size={14} />
     case 'DELIVERED': return <CheckCircle size={14} />
     default: return <ShoppingBag size={14} />
   }
+}
+
+const getStatusLabel = (order: Order) => {
+  const { status, deliveryMethod, items } = order
+  
+  // Check for mixed item statuses
+  const itemStatuses = new Set(items.map(item => item.status || status))
+  if (itemStatuses.size > 1) return 'Mixed Shipment'
+  
+  const effectiveStatus = items[0]?.status || status
+  if (effectiveStatus === 'READY_FOR_PICKUP') return 'Ready for Collection'
+  if (effectiveStatus === 'DELIVERED' && deliveryMethod === 'PICKUP') return 'Collected'
+  if (effectiveStatus === 'SHIPPED') return 'In Transit'
+  return effectiveStatus
 }
 
 export default function OrdersClient({ initialOrders, totalPages: total, currentPage }: OrdersClientProps) {
@@ -97,20 +118,34 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
 
   const orders = data?.orders || initialOrders
 
-  const confirmDelivery = async (orderId: string) => {
-    setConfirmingId(orderId)
+  const confirmDelivery = async (order: Order) => {
+    // Check if it's a multi-seller order
+    const sellerIds = new Set(order.items.map(i => i.product.professional.professionalProfile?.businessName))
+    if (sellerIds.size > 1) {
+      // Redirect to detail page to confirm individual packages
+      window.location.href = `/orders/${order.id}`
+      return
+    }
+
+    const professionalId = order.items[0]?.professionalId || order.items[0]?.product.professionalId
+
+    setConfirmingId(order.id)
     try {
-      const res = await fetch(`/api/orders/${orderId}/confirm-delivery`, { method: 'POST' })
+      const res = await fetch(`/api/orders/${order.id}/confirm-delivery`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professionalId })
+      })
       if (res.ok) {
         // Optimistic update
         mutate({
           ...data,
-          orders: orders.map((o: Order) => o.id === orderId ? { ...o, status: 'DELIVERED' } : o)
+          orders: orders.map((o: Order) => o.id === order.id ? { ...o, status: 'DELIVERED' } : o)
         }, false)
         toast.success('Delivery confirmed! Thank you.')
       } else {
-        const data = await res.json()
-        toast.error(data.error || 'Failed to confirm delivery')
+        const errorData = await res.json()
+        toast.error(errorData.error || 'Failed to confirm delivery')
       }
     } catch {
       toast.error('Something went wrong')
@@ -179,23 +214,34 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
                             </span>
                             <h3 className="text-xl font-mono text-stone-950">#{order.id.slice(-8).toUpperCase()}</h3>
                          </div>
-                         <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-mono uppercase tracking-widest ${statusColors[order.status]}`}>
-                            <StatusIcon status={order.status} /> {order.status}
-                         </div>
+                          <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-mono uppercase tracking-widest ${statusColors[order.items[0]?.status || order.status] || 'bg-stone-50 text-stone-600 border-stone-100'}`}>
+                             <StatusIcon status={order.items[0]?.status || order.status} /> {getStatusLabel(order)}
+                          </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-t border-stone-50 pt-10">
                          <div className="space-y-4">
-                            <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Delivery Coordinates</p>
+                            <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                               {order.deliveryMethod === 'PICKUP' ? 'Pickup Point' : 'Delivery Coordinates'}
+                            </p>
                             <div className="flex items-start gap-4">
                                <div className="p-3 bg-stone-50 rounded-2xl">
                                   <MapPin size={18} className="text-stone-900" />
                                </div>
                                <div className="text-sm text-stone-600 font-serif italic leading-relaxed">
-                                  {order.address.street},<br />
-                                  {order.address.city}, {order.address.state}
-                               </div>
-                            </div>
+                                   {order.deliveryMethod === 'PICKUP' ? (
+                                     <>
+                                       <span className="font-bold block not-italic mb-1">{order.items[0]?.product?.professional?.professionalProfile?.businessName || 'Seller Location'}</span>
+                                       {order.items[0]?.product?.professional?.professionalProfile?.location || 'Contact seller for exact pickup location'}
+                                     </>
+                                   ) : (
+                                     <>
+                                       {order.address.street},<br />
+                                       {order.address.city}, {order.address.state}
+                                     </>
+                                   )}
+                                </div>
+                             </div>
                          </div>
                          <div className="space-y-4">
                             <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Fulfillment Items</p>
@@ -232,27 +278,39 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
                          <h4 className="text-2xl font-serif italic text-stone-900 leading-tight">Timeline Log</h4>
                          <p className="text-sm text-stone-500 font-serif italic leading-relaxed">
                             Order initialized on {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric'})} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}.
+                            {order.deliveryMethod === 'PICKUP' && (
+                               <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
+                                  <Package size={16} className="text-amber-600" />
+                                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-700 font-bold">Self-Pickup selected</span>
+                               </div>
+                            )}
                          </p>
 
                          {/* Status-specific action prompts */}
-                         {order.status === 'SHIPPED' && (
+                         {(order.status === 'SHIPPED' || (order.status === 'READY_FOR_PICKUP' && order.deliveryMethod === 'PICKUP')) && (
                            <div className="space-y-4 pt-4 border-t border-stone-200">
-                             <div className="flex items-center gap-3 text-violet-600">
-                               <Truck size={16} />
-                               <span className="text-xs font-mono uppercase tracking-widest">In Transit</span>
+                             <div className={`flex items-center gap-3 ${order.deliveryMethod === 'PICKUP' ? 'text-amber-600' : 'text-violet-600'}`}>
+                               {order.deliveryMethod === 'PICKUP' ? <Package size={16} /> : <Truck size={16} />}
+                               <span className="text-xs font-mono uppercase tracking-widest">
+                                 {order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup' : 'In Transit'}
+                               </span>
                              </div>
-                             <p className="text-xs text-stone-500 leading-relaxed">Your package is on its way! Once it arrives, please confirm delivery below.</p>
+                             <p className="text-xs text-stone-500 leading-relaxed">
+                               {order.deliveryMethod === 'PICKUP' 
+                                 ? 'Your item is waiting for you! Head to the store and confirm once you pick it up.' 
+                                 : 'Your package is on its way! Once it arrives, please confirm delivery below.'}
+                             </p>
                              <button
-                               onClick={() => confirmDelivery(order.id)}
-                               disabled={confirmingId === order.id}
-                               className="w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-50"
-                             >
-                               {confirmingId === order.id ? (
-                                 <><Loader2 size={14} className="animate-spin" /> Confirming...</>
-                               ) : (
-                                 <><PackageCheck size={14} /> Confirm Arrival</>
-                               )}
-                             </button>
+                                onClick={() => confirmDelivery(order)}
+                                disabled={confirmingId === order.id}
+                                className="w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-50"
+                              >
+                                {confirmingId === order.id ? (
+                                  <><Loader2 size={14} className="animate-spin" /> Confirming...</>
+                                ) : (
+                                  <><PackageCheck size={14} /> {new Set(order.items.map(i => i.product.professional.professionalProfile?.businessName)).size > 1 ? 'Review Packages' : (order.deliveryMethod === 'PICKUP' ? 'Confirm Collection' : 'Confirm Arrival')}</>
+                                )}
+                              </button>
                            </div>
                          )}
 

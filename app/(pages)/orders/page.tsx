@@ -30,11 +30,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
             items: {
               include: {
                 product: {
-                  select: {
-                    name: true,
-                    images: true,
-                    price: true,
-                    currency: true,
+                  include: {
+                    professional: {
+                      include: {
+                        professionalProfile: {
+                          select: {
+                            businessName: true,
+                            location: true,
+                            latitude: true,
+                            longitude: true,
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }

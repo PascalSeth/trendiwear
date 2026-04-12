@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Send, X, MessageSquare, Loader2, 
   Paperclip,
-  CheckCheck
+  CheckCheck,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   Sheet, 
@@ -214,6 +215,19 @@ export function ChatDrawer({
             <X className="h-4 w-4" />
           </Button>
         </SheetHeader>
+        
+        {/* Safety Warning Banner */}
+        <div className="bg-amber-50 border-b border-amber-100 p-3 px-4 flex gap-3 items-start z-10 shadow-sm">
+           <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={16} />
+           <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-900">Stay Safe!</p>
+              <p className="text-[10px] text-amber-700 leading-relaxed font-serif italic">
+                 Never pay a seller directly to their phone (Momo) or in cash. 
+                 <strong> TrendiZip is not responsible for any payments made outside the site.</strong> 
+                 Only payments on this website are protected.
+              </p>
+           </div>
+        </div>
 
         {/* Messages Area */}
         <div 

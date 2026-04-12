@@ -268,13 +268,13 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
                 transition={{ delay: i * 0.1, duration: 0.8 }}
                 className="shrink-0 group pointer-events-auto"
               >
-                <Link href={`/shopping/collections/${col.id}`}>
+                <Link href={`/shopping/collections/${col.slug}`}>
                   <div className="relative w-[300px] md:w-[500px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-700 group-hover:scale-[0.98]">
                     <Image 
                       src={col.imageUrl || "/placeholder-collection.jpg"} 
                       alt={col.name}
                       fill
-                      className="object-cover transition-transform duration-[1500ms] group-hover:scale-110"
+                      className="object-cover transition-transform duration-1500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
                     
@@ -340,7 +340,7 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
                 <h3 className="text-2xl md:text-4xl font-serif text-white mb-6 leading-none">
                   {cat.name}
                 </h3>
-                <Link href={`/shopping/categories/${cat.id}`}>
+                <Link href={`/shopping/categories/${cat.slug}`}>
                   <button className="bg-white/20 backdrop-blur-md text-white border border-white/30 text-[9px] font-mono uppercase tracking-widest px-6 py-3 rounded-full hover:bg-white hover:text-stone-900 transition-all">
                     Explore Chapter
                   </button>

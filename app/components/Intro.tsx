@@ -130,7 +130,7 @@ function FashionInspo() {
                             src={event.imageUrl}
                             alt={event.name}
                             fill
-                            className="object-cover transition-all duration-[1200ms] grayscale group-hover:grayscale-0 group-hover:scale-105"
+                            className="object-cover transition-all duration-1200 grayscale group-hover:grayscale-0 group-hover:scale-105"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center p-8">

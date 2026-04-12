@@ -4,11 +4,23 @@ import ProductClient from './ProductClient';
 import { notFound } from 'next/navigation';
 import { getAuthSession } from '@/lib/auth';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const session = await getAuthSession();
 
-  // Fetch product, reviews and user eligibility in parallel
+  // 1. First fetch product by slug
+  const productInfo = await prisma.product.findUnique({
+    where: { slug, isActive: true },
+    select: { id: true }
+  });
+
+  if (!productInfo) {
+    return notFound();
+  }
+
+  const id = productInfo.id;
+
+  // 2. Fetch rest in parallel using ID
   const [product, reviews, purchase, hasReviewed] = await Promise.all([
     prisma.product.findUnique({
       where: { id, isActive: true },

@@ -349,7 +349,7 @@ export default function CategoryDetailClient({
                     <div className="w-8 h-px bg-amber-200/50" />
                     {category.parent && (
                       <>
-                        <Link href={`/shopping/categories/${category.parent.id}`} className="hover:text-amber-700 transition-colors">{category.parent.name}</Link>
+                        <Link href={`/shopping/categories/${category.parent.slug}`} className="hover:text-amber-700 transition-colors">{category.parent.name}</Link>
                         <div className="w-4 h-px bg-amber-200/30" />
                       </>
                     )}
@@ -420,7 +420,7 @@ export default function CategoryDetailClient({
                       alt={activeCategory?.name || 'Category'}
                       fill
                       priority
-                      className="object-cover transition-transform duration-[3s] group-hover:scale-105"
+                      className="object-cover transition-transform duration-3000 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-stone-900/5 mix-blend-multiply group-hover:opacity-0 transition-opacity duration-1000" />
                   </motion.div>
@@ -485,7 +485,7 @@ export default function CategoryDetailClient({
                             alt={child.name} 
                             fill 
                             className={cn(
-                              "object-cover transition-all duration-[3s]",
+                              "object-cover transition-all duration-3000",
                               selectedSubcategoryId === child.id ? "scale-110" : "grayscale group-hover:grayscale-0 group-hover:scale-110"
                             )} 
                           />

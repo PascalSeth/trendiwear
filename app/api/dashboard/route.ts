@@ -90,7 +90,7 @@ export async function GET() {
       return sum + itemSubtotal;
     }, 0);
     
-    const completedOrders = orders.filter(item => item.order.status === 'DELIVERED').length;
+    const completedOrders = orders.filter(item => item.status === 'DELIVERED').length;
     const totalOrders = orders.length;
 
     // Calculate average rating from reviews
@@ -201,7 +201,7 @@ export async function GET() {
         id: item.orderId,
         productName: item.product.name,
         amount: item.price * item.quantity,
-        status: item.order.status,
+        status: item.status,
         date: item.order.createdAt
       })),
       analytics: {

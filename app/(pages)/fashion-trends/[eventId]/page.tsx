@@ -20,6 +20,7 @@ interface TrendEvent {
   searchKeywords?: string[];
   suggestedProducts?: Array<{
     id: string;
+    slug: string;
     name: string;
     price: number;
     currency: string;
@@ -53,6 +54,7 @@ interface OutfitInspiration {
   products: Array<{
     product: {
       id: string;
+      slug: string;
       currency: string;
     };
   }>;
@@ -166,7 +168,7 @@ export default function EventDetailPage() {
                   src={event.imageUrl}
                   alt={event.name}
                   fill
-                  className="object-cover transition-all duration-[2000ms] group-hover:scale-105 object-[50%_20%]"
+                  className="object-cover transition-all duration-2000 group-hover:scale-105 object-[50%_20%]"
                   priority
                 />
               ) : (
@@ -285,7 +287,7 @@ export default function EventDetailPage() {
                       src={outfit.outfitImageUrl}
                       alt={outfit.title}
                       fill
-                      className="object-cover transition-all duration-[1200ms] group-hover:scale-105"
+                      className="object-cover transition-all duration-1200 group-hover:scale-105"
                     />
                     
                     {/* SILK GLASS OVERLAY */}
@@ -358,7 +360,7 @@ export default function EventDetailPage() {
               {event.suggestedProducts.map((product) => (
                 <Link 
                   key={product.id}
-                  href={`/shopping/products/${product.id}`}
+                  href={`/shopping/products/${product.slug}`}
                   className="group"
                 >
                   <div className="aspect-[3/4] relative bg-stone-50 p-2 md:p-3 border border-stone-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-700 group-hover:shadow-[0_15px_40px_rgb(0,0,0,0.06)] group-hover:-translate-y-2 overflow-hidden mb-6">

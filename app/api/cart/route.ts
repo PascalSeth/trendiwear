@@ -60,6 +60,9 @@ export async function GET() {
                   select: {
                     businessName: true,
                     deliveryZones: true,
+                    latitude: true,
+                    longitude: true,
+                    location: true,
                   },
                 },
               },
@@ -157,7 +160,12 @@ export async function POST(request: NextRequest) {
                   firstName: true,
                   lastName: true,
                   professionalProfile: {
-                    select: { businessName: true },
+                    select: { 
+                      businessName: true,
+                      latitude: true,
+                      longitude: true,
+                      location: true
+                    },
                   },
                 },
               },
@@ -182,7 +190,12 @@ export async function POST(request: NextRequest) {
                   firstName: true,
                   lastName: true,
                   professionalProfile: {
-                    select: { businessName: true },
+                    select: { 
+                      businessName: true,
+                      latitude: true,
+                      longitude: true,
+                      location: true
+                    },
                   },
                 },
               },

@@ -94,7 +94,7 @@ export default function WishlistPage() {
             {wishlistItems.map((item) => (
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative">
-                  <Link href={`/shopping/products/${item.product.id}`}>
+                  <Link href={`/shopping/products/${item.product.slug || item.product.id}`}>
                     <div className="aspect-square relative overflow-hidden bg-gray-100">
                       {item.product.images[0] ? (
                         <Image
@@ -132,7 +132,7 @@ export default function WishlistPage() {
 
                 <CardContent className="p-4">
                   <div className="space-y-2">
-                    <Link href={`/shopping/products/${item.product.id}`}>
+                    <Link href={`/shopping/products/${item.product.slug}`}>
                       <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2">
                         {item.product.name}
                       </h3>

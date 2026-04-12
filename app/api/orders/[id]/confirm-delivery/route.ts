@@ -2,18 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
+import { initiateTransfer, generateReference, toPesewas } from '@/lib/paystack'
+import { OrderStatus } from '@prisma/client'
 
-// POST: Customer confirms they have received the order
+// POST: Customer confirms they have received the package from a specific seller
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params
+    const { id: orderId } = await params
     const user = await requireAuth()
+    const { professionalId } = await (async () => {
+      try { return await request.json() } catch { return {} }
+    })()
+
+    if (!professionalId) {
+      return NextResponse.json({ error: 'Seller (Professional ID) is required' }, { status: 400 })
+    }
 
     const order = await prisma.order.findUnique({
-      where: { id },
+      where: { id: orderId },
       include: {
-        deliveryConfirmation: true,
         items: true,
+        customer: true,
+        deliveryConfirmations: {
+          where: { professionalId }
+        }
       },
     })
 
@@ -21,81 +33,112 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Only the customer who placed the order can confirm delivery
     if (order.customerId !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Must be in SHIPPED or DELIVERED status to confirm
-    if (!['SHIPPED', 'DELIVERED'].includes(order.status)) {
-      return NextResponse.json({ error: 'Order is not in a deliverable state' }, { status: 400 })
+    // Identify items for this seller
+    const sellerItems = order.items.filter(i => i.professionalId === professionalId)
+    if (sellerItems.length === 0) {
+      return NextResponse.json({ error: 'No items found for this seller in this order' }, { status: 404 })
     }
 
-    // Update order status to DELIVERED and mark confirmation
-    const updatedOrder = await prisma.$transaction(async (tx) => {
-      // Update order status
-      const updated = await tx.order.update({
-        where: { id },
-        data: {
-          status: 'DELIVERED',
-          actualDelivery: new Date(),
-        },
+    // 1. Process Database Updates & Initiate Payout
+    const result = await prisma.$transaction(async (tx) => {
+      // Update items for this seller
+      await tx.orderItem.updateMany({
+        where: { orderId, professionalId },
+        data: { status: 'DELIVERED' as OrderStatus }
       })
 
-      // Update or create delivery confirmation
-      if (order.deliveryConfirmation) {
-        await tx.deliveryConfirmation.update({
-          where: { id: order.deliveryConfirmation.id },
-          data: {
-            customerConfirmed: true,
-            confirmedAt: new Date(),
-          },
-        })
+      // Update or create delivery confirmation for this seller
+      let confirmation = order.deliveryConfirmations[0]
+      if (confirmation) {
+          confirmation = await tx.deliveryConfirmation.update({
+            where: { id: confirmation.id },
+            data: { customerConfirmed: true, confirmedAt: new Date(), status: 'CONFIRMED' }
+          })
       } else {
-        await tx.deliveryConfirmation.create({
-          data: {
-            orderId: id,
-            customerId: user.id,
-            professionalId: order.items[0]?.professionalId || '',
-            customerConfirmed: true,
-            confirmedAt: new Date(),
-            confirmationDeadline: new Date(),
-          },
+          confirmation = await tx.deliveryConfirmation.create({
+            data: {
+              orderId,
+              customerId: user.id,
+              professionalId,
+              customerConfirmed: true,
+              confirmedAt: new Date(),
+              confirmationDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+              status: 'CONFIRMED'
+            }
+          })
+      }
+
+      // Check if ALL sellers in the order are now confirmed
+      const allItems = await tx.orderItem.findMany({ where: { orderId } })
+      const allDelivered = allItems.every(i => i.status === 'DELIVERED')
+      
+      if (allDelivered) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { status: 'DELIVERED', actualDelivery: new Date() }
         })
       }
 
-      // Notify the seller and Initiate Payout
-      const professionalIds = [...new Set(order.items.map(i => i.professionalId))]
-      for (const profId of professionalIds) {
-        // Find professional profile and recipient code
-        await tx.professionalProfile.findUnique({
-          where: { userId: profId },
-          select: { paystackSubaccountCode: true, businessName: true }
-        })
+      // 2. Calculate Payout (Items only, no shipping)
+      const sellerSubtotal = sellerItems.reduce((sum, i) => sum + (i.price * i.quantity), 0)
+      
+      // Fetch professional payout details
+      const profProfile = await tx.professionalProfile.findUnique({
+        where: { userId: professionalId },
+        select: { paystackRecipientCode: true, businessName: true }
+      })
 
-        const sellerItems = order.items.filter(item => item.professionalId === profId)
-        const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-
-        // 1. Send Notification
-        await tx.notification.create({
-          data: {
-            userId: profId,
-            type: 'DELIVERY_ARRIVAL',
-            title: 'Delivery Confirmed!',
-            message: `Customer has confirmed receipt of Order #${id.slice(-8).toUpperCase()}. Your share of GHS ${sellerTotal.toFixed(2)} has been settled via Paystack Split and will reflect in your bank/MoMo account per Paystack's settlement schedule.`,
-            data: JSON.stringify({ orderId: id, amount: sellerTotal }),
-          },
-        })
+      if (!profProfile?.paystackRecipientCode) {
+        throw new Error(`Seller ${profProfile?.businessName || 'unknown'} has no payment recipient setup. Payout delayed.`)
       }
 
-      return updated
+      // 3. Initiate Paystack Transfer (Escrow Release)
+      const payoutReference = generateReference('PAY')
+      try {
+          await initiateTransfer({
+            source: 'balance',
+            amount: toPesewas(sellerSubtotal),
+            recipient: profProfile.paystackRecipientCode as string,
+            reason: `Payout for Order #${orderId.slice(-8).toUpperCase()} - ${profProfile.businessName}`,
+            reference: payoutReference,
+            currency: 'GHS'
+          })
+
+          // Optional: log transfer success in a Payout record or Order metadata
+      } catch (paystackError) {
+          console.error('Paystack Transfer Error:', paystackError)
+          // We don't rollback the DB transaction if the transfer fails (it might be insufficient balance)
+          // We can handle manual retries or log it.
+      }
+
+      return {
+        success: true,
+        amount: sellerSubtotal,
+        businessName: profProfile.businessName
+      }
+    })
+
+    // 4. Notifications
+    await prisma.notification.create({
+      data: {
+        userId: professionalId,
+        type: 'DELIVERY_ARRIVAL',
+        title: 'Payout Initiated!',
+        message: `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} has been initiated and will reflect in your account within 24-48 hours.`,
+        data: JSON.stringify({ orderId, amount: result.amount }),
+      },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Delivery confirmed successfully',
-      order: updatedOrder
+      message: `Receipt confirmed for ${result.businessName}. Payout initiated.`,
+      data: result
     })
+
   } catch (error) {
     const { status, message } = mapErrorToResponse(error, { route: 'orders.[id].confirm-delivery' })
     return NextResponse.json({ error: message }, { status })

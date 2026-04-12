@@ -89,31 +89,12 @@ export async function POST(request: NextRequest) {
     const parsed = body as InitBody
     const reference = parsed.reference || generateReference('TZ')
     
-    // Identify the professional(s) involved
-    const professionalIds = [...new Set(order.items.map(i => i.professionalId))]
-    let subaccountCode: string | undefined
-
-    // For single-professional orders, we can use the simple split
-    if (professionalIds.length === 1) {
-      const profProfile = await prisma.professionalProfile.findUnique({
-        where: { userId: professionalIds[0] },
-        select: { paystackSubaccountCode: true }
-      })
-      if (profProfile?.paystackSubaccountCode) {
-        subaccountCode = profProfile.paystackSubaccountCode
-      }
-    }
-
-    // Initialize transaction with Paystack (Automatic Split if subaccount exists)
     const paystackResponse = await initializeTransaction({
       email: order.customer.email,
       amount: toPesewas(order.totalPrice),
       reference,
       callback_url: callbackUrl || `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment-complete`,
-      ...(subaccountCode && { 
-        subaccount: subaccountCode,
-        bearer: 'account' // Platform pays the Paystack fee from its share
-      }),
+      // All splits/subaccounts removed so funds go to platform escrow
       metadata: {
         orderId: order.id,
         customerId: user.id,

@@ -1,0 +1,41 @@
+
+> trendizip@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+
+[1m[33mwarn[39m[22m - The class `duration-[1000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1200ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1200ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[1500ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;1500ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2000ms]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2000ms&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[2s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;2s&rsqb;` to silence this warning.
+
+[1m[33mwarn[39m[22m - The class `duration-[3s]` is ambiguous and matches multiple utilities.
+[1m[33mwarn[39m[22m - If this is content and not a class, replace it with `duration-&lsqb;3s&rsqb;` to silence this warning.
+ ✓ Compiled successfully in 39.7s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/(pages)/orders/[orderId]/OrderDetailClient.tsx:262:55
+Type error: Property 'riderName' does not exist on type '{ professionalId: string; customerConfirmed: boolean; confirmedAt?: string | undefined; status: string; }'.
+
+[0m [90m 260 |[39m
+ [90m 261 |[39m                        {[90m/* Rider Info (Package Specific) */[39m}
+[31m[1m>[22m[39m[90m 262 |[39m                        {confirmation [33m&&[39m (confirmation[33m.[39mriderName [33m||[39m confirmation[33m.[39mriderPhone) [33m&&[39m (
+ [90m     |[39m                                                       [31m[1m^[22m[39m
+ [90m 263 |[39m                          [33m<[39m[33mdiv[39m className[33m=[39m[32m"space-y-3"[39m[33m>[39m
+ [90m 264 |[39m                             [33m<[39m[33mlabel[39m className[33m=[39m[32m"text-[9px] font-mono uppercase tracking-[0.2em] text-stone-400 block"[39m[33m>[39m[33mRider[39m [33mAssigned[39m[33m<[39m[33m/[39m[33mlabel[39m[33m>[39m
+ [90m 265 |[39m                             [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex items-center gap-3"[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

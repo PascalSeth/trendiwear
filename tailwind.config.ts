@@ -57,6 +57,12 @@ const config: Config = {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		transitionDuration: {
+  			'1200': '1200ms',
+  			'1500': '1500ms',
+  			'2000': '2000ms',
+  			'3000': '3000ms',
+  		},
   		keyframes: {
   			'accordion-down': {
   				from: {

@@ -41,8 +41,8 @@ interface TailorsClientProps {
   initialProfessionals: Professional[];
 }
 
-// --- Artisan Card ---
-function ArtisanCard({ professional, index }: { professional: Professional; index: number }) {
+// --- Seller Card ---
+function SellerCard({ professional, index }: { professional: Professional; index: number }) {
   const [liked, setLiked] = useState(false);
 
   const minPrice = professional.user.professionalServices?.length 
@@ -108,7 +108,7 @@ function ArtisanCard({ professional, index }: { professional: Professional; inde
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-white/70 uppercase tracking-widest mb-0.5 truncate">
-                  {professional.specialization?.name || 'Artisan'}
+                  {professional.specialization?.name || 'Seller'}
                 </p>
                 <h3 className="text-white font-semibold text-[15px] leading-snug truncate">
                   {professional.businessName}
@@ -303,7 +303,7 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
             </div>
             <h1 className="text-4xl md:text-6xl font-semibold text-stone-900 leading-[1.1] tracking-tight">
               Find your perfect <br />
-              <span className="text-amber-700/70 italic font-serif">artisan</span>
+              <span className="text-amber-700/70 italic font-serif">seller</span>
             </h1>
             <p className="text-stone-500 text-base md:text-lg leading-relaxed max-w-lg">
               Browse our curated directory of verified tailors, designers, and fashion professionals. Every visit shows a fresh mix — everyone gets a fair spotlight.
@@ -473,7 +473,7 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
       {/* ── Results Count ── */}
       <div className="max-w-[1600px] mx-auto px-6 py-6 flex items-center justify-between">
         <p className="text-sm text-stone-400">
-          Showing <span className="font-semibold text-stone-900">{filtered.length}</span> artisans
+          Showing <span className="font-semibold text-stone-900">{filtered.length}</span> sellers
         </p>
       </div>
 
@@ -482,7 +482,7 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-5 gap-y-10">
           <AnimatePresence mode="popLayout">
             {filtered.map((p, i) => (
-              <ArtisanCard key={p.id} professional={p} index={i} />
+              <SellerCard key={p.id} professional={p} index={i} />
             ))}
           </AnimatePresence>
         </div>
@@ -494,7 +494,7 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
               <Search size={28} className="text-stone-200" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-stone-900 mb-1">No artisans found</h3>
+              <h3 className="text-xl font-semibold text-stone-900 mb-1">No sellers found</h3>
               <p className="text-stone-400 text-sm max-w-xs mx-auto">Try adjusting your filters or search to discover more talent.</p>
             </div>
             <button onClick={clearFilters} className="px-6 py-3 bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-stone-700 transition-colors">

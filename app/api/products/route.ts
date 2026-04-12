@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from '@/lib/api-utils'
+import { createSlug } from "@/lib/utils"
 import { AnalyticsTracker } from "@/lib/analytics"
 import { suggestTags } from "@/lib/fashion-engine"
 import type { Prisma, ProductTag } from "@prisma/client"
@@ -399,6 +400,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.create({
       data: {
         name,
+        slug: createSlug(name),
         description,
         price: Number.parseFloat(price),
         stockQuantity: Number.parseInt(stockQuantity || '0'),

@@ -376,7 +376,7 @@ export default function CollectionDetailClient({
                   alt={collection.name}
                   fill
                   priority
-                  className="object-cover transition-transform duration-[3s] group-hover:scale-110"
+                  className="object-cover transition-transform duration-3000 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-stone-900/10 mix-blend-overlay group-hover:opacity-0 transition-opacity duration-1000" />
                 

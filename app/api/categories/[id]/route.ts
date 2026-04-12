@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
 import { mapErrorToResponse } from "@/lib/api-utils"
 import type { Prisma } from "@prisma/client"
+import { createSlug } from "@/lib/utils"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -202,7 +203,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id },
       data: {
         ...(name && { name }),
-        ...(slug && { slug }),
+        ...(slug && { slug: createSlug(slug) }),
         ...(description !== undefined && { description }),
         ...(imageUrl !== undefined && { imageUrl }),
         ...(parentId !== undefined && { parentId }),

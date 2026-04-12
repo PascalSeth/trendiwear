@@ -91,18 +91,29 @@ export async function GET(request: NextRequest) {
           },
           address: true,
           items: {
+            where: view === "seller" ? { professionalId: user.id } : undefined,
             include: {
               product: {
-                select: {
-                  name: true,
-                  images: true,
-                  price: true,
-                  currency: true,
-                },
+                include: {
+                  professional: {
+                    include: {
+                      professionalProfile: {
+                        select: {
+                          businessName: true,
+                          location: true,
+                          latitude: true,
+                          longitude: true,
+                        }
+                      }
+                    }
+                  }
+                }
               },
             },
           },
-          deliveryConfirmation: true,
+          deliveryConfirmations: {
+            where: view === "seller" ? { professionalId: user.id } : undefined,
+          },
           paymentEscrow: true,
         },
         skip: (page - 1) * limit,
@@ -192,6 +203,8 @@ export async function POST(request: NextRequest) {
       color?: string;
       price: number;
       notes?: string;
+      isPreorder: boolean;
+      estimatedDelivery: number | null;
     }> = []
 
     for (const item of items) {
@@ -212,18 +225,9 @@ export async function POST(request: NextRequest) {
       const { effectivePrice } = calculateEffectivePrice(product)
       const itemTotal = effectivePrice * item.quantity
       subtotal += itemTotal
-
-      // Only calculate shipping if deliveryMethod is not PICKUP
-      if (deliveryMethod !== 'PICKUP' && deliveryZone && product.professional.professionalProfile?.deliveryZones) {
-        const zone = product.professional.professionalProfile.deliveryZones.find((z) => z.zoneName === deliveryZone)
-        if (zone) {
-          const freeDeliveryThreshold =
-            zone.freeDeliveryAbove || product.professional.professionalProfile.freeDeliveryThreshold
-          if (!freeDeliveryThreshold || itemTotal < freeDeliveryThreshold) {
-            shippingCost += zone.baseDeliveryFee
-          }
-        }
-      }
+      
+      // Shipping is now paid offline (in person), so we don't calculate or charge it here
+      shippingCost = 0
 
       orderItems.push({
         productId: item.productId,
@@ -233,6 +237,8 @@ export async function POST(request: NextRequest) {
         color: item.color,
         price: effectivePrice,
         notes: item.notes,
+        isPreorder: product.isPreorder,
+        estimatedDelivery: product.estimatedDelivery,
       })
     }
 
@@ -252,8 +258,6 @@ export async function POST(request: NextRequest) {
           discount = Math.min((subtotal * coupon.value) / 100, coupon.maxDiscount || Number.POSITIVE_INFINITY)
         } else if (coupon.type === "FIXED_AMOUNT") {
           discount = Math.min(coupon.value, subtotal)
-        } else if (coupon.type === "FREE_SHIPPING") {
-          discount = shippingCost
         }
       }
     }
@@ -285,6 +289,8 @@ export async function POST(request: NextRequest) {
               color: item.color,
               price: item.price,
               notes: item.notes,
+              isPreorder: item.isPreorder,
+              estimatedDelivery: item.estimatedDelivery,
             }))
           },
           // Set payment info if provided (after successful payment)

@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Package, Truck, CheckCircle, Clock,
-  CreditCard, PackageCheck, Loader2, AlertCircle, Copy, Check
+  CreditCard, PackageCheck, Loader2, AlertCircle, Copy, Check, Info
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -20,6 +20,9 @@ interface OrderItem {
   price: number
   size?: string
   color?: string
+  status: string // Item-level status
+  deliveryFee?: number // Seller-input offline fee
+  professionalId: string
   product: {
     id: string
     name: string
@@ -32,6 +35,9 @@ interface OrderItem {
       professionalProfile?: {
         businessName: string
         slug: string
+        location: string
+        latitude?: number
+        longitude?: number
       }
     }
   }
@@ -57,13 +63,19 @@ interface Order {
     state: string
     country: string
     zipCode?: string
+    latitude?: number
+    longitude?: number
   }
   items: OrderItem[]
-  deliveryConfirmation?: {
+  deliveryConfirmations?: Array<{
+    professionalId: string
     customerConfirmed: boolean
     confirmedAt?: string
-    confirmationDeadline: string
-  }
+    status: string
+    riderName?: string
+    riderPhone?: string
+    trackingNumber?: string
+  }>
 }
 
 interface Props {
@@ -72,18 +84,18 @@ interface Props {
 }
 
 const statusConfig: Record<string, { color: string; bg: string; border: string; icon: React.ReactNode; label: string }> = {
-  PENDING:      { color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200', icon: <Clock size={16} />,       label: 'Payment Pending' },
-  PROCESSING:   { color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  icon: <Package size={16} />,     label: 'Processing' },
-  CONFIRMED:    { color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200', icon: <CheckCircle size={16} />, label: 'Confirmed' },
-  SHIPPED:      { color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-200', icon: <Truck size={16} />,       label: 'In Transit' },
-  DELIVERED:    { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: <CheckCircle size={16} />, label: 'Delivered' },
-  CANCELLED:    { color: 'text-rose-600',    bg: 'bg-rose-50',    border: 'border-rose-200',  icon: <AlertCircle size={16} />, label: 'Cancelled' },
+  PENDING:          { color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200',  icon: <Clock size={16} />,       label: 'Pending' },
+  CONFIRMED:        { color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200', icon: <CheckCircle size={16} />, label: 'Confirmed' },
+  PROCESSING:       { color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',   icon: <Package size={16} />,     label: 'Processing' },
+  SHIPPED:          { color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-200', icon: <Truck size={16} />,       label: 'In Transit' },
+  READY_FOR_PICKUP: { color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200', icon: <Package size={16} />,     label: 'Ready for Pickup' },
+  READY_FOR_DELIVERY: { color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', icon: <Truck size={16} />,      label: 'Out for Delivery' },
+  DELIVERED:        { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: <CheckCircle size={16} />, label: 'Delivered' },
+  CANCELLED:        { color: 'text-rose-600',    bg: 'bg-rose-50',    border: 'border-rose-200',   icon: <AlertCircle size={16} />, label: 'Cancelled' },
 }
 
-const timelineSteps = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED']
-
 export default function OrderDetailClient({ order, isCustomer }: Props) {
-  const [confirmingDelivery, setConfirmingDelivery] = useState(false)
+  const [loadingAction, setLoadingAction] = useState<string | null>(null) // professionalId
   const [copied, setCopied] = useState(false)
 
   const { data, mutate } = useSWR(
@@ -91,15 +103,22 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
     fetcher,
     { 
       fallbackData: order,
-      refreshInterval: 15000 
+      refreshInterval: 10000 
     }
   )
 
-  const currentOrder = data || order
-  const cfg = statusConfig[currentOrder.status] || statusConfig.PENDING
+  const currentOrder = (data as Order) || order
   const currency = currentOrder.items[0]?.product?.currency || 'GHS'
 
-  const activeStepIndex = timelineSteps.indexOf(currentOrder.status)
+  // Group items by seller (professionalId)
+  const packages = React.useMemo(() => {
+    const groups: Record<string, OrderItem[]> = {}
+    currentOrder.items.forEach(item => {
+      if (!groups[item.professionalId]) groups[item.professionalId] = []
+      groups[item.professionalId].push(item)
+    })
+    return groups
+  }, [currentOrder.items])
 
   const copyOrderId = () => {
     navigator.clipboard.writeText(currentOrder.id)
@@ -108,274 +127,286 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const confirmDelivery = async () => {
-    setConfirmingDelivery(true)
+  const confirmPackageDelivery = async (professionalId: string) => {
+    setLoadingAction(professionalId)
     try {
       const res = await fetch(`/api/orders/${currentOrder.id}/confirm-delivery`, { 
-        method: 'POST' 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professionalId })
       })
       
       if (res.ok) {
-        // Optimistic update
-        mutate({
-          ...currentOrder,
-          status: 'DELIVERED',
-          deliveryConfirmation: {
-            ...currentOrder.deliveryConfirmation,
-            customerConfirmed: true,
-            confirmedAt: new Date().toISOString()
-          }
-        }, false)
-        toast.success('Delivery confirmed! Thank you.')
+        toast.success('Package confirmed! Payout initiated for this seller.')
+        mutate() // Refresh data
       } else {
         const errorData = await res.json()
-        toast.error(errorData.error || 'Failed to confirm delivery')
+        toast.error(errorData.error || 'Failed to confirm package')
       }
     } catch {
       toast.error('Something went wrong')
     } finally {
-      setConfirmingDelivery(false)
+      setLoadingAction(null)
     }
   }
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] pt-24 lg:pt-32 pb-32">
-      <div className="max-w-5xl mx-auto px-6 lg:px-12">
+      <div className="max-w-6xl mx-auto px-6 lg:px-12">
 
         {/* Back Link */}
         <Link href="/orders" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors mb-12">
-          <ArrowLeft size={14} /> Back to Orders
+          <ArrowLeft size={14} /> My Orders
         </Link>
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row justify-between md:items-end gap-6 mb-12 border-b border-stone-200 pb-12">
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 mb-12 border-b border-stone-200 pb-12">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-stone-400 mb-3">Full Trace</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-stone-400 mb-3">Order Trace</p>
             <h1 className="text-4xl md:text-5xl font-serif italic text-stone-950 leading-tight">
               Order #{currentOrder.id.slice(-8).toUpperCase()}
             </h1>
-            <button onClick={copyOrderId} className="mt-3 inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-stone-400 hover:text-stone-900 transition-colors">
-              {copied ? <Check size={12} /> : <Copy size={12} />}
-              {copied ? 'Copied' : 'Copy full ID'}
-            </button>
+            <div className="flex items-center gap-6 mt-4">
+              <button onClick={copyOrderId} className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-stone-400 hover:text-stone-900 transition-colors">
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'Copied' : 'Copy ID'}
+              </button>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">
+                Placed on {new Date(currentOrder.createdAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
-          <div className={`flex items-center gap-3 px-6 py-3 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
-            {cfg.icon}
-            <span className="text-xs font-mono uppercase tracking-widest font-bold">{cfg.label}</span>
+          <div className="flex flex-col items-end gap-2">
+             <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Overall Status</span>
+             <StatusBadge status={currentOrder.status} />
           </div>
-        </motion.div>
+        </div>
 
-        {/* Status Timeline */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white border border-stone-100 rounded-3xl p-8 lg:p-12 mb-8 shadow-sm">
-          <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-8">Order Progress</h3>
-          <div className="flex items-center justify-between relative">
-            {/* Connector line */}
-            <div className="absolute top-5 left-5 right-5 h-[2px] bg-stone-100" />
-            <div className="absolute top-5 left-5 h-[2px] bg-stone-900 transition-all duration-700" style={{ width: `${Math.max(0, activeStepIndex) / (timelineSteps.length - 1) * 100}%`, maxWidth: 'calc(100% - 40px)' }} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
-            {timelineSteps.map((step, idx) => {
-              const isCompleted = idx <= activeStepIndex
-              const isCurrent = idx === activeStepIndex
-              const stepCfg = statusConfig[step] || statusConfig.PENDING
+          {/* Left: Packages (Multi-Seller) */}
+          <div className="lg:col-span-8 space-y-10">
+            <div>
+               <h2 className="text-2xl font-serif mb-2">Packages</h2>
+               <p className="text-stone-500 text-sm">Each seller manages their own delivery and status updates.</p>
+            </div>
+
+            {Object.entries(packages).map(([profId, items], idx) => {
+              const seller = items[0].product.professional.professionalProfile
+              const packageStatus = items[0].status
+              const confirmation = currentOrder.deliveryConfirmations?.find(c => c.professionalId === profId)
+              const isDelivered = packageStatus === 'DELIVERED' || confirmation?.customerConfirmed
+
               return (
-                <div key={step} className="relative z-10 flex flex-col items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isCompleted ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-300'} ${isCurrent ? 'ring-4 ring-stone-900/10 scale-110' : ''}`}>
-                    {stepCfg.icon}
+                <motion.div 
+                  key={profId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="bg-white border border-stone-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Package Header */}
+                  <div className="p-8 border-b border-stone-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-stone-50 rounded-2xl flex items-center justify-center border border-stone-100 italic font-serif text-stone-400">
+                        {seller?.businessName?.charAt(0) || 'S'}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-stone-900">{seller?.businessName || 'Seller'}</h4>
+                        <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Package {idx + 1}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                       <StatusBadge status={packageStatus} />
+                    </div>
                   </div>
-                  <span className={`text-[9px] font-mono uppercase tracking-widest ${isCompleted ? 'text-stone-900 font-bold' : 'text-stone-300'}`}>
-                    {stepCfg.label}
-                  </span>
-                </div>
+
+                  {/* Items List */}
+                  <div className="p-8 space-y-6">
+                     {items.map(item => (
+                       <div key={item.id} className="flex gap-6">
+                         <div className="relative w-20 h-24 rounded-2xl overflow-hidden bg-stone-50 flex-shrink-0 border border-stone-100">
+                            <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt={item.product.name} fill className="object-cover" />
+                         </div>
+                         <div className="flex-1 min-w-0 py-1">
+                            <h5 className="text-sm font-medium text-stone-900 mb-1">{item.product.name}</h5>
+                            <div className="flex gap-2 mb-3">
+                               {item.size && <span className="text-[9px] font-mono uppercase tracking-widest bg-stone-50 px-2 py-0.5 border border-stone-100 rounded">{item.size}</span>}
+                               <span className="text-[9px] font-mono uppercase tracking-widest bg-stone-50 px-2 py-0.5 border border-stone-100 rounded">Qty: {item.quantity}</span>
+                            </div>
+                            <p className="text-xs text-stone-400">{currency} {item.price.toFixed(2)} each</p>
+                         </div>
+                         <div className="text-right py-1">
+                            <span className="text-sm font-medium text-stone-900">{currency} {(item.price * item.quantity).toFixed(2)}</span>
+                         </div>
+                       </div>
+                     ))}
+                  </div>
+
+                  {/* Footer Action Card */}
+                  <div className={`p-8 bg-stone-50/50 border-t border-stone-50 space-y-6`}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                       {/* Delivery Info */}
+                       <div className="space-y-3">
+                          <label className="text-[9px] font-mono uppercase tracking-[0.2em] text-stone-400 block">Delivery Method</label>
+                          <div className="flex items-center gap-3">
+                             <div className="p-2 bg-white rounded-xl border border-stone-100">
+                                {currentOrder.deliveryMethod === 'PICKUP' ? <Package size={14} className="text-amber-600" /> : <Truck size={14} className="text-blue-600" />}
+                             </div>
+                             <span className="text-xs font-medium text-stone-700 capitalize">{currentOrder.deliveryMethod.toLowerCase()}</span>
+                          </div>
+                          {seller?.location && (
+                            <p className="text-xs text-stone-500 leading-relaxed italic ml-10 truncate max-w-[200px]" title={seller.location}>{seller.location}</p>
+                          )}
+                       </div>
+
+                       {/* Rider Info (Package Specific) */}
+                       {confirmation && (confirmation.riderName || confirmation.riderPhone) && (
+                         <div className="space-y-3">
+                            <label className="text-[9px] font-mono uppercase tracking-[0.2em] text-stone-400 block">Rider Assigned</label>
+                            <div className="flex items-center gap-3">
+                               <div className="p-2 bg-white rounded-xl border border-stone-100">
+                                  <Truck size={14} className="text-teal-600" />
+                               </div>
+                               <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-stone-900">{confirmation.riderName || 'Rider'}</span>
+                                  {confirmation.riderPhone && (
+                                    <a href={`tel:${confirmation.riderPhone}`} className="text-[9px] font-mono text-teal-600 hover:underline uppercase tracking-widest">{confirmation.riderPhone}</a>
+                                  )}
+                               </div>
+                            </div>
+                            {confirmation.trackingNumber && (
+                              <p className="text-[9px] font-mono text-stone-400 ml-10">Tracking: {confirmation.trackingNumber}</p>
+                            )}
+                         </div>
+                       )}
+
+                       {/* Offline Delivery Fee */}
+                       <div className="space-y-3">
+                          <label className="text-[9px] font-mono uppercase tracking-[0.2em] text-stone-400 block">Delivery Fee</label>
+                          <div className="flex items-center gap-3">
+                             <div className="p-2 bg-white rounded-xl border border-stone-100">
+                                <CreditCard size={14} className="text-stone-400" />
+                             </div>
+                             <div className="flex flex-col">
+                                <span className="text-sm font-bold text-stone-900">
+                                   {items[0].deliveryFee ? `${currency} ${items[0].deliveryFee.toFixed(2)}` : 'Wait for quote'}
+                                </span>
+                                <span className="text-[9px] font-mono text-amber-600 uppercase tracking-widest">Paid In-Person to Seller</span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* ACTION BUTTON */}
+                    {isCustomer && !isDelivered && (
+                      <div className="pt-4">
+                        {(packageStatus === 'SHIPPED' || packageStatus === 'READY_FOR_DELIVERY' || packageStatus === 'READY_FOR_PICKUP') ? (
+                          <div className="space-y-4">
+                            <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-xl flex items-start gap-3">
+                               <Info size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                               <p className="text-[10px] text-amber-700 leading-relaxed">
+                                  Confirm only when you have received the package and paid the delivery fee to the seller. This will release the item funds to them.
+                               </p>
+                            </div>
+                            <button
+                              onClick={() => confirmPackageDelivery(profId)}
+                              disabled={loadingAction === profId}
+                              className="w-full h-14 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl font-mono text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-stone-900/10"
+                            >
+                              {loadingAction === profId ? <><Loader2 size={16} className="animate-spin" /> Processing...</> : <><PackageCheck size={18} /> Confirm Receipt & Release Funds</>}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="h-14 border border-stone-200 border-dashed rounded-2xl flex items-center justify-center text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                            Awaiting Dispatch from Seller
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isDelivered && (
+                       <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex items-center gap-4">
+                          <CheckCircle className="text-emerald-500" size={24} />
+                          <div>
+                             <p className="text-xs font-bold text-emerald-900 uppercase tracking-widest">Receipt Confirmed</p>
+                             <p className="text-[10px] text-emerald-600 font-mono mt-1">Package successfully received and funds released to {seller?.businessName}.</p>
+                          </div>
+                       </div>
+                    )}
+                  </div>
+                </motion.div>
               )
             })}
           </div>
-        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          {/* Left: Items */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2 bg-white border border-stone-100 rounded-3xl p-8 lg:p-12 shadow-sm">
-            <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-8">Items ({currentOrder.items.length})</h3>
-            <div className="space-y-6">
-              {currentOrder.items.map((item: OrderItem) => (
-                <div key={item.id} className="flex gap-5 p-4 rounded-2xl hover:bg-stone-50 transition-colors">
-                  <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0 ring-1 ring-stone-900/5">
-                    <Image src={item.product.images[0] || '/placeholder-product.jpg'} alt={item.product.name} fill className="object-cover" />
+          {/* Right Sidebar: Summary */}
+          <div className="lg:col-span-4 space-y-8">
+            {/* Total Balance Sheet */}
+            <div className="bg-white border border-stone-100 rounded-[2.5rem] p-8 lg:p-10 shadow-sm sticky top-28">
+               <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-8">Financial Summary</h3>
+               
+               <div className="space-y-4 mb-8">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Items Total</span>
+                    <span className="font-medium">{currency} {currentOrder.subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Link href={`/shopping/products/${item.product.id}`} className="text-sm font-medium text-stone-900 hover:underline line-clamp-1">
-                      {item.product.name}
-                    </Link>
-                    <div className="flex flex-wrap gap-2">
-                      {item.size && (
-                        <span className="text-[10px] font-mono uppercase tracking-widest bg-stone-100 text-stone-500 px-3 py-1 rounded-full">
-                          Size: {item.size}
-                        </span>
-                      )}
-                      {item.color && (
-                        <span 
-                          className="w-4 h-4 rounded-full border border-stone-200 shadow-sm shrink-0" 
-                          style={{ backgroundColor: item.color }} 
-                          title={item.color}
-                        />
-                      )}
-                      <span className="text-[10px] font-mono uppercase tracking-widest bg-stone-100 text-stone-500 px-3 py-1 rounded-full">
-                        Qty: {item.quantity}
-                      </span>
-                    </div>
-                    {item.product.professional?.professionalProfile && (
-                      <Link href={`/tz/${item.product.professional.professionalProfile.slug}`} className="text-[10px] font-mono text-stone-400 hover:text-stone-900 uppercase tracking-widest transition-colors">
-                        by {item.product.professional.professionalProfile.businessName}
-                      </Link>
-                    )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Handling Fee (3%)</span>
+                    <span className="font-medium">{currency} {currentOrder.platformFee.toFixed(2)}</span>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-medium text-stone-900">{currency} {(item.price * item.quantity).toFixed(2)}</p>
-                    {item.quantity > 1 && (
-                      <p className="text-[10px] text-stone-400 font-mono">{currency} {item.price.toFixed(2)} each</p>
-                    )}
+                  <div className="flex justify-between text-sm italic">
+                    <span className="text-stone-500">Shipping (Online)</span>
+                    <span className="font-medium">{currency} 0.00</span>
                   </div>
-                </div>
-              ))}
-            </div>
+               </div>
 
-            {/* Price Breakdown */}
-            <div className="mt-10 pt-8 border-t border-stone-100 space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Subtotal</span>
-                <span className="font-medium">{currency} {currentOrder.subtotal.toFixed(2)}</span>
-              </div>
-              {currentOrder.shippingCost > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Shipping</span>
-                  <span className="font-medium">{currency} {currentOrder.shippingCost.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Platform Fee</span>
-                <span className="font-medium">{currency} {currentOrder.platformFee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg pt-4 border-t border-stone-200">
-                <span className="font-serif text-stone-900">Total</span>
-                <span className="font-serif font-medium text-stone-900">{currency} {currentOrder.totalPrice.toFixed(2)}</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right Sidebar */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-6">
-
-            {/* Delivery Address */}
-            <div className="bg-white border border-stone-100 rounded-3xl p-8 shadow-sm space-y-4">
-              <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Delivery Address</h3>
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-stone-50 rounded-2xl flex-shrink-0">
-                  <MapPin size={18} className="text-stone-600" />
-                </div>
-                <div className="text-sm text-stone-600 font-serif italic leading-relaxed">
-                  {currentOrder.address.street}<br />
-                  {currentOrder.address.city}, {currentOrder.address.state}<br />
-                  {currentOrder.address.zipCode && `${currentOrder.address.zipCode}, `}{currentOrder.address.country}
-                </div>
-              </div>
-              <div className="pt-3 border-t border-stone-50">
-                <span className={`text-[10px] font-mono uppercase tracking-widest px-3 py-1 rounded-full ${currentOrder.deliveryMethod === 'PICKUP' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}`}>
-                  {currentOrder.deliveryMethod === 'PICKUP' ? 'Store Pickup' : 'Home Delivery'}
-                </span>
-              </div>
-            </div>
-
-            {/* Tracking Info */}
-            {currentOrder.trackingNumber && (
-              <div className="bg-white border border-stone-100 rounded-3xl p-8 shadow-sm space-y-4">
-                <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Tracking</h3>
-                <div className="flex items-center gap-3">
-                  <Truck size={18} className="text-violet-600" />
-                  <span className="font-mono text-sm text-stone-900">{currentOrder.trackingNumber}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Payment Info */}
-            <div className="bg-white border border-stone-100 rounded-3xl p-8 shadow-sm space-y-4">
-              <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Payment</h3>
-              <div className="flex items-center gap-3">
-                <CreditCard size={18} className="text-stone-600" />
-                <span className={`text-xs font-mono uppercase tracking-widest ${currentOrder.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                  {currentOrder.paymentStatus}
-                </span>
-              </div>
-              {currentOrder.paystackPaidAt && (
-                <p className="text-[10px] font-mono text-stone-400">
-                  Paid on {new Date(currentOrder.paystackPaidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-
-            {/* Timeline */}
-            <div className="bg-white border border-stone-100 rounded-3xl p-8 shadow-sm space-y-4">
-              <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Timeline</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Clock size={14} className="text-stone-400" />
-                  <span className="text-stone-500">Placed: {new Date(currentOrder.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                </div>
-                {currentOrder.paystackPaidAt && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <CreditCard size={14} className="text-emerald-500" />
-                    <span className="text-stone-500">Paid: {new Date(currentOrder.paystackPaidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+               <div className="pt-8 border-t border-stone-200 mb-8 space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="font-serif">Online Total</span>
+                    <span className="text-3xl font-serif">{currency} {currentOrder.totalPrice.toFixed(2)}</span>
                   </div>
-                )}
-                {currentOrder.actualDelivery && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle size={14} className="text-emerald-500" />
-                    <span className="text-stone-500">Delivered: {new Date(currentOrder.actualDelivery).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  <p className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Paid via Paystack</p>
+               </div>
+
+               <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl mb-8">
+                  <div className="flex items-center gap-3 mb-2">
+                     <ShieldCheck size={16} className="text-emerald-600" />
+                     <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-widest">TrendiZip Escrow</span>
                   </div>
-                )}
-              </div>
+                  <p className="text-[10px] text-emerald-700 leading-relaxed">
+                     Your payment for the items is held securely. We only release it to each seller separately when you confirm their package.
+                  </p>
+               </div>
+
+               {/* Delivery Address Review */}
+               <div className="space-y-4 pt-8 border-t border-stone-100">
+                  <h4 className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Ship To</h4>
+                  <div className="flex items-start gap-3">
+                     <MapPin size={14} className="text-stone-400 mt-0.5" />
+                     <p className="text-xs text-stone-600 leading-relaxed">
+                        {currentOrder.address.street}, {currentOrder.address.city}, {currentOrder.address.state}
+                     </p>
+                  </div>
+               </div>
             </div>
+          </div>
 
-            {/* Confirm Delivery CTA */}
-            {isCustomer && currentOrder.status === 'SHIPPED' && (
-              <div className="bg-violet-50 border border-violet-200 rounded-3xl p-8 space-y-4">
-                <div className="flex items-center gap-3 text-violet-700">
-                  <Truck size={18} />
-                  <span className="text-xs font-mono uppercase tracking-widest font-bold">Package In Transit</span>
-                </div>
-                <p className="text-sm text-violet-600 leading-relaxed">
-                  Once your package arrives, please confirm to complete the order.
-                </p>
-                <button
-                  onClick={confirmDelivery}
-                  disabled={confirmingDelivery}
-                  className="w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white h-14 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20"
-                >
-                  {confirmingDelivery ? (
-                    <><Loader2 size={14} className="animate-spin" /> Confirming...</>
-                  ) : (
-                    <><PackageCheck size={14} /> Confirm Delivery</>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* Delivery Confirmed */}
-            {currentOrder.status === 'DELIVERED' && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-8 flex items-center gap-4">
-                <CheckCircle size={24} className="text-emerald-600 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-mono uppercase tracking-widest font-bold text-emerald-800">Delivery Confirmed</p>
-                  {currentOrder.deliveryConfirmation?.confirmedAt && (
-                    <p className="text-[10px] text-emerald-600 font-mono mt-1">
-                      {new Date(currentOrder.deliveryConfirmation.confirmedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </motion.div>
         </div>
       </div>
     </div>
   )
 }
+
+function StatusBadge({ status }: { status: string }) {
+  const cfg = statusConfig[status] || statusConfig.PENDING
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
+      {cfg.icon}
+      <span className="text-[9px] font-mono uppercase tracking-widest font-bold">{cfg.label}</span>
+    </div>
+  )
+}
+
+import { ShieldCheck } from 'lucide-react'

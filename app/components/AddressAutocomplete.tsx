@@ -59,7 +59,6 @@ export default function AddressAutocomplete({
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // Only search if the value is not already what was selected (to avoid infinite loops)
       if (value.trim().length > 3 && !suggestions.find(s => s.display_name === value)) {
         searchAddress(value)
       } else if (value.trim().length <= 3) {
@@ -88,6 +87,7 @@ export default function AddressAutocomplete({
   }, [])
 
   const searchAddress = async (query: string) => {
+    if (!query) return;
     setIsSearching(true)
     setError(null)
 
@@ -97,35 +97,51 @@ export default function AddressAutocomplete({
         {
           headers: {
             'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'Trendiwear-App'
+            'User-Agent': 'TrendiZip-Ghana-Verified-App'
           }
         }
       )
 
-      if (!response.ok) throw new Error('Search failed')
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Service busy (rate limit). Please wait a moment.')
+        }
+        throw new Error('Search service temporarily unavailable.')
+      }
 
       const data = await response.json()
       setSuggestions(data)
       setShowSuggestions(data.length > 0)
+      if (data.length === 0) {
+        setError('No exact matches found. Try refining your search.')
+      }
     } catch (err) {
       console.error('Error searching address:', err)
-      setError('Search failed. Please enter manually.')
+      setError(err instanceof Error ? err.message : 'Connection failed. Please check your internet or retry.')
     } finally {
       setIsSearching(false)
     }
   }
 
+  const handleRetry = () => {
+    if (value.trim().length > 3) {
+      searchAddress(value)
+    }
+  }
+
   const handleSelect = (item: NominatimResult) => {
-    const { address, lat, lon } = item
-    
+    const { address, lat, lon } = item;
+    const rawLat = parseFloat(lat)
+    const rawLon = parseFloat(lon)
+
     const result: AddressResult = {
       street: address.road || address.pedestrian || address.suburb || value,
       city: address.city || address.town || address.village || address.county || '',
       state: address.state || address.region || '',
       zipCode: address.postcode || '',
       country: address.country || 'Kenya',
-      latitude: parseFloat(lat),
-      longitude: parseFloat(lon)
+      latitude: isNaN(rawLat) ? 0 : rawLat,
+      longitude: isNaN(rawLon) ? 0 : rawLon
     }
 
     onAddressSelect(result)
@@ -170,8 +186,7 @@ export default function AddressAutocomplete({
           setIsSearching(false)
         } catch (err) {
           console.error('Error detecting location:', err)
-          // Fallback to coordinates only if geocoding fails
-          onAddressSelect({
+          const fallback: AddressResult = {
             street: `Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
             city: '',
             state: '',
@@ -179,8 +194,9 @@ export default function AddressAutocomplete({
             country: 'Kenya',
             latitude: lat,
             longitude: lng
-          })
-          onChange(`Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+          }
+          onAddressSelect(fallback)
+          onChange(fallback.street)
           setIsSearching(false)
         }
       },
@@ -236,13 +252,24 @@ export default function AddressAutocomplete({
 
       <AnimatePresence>
         {error && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-1"
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between bg-amber-50 border border-amber-100 p-2 rounded-lg"
           >
-            {error}
-          </motion.p>
+            <p className="text-[9px] font-bold text-amber-700 uppercase tracking-widest px-1">
+              {error}
+            </p>
+            {error.includes('Connection') || error.includes('busy') || error.includes('failed') ? (
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="text-[9px] font-black uppercase tracking-widest bg-amber-200 text-amber-800 px-2 py-1 rounded hover:bg-amber-300 transition-colors"
+              >
+                Retry
+              </button>
+            ) : null}
+          </motion.div>
         )}
       </AnimatePresence>
 

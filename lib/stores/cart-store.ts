@@ -24,6 +24,9 @@ export interface CartProduct {
     lastName: string
     professionalProfile?: {
       businessName: string
+      latitude: number | null
+      longitude: number | null
+      location: string | null
     }
   }
   allowPickup: boolean

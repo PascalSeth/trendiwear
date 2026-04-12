@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       data: {
         momoNumber: formattedPhone,
         momoProvider: provider,
-        paystackSubaccountCode: recipientCode, // Reusing field for recipient_code
+        paystackRecipientCode: recipientCode,
         paymentSetupComplete: true,
       },
     })

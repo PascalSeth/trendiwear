@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   ShoppingBag, Star,
   ChevronLeft, ChevronRight, 
-  Clock, BadgeCheck,
+  Clock, BadgeCheck, ShieldCheck,
   Info,
   Check,
   Plus, Minus,
@@ -328,9 +328,17 @@ export default function ProductClient({
                      </div>
                   </div>
                   {product.isPreorder && product.estimatedDelivery && (
-                    <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3">
-                       <Clock size={16} className="text-blue-600" />
-                       <span className="text-[10px] font-black uppercase tracking-widest text-blue-900">Est. Delivery: {product.estimatedDelivery} Days</span>
+                    <div className="mt-6 p-6 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center justify-between group overflow-hidden relative">
+                       <div className="flex items-center gap-4 relative z-10">
+                          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-600 shadow-sm">
+                             <Clock size={18} className="animate-pulse" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-blue-900">Pre-order Lead Time</p>
+                             <p className="text-[9px] font-bold text-blue-600/60 mt-0.5 italic lowercase">Estimated shipment in {product.estimatedDelivery} days</p>
+                          </div>
+                       </div>
+                       <BadgeCheck className="w-12 h-12 text-blue-100 absolute -right-2 top-1/2 -translate-y-1/2 rotate-12" />
                     </div>
                   )}
                </div>
@@ -429,10 +437,27 @@ export default function ProductClient({
                      </div>
                   )}
                    {product.isPreorder && (
-                    <div className="py-2 text-center bg-blue-50 rounded-xl">
-                       <span className="text-[8px] font-black uppercase tracking-widest text-blue-500">This is a Pre-order item</span>
+                    <div className="py-4 text-center bg-blue-50/30 rounded-2xl border border-blue-100/50 space-y-1">
+                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Exclusive Pre-order Opportunity</p>
+                       <p className="text-[8px] font-bold text-blue-400 italic">Expected arrival calculated from ship date.</p>
                     </div>
                   )}
+
+                  <div className="p-6 bg-emerald-50/30 rounded-3xl border border-emerald-100/50 space-y-4">
+                     <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500 rounded-xl text-white shadow-sm ring-4 ring-emerald-50">
+                           <ShieldCheck size={18} />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">TrendiZip Security</p>
+                           <p className="text-[8px] font-bold text-emerald-400 lowercase">Safe Payment Guarantee</p>
+                        </div>
+                     </div>
+                     <p className="text-[10px] text-stone-500 font-serif leading-relaxed italic">
+                        We hold your money safely and only pay the seller after you confirm receipt. 
+                        <strong> TrendiZip is not responsible for any payments made outside this website.</strong>
+                     </p>
+                  </div>
 
                   {(!session || !isOwner) && (
                     <button 
@@ -481,7 +506,7 @@ export default function ProductClient({
          </div>
       )}
 
-      {/* 2. Sleek Artisan / Designer Banner */}
+      {/* 2. Sleek Seller / Designer Banner */}
       {product.professional?.professionalProfile && (
          <section className="w-full py-16 md:py-24 bg-white border-b border-stone-100 relative">
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">

@@ -2,12 +2,12 @@ import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import CollectionDetailClient from './CollectionDetailClient';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   // Fetch collection and products in parallel on the server
   const collection = await prisma.collection.findUnique({
-    where: { id },
+    where: { slug },
     include: {
       _count: {
         select: {
@@ -25,7 +25,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     where: {
       isActive: true,
       isInStock: true,
-      collections: { some: { id } }
+      collections: { some: { id: collection.id } }
     },
     include: {
       categories: {

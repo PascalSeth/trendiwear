@@ -47,7 +47,7 @@ export const CategoryNavigator = ({ categories }: CategoryNavigatorProps) => {
             {categories.map((cat, i) => (
               <Link
                 key={cat.id}
-                href={`/shopping/categories/${cat.id}`}
+                href={`/shopping/categories/${cat.slug}`}
                 className="group flex items-center gap-4 hover:opacity-100 transition-opacity"
               >
                 <div className="relative w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden border border-stone-100 group-hover:border-stone-900 transition-colors duration-500">

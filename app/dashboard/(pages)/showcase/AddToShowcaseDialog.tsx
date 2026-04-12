@@ -35,6 +35,7 @@ interface Product {
   isActive: boolean
   isInStock: boolean
   isShowcaseApproved: boolean
+  isPreorder?: boolean
 }
 
 interface AddToShowcaseDialogProps {
@@ -158,7 +159,12 @@ export default function AddToShowcaseDialog({ onAdd, userRole }: AddToShowcaseDi
                         height={64}
                       />
                       <div>
-                        <h4 className="font-medium">{product.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{product.name}</h4>
+                          {product.isPreorder && (
+                             <Badge variant="outline" className="text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1.5 h-4">Pre-order</Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           by {product.professional.professionalProfile?.businessName ||
                               `${product.professional.firstName} ${product.professional.lastName}`}

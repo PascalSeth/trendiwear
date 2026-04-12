@@ -255,10 +255,10 @@ export default function CartPage() {
                   <div className="h-6 w-10 bg-white/10 rounded" />
                   <div className="h-6 w-10 bg-white/10 rounded" />
                 </div>
-                <p className="text-[10px] text-zinc-500 flex items-center gap-1.5 justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <div className="text-[10px] text-zinc-500 flex items-center gap-1.5 justify-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Secure checkout powered by Paystack
-                </p>
+                </div>
               </div>
             </div>
           </div>

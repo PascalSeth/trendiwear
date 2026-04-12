@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireRole } from "@/lib/auth"
 import type { Season } from "@prisma/client"
 import type { Prisma } from "@prisma/client"
+import { createSlug } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     const collection = await prisma.collection.create({
       data: {
         name,
-        slug,
+        slug: createSlug(slug || name),
         description,
         imageUrl,
         season,

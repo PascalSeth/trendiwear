@@ -30,6 +30,8 @@ export default function PaymentCompletePage() {
   const [result, setResult] = useState<PaymentResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const [redirectCount, setRedirectCount] = useState(3)
+
   useEffect(() => {
     const verifyPayment = async () => {
       if (!reference) {
@@ -47,6 +49,19 @@ export default function PaymentCompletePage() {
         const data = await response.json()
         
         setResult(data)
+
+        // Start redirect countdown on success
+        if (data.success) {
+          const timer = setInterval(() => {
+            setRedirectCount((prev) => {
+              if (prev <= 1) {
+                clearInterval(timer)
+                window.location.href = '/orders'
+              }
+              return prev - 1
+            })
+          }, 1000)
+        }
       } catch (error) {
         console.error('Payment verification error:', error)
         setResult({
@@ -67,9 +82,9 @@ export default function PaymentCompletePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-12">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Verifying Payment</h2>
-            <p className="text-gray-500 text-center">Please wait while we confirm your payment...</p>
+            <Loader2 className="w-12 h-12 animate-spin text-stone-900 mb-4" />
+            <h2 className="text-xl font-serif text-stone-900 mb-2">Verifying Payment</h2>
+            <p className="text-stone-500 text-center font-serif italic text-sm">Please wait while we confirm your payment with the seller...</p>
           </CardContent>
         </Card>
       </div>
@@ -78,53 +93,53 @@ export default function PaymentCompletePage() {
 
   if (result?.success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center py-8">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-              <CheckCircle2 className="w-12 h-12 text-green-600" />
+      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-stone-100 shadow-2xl rounded-[2.5rem] overflow-hidden">
+          <CardContent className="flex flex-col items-center py-12 px-8">
+            <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-8 ring-1 ring-emerald-100">
+              <CheckCircle2 className="w-12 h-12 text-emerald-600" />
             </div>
             
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-            <p className="text-gray-500 text-center mb-6">
-              Your order has been confirmed and is being processed.
+            <h2 className="text-3xl font-serif italic text-stone-950 mb-3 text-center">Payment Successful!</h2>
+            <p className="text-stone-500 text-center font-serif italic text-sm mb-8 leading-relaxed">
+              Your order has been confirmed. The seller is now preparing your items.
             </p>
 
             {result.order && (
-              <div className="w-full bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-gray-500">Order ID</span>
-                  <span className="font-mono text-sm">#{result.order.id.substring(0, 8)}</span>
+              <div className="w-full bg-stone-50/50 border border-stone-100 rounded-3xl p-6 mb-8 space-y-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-stone-400 font-mono uppercase tracking-widest">Order ID</span>
+                  <span className="font-mono text-stone-900">#{result.order.id.substring(0, 8).toUpperCase()}</span>
                 </div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-gray-500">Amount Paid</span>
-                  <span className="font-semibold">{result.order.currency || 'GHS'} {result.order.totalPrice.toFixed(2)}</span>
-                </div>
-                {result.order.channel && (
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-gray-500">Payment Method</span>
-                    <span className="text-sm capitalize">{result.order.channel.replace('_', ' ')}</span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Status</span>
-                  <span className="inline-flex items-center gap-1 text-sm text-green-600">
-                    <Package className="w-4 h-4" />
+                  <span className="text-stone-400 font-mono uppercase tracking-widest text-[10px]">Amount Paid</span>
+                  <span className="font-serif font-medium text-stone-900">{result.order.currency || 'GHS'} {result.order.totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t border-stone-100">
+                  <span className="text-stone-400 font-mono uppercase tracking-widest text-[10px]">Status</span>
+                  <span className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-emerald-600 font-bold">
+                    <Package className="w-3 h-3" />
                     Processing
                   </span>
                 </div>
               </div>
             )}
 
-            <div className="flex flex-col w-full gap-3">
-              <Button asChild className="w-full">
+            <div className="space-y-4 w-full">
+              <div className="text-center py-2">
+                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400 animate-pulse">
+                  Redirecting to your orders in {redirectCount}s...
+                </p>
+              </div>
+
+              <Button asChild className="w-full bg-stone-950 hover:bg-black text-white rounded-full h-14 font-mono text-[10px] uppercase tracking-[0.2em] transition-all">
                 <Link href={`/orders`}>
                   View My Orders
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
               
-              <Button variant="outline" asChild className="w-full">
+              <Button variant="outline" asChild className="w-full border-stone-200 rounded-full h-14 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500 hover:text-stone-950 transition-all">
                 <Link href="/shopping">
                   Continue Shopping
                 </Link>

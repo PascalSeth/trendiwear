@@ -132,7 +132,8 @@ model ProfessionalProfile {
   slug                   String?                @unique
   spotlightVideoUrl      String?
   creditScore            Float                  @default(0)
-  paystackSubaccountCode String?
+  paystackSubaccountCode  String?
+  paystackRecipientCode   String?
   momoNumber             String?                @unique
   momoProvider           String?
   paymentSetupComplete   Boolean                @default(false)
@@ -296,6 +297,7 @@ model Store {
 model Product {
   id                   String               @id @default(uuid())
   name                 String
+  slug                 String               @unique @default(uuid())
   description          String?
   price                Float
   currency             String               @default("GHS")
@@ -572,7 +574,6 @@ model Order {
   paystackPaidAt            DateTime?
   paystackChannel           String?
   paystackFees              Float?
-  trackingNumber            String?
   estimatedDelivery         DateTime?
   actualDelivery            DateTime?
   deliveryZone              String?
@@ -583,17 +584,11 @@ model Order {
   yangoQuoteId              String?
   yangoQuotePrice           Float?
   deliveryPaystackReference String?               @unique
-  riderName                 String?
-  riderPhone                String?
-  manualDeliveryFee         Float?
-  readyForDeliveryAt        DateTime?
-  riderId                   String?
   createdAt                 DateTime              @default(now())
   updatedAt                 DateTime              @updatedAt
-  deliveryConfirmation      DeliveryConfirmation?
+  deliveryConfirmations      DeliveryConfirmation[]
   address                   Address               @relation(fields: [addressId], references: [id])
   customer                  User                  @relation(fields: [customerId], references: [id])
-  rider                     Rider?                @relation(fields: [riderId], references: [id])
   coupons                   OrderCoupon[]
   items                     OrderItem[]
   paymentEscrow             PaymentEscrow?
@@ -610,26 +605,35 @@ model OrderItem {
   quantity       Int
   size           String?
   color          String?
-  price          Float
-  notes          String?
-  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product        Product @relation(fields: [productId], references: [id])
+  price              Float
+  deliveryFee        Float?
+  notes              String?
+  status             OrderStatus @default(PENDING)
+  order              Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product            Product @relation(fields: [productId], references: [id])
+  isPreorder         Boolean @default(false)
+  estimatedDelivery  Int?
 
   @@unique([orderId, productId, size, color])
 }
 
 model DeliveryConfirmation {
   id                   String             @id @default(uuid())
-  orderId              String             @unique
+  orderId              String
   customerId           String
   professionalId       String
   status               ConfirmationStatus @default(PENDING)
   customerConfirmed    Boolean            @default(false)
   confirmationDeadline DateTime
+  riderName            String?
+  riderPhone           String?
+  trackingNumber       String?
   createdAt            DateTime           @default(now())
   confirmedAt          DateTime?
   customer             User               @relation(fields: [customerId], references: [id])
   order                Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, professionalId])
 }
 
 model PaymentEscrow {
@@ -1253,7 +1257,6 @@ model Rider {
   professionalId String
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
-  orders         Order[]
   professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
   @@index([professionalId])
@@ -1312,6 +1315,7 @@ enum OrderStatus {
   PARTIALLY_REFUNDED
   READY_FOR_DELIVERY
   AWAITING_DELIVERY_PAYMENT
+  READY_FOR_PICKUP
 }
 
 enum PaymentStatus {

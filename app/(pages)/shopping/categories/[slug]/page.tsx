@@ -2,12 +2,12 @@ import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import CategoryDetailClient from './CategoryDetailClient';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   // 1. Fetch category with children and basic counts
   const category = await prisma.category.findUnique({
-    where: { id },
+    where: { slug },
     include: {
       parent: {
         select: { id: true, name: true, slug: true }
@@ -51,6 +51,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     return [...childIds, ...nestedIds.flat()];
   };
 
+  const id = category.id;
   const childIds = await getAllChildIds(id);
   const allCategoryIds = [id, ...childIds];
 

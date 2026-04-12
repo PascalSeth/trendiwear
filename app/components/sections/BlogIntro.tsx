@@ -162,7 +162,7 @@ function BlogIntro() {
                   src={featuredPost.imageUrl}
                   alt={featuredPost.title}
                   fill
-                  className="object-cover transition-transform duration-[1000ms] ease-out grayscale group-hover:grayscale-0 group-hover:scale-105"
+                  className="object-cover transition-transform duration-1000 ease-out grayscale group-hover:grayscale-0 group-hover:scale-105"
                 />
 
                 {/* Gradient Overlay for Text Readability */}

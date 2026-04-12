@@ -6,7 +6,7 @@ import { MultiCategoryPicker } from "@/app/components/MultiCategoryPicker";
 import { 
   Upload, X, Video, ChevronRight, ChevronLeft, 
   Check, Tag, Package, Palette, Image as ImageIcon, 
-  Loader2, DollarSign, Award,
+  Loader2, DollarSign, Award, Clock,
   Save, Plus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,6 +78,7 @@ export default function AddProductPage() {
   const [discountStartDate] = useState("");
   const [discountEndDate] = useState("");
   const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
+  const [estimatedDelivery, setEstimatedDelivery] = useState("0");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // --- Discovery Preview ---
@@ -157,6 +158,7 @@ export default function AddProductPage() {
     setIsCustomizable(false);
     setIsUnisex(true);
     setIsPreorder(false);
+    setEstimatedDelivery("0");
     setSubmittedForShowcase(false);
     setCurrentStep(0);
     setShowSuccessModal(false);
@@ -200,6 +202,7 @@ export default function AddProductPage() {
         isCustomizable,
         isUnisex,
         isPreorder,
+        estimatedDelivery: parseInt(estimatedDelivery),
         submittedForShowcase,
         discountPercentage: discountPercentage || undefined,
         discountStartDate: discountStartDate || undefined,
@@ -722,7 +725,7 @@ export default function AddProductPage() {
                             {[
                               { id: 'custom', label: 'Customizable Request', state: isCustomizable, set: setIsCustomizable, icon: <Save className="w-3 h-3" /> },
                               { id: 'unisex', label: 'Gender Neutral', state: isUnisex, set: setIsUnisex, icon: <Check className="w-3 h-3" /> },
-                              { id: 'preorder', label: 'Early Access', state: isPreorder, set: setIsPreorder, icon: <Loader2 className="w-3 h-3" /> },
+                              { id: 'preorder', label: 'Pre-order', state: isPreorder, set: setIsPreorder, icon: <Loader2 className="w-3 h-3" /> },
                               { id: 'showcase', label: 'Marketplace Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-3 h-3" /> },
                             ].map(opt => (
                               <button
@@ -746,6 +749,42 @@ export default function AddProductPage() {
                               </button>
                             ))}
                          </div>
+
+                         <AnimatePresence>
+                           {isPreorder && (
+                             <motion.div 
+                               initial={{ height: 0, opacity: 0 }}
+                               animate={{ height: 'auto', opacity: 1 }}
+                               exit={{ height: 0, opacity: 0 }}
+                               className="overflow-hidden"
+                             >
+                               <div className="pt-6 border-t border-slate-100 space-y-4">
+                                  <div className="flex items-center gap-3">
+                                     <div className="p-2 rounded-lg bg-blue-600 text-white shadow-sm">
+                                        <Clock className="w-3.5 h-3.5" />
+                                     </div>
+                                     <div className="text-left">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Pre-order Fulfillment</Label>
+                                        <p className="text-[8px] text-slate-400 font-bold lowercase block">Configure your shipment lead time</p>
+                                     </div>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                     <div className="relative">
+                                        <Input 
+                                          type="number"
+                                          value={estimatedDelivery}
+                                          onChange={(e) => setEstimatedDelivery(e.target.value)}
+                                          className="h-12 rounded-xl bg-slate-50 border-slate-100 focus:border-blue-600 font-bold px-4"
+                                          placeholder="14"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">DAYS LEAD TIME</span>
+                                     </div>
+                                  </div>
+                               </div>
+                             </motion.div>
+                           )}
+                         </AnimatePresence>
                       </div>
                    </div>
                 </div>

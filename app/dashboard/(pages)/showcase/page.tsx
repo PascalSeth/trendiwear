@@ -34,6 +34,7 @@ interface ShowcaseProduct {
   submittedForShowcase: boolean
   isShowcaseApproved: boolean
   showcaseStatus: "PENDING" | "APPROVED" | "REJECTED"
+  isPreorder?: boolean
   description?: string
 }
 
@@ -59,6 +60,7 @@ interface CurrentShowcaseProduct {
   submittedForShowcase: boolean
   isShowcaseApproved: boolean
   showcaseStatus: "PENDING" | "APPROVED" | "REJECTED"
+  isPreorder?: boolean
   _count: {
     wishlistItems: number
     orderItems: number
@@ -305,7 +307,12 @@ export default function ShowcaseManagementPage() {
                           height={80}
                         />
                         <div>
-                          <CardTitle className="text-xl">{product.name}</CardTitle>
+                          <div className="flex items-center gap-3">
+                            <CardTitle className="text-xl">{product.name}</CardTitle>
+                            {product.isPreorder && (
+                               <Badge variant="outline" className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border-blue-200">Pre-order</Badge>
+                            )}
+                          </div>
                           <p className="text-muted-foreground mt-1">
                             by {product.professional.professionalProfile?.businessName ||
                                 `${product.professional.firstName} ${product.professional.lastName}`}

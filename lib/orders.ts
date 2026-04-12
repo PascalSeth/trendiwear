@@ -42,6 +42,12 @@ export async function fulfillOrder(orderId: string) {
       })
     }
 
+    // 1.1 Update all OrderItem statuses to PROCESSING
+    await tx.orderItem.updateMany({
+      where: { orderId },
+      data: { status: 'PROCESSING' }
+    })
+
     // 2. Clear cart items
     await tx.cartItem.deleteMany({
       where: {

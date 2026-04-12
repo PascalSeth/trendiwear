@@ -25,6 +25,7 @@ import {
 import { Plus, Upload, X } from "lucide-react";
 import { Category } from "@/app/dashboard/types/category";
 import Image from "next/image";
+import { createSlug } from "@/lib/utils";
 
 interface ProductCategorySheetProps {
   categories: Category[];
@@ -106,18 +107,12 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
     }
   };
 
-  const generateSlug = (name: string): string => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
 
   const handleNameChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
       name: value,
-      slug: generateSlug(value),
+      slug: createSlug(value),
     }));
   };
 
@@ -174,7 +169,7 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
 
       const categoryData = {
         name: formData.name,
-        slug: formData.slug || generateSlug(formData.name),
+        slug: formData.slug || createSlug(formData.name),
         description: formData.description || undefined,
         imageUrl,
         parentId: formData.parentId === "none" ? undefined : formData.parentId || undefined,

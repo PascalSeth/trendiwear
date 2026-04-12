@@ -212,6 +212,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
         sizes: true,
         colors: true,
         tags: true,
+        slug: true,
+        stockQuantity: true,
+        isPreorder: true,
+        categories: {
+          select: {
+            name: true,
+            slug: true,
+          }
+        },
+        createdAt: true,
         professional: {
           select: {
             firstName: true,

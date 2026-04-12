@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 // import { requireRole } from "@/lib/auth"
 import type { Prisma } from "@prisma/client"
+import { createSlug } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,7 +88,16 @@ export async function POST(request: NextRequest) {
     }
 
     const category = await prisma.category.create({
-      data: { name, slug, description, imageUrl, parentId, level, order: finalOrder, isActive: isActive ?? true },
+      data: { 
+        name, 
+        slug: createSlug(slug || name), 
+        description, 
+        imageUrl, 
+        parentId, 
+        level, 
+        order: finalOrder, 
+        isActive: isActive ?? true 
+      },
       include: { parent: true, children: true },
     })
 

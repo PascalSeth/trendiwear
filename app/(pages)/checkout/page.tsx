@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, MapPin, Check, Plus, Loader2, ShieldCheck, CreditCard, Info, Pencil, X, Truck, Package } from 'lucide-react'
+import { ArrowLeft, MapPin, Check, Plus, Loader2, ShieldCheck, Info, Pencil, X, Truck, Package } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,9 @@ import { toast } from 'sonner'
 import { useCartStore, selectCartItems, selectCartSummary } from '@/lib/stores'
 import { Button } from '@/components/ui/button'
 import AddressAutocomplete, { AddressResult } from '@/app/components/AddressAutocomplete'
+import dynamic from 'next/dynamic'
+import { calculateDistance } from '@/lib/utils/geo'
+const PickupMap = dynamic(() => import('@/app/components/checkout/PickupMap'), { ssr: false })
 
 interface Address {
   id: string
@@ -21,10 +24,12 @@ interface Address {
   state: string
   zipCode: string
   country: string
-  latitude?: number
-  longitude?: number
+  latitude: number | null
+  longitude: number | null
   isDefault: boolean
+  isDeleted: boolean
 }
+
 
 const EMPTY_FORM = {
   type: 'HOME',
@@ -60,6 +65,27 @@ export default function CheckoutPage() {
   // Geolocation handled by AddressAutocomplete component
   const allAllowPickup = cartItems.every(i => i.product.allowPickup)
   const allAllowDelivery = cartItems.every(i => i.product.allowDelivery)
+
+
+  // Derived: Unique sellers for pickup
+  const pickupSellers = React.useMemo(() => {
+    const sellersMap = new Map()
+    cartItems.forEach(item => {
+      const prof = item.product.professional
+      if (prof && prof.professionalProfile) {
+        sellersMap.set(prof.professionalProfile.businessName, {
+          name: prof.professionalProfile.businessName,
+          lat: prof.professionalProfile.latitude,
+          lng: prof.professionalProfile.longitude,
+          address: prof.professionalProfile.location,
+          fullName: `${prof.firstName} ${prof.lastName}`
+        })
+      }
+    })
+    return Array.from(sellersMap.values())
+  }, [cartItems])
+
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId)
 
   useEffect(() => {
     if (cartItems.length === 0) router.push('/cart')
@@ -399,12 +425,77 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Pickup Details & Map */}
+            {deliveryMethod === 'PICKUP' && pickupSellers.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-6"
+              >
+                <div className="bg-white border border-stone-200 p-8 rounded-none space-y-8">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-serif">Collection Points</h3>
+                      <p className="text-stone-500 text-sm mt-1">Visit our artisans at their studio locations</p>
+                    </div>
+                    <div className="h-10 w-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
+                      <MapPin size={20} />
+                    </div>
+                  </div>
+
+                  {/* Map Aspect - Cinematic Atelier Style */}
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-full rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl relative group bg-stone-100 h-[400px]"
+                  >
+                    <PickupMap 
+                      userAddress={selectedAddress}
+                      sellers={pickupSellers}
+                    />
+                  </motion.div>
+
+                  {/* Seller List with Distances */}
+                  <div className="space-y-4">
+                    {pickupSellers.map((seller, idx) => {
+                      const dist = selectedAddress?.latitude && selectedAddress?.longitude && seller.lat && seller.lng
+                        ? calculateDistance(selectedAddress.latitude as number, selectedAddress.longitude as number, seller.lat as number, seller.lng as number)
+                        : null;
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-4 border border-stone-100 hover:border-stone-200 transition-colors">
+                          <div className="flex gap-4 items-center">
+                            <div className="w-12 h-12 bg-stone-50 flex items-center justify-center border border-stone-100 italic font-serif text-lg text-stone-400">
+                              {seller.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-stone-900">{seller.name}</h4>
+                              <p className="text-xs text-stone-500 truncate max-w-[200px]">{seller.address}</p>
+                            </div>
+                          </div>
+                          {dist !== null && (
+                             <div className="text-right">
+                               <span className="block text-sm font-bold text-stone-900">{dist} km</span>
+                               <span className="text-[9px] font-mono uppercase tracking-widest text-stone-400">to collection</span>
+                             </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Payment Notice */}
-            <div className="p-6 bg-stone-100 border border-stone-200 flex gap-4 items-start">
-              <CreditCard className="text-stone-400 mt-1" size={20} />
+            <div className="p-6 bg-emerald-50/50 border border-emerald-100 flex gap-4 items-start">
+              <ShieldCheck className="text-emerald-600 mt-1" size={24} />
               <div>
-                <h4 className="font-medium text-stone-900 mb-1">Paystack Secure Payment</h4>
-                <p className="text-sm text-stone-500">You will complete payment via the secure Paystack portal after clicking Pay Now.</p>
+                <h4 className="font-medium text-stone-900 mb-1">✅ 100% Protected Payment</h4>
+                <div className="text-sm text-stone-600 leading-relaxed">
+                  Your payment is safely held by <strong>TrendiZip</strong>. The seller is only paid when your delivery is complete. 
+                  <span className="block mt-2 text-stone-400 text-xs italic">Note: We are not responsible for any payments made outside our official checkout.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -537,7 +628,7 @@ const AddressForm = ({
         <button
           key={t}
           type="button"
-          onClick={() => setForm({ ...form, type: t })}
+          onClick={() => setForm(f => ({ ...f, type: t }))}
           className={`px-4 py-2 border text-xs font-mono uppercase tracking-widest transition-all ${form.type === t ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 text-stone-500 hover:border-stone-400'}`}
         >
           {t}
@@ -546,14 +637,14 @@ const AddressForm = ({
     </div>
 
     <div className="grid grid-cols-2 gap-6">
-      <Field label="First Name" value={form.firstName} onChange={v => setForm({ ...form, firstName: v })} />
-      <Field label="Last Name" value={form.lastName} onChange={v => setForm({ ...form, lastName: v })} />
+      <Field label="First Name" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
+      <Field label="Last Name" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
     </div>
     <div className="space-y-1">
       <label className="text-[10px] font-mono uppercase tracking-widest text-stone-500 ml-1">Street Address</label>
       <AddressAutocomplete
         value={form.street}
-        onChange={v => setForm({ ...form, street: v })}
+        onChange={v => setForm(f => ({ ...f, street: v }))}
         onAddressSelect={(res: AddressResult) => {
           setForm(f => ({
             ...f,
@@ -569,27 +660,47 @@ const AddressForm = ({
       />
     </div>
     <div className="grid grid-cols-2 gap-6">
-      <Field label="City" value={form.city} onChange={v => setForm({ ...form, city: v })} />
-      <Field label="State / Region" value={form.state} onChange={v => setForm({ ...form, state: v })} />
+      <Field label="City" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
+      <Field label="State / Region" value={form.state} onChange={v => setForm(f => ({ ...f, state: v }))} />
     </div>
     <div className="grid grid-cols-2 gap-6">
-      <Field label="Zip / Postal Code" value={form.zipCode} onChange={v => setForm({ ...form, zipCode: v })} />
-      <Field label="Country" value={form.country} onChange={v => setForm({ ...form, country: v })} />
+      <Field label="Zip / Postal Code" value={form.zipCode} onChange={v => setForm(f => ({ ...f, zipCode: v }))} />
+      <Field label="Country" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
     </div>
 
-    <AnimatePresence>
-      {(form.latitude !== 0 || form.longitude !== 0) && (
+    <AnimatePresence mode="wait">
+      {(form.latitude !== 0 || form.longitude !== 0) ? (
         <motion.div 
+          key="coord-success"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
           className="bg-emerald-50 border border-emerald-100 p-4 flex items-center gap-3 rounded-lg"
         >
           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-emerald-200 shadow-sm">
             <Check size={14} className="text-emerald-600" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Coordinates Locked</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">✅ Location Verified for Map</p>
             <p className="text-[10px] font-mono text-emerald-600">{form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}</p>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div 
+          key="coord-missing"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="bg-amber-50 border border-amber-100 p-4 flex items-start gap-3 rounded-lg"
+        >
+          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-amber-200 shadow-sm shrink-0">
+            <Info size={14} className="text-amber-600" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800">⚠️ Coordinates Missing</p>
+            <p className="text-[9px] text-amber-600 leading-relaxed italic">
+              Use &quot;Search&quot; or &quot;Detect&quot; above to add your address to the map for accurate distance calculation.
+            </p>
           </div>
         </motion.div>
       )}

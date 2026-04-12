@@ -31,7 +31,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     firstName: true,
                     lastName: true,
                     professionalProfile: {
-                      select: { businessName: true },
+                      select: { 
+                        businessName: true,
+                        location: true,
+                        latitude: true,
+                        longitude: true,
+                      },
                     },
                   },
                 },
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             },
           },
         },
-        deliveryConfirmation: true,
+        deliveryConfirmations: true,
         paymentEscrow: true,
         coupons: {
           include: { coupon: true },
@@ -93,19 +98,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const updateData: Prisma.OrderUpdateInput = {}
     if (status) updateData.status = status
-    if (trackingNumber) updateData.trackingNumber = trackingNumber
     if (notes) updateData.notes = notes
 
     if (status === "DELIVERED") {
       updateData.actualDelivery = new Date()
 
-      await prisma.deliveryConfirmation.create({
-        data: {
+      await prisma.deliveryConfirmation.upsert({
+        where: {
+          orderId_professionalId: {
+            orderId: id,
+            professionalId: user.id
+          }
+        },
+        create: {
           orderId: id,
           customerId: order.customerId,
           professionalId: user.id,
           confirmationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
         },
+        update: {
+          status: 'CONFIRMED',
+          customerConfirmed: true,
+          confirmedAt: new Date()
+        }
       })
     }
 
@@ -128,7 +143,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Send notification to customer about status change
     if (status) {
-      const statusMessages: Record<OrderStatus, { title: string; message: string; type: 'ORDER_UPDATE' | 'SHIPPING_UPDATE' | 'DELIVERY_ARRIVAL' }> = {
+      const statusMessages: Partial<Record<OrderStatus, { title: string; message: string; type: 'ORDER_UPDATE' | 'SHIPPING_UPDATE' | 'DELIVERY_ARRIVAL' }>> = {
         PENDING: { title: 'Order Pending', message: 'Your order is pending confirmation.', type: 'ORDER_UPDATE' },
         CONFIRMED: { title: 'Order Confirmed!', message: 'Great news! Your order has been confirmed and is being prepared.', type: 'ORDER_UPDATE' },
         PROCESSING: { title: 'Order Processing', message: 'Your order is being processed and will ship soon.', type: 'ORDER_UPDATE' },

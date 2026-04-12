@@ -114,12 +114,15 @@ interface Review {
 
 interface ProductPreview {
   id: string;
+  slug?: string;
   name: string;
   price: number;
   currency: string;
   images: string[];
   sizes?: string[];
   colors?: string[];
+  stockQuantity: number;
+  isPreorder?: boolean;
   createdAt?: string | Date;
   professional: {
     firstName: string;
@@ -133,11 +136,20 @@ interface ProductPreview {
   _count: {
     wishlistItems: number;
   };
+  categories?: {
+    name: string;
+    slug: string;
+  }[];
   category?: {
     name: string;
     slug: string;
   };
   tags?: string[];
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number | null;
+  discountEndDate?: string | null;
 }
 
 export interface ProfessionalProfile {
@@ -467,7 +479,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             className="max-w-7xl mx-auto rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative group bg-stone-100"
           >
             {profile.location.embedUrl ? (
-              <div className="aspect-[21/6] w-full grayscale hover:grayscale-0 transition-all duration-[1500ms] ease-out">
+              <div className="aspect-[21/6] w-full grayscale hover:grayscale-0 transition-all duration-1500 ease-out">
                 <iframe
                   src={profile.location.embedUrl}
                   width="100%"
@@ -594,7 +606,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                                 alt={`${selectedCollection.name} ${i}`} 
                                 width={800} 
                                 height={1000} 
-                                className="w-full h-auto object-cover transition-all duration-[1500ms] ease-out group-hover:scale-[1.05] md:grayscale md:hover:grayscale-0" 
+                                className="w-full h-auto object-cover transition-all duration-1500 ease-out group-hover:scale-[1.05] md:grayscale md:hover:grayscale-0" 
                               />
                             </div>
                             
@@ -640,7 +652,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                                 src={collection.coverImage || collection.images[0] || '/placeholder-portfolio.jpg'} 
                                 alt={collection.name}
                                 fill
-                                className="object-cover md:grayscale md:hover:grayscale-0 transition-all duration-[2s] ease-out group-hover:scale-110"
+                                className="object-cover md:grayscale md:hover:grayscale-0 transition-all duration-2000 ease-out group-hover:scale-110"
                               />
                               
                               {/* Vertical Archive Index - Persistent on mobile */}
@@ -728,8 +740,6 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                        <ProductCard 
                          item={{ 
                            ...product, 
-                           category: { name: "Featured", slug: "featured" }, 
-                           stockQuantity: 1 
                          }} 
                          index={index} 
                        />

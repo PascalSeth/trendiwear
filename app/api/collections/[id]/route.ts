@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireRole } from "@/lib/auth"
+import { createSlug } from "@/lib/utils"
 
 export async function GET(
   request: NextRequest,
@@ -102,7 +103,7 @@ export async function PUT(
       where: { id },
       data: {
         ...(name && { name }),
-        ...(slug && { slug }),
+        ...(slug && { slug: createSlug(slug) }),
         ...(description !== undefined && { description }),
         ...(imageUrl !== undefined && { imageUrl }),
         ...(season && { season }),

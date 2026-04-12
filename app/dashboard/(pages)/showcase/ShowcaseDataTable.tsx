@@ -40,6 +40,7 @@ interface ShowcaseProduct {
   }
   submittedForShowcase: boolean
   isShowcaseApproved: boolean
+  isPreorder?: boolean
   submittedAt: string | null
   approvedAt: string | null
   showcaseStatus: "PENDING" | "APPROVED" | "REJECTED"
@@ -128,7 +129,12 @@ export default function ShowcaseDataTable({
                       height={48}
                     />
                     <div>
-                      <div className="font-medium">{product.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium">{product.name}</div>
+                        {product.isPreorder && (
+                          <Badge variant="outline" className="text-[8px] font-black uppercase bg-blue-50 text-blue-600 border-blue-100 px-1.5 h-4">Pre-order</Badge>
+                        )}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {product._count.reviews} reviews
                       </div>
