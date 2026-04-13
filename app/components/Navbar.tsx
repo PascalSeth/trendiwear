@@ -259,9 +259,18 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
           </div>
 
           {/* Action Row - Mobile Capsule Styling */}
-          <div className="flex items-center gap-1 md:gap-4 bg-stone-100/50 md:bg-transparent backdrop-blur-sm md:backdrop-blur-0 px-1.5 md:px-0 py-1 md:py-0 rounded-full border border-stone-200/50 md:border-0">
-            <NotificationBell context="personal" />
-            <CartSheetTrigger />
+          <div className="flex items-center gap-1 md:gap-4 bg-stone-100/50 md:bg-transparent backdrop-blur-sm md:backdrop-blur-0 px-1.5 md:px-0 py-1 md:py-0 rounded-full border border-stone-200/50 md:border-0 ml-auto">
+            {user ? (
+              <>
+                <NotificationBell context="personal" />
+                <CartSheetTrigger />
+              </>
+            ) : (
+              <div className="hidden md:flex items-center gap-4">
+                <NotificationBell context="personal" />
+                <CartSheetTrigger />
+              </div>
+            )}
             
             {/* User Access Point */}
             {user ? (
@@ -327,11 +336,18 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
-                <button onClick={() => window.location.href='/auth/signin'} className="p-2 text-stone-400 hover:text-stone-900 sm:hidden">
-                  <User size={20} strokeWidth={1.5} />
+              <div className="flex items-center">
+                <button 
+                  onClick={() => window.location.href='/auth/signin'} 
+                  className="flex lg:hidden items-center gap-2 px-3 py-1.5 bg-stone-900 rounded-full text-[9px] font-mono uppercase tracking-[0.2em] text-white shadow-lg shadow-stone-200/50 hover:bg-stone-800 transition-all active:scale-95 ml-2"
+                >
+                  <User size={12} strokeWidth={2} />
+                  <span>Login</span>
                 </button>
-                <button onClick={() => window.location.href='/auth/signin'} className="hidden sm:block text-[10px] font-mono uppercase tracking-[0.3em] text-stone-500 hover:text-stone-900 px-4 py-2 transition-colors">
+                <button 
+                  onClick={() => window.location.href='/auth/signin'} 
+                  className="hidden lg:block text-[10px] font-mono uppercase tracking-[0.4em] text-stone-500 hover:text-stone-900 px-4 py-2 transition-colors"
+                >
                   Login
                 </button>
               </div>
