@@ -85,21 +85,38 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const timeLeft = useCountdown(item.discountEndDate);
 
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    
+    // Click outside listener for mobile
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isMobile && cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsHovered(false);
+      }
+    };
+    
+    if (isMobile) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobile]);
 
   // Image cycling on hover
   useEffect(() => {
-    if (!isHovered || item.images.length <= 1 || isMobile) return;
+    if (!isHovered || item.images.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % item.images.length);
     }, 1500);
     return () => clearInterval(interval);
-  }, [isHovered, item.images.length, isMobile]);
+  }, [isHovered, item.images.length]);
 
   useEffect(() => {
     if (!isHovered) setCurrentImageIndex(0);
@@ -118,6 +135,7 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
   return (
     <>
       <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -125,6 +143,7 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
       className="group relative w-full cursor-pointer bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-700 hover:scale-[1.02]"
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
+      onClick={() => isMobile && setIsHovered(!isHovered)}
     >
       {/* Media Content */}
       <div className="relative aspect-[4/5] overflow-hidden bg-stone-50 rounded-t-xl">
