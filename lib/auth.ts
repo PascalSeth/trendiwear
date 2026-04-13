@@ -35,6 +35,7 @@ export async function getCurrentUser() {
               tier: true,
             },
           },
+          trial: true,
         }
       },
       measurements: true,

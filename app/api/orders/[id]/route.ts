@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           },
         },
         deliveryConfirmations: true,
-        paymentEscrow: true,
+        paymentEscrows: true,
         coupons: {
           include: { coupon: true },
         },

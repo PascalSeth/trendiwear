@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
-import { initiateTransfer, generateReference, toPesewas } from '@/lib/paystack'
+import { initiateTransfer, toPesewas } from '@/lib/paystack'
 import { OrderStatus } from '@prisma/client'
 
 // POST: Customer confirms they have received the package from a specific seller
@@ -45,14 +45,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // 1. Process Database Updates & Initiate Payout
     const result = await prisma.$transaction(async (tx) => {
+      // Find or create confirmation BEFORE checking confirmed state
+      let confirmation = await tx.deliveryConfirmation.findUnique({
+        where: {
+          orderId_professionalId: {
+            orderId,
+            professionalId
+          }
+        }
+      })
+
+      // If already confirmed, we DON'T initiate a new payout
+      if (confirmation?.customerConfirmed) {
+         return {
+           alreadyConfirmed: true,
+           amount: 0,
+           businessName: "" 
+         }
+      }
+
       // Update items for this seller
       await tx.orderItem.updateMany({
         where: { orderId, professionalId },
         data: { status: 'DELIVERED' as OrderStatus }
       })
 
-      // Update or create delivery confirmation for this seller
-      let confirmation = order.deliveryConfirmations[0]
+      // Update or create delivery confirmation
       if (confirmation) {
           confirmation = await tx.deliveryConfirmation.update({
             where: { id: confirmation.id },
@@ -97,7 +115,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
 
       // 3. Initiate Paystack Transfer (Escrow Release)
-      const payoutReference = generateReference('PAY')
+      // Use the confirmation ID as a deterministic reference for idempotency
+      const payoutReference = `PAY_${confirmation.id.replace(/-/g, '')}`
       try {
           await initiateTransfer({
             source: 'balance',
@@ -108,11 +127,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             currency: 'GHS'
           })
 
-          // Optional: log transfer success in a Payout record or Order metadata
+          // Update Escrow status to reflect successful release
+          await tx.paymentEscrow.update({
+            where: {
+              orderId_professionalId: {
+                orderId,
+                professionalId
+              }
+            },
+            data: {
+              status: 'RELEASED',
+              releasedAt: new Date()
+            }
+          })
       } catch (paystackError) {
           console.error('Paystack Transfer Error:', paystackError)
           // We don't rollback the DB transaction if the transfer fails (it might be insufficient balance)
-          // We can handle manual retries or log it.
+          // The Escrow status remains 'HELD' for manual intervention or retry.
       }
 
       return {
@@ -121,6 +152,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         businessName: profProfile.businessName
       }
     })
+
+    if (result.alreadyConfirmed) {
+      return NextResponse.json({
+        success: true,
+        message: `Receipt already confirmed. No new payout initiated.`,
+      })
+    }
 
     // 4. Notifications
     await prisma.notification.create({

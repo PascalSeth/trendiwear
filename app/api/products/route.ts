@@ -302,7 +302,10 @@ export async function POST(request: NextRequest) {
       try {
         const profile = await prisma.professionalProfile.findUnique({
           where: { userId: user.id },
-          include: { subscription: { include: { tier: true } } }
+          include: { 
+            subscription: { include: { tier: true } },
+            trial: true
+          }
         });
 
         if (!profile) {
@@ -314,8 +317,19 @@ export async function POST(request: NextRequest) {
 
         const now = new Date();
 
+        // Enforce Verified Tier for Pre-orders
+        if (body.isPreorder) {
+          // Re-fetch profile to guarantee we didn't miss it or its verification status
+          if (!profile.isVerified) {
+             return NextResponse.json(
+                { error: "Only Verified Professionals can accept Pre-orders." },
+                { status: 403 }
+             );
+          }
+        }
+
         // Check if trial is active OR subscription is active
-        const hasActiveTrial = profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate;
+        const hasActiveTrial = profile.trial && now < profile.trial.endDate;
         const hasActiveSubscription = profile.subscription && 
           profile.subscription.status === "ACTIVE" && 
           profile.subscription.nextRenewalDate && 
@@ -328,16 +342,31 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Check product limit from tier
-        if (profile.subscription?.tier?.monthlyListings) {
-          const productCount = await prisma.product.count({
-            where: { professionalId: user.id }
-          });
+        // Check product limits
+        const productCount = await prisma.product.count({
+          where: { professionalId: user.id }
+        });
 
+        // 1. Enforce Trial Limit (8 Products)
+        if (hasActiveTrial && !hasActiveSubscription) {
+          if (productCount >= 8) {
+            return NextResponse.json(
+              {
+                error: "Trial limit reached (8 products). Please upgrade to a paid plan to list more items.",
+                limitReached: true
+              },
+              { status: 403 }
+            );
+          }
+        }
+
+        // 2. Enforce Subscription Tier Limit
+        if (hasActiveSubscription && profile.subscription?.tier?.monthlyListings) {
           if (productCount >= profile.subscription.tier.monthlyListings) {
             return NextResponse.json(
               {
                 error: `You've reached the product limit (${profile.subscription.tier.monthlyListings}) for your tier. Please upgrade your subscription.`,
+                limitReached: true
               },
               { status: 403 }
             );
@@ -391,6 +420,7 @@ export async function POST(request: NextRequest) {
       allowPickup,
       allowDelivery,
       isPreorder,
+      preorderLimit,
     } = body
 
     // 1. Run the "Free AI" Fashion Engine to suggest tags & styles
@@ -434,6 +464,8 @@ export async function POST(request: NextRequest) {
         allowPickup: allowPickup !== undefined ? Boolean(allowPickup) : true,
         allowDelivery: allowDelivery !== undefined ? Boolean(allowDelivery) : true,
         isPreorder: Boolean(isPreorder),
+        preorderLimit: preorderLimit ? Number.parseInt(preorderLimit) : 0,
+        discountType: body.discountType,
       },
       include: {
         categories: true,

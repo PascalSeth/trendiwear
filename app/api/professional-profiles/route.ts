@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { createSubaccount, validateGhanaPhone, PAYSTACK_CONFIG } from '@/lib/paystack'
+import { createTransferRecipient, validateGhanaPhone, PAYSTACK_CONFIG } from '@/lib/paystack'
+import { initializeTrial } from '@/lib/subscription-service'
 import { mapErrorToResponse } from '@/lib/api-utils'
-import type { CreateSubaccountPayload } from '@/lib/paystack'
+import type { CreateTransferRecipientPayload } from '@/lib/paystack'
 import type { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -332,8 +333,6 @@ export async function POST(request: NextRequest) {
           ...(location && { location }),
           availability,
           freeDeliveryThreshold,
-          trialStartDate: new Date(),
-          trialEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 3 months
           socialMedia: { create: socialMedia || [] },
         },
         include: {
@@ -343,6 +342,9 @@ export async function POST(request: NextRequest) {
           socialMedia: true,
         },
       })
+
+      // Initialize Trial
+      await initializeTrial(profile.id)
     }
 
     // Only update user role if this is a new profile
@@ -403,15 +405,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Professional profile not found after update' }, { status: 500 })
       }
 
-      // Build payload for Paystack Subaccount
-      const subaccountPayload: CreateSubaccountPayload = {
-        business_name: freshProfile.businessName,
-        settlement_bank: mappedProvider,
+      // Build payload for Paystack Transfer Recipient
+      const recipientPayload: CreateTransferRecipientPayload = {
+        type: "mobile_money",
+        name: `${freshProfile.user.firstName} ${freshProfile.user.lastName}`,
         account_number: formattedPhone,
-        percentage_charge: PAYSTACK_CONFIG.platformFeePercent, // Default 3%
-        description: `TrendiWear subaccount for ${freshProfile.businessName}`,
-        primary_contact_email: freshProfile.user.email,
-        primary_contact_name: `${freshProfile.user.firstName} ${freshProfile.user.lastName}`,
+        bank_code: mappedProvider,
+        currency: "GHS",
+        description: `TrendiWear payout recipient for ${freshProfile.businessName}`,
         metadata: {
           professionalId: freshProfile.id,
           userId: user.id,
@@ -419,22 +420,22 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const res = await createSubaccount(subaccountPayload)
-        const subaccountCode = res.data.subaccount_code
+        const res = await createTransferRecipient(recipientPayload)
+        const recipientCode = res.data.recipient_code
 
-        // Persist subaccount info
+        // Persist recipient info
         await prisma.professionalProfile.update({
           where: { id: freshProfile.id },
           data: {
             momoNumber: formattedPhone,
             momoProvider: mappedProvider,
-            paystackSubaccountCode: subaccountCode,
+            paystackRecipientCode: recipientCode,
             paymentSetupComplete: true,
           },
         })
       } catch (payErr) {
-        console.error('Automated subaccount setup failed:', payErr)
-        return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack subaccount' }, { status: 500 })
+        console.error('Automated payout setup failed:', payErr)
+        return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack recipient' }, { status: 500 })
       }
     }
 

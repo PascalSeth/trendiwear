@@ -8,24 +8,25 @@ export async function canAccessDashboardFeatures(professionalId: string): Promis
   try {
     const profile = await prisma.professionalProfile.findUnique({
       where: { id: professionalId },
+      include: {
+        trial: true,
+        subscription: true,
+      }
     })
 
     if (!profile) return false
 
     const now = new Date()
 
-    // Check if on trial
-    if (profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate) {
+    // Check if on active trial
+    if (profile.trial && now < profile.trial.endDate) {
       return true
     }
 
     // Check if has active subscription
-    if (profile.subscriptionStatus === 'ACTIVE' && profile.subscriptionId) {
-      const subscription = await prisma.subscription.findUnique({
-        where: { id: profile.subscriptionId },
-      })
-
-      if (subscription && subscription.status === 'ACTIVE') {
+    if (profile.subscription && profile.subscription.status === 'ACTIVE') {
+      // Check if it's not expired
+      if (now < profile.subscription.nextRenewalDate) {
         return true
       }
     }
@@ -56,6 +57,7 @@ export async function getProfessionalAccessTier(
       where: { id: professionalId },
       include: {
         subscription: { include: { tier: true } },
+        trial: true,
       },
     })
 
@@ -74,21 +76,31 @@ export async function getProfessionalAccessTier(
     const now = new Date()
 
     // Check trial status
-    if (profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate) {
-      const daysRemaining = Math.ceil((profile.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (profile.trial && now < profile.trial.endDate) {
+      const daysRemaining = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      
+      const productCount = await prisma.product.count({
+        where: { professionalId }
+      })
+
+      const trialLimit = 8
+      const isLimitReached = productCount >= trialLimit
+
       return {
         canView: true,
-        canAddProducts: true,
+        canAddProducts: !isLimitReached,
         canAddServices: true,
         canEditProfile: true,
         canViewAnalytics: false,
-        accessLevel: 'FULL',
-        reason: `Trial active: ${daysRemaining} days remaining`,
+        accessLevel: isLimitReached ? 'VIEW_ONLY' : 'FULL',
+        reason: isLimitReached 
+          ? `Trial limit reached (8 products). Upgrade to add more.` 
+          : `Trial active: ${daysRemaining} days remaining (${productCount}/8 products)`,
       }
     }
 
     // Trial expired, check subscription
-    if (!profile.subscription || profile.subscription.status !== 'ACTIVE') {
+    if (!profile.subscription || profile.subscription.status !== 'ACTIVE' || now > profile.subscription.nextRenewalDate) {
       return {
         canView: true,
         canAddProducts: false,
@@ -96,7 +108,7 @@ export async function getProfessionalAccessTier(
         canEditProfile: false,
         canViewAnalytics: false,
         accessLevel: 'VIEW_ONLY',
-        reason: 'Trial expired. Subscribe to continue using full features.',
+        reason: 'Trial or Subscription expired. Renew to continue using full features.',
       }
     }
 
@@ -132,12 +144,13 @@ export async function isTrialExpiringSoon(professionalId: string): Promise<boole
   try {
     const profile = await prisma.professionalProfile.findUnique({
       where: { id: professionalId },
+      include: { trial: true },
     })
 
-    if (!profile || !profile.trialEndDate) return false
+    if (!profile || !profile.trial) return false
 
     const now = new Date()
-    const daysUntilExpiry = Math.ceil((profile.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const daysUntilExpiry = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     return daysUntilExpiry > 0 && daysUntilExpiry <= 7
   } catch (error) {

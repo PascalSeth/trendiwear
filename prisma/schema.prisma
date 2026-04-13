@@ -49,17 +49,19 @@ model User {
   reportedContent            ReportedContent[]
   reviewReplies              Review[]               @relation("ReviewReplier")
   reviews                    Review[]               @relation("ReviewAuthor")
+  reviewComments             ReviewReply[]
   savedOutfits               SavedOutfit[]
   customServices             Service[]              @relation("CustomServiceCreator")
+  servicePackages            ServicePackage[]
   sessions                   Session[]
   streamChatMessages         StreamChatMessage[]
   movements                  UserMovement[]
   profileExtension           UserProfileExtension?
   recommendations            UserRecommendation[]
+  shippingInvoices           ShippingInvoice[]
+  bookingInvoices            BookingInvoice[]
   searches                   UserSearch[]
   wishlist                   WishlistItem[]
-  servicePackages            ServicePackage[]
-  reviewComments             ReviewReply[]
 }
 
 model Address {
@@ -94,8 +96,19 @@ model Measurement {
   shoulder         Float?
   armLength        Float?
   inseam           Float?
+  neck             Float?
+  underbust        Float?
+  hpsToWaist       Float?
+  napeToWaist      Float?
+  bicep            Float?
+  wrist            Float?
+  thigh            Float?
+  knee             Float?
+  ankle            Float?
+  crotchRise       Float?
   height           Float?
   weight           Float?
+  unit             String            @default("in")
   topSize          String?
   bottomSize       String?
   dressSize        String?
@@ -132,22 +145,19 @@ model ProfessionalProfile {
   slug                   String?                @unique
   spotlightVideoUrl      String?
   creditScore            Float                  @default(0)
-  paystackSubaccountCode  String?
-  paystackRecipientCode   String?
+  paystackSubaccountCode String?
   momoNumber             String?                @unique
   momoProvider           String?
   paymentSetupComplete   Boolean                @default(false)
-  trialStartDate         DateTime?
-  trialEndDate           DateTime?
-  isOnTrial              Boolean                @default(true)
   subscriptionId         String?                @unique
-  subscriptionStatus     SubscriptionStatus     @default(TRIAL)
   lastSubscriptionRenew  DateTime?
   serviceAvailability    String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   galleryImages          String[]               @default([])
+  paystackRecipientCode  String?
   deliveryZones          DeliveryZone[]
+  portfolioCollections   PortfolioCollection[]
   specialization         ProfessionalType       @relation(fields: [specializationId], references: [id])
   subscription           Subscription?          @relation(fields: [subscriptionId], references: [id])
   user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -157,7 +167,6 @@ model ProfessionalProfile {
   store                  Store?
   subscriptionHistory    SubscriptionPayment[]
   documents              VerificationDocument[]
-  portfolioCollections   PortfolioCollection[]
 }
 
 model PortfolioCollection {
@@ -297,7 +306,6 @@ model Store {
 model Product {
   id                   String               @id @default(uuid())
   name                 String
-  slug                 String               @unique @default(uuid())
   description          String?
   price                Float
   currency             String               @default("GHS")
@@ -305,7 +313,6 @@ model Product {
   images               String[]
   videoUrl             String?
   categoryId           String?
-  categories           Category[]           @relation("ProductCategories")
   professionalId       String
   sizes                String[]
   colors               String[]
@@ -314,8 +321,6 @@ model Product {
   estimatedDelivery    Int?
   isCustomizable       Boolean              @default(false)
   tags                 ProductTag[]
-  styleTags            StylePreference[]
-  keywords             String[]
   isUnisex             Boolean              @default(true)
   isActive             Boolean              @default(true)
   isInStock            Boolean              @default(true)
@@ -327,6 +332,7 @@ model Product {
   discountPrice        Float?
   discountStartDate    DateTime?
   discountEndDate      DateTime?
+  discountType         String               @default("PERCENTAGE")
   isOnSale             Boolean              @default(false)
   allowPickup          Boolean              @default(true)
   allowDelivery        Boolean              @default(true)
@@ -338,16 +344,21 @@ model Product {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   isPreorder           Boolean              @default(false)
+  preorderLimit        Int                  @default(0)
+  keywords             String[]
+  styleTags            StylePreference[]
+  slug                 String               @unique @default(uuid())
   cartItems            CartItem[]
   orderItems           OrderItem[]
   outfitProducts       OutfitProduct[]
-  collections          Collection[]
   professional         User                 @relation(fields: [professionalId], references: [id])
   analytics            ProductAnalytics?
   performance          ProductPerformance?
   socialPosts          SocialPost[]
   recommendations      UserRecommendation[]
   wishlistItems        WishlistItem[]
+  collections          Collection[]         @relation("CollectionToProduct")
+  categories           Category[]           @relation("ProductCategories")
 
   @@index([professionalId])
 }
@@ -381,7 +392,7 @@ model Collection {
   order       Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  products    Product[]
+  products    Product[] @relation("CollectionToProduct")
 }
 
 model Service {
@@ -429,12 +440,12 @@ model ProfessionalService {
   isActive         Boolean              @default(true)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
+  packages         PackageService[]
   professional     User                 @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   service          Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  variants         ServiceVariant[]
   addons           ServiceAddon[]
   requirements     ServiceRequirement[]
-  packages         PackageService[]
+  variants         ServiceVariant[]
 
   @@unique([professionalId, serviceId])
 }
@@ -472,8 +483,8 @@ model ServicePackage {
   isActive       Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  professional   User             @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   services       PackageService[]
+  professional   User             @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 }
 
 model PackageService {
@@ -504,11 +515,11 @@ model Event {
   description        String?
   imageUrl           String?
   dressCodes         String[]
-  searchKeywords     String[]
   seasonality        Season[]
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  searchKeywords     String[]
   outfitInspirations OutfitInspiration[]
 }
 
@@ -558,18 +569,18 @@ model SavedOutfit {
 }
 
 model Order {
-  id                        String                @id @default(uuid())
+  id                        String                 @id @default(uuid())
   customerId                String
   addressId                 String
   subtotal                  Float
-  shippingCost              Float                 @default(0)
-  tax                       Float                 @default(0)
+  shippingCost              Float                  @default(0)
+  tax                       Float                  @default(0)
   totalPrice                Float
-  platformFee               Float                 @default(0)
-  status                    OrderStatus           @default(PENDING)
-  paymentStatus             PaymentStatus         @default(PENDING)
+  platformFee               Float                  @default(0)
+  status                    OrderStatus            @default(PENDING)
+  paymentStatus             PaymentStatus          @default(PENDING)
   paymentMethod             String?
-  paystackReference         String?               @unique
+  paystackReference         String?                @unique
   paystackAccessCode        String?
   paystackPaidAt            DateTime?
   paystackChannel           String?
@@ -583,36 +594,37 @@ model Order {
   yangoStatus               String?
   yangoQuoteId              String?
   yangoQuotePrice           Float?
-  deliveryPaystackReference String?               @unique
-  createdAt                 DateTime              @default(now())
-  updatedAt                 DateTime              @updatedAt
-  deliveryConfirmations      DeliveryConfirmation[]
-  address                   Address               @relation(fields: [addressId], references: [id])
-  customer                  User                  @relation(fields: [customerId], references: [id])
+  deliveryPaystackReference String?                @unique
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  deliveryConfirmations     DeliveryConfirmation[]
+  address                   Address                @relation(fields: [addressId], references: [id])
+  customer                  User                   @relation(fields: [customerId], references: [id])
   coupons                   OrderCoupon[]
   items                     OrderItem[]
-  paymentEscrow             PaymentEscrow?
+  paymentEscrows            PaymentEscrow[]
+  shippingInvoices          ShippingInvoice[]
 
   @@index([customerId])
   @@index([paystackReference])
 }
 
 model OrderItem {
-  id             String  @id @default(uuid())
-  orderId        String
-  productId      String
-  professionalId String
-  quantity       Int
-  size           String?
-  color          String?
-  price              Float
-  deliveryFee        Float?
-  notes              String?
-  status             OrderStatus @default(PENDING)
-  order              Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product            Product @relation(fields: [productId], references: [id])
-  isPreorder         Boolean @default(false)
-  estimatedDelivery  Int?
+  id                String      @id @default(uuid())
+  orderId           String
+  productId         String
+  professionalId    String
+  quantity          Int
+  size              String?
+  color             String?
+  price             Float
+  notes             String?
+  estimatedDelivery Int?
+  isPreorder        Boolean     @default(false)
+  deliveryFee       Float?
+  status            OrderStatus @default(PENDING)
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product           Product     @relation(fields: [productId], references: [id])
 
   @@unique([orderId, productId, size, color])
 }
@@ -625,11 +637,11 @@ model DeliveryConfirmation {
   status               ConfirmationStatus @default(PENDING)
   customerConfirmed    Boolean            @default(false)
   confirmationDeadline DateTime
+  createdAt            DateTime           @default(now())
+  confirmedAt          DateTime?
   riderName            String?
   riderPhone           String?
   trackingNumber       String?
-  createdAt            DateTime           @default(now())
-  confirmedAt          DateTime?
   customer             User               @relation(fields: [customerId], references: [id])
   order                Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -638,15 +650,20 @@ model DeliveryConfirmation {
 
 model PaymentEscrow {
   id             String       @id @default(uuid())
-  orderId        String       @unique
+  orderId        String?
+  bookingId      String?
   professionalId String
   amount         Float
   status         EscrowStatus @default(HELD)
   releaseDate    DateTime?
   releasedAt     DateTime?
   createdAt      DateTime     @default(now())
-  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  booking        Booking?     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   professional   User         @relation(fields: [professionalId], references: [id])
+
+  @@unique([orderId, professionalId])
+  @@index([bookingId])
 }
 
 model Booking {
@@ -658,10 +675,18 @@ model Booking {
   bookingDate        DateTime
   endTime            DateTime?
   totalPrice         Float?
-  location           String?
-  notes              String?
-  status             BookingStatus        @default(PENDING)
-  paymentMethod      BookingPaymentMethod @default(PLATFORM)
+  location               String?
+  notes                  String?
+  status                 BookingStatus        @default(PENDING)
+  quoteStatus            String?              // REQUESTED, QUOTE_PROVIDED
+  isQuoteBased           Boolean              @default(false)
+  depositAmount          Float?
+  balanceAmount          Float?
+  inspirationImages      String[]             @default([])
+  snapshotMeasurements   Json?
+  proposedRescheduleDate DateTime?
+  rescheduleReason       String?
+  paymentMethod          BookingPaymentMethod @default(PLATFORM)
   paymentStatus      BookingPaymentStatus @default(UNPAID)
   requestExpiresAt   DateTime?
   paystackReference  String?              @unique
@@ -670,12 +695,30 @@ model Booking {
   paystackFees       Float?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
+  selectedAddons     Json?
+  requirementAnswers Json?
   customer           User                 @relation("BookingCustomer", fields: [customerId], references: [id])
   professional       User                 @relation("BookingProfessional", fields: [professionalId], references: [id])
   service            Service              @relation(fields: [serviceId], references: [id])
   variant            ServiceVariant?      @relation(fields: [variantId], references: [id])
-  selectedAddons     Json?
-  requirementAnswers Json?
+  paymentEscrows     PaymentEscrow[]
+  bookingInvoices    BookingInvoice[]
+}
+
+model BookingInvoice {
+  id             String       @id @default(uuid())
+  bookingId      String
+  professionalId String
+  amount         Float
+  status         InvoiceStatus @default(PENDING)
+  expiresAt      DateTime
+  paystackReference String?    @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  professional   User         @relation(fields: [professionalId], references: [id])
+
+  @@index([bookingId])
 }
 
 model WishlistItem {
@@ -1286,6 +1329,9 @@ enum AddressType {
 
 enum DocumentType {
   NATIONAL_ID
+  NATIONAL_ID_FRONT
+  NATIONAL_ID_BACK
+  SELFIE
   BUSINESS_REGISTRATION
   PORTFOLIO
   CERTIFICATION
@@ -1360,6 +1406,7 @@ enum BookingPaymentMethod {
 enum BookingPaymentStatus {
   UNPAID
   PAID
+  PARTIALLY_PAID
   PENDING_IN_PERSON
   REFUNDED
 }
@@ -1550,4 +1597,26 @@ enum MovementTarget {
   SEARCH_RESULT
   CART
   WISHLIST
+}
+
+model ShippingInvoice {
+  id                String        @id @default(uuid())
+  orderId           String
+  professionalId    String
+  amount            Float
+  status            InvoiceStatus @default(PENDING)
+  paystackReference String?       @unique
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  paidAt            DateTime?
+  pickupReady       Boolean       @default(false)
+  
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  professional      User          @relation(fields: [professionalId], references: [id])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
 }

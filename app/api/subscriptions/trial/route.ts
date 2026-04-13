@@ -44,23 +44,35 @@ export async function GET() {
     }
 
     const now = new Date()
-    const isOnTrial = profile.trialStartDate && profile.trialEndDate && now < profile.trialEndDate
-    const daysRemaining = profile.trialEndDate
-      ? Math.ceil((profile.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const trial = profile.trial
+    const subscription = profile.subscription
+    
+    const isOnTrial = trial && now < trial.endDate
+    const daysRemaining = trial
+      ? Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       : 0
+
+    const productCount = await prisma.product.count({
+      where: { professionalId: profile.id }
+    })
+    const productLimit = 8
+    const isLimitReached = productCount >= productLimit
 
     return NextResponse.json({
       success: true,
       data: {
         isOnTrial,
-        trialStartDate: profile.trialStartDate,
-        trialEndDate: profile.trialEndDate,
+        trialStartDate: trial?.startDate || null,
+        trialEndDate: trial?.endDate || null,
         daysRemaining: Math.max(0, daysRemaining),
-        subscriptionStatus: profile.subscriptionStatus,
-        currentSubscription: profile.subscription,
-        trial: profile.trial,
-        isTrialExpired: profile.trialEndDate && now > profile.trialEndDate,
-        trialExpiredAt: profile.trialEndDate,
+        productCount,
+        productLimit,
+        isLimitReached,
+        subscriptionStatus: subscription?.status || (isOnTrial ? 'TRIAL' : 'EXPIRED'),
+        currentSubscription: subscription,
+        trial: trial,
+        isTrialExpired: trial && now > trial.endDate,
+        trialExpiredAt: trial?.endDate || null,
       },
     })
   } catch (error) {

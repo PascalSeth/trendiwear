@@ -17,6 +17,10 @@ export async function checkDashboardAccess(request: NextRequest) {
 
     const profile = await prisma.professionalProfile.findUnique({
       where: { userId: session.user.id },
+      include: {
+        trial: true,
+        subscription: true,
+      }
     })
 
     if (!profile) {
@@ -26,8 +30,8 @@ export async function checkDashboardAccess(request: NextRequest) {
     const now = new Date()
 
     // Check if on active trial
-    if (profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate) {
-      const daysRemaining = Math.ceil((profile.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (profile.trial && now < profile.trial.endDate) {
+      const daysRemaining = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
       // Add headers for client-side awareness
       const response = NextResponse.next()
@@ -43,17 +47,12 @@ export async function checkDashboardAccess(request: NextRequest) {
     }
 
     // Check if has active subscription
-    if (profile.subscriptionStatus === 'ACTIVE' && profile.subscriptionId) {
-      const subscription = await prisma.subscription.findUnique({
-        where: { id: profile.subscriptionId },
-      })
-
-      if (subscription && subscription.status === 'ACTIVE') {
-        const response = NextResponse.next()
-        response.headers.set('X-Subscription-Status', 'ACTIVE')
-        response.headers.set('X-Subscription-Tier', subscription.tierId)
-        return response
-      }
+    // Check if has active subscription
+    if (profile.subscription && profile.subscription.status === 'ACTIVE' && now < profile.subscription.nextRenewalDate) {
+      const response = NextResponse.next()
+      response.headers.set('X-Subscription-Status', 'ACTIVE')
+      response.headers.set('X-Subscription-Tier', profile.subscription.tierId)
+      return response
     }
 
     // Trial expired and no subscription - redirect to subscription page
@@ -96,7 +95,10 @@ export async function checkSubscriptionForAction(
 
     const profile = await prisma.professionalProfile.findUnique({
       where: { userId: session.user.id },
-      include: { subscription: { include: { tier: true } } },
+      include: { 
+        subscription: { include: { tier: true } },
+        trial: true
+      },
     })
 
     if (!profile) {
@@ -110,19 +112,19 @@ export async function checkSubscriptionForAction(
     const now = new Date()
 
     // Check trial status
-    if (profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate) {
+    if (profile.trial && now < profile.trial.endDate) {
       // All actions allowed during trial
       return { allowed: true }
     }
 
     // Trial expired
-    const isActive = profile.subscription?.status === 'ACTIVE'
+    const isActive = profile.subscription?.status === 'ACTIVE' && now < profile.subscription.nextRenewalDate
 
     if (!isActive) {
       return {
         allowed: false,
         status: 403,
-        message: 'Trial expired. Please subscribe to continue.',
+        message: 'Trial or Subscription expired. Please subscribe to continue.',
       }
     }
 

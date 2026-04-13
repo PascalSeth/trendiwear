@@ -87,6 +87,9 @@ export async function POST(request: NextRequest) {
       location,
       notes,
       paymentMethod = 'PLATFORM',
+      isQuoteBased = false,
+      inspirationImages = [],
+      requiresMeasurements = false,
     }: {
       serviceId: string
       professionalId: string
@@ -95,10 +98,25 @@ export async function POST(request: NextRequest) {
       location?: string
       notes?: string
       paymentMethod?: 'PLATFORM' | 'IN_PERSON'
+      isQuoteBased?: boolean
+      inspirationImages?: string[]
+      requiresMeasurements?: boolean
     } = body
 
     if (!professionalId) {
       return NextResponse.json({ error: "professionalId is required" }, { status: 400 })
+    }
+
+    let snapshotMeasurements = null
+    if (requiresMeasurements) {
+      const measurement = await prisma.measurement.findUnique({ where: { userId: user.id } })
+      if (!measurement || (!measurement.bust && !measurement.waist && !measurement.height)) {
+        return NextResponse.json({ 
+          error: "Measurements required. Please complete your measurement profile to book this service.", 
+          code: "MEASUREMENTS_REQUIRED" 
+        }, { status: 400 })
+      }
+      snapshotMeasurements = measurement
     }
 
     const bookingDateTime = new Date(bookingDate)
@@ -118,6 +136,9 @@ export async function POST(request: NextRequest) {
       include: {
         service: true,
         variants: { where: { isActive: true } },
+        professional: {
+          include: { professionalProfile: true }
+        }
       },
     })
 
@@ -125,11 +146,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Service not available" }, { status: 400 })
     }
 
+    if (isQuoteBased && !professionalService.professional.professionalProfile?.isVerified) {
+      return NextResponse.json({ error: "Only verified professionals can offer custom quote-based services." }, { status: 403 })
+    }
+
     // 3. Resolve price and duration
-    let resolvedPrice = professionalService.price
+    let resolvedPrice = isQuoteBased ? 0 : professionalService.price
     let resolvedDuration = professionalService.durationOverride ?? professionalService.service.duration
 
-    if (variantId) {
+    if (!isQuoteBased && variantId) {
       const variant = professionalService.variants.find(v => v.id === variantId)
       if (!variant) return NextResponse.json({ error: "Variant not found" }, { status: 400 })
       resolvedPrice = variant.price
@@ -137,6 +162,9 @@ export async function POST(request: NextRequest) {
     }
 
     const endTime = new Date(bookingDateTime.getTime() + resolvedDuration * 60000)
+    
+    const depositAmount = isQuoteBased ? null : resolvedPrice * 0.5
+    const balanceAmount = isQuoteBased ? null : resolvedPrice * 0.5
 
     // 4. Competitive Conflict Check
     // A slot is ONLY blocked if someone has PAID or if it's a confirmed IN_PERSON booking.
@@ -172,12 +200,18 @@ export async function POST(request: NextRequest) {
         ...(variantId ? { variantId } : {}),
         bookingDate: bookingDateTime,
         endTime,
-        totalPrice: resolvedPrice,
+        totalPrice: isQuoteBased ? null : resolvedPrice,
+        depositAmount,
+        balanceAmount,
+        isQuoteBased,
+        quoteStatus: isQuoteBased ? 'REQUESTED' : null,
+        snapshotMeasurements: snapshotMeasurements || undefined,
+        inspirationImages,
         location,
         notes,
         paymentMethod,
         requestExpiresAt,
-        status: 'PENDING',
+        status: isQuoteBased ? 'PENDING' : 'PENDING', // PENDING serves for both Requesting quote and Requesting slot
         paymentStatus: 'UNPAID',
       },
       include: {
@@ -207,7 +241,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Also send email
-    if (booking.professional && booking.professional.email) {
+    if (booking.professional?.email) {
       try {
         await sendBookingRequestEmail({
           to: booking.professional.email,

@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
 import { Role, ProfessionalProfile } from "@prisma/client";
-import SuperAdminDashboard from "./components/SuperAdminDashboard";
-import AnalyticsInsights from "./components/AnalyticsInsights";
-import SetupGuide from "./components/SetupGuide";
-import RecentActivity, { ActivityItem } from "./components/RecentActivity";
+import SuperAdminDashboard from "@/app/dashboard/components/SuperAdminDashboard";
+import AnalyticsInsights from "@/app/dashboard/components/AnalyticsInsights";
+import SetupGuide from "@/app/dashboard/components/SetupGuide";
+import RecentActivity, { ActivityItem } from "@/app/dashboard/components/RecentActivity";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -116,8 +116,6 @@ function ProfessionalBusinessDashboard({
           isVerified={professionalProfile.isVerified}
           paymentSetupComplete={professionalProfile.paymentSetupComplete}
           hasProductsOrServices={dashboardData?.setupStatus?.hasProductsOrServices || false}
-          businessName={professionalProfile.businessName}
-          profileId={professionalProfile.id}
         />
 
         {/* Dashboard Header */}

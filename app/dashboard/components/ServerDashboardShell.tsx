@@ -73,12 +73,15 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
     businessImage: role === Role.SUPER_ADMIN 
       ? '/logo3d.jpg' 
       : (user.professionalProfile?.businessImage || undefined),
-    trialEndDate: user.professionalProfile?.trialEndDate?.toISOString() || null,
-    subscriptionStatus: user.professionalProfile?.subscriptionStatus || null,
+    trialEndDate: user.professionalProfile?.trial?.endDate?.toISOString() || null,
+    subscriptionStatus: user.professionalProfile?.subscription?.status || (user.professionalProfile?.trial ? 'TRIAL' : null),
     hasActiveSubscription: (role === Role.SUPER_ADMIN || role === Role.ADMIN) || !!(
       user.professionalProfile?.subscription && 
       user.professionalProfile.subscription.status === 'ACTIVE' && 
       new Date(user.professionalProfile.subscription.nextRenewalDate) > new Date()
+    ) || !!(
+      user.professionalProfile?.trial &&
+      new Date(user.professionalProfile.trial.endDate) > new Date()
     ),
   };
 

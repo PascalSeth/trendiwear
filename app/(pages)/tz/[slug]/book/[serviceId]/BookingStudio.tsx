@@ -7,8 +7,15 @@ import { useRouter } from 'next/navigation';
 import { 
   Clock, AlertCircle, Loader2, Check, Gem, Sun,
   ArrowRight, Calendar as CalendarIcon,
-  ChevronLeft, Camera, CreditCard, Wallet, Hourglass
+  ChevronLeft, Camera, CreditCard, Wallet, Hourglass, X,
+  Info, ChevronRight
 } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +63,78 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
     notes: '',
     paymentMethod: 'PLATFORM' as 'PLATFORM' | 'IN_PERSON',
   });
+
+  const [inspirationUrls, setInspirationUrls] = useState<string[]>([]);
+  const [currentUrl, setCurrentUrl] = useState('');
+
+  const [showMeasurementModal, setShowMeasurementModal] = useState(false);
+  const [measurementUnit, setMeasurementUnit] = useState<'in' | 'cm'>('in');
+  const [measurementStep, setMeasurementStep] = useState(1);
+  const [measurementData, setMeasurementData] = useState({
+    // Core
+    bust: '',
+    waist: '',
+    hips: '',
+    height: '',
+    weight: '',
+    // Upper
+    neck: '',
+    shoulder: '',
+    armLength: '',
+    bicep: '',
+    wrist: '',
+    underbust: '',
+    hpsToWaist: '',
+    napeToWaist: '',
+    // Lower
+    inseam: '',
+    thigh: '',
+    knee: '',
+    ankle: '',
+    crotchRise: ''
+  });
+  const [savingMeasurements, setSavingMeasurements] = useState(false);
+
+  const convertValue = (val: string, toUnit: 'in' | 'cm') => {
+    if (!val) return '';
+    const num = parseFloat(val);
+    if (isNaN(num)) return '';
+    if (toUnit === 'cm') return (num * 2.54).toFixed(1);
+    return (num / 2.54).toFixed(1);
+  };
+
+  const toggleUnit = () => {
+    const nextUnit = measurementUnit === 'in' ? 'cm' : 'in';
+    const newData = { ...measurementData };
+    
+    // Length conversion
+    const lengthKeys = [
+      'bust', 'waist', 'hips', 'shoulder', 'armLength', 'inseam', 'height',
+      'neck', 'underbust', 'hpsToWaist', 'napeToWaist', 'bicep', 'wrist',
+      'thigh', 'knee', 'ankle', 'crotchRise'
+    ];
+    lengthKeys.forEach((key) => {
+      const k = key as keyof typeof measurementData;
+      if (newData[k]) {
+        newData[k] = convertValue(newData[k], nextUnit);
+      }
+    });
+
+    // Weight conversion (lbs <-> kg)
+    if (newData.weight) {
+      const w = parseFloat(newData.weight);
+      if (!isNaN(w)) {
+        newData.weight = nextUnit === 'in' 
+          ? (w * 2.20462).toFixed(1)   // to lbs
+          : (w / 2.20462).toFixed(1);  // to kg
+      }
+    }
+
+    setMeasurementData(newData);
+    setMeasurementUnit(nextUnit);
+  };
+
+  const isQuoteBased = service.price === 0;
 
   // Fetch Slots
   useEffect(() => {
@@ -140,11 +219,19 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
           selectedAddonIds: Array.from(selectedAddonIds),
           requirementAnswers,
           paymentMethod: formData.paymentMethod,
+          isQuoteBased,
+          inspirationImages: inspirationUrls,
+          requiresMeasurements: service.customRequirements?.some(r => r.isRequired) || true // Pass flag
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (errorData.code === 'MEASUREMENTS_REQUIRED') {
+           setShowMeasurementModal(true);
+           setLoading(false);
+           return;
+        }
         throw new Error(errorData.error || 'Failed to create booking');
       }
 
@@ -152,8 +239,34 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Booking failed');
     } finally {
-      setLoading(false);
+      if (!showMeasurementModal) {
+         setLoading(false);
+      }
     }
+  };
+
+  const handleSaveMeasurements = async () => {
+     setSavingMeasurements(true);
+     try {
+        // Convert all values to numbers for the API
+        const payload: Record<string, number | string> = { unit: measurementUnit };
+        Object.entries(measurementData).forEach(([key, val]) => {
+           if (val) payload[key] = parseFloat(val);
+        });
+
+        const res = await fetch('/api/measurements', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to save measurements');
+        setShowMeasurementModal(false);
+        handleSubmit(); // Re-trigger booking
+     } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to save measurements');
+     } finally {
+        setSavingMeasurements(false);
+     }
   };
 
   // Enforce No same-day bookings
@@ -334,6 +447,50 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                                 ))}
                              </div>
                           )}
+
+                           {/* Request For Quote (RFQ) Media Intake Box */}
+                           {isQuoteBased && (
+                              <div className="space-y-4 pt-10">
+                                 <h4 className="text-[10px] font-black text-stone-300 uppercase tracking-widest pl-2 flex items-center gap-2">
+                                   <Camera size={14} /> Inspiration Links
+                                 </h4>
+                                 <p className="text-xs text-stone-500 italic px-2 pb-2">Paste URLs to Pinterest, Instagram, or Google Images to give the professional a visual concept of your custom request.</p>
+                                 <div className="flex gap-2">
+                                    <Input 
+                                      placeholder="https://pinterest.com/..." 
+                                      value={currentUrl} 
+                                      onChange={e => setCurrentUrl(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                           e.preventDefault();
+                                           if (currentUrl.trim()) {
+                                              setInspirationUrls(p => [...p, currentUrl.trim()]);
+                                              setCurrentUrl('');
+                                           }
+                                        }
+                                      }}
+                                      className="rounded-full bg-stone-50 border-stone-100 shadow-inner px-6" 
+                                    />
+                                    <Button 
+                                      onClick={() => {
+                                        if (currentUrl.trim()) {
+                                           setInspirationUrls(p => [...p, currentUrl.trim()]);
+                                           setCurrentUrl('');
+                                        }
+                                      }}
+                                      className="rounded-full px-6"
+                                    >Add</Button>
+                                 </div>
+                                 <div className="flex flex-wrap gap-2 pt-2">
+                                    {inspirationUrls.map((url, idx) => (
+                                      <div key={idx} className="flex items-center gap-2 px-4 py-2 bg-stone-100 rounded-full text-[10px] font-black uppercase tracking-widest text-stone-600">
+                                         <span className="truncate max-w-[150px]">{url}</span>
+                                         <button onClick={() => setInspirationUrls(p => p.filter((_, i) => i !== idx))}><X size={12} className="text-red-500 hover:text-red-700" /></button>
+                                      </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           )}
                        </div>
                     </motion.div>
                   )}
@@ -428,9 +585,17 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                                 ))}
                                 <div className="h-px bg-white/10 my-6" />
                                 <div className="flex justify-between items-end">
-                                   <span className="text-[10px] font-black uppercase tracking-[0.4em]">Total Accrual</span>
-                                   <span className="text-5xl font-black tracking-tighter leading-none">GHS {totalPrice.toFixed(2)}</span>
+                                   <span className="text-[10px] font-black uppercase tracking-[0.4em]">{isQuoteBased ? 'Current Accrual' : 'Total Accrual'}</span>
+                                   <span className="text-5xl font-black tracking-tighter leading-none">{isQuoteBased ? 'QUOTE' : `GHS ${totalPrice.toFixed(2)}`}</span>
                                 </div>
+                                {isQuoteBased && (
+                                   <p className="text-[10px] text-white/40 italic font-serif mt-2">The professional will review your request and references, and issue a Quote. You will be prompted to pay a 50% deposit later.</p>
+                                )}
+                                {!isQuoteBased && (
+                                   <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                                     <Check size={12} /> Deposit Split (50% To Secure): GHS {(totalPrice / 2).toFixed(2)}
+                                   </p>
+                                )}
                              </div>
                           </div>
 
@@ -529,7 +694,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                                <Loader2 className="w-6 h-6 animate-spin" />
                            ) : (
                                <span className="flex items-center gap-4">
-                                  {step === 'confirm' ? `REQUEST RESERVATION` : 'CONTINUE CURATION'} <ArrowRight size={18} />
+                                  {step === 'confirm' ? (isQuoteBased ? 'REQUEST CUSTOM QUOTE' : 'REQUEST RESERVATION') : 'CONTINUE CURATION'} <ArrowRight size={18} />
                                </span>
                            )}
                         </Button>
@@ -539,6 +704,192 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
              </div>
           </div>
         </div>
+        
+        {/* Measurement Intercept Modal: The Bespoke Standard */}
+        <AnimatePresence>
+          {showMeasurementModal && (
+            <TooltipProvider>
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
+                 <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl flex flex-col max-h-[90vh]">
+                    
+                    {/* Header with Unit Toggle */}
+                    <div className="p-10 pb-6 border-b border-stone-50 flex justify-between items-center">
+                       <div>
+                          <h3 className="text-3xl font-black text-stone-900 tracking-tighter">Bespoke Blueprint</h3>
+                          <div className="flex items-center gap-4 mt-2">
+                             <div className="flex bg-stone-100 p-1 rounded-full border border-stone-200 shadow-inner">
+                                {['in', 'cm'].map((u) => (
+                                   <button 
+                                     key={u} 
+                                     onClick={toggleUnit}
+                                     className={cn(
+                                       "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                                       measurementUnit === u ? "bg-white text-stone-900 shadow-md" : "text-stone-400 hover:text-stone-600"
+                                     )}
+                                   >
+                                      {u}
+                                   </button>
+                                ))}
+                             </div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-stone-300">Metric Calibration</p>
+                          </div>
+                       </div>
+                       <button onClick={() => setShowMeasurementModal(false)} className="p-4 bg-stone-50 rounded-full hover:bg-stone-100 transition-colors text-stone-400"><X size={20} /></button>
+                    </div>
+
+                    {/* Step Indicator */}
+                    <div className="flex px-10 py-4 gap-2 border-b border-stone-50">
+                       {[1, 2, 3].map(s => (
+                          <div key={s} className="flex-1 h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                             <motion.div 
+                               initial={false} 
+                               animate={{ width: measurementStep >= s ? '100%' : '0%' }} 
+                               className={cn("h-full", measurementStep === s ? "bg-stone-900" : "bg-stone-400")} 
+                             />
+                          </div>
+                       ))}
+                    </div>
+
+                    {/* Form Content: Step-by-Step */}
+                    <div className="flex-1 overflow-y-auto pt-20 p-10">
+                       <AnimatePresence mode="wait">
+                          {measurementStep === 1 && (
+                            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                               <div className="flex items-center gap-4 mb-2">
+                                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">01</div>
+                                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Core Essentials</h4>
+                               </div>
+                               <div className="grid grid-cols-2 gap-6">
+                                  {[
+                                     { id: 'bust', label: 'Full Chest', help: 'Measure around the fullest part of your chest.' },
+                                     { id: 'waist', label: 'Waistline', help: 'Measure around your natural waist (narrowest part).' },
+                                     { id: 'hips', label: 'Seat / Hips', help: 'Fullest part of your hips and bottom.' },
+                                     { id: 'height', label: 'Total Height', help: 'Your full height from floor to head.' },
+                                     { id: 'weight', label: `Weight (${measurementUnit === 'in' ? 'lbs' : 'kg'})`, help: 'Total body mass.' },
+                                  ].map(f => (
+                                     <div key={f.id} className="space-y-2">
+                                        <div className="flex justify-between items-center px-1">
+                                           <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{f.label}</label>
+                                           <Tooltip>
+                                              <TooltipTrigger><Info size={12} className="text-stone-300 hover:text-stone-900 transition-colors" /></TooltipTrigger>
+                                              <TooltipContent side="top">{f.help}</TooltipContent>
+                                           </Tooltip>
+                                        </div>
+                                        <div className="relative group">
+                                           <Input type="number" step="0.1" value={measurementData[f.id as keyof typeof measurementData]} onChange={e => setMeasurementData(p => ({...p, [f.id]: e.target.value}))} className="h-16 rounded-2xl text-lg font-black bg-stone-50 border-stone-100 pr-12 focus:bg-white transition-all shadow-inner" />
+                                           <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[10px] uppercase text-stone-300 tracking-widest">
+                                              {f.id === 'weight' ? (measurementUnit === 'in' ? 'lbs' : 'kg') : measurementUnit}
+                                           </span>
+                                        </div>
+                                     </div>
+                                  ))}
+                               </div>
+                            </motion.div>
+                          )}
+
+                          {measurementStep === 2 && (
+                            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                               <div className="flex items-center gap-4 mb-2">
+                                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">02</div>
+                                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Upper Body & Arms</h4>
+                               </div>
+                               <div className="grid grid-cols-2 gap-6">
+                                  {[
+                                     { id: 'neck', label: 'Neck / Collar', help: 'Around the base of your neck.' },
+                                     { id: 'shoulder', label: 'Shoulder Width', help: 'Width from edge to edge across your back.' },
+                                     { id: 'armLength', label: 'Sleeve Length', help: 'From shoulder bone to wrist bone.' },
+                                     { id: 'bicep', label: 'Upper Arm', help: 'Fullest part of your relaxed arm.' },
+                                     { id: 'wrist', label: 'Wrist Bone', help: 'Circumference around the wrist bone.' },
+                                     { id: 'underbust', label: 'Lower Chest', help: 'Directly beneath the bust.' },
+                                     { id: 'hpsToWaist', label: 'Front Length', help: 'From high shoulder point down to waist.' },
+                                     { id: 'napeToWaist', label: 'Back Length', help: 'From base of neck down to waist.' },
+                                  ].map(f => (
+                                     <div key={f.id} className="space-y-2">
+                                        <div className="flex justify-between items-center px-1">
+                                           <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{f.label}</label>
+                                           <Tooltip>
+                                              <TooltipTrigger><Info size={12} className="text-stone-300 hover:text-stone-900 transition-colors" /></TooltipTrigger>
+                                              <TooltipContent side="top">{f.help}</TooltipContent>
+                                           </Tooltip>
+                                        </div>
+                                        <div className="relative">
+                                           <Input type="number" step="0.1" value={measurementData[f.id as keyof typeof measurementData]} onChange={e => setMeasurementData(p => ({...p, [f.id]: e.target.value}))} className="h-16 rounded-2xl text-lg font-black bg-stone-50 border-stone-100 pr-12 shadow-inner" />
+                                           <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[10px] uppercase text-stone-300 tracking-widest">{measurementUnit}</span>
+                                        </div>
+                                     </div>
+                                  ))}
+                               </div>
+                            </motion.div>
+                          )}
+
+                          {measurementStep === 3 && (
+                            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                               <div className="flex items-center gap-4 mb-2">
+                                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">03</div>
+                                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Lower Body / Legs</h4>
+                               </div>
+                               <div className="grid grid-cols-2 gap-6">
+                                  {[
+                                     { id: 'inseam', label: 'Inner Leg', help: 'Inside of leg from crotch to ankle.' },
+                                     { id: 'thigh', label: 'Upper Thigh', help: 'Fullest part of your upper leg.' },
+                                     { id: 'knee', label: 'Knee Width', help: 'At the knee joint while standing.' },
+                                     { id: 'ankle', label: 'Ankle Bone', help: 'Around the ankle bone.' },
+                                     { id: 'crotchRise', label: 'Seat Depth', help: 'Tailoring distance from waist to crotch.' },
+                                  ].map(f => (
+                                     <div key={f.id} className="space-y-2">
+                                        <div className="flex justify-between items-center px-1">
+                                           <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{f.label}</label>
+                                           <Tooltip>
+                                              <TooltipTrigger><Info size={12} className="text-stone-300 hover:text-stone-900 transition-colors" /></TooltipTrigger>
+                                              <TooltipContent side="top">{f.help}</TooltipContent>
+                                           </Tooltip>
+                                        </div>
+                                        <div className="relative">
+                                           <Input type="number" step="0.1" value={measurementData[f.id as keyof typeof measurementData]} onChange={e => setMeasurementData(p => ({...p, [f.id]: e.target.value}))} className="h-16 rounded-2xl text-lg font-black bg-stone-50 border-stone-100 pr-12 shadow-inner" />
+                                           <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[10px] uppercase text-stone-300 tracking-widest">{measurementUnit}</span>
+                                        </div>
+                                     </div>
+                                  ))}
+                               </div>
+                            </motion.div>
+                          )}
+                       </AnimatePresence>
+                    </div>
+
+                    {/* Footer Controls */}
+                    <div className="p-10 pt-6 border-t border-stone-50 bg-stone-50/30 flex gap-4">
+                       {measurementStep > 1 && (
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => setMeasurementStep(p => p - 1)} 
+                            className="h-16 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 border-stone-100/50 hover:bg-white"
+                          >
+                             Back
+                          </Button>
+                       )}
+                       {measurementStep < 3 ? (
+                          <Button 
+                            onClick={() => setMeasurementStep(p => p + 1)} 
+                            className="flex-1 h-16 rounded-2xl bg-stone-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95"
+                          >
+                             Next Step <ChevronRight size={16} className="ml-2" />
+                          </Button>
+                       ) : (
+                          <Button 
+                            onClick={handleSaveMeasurements} 
+                            disabled={savingMeasurements} 
+                            className="flex-1 h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-100 transition-all active:scale-95"
+                          >
+                             {savingMeasurements ? <Loader2 className="animate-spin" /> : "Finalize & Secure Slot"}
+                          </Button>
+                       )}
+                    </div>
+                 </motion.div>
+              </div>
+            </TooltipProvider>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

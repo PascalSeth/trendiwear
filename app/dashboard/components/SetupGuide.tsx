@@ -9,16 +9,12 @@ interface SetupGuideProps {
   isVerified: boolean;
   paymentSetupComplete: boolean;
   hasProductsOrServices: boolean;
-  businessName: string;
-  profileId: string;
 }
 
 export default function SetupGuide({
   isVerified,
   paymentSetupComplete,
   hasProductsOrServices,
-  businessName,
-  profileId,
 }: SetupGuideProps) {
   const steps = [
     {
@@ -46,8 +42,8 @@ export default function SetupGuide({
       icon: <ShieldAlert className="w-5 h-5" />,
       isCompleted: isVerified,
       actionText: 'Verify Now',
-      actionUrl: `mailto:verify@trendiwear.com?subject=Verification Request&body=Business: ${businessName} (ID: ${profileId})`,
-      isExternal: true,
+      actionUrl: '/dashboard/settings?tab=verification',
+      isExternal: false,
     },
   ];
 

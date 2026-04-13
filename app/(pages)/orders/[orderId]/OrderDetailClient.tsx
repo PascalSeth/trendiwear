@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Package, Truck, CheckCircle, Clock,
-  CreditCard, PackageCheck, Loader2, AlertCircle, Copy, Check, Info
+  CreditCard, PackageCheck, Loader2, AlertCircle, Copy, Check, Info, RotateCcw
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -97,6 +97,8 @@ const statusConfig: Record<string, { color: string; bg: string; border: string; 
 export default function OrderDetailClient({ order, isCustomer }: Props) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null) // professionalId
   const [copied, setCopied] = useState(false)
+  const [refunding, setRefunding] = useState(false)
+  const [paying, setPaying] = useState(false)
 
   const { data, mutate } = useSWR(
     `/api/orders/${order.id}`,
@@ -125,6 +127,63 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
     setCopied(true)
     toast.success('Order ID copied')
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const canRefund = React.useMemo(() => {
+    if (currentOrder.paymentStatus !== 'PAID') return false
+    if (currentOrder.status !== 'PENDING' && currentOrder.status !== 'PROCESSING') return false
+    if (!currentOrder.paystackPaidAt) return false
+    
+    const paidAt = new Date(currentOrder.paystackPaidAt).getTime()
+    const twelveHoursInMs = 12 * 60 * 60 * 1000
+    return Date.now() - paidAt < twelveHoursInMs
+  }, [currentOrder])
+
+  const handlePayOrder = async () => {
+    setPaying(true)
+    try {
+      const res = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId: currentOrder.id, 
+          callbackUrl: window.location.origin + `/orders/${currentOrder.id}/payment-complete` 
+        })
+      })
+      const data = await res.json()
+      if (data.authorizationUrl) {
+         window.location.href = data.authorizationUrl
+      } else {
+         toast.error(data.error || 'Failed to initialize payment')
+         setPaying(false)
+      }
+    } catch {
+      toast.error('Network error')
+      setPaying(false)
+    }
+  }
+
+  const requestRefund = async () => {
+    if (!confirm('Are you sure you want to request a refund? This will cancel your order. Note: The 3% platform fee is non-refundable.')) return
+    
+    setRefunding(true)
+    try {
+      const res = await fetch(`/api/orders/${currentOrder.id}/refund`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (res.ok) {
+        toast.success('Refund requested successfully')
+        mutate()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Refund failed')
+      }
+    } catch {
+      toast.error('Connection error')
+    } finally {
+      setRefunding(false)
+    }
   }
 
   const confirmPackageDelivery = async (professionalId: string) => {
@@ -370,15 +429,55 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
                   <p className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Paid via Paystack</p>
                </div>
 
-               <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl mb-8">
-                  <div className="flex items-center gap-3 mb-2">
-                     <ShieldCheck size={16} className="text-emerald-600" />
-                     <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-widest">TrendiZip Escrow</span>
-                  </div>
-                  <p className="text-[10px] text-emerald-700 leading-relaxed">
-                     Your payment for the items is held securely. We only release it to each seller separately when you confirm their package.
-                  </p>
-               </div>
+               {currentOrder.paymentStatus === 'PAID' ? (
+                 <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl mb-8">
+                    <div className="flex items-center gap-3 mb-2">
+                       <ShieldCheck size={16} className="text-emerald-600" />
+                       <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-widest">TrendiZip Escrow</span>
+                    </div>
+                    <p className="text-[10px] text-emerald-700 leading-relaxed">
+                       Your payment for the items is held securely. We only release it to each seller separately when you confirm their package.
+                    </p>
+                 </div>
+               ) : (
+                 <div className="bg-amber-50 border border-amber-100 p-5 rounded-2xl mb-8 space-y-4">
+                    <div className="flex items-center gap-3">
+                       <AlertCircle size={16} className="text-amber-600" />
+                       <span className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Awaiting Payment</span>
+                    </div>
+                    <p className="text-[10px] text-amber-700 leading-relaxed">
+                       This order has not been paid for yet. Complete the payment to notify the sellers to start processing.
+                    </p>
+                    <button
+                      onClick={handlePayOrder}
+                      disabled={paying}
+                      className="w-full h-12 bg-stone-900 hover:bg-black text-white rounded-xl font-mono text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-stone-900/10"
+                    >
+                      {paying ? (
+                        <><Loader2 size={14} className="animate-spin" /> Initializing...</>
+                      ) : (
+                        <><CreditCard size={14} /> Complete Payment</>
+                      )}
+                    </button>
+                 </div>
+               )}
+
+               {/* Refund Action */}
+               {isCustomer && canRefund && (
+                 <div className="pt-8 border-t border-stone-100 flex flex-col gap-4">
+                    <p className="text-[9px] font-mono text-stone-400 leading-relaxed uppercase tracking-widest">
+                       Eligible for instant refund for {Math.max(0, Math.ceil((12 * 60 * 60 * 1000 - (Date.now() - new Date(currentOrder.paystackPaidAt!).getTime())) / (60 * 60 * 1000)))} more hours.
+                    </p>
+                    <button
+                      onClick={requestRefund}
+                      disabled={refunding}
+                      className="w-full h-12 flex items-center justify-center gap-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-2xl text-[10px] font-mono uppercase tracking-widest transition-all"
+                    >
+                      {refunding ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                      Request Order Refund
+                    </button>
+                 </div>
+               )}
 
                {/* Delivery Address Review */}
                <div className="space-y-4 pt-8 border-t border-stone-100">

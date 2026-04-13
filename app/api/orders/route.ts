@@ -114,7 +114,8 @@ export async function GET(request: NextRequest) {
           deliveryConfirmations: {
             where: view === "seller" ? { professionalId: user.id } : undefined,
           },
-          paymentEscrow: true,
+          paymentEscrows: true,
+          shippingInvoices: true,
         },
         skip: (page - 1) * limit,
         take: limit,
@@ -214,10 +215,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Product ${product?.name || item.productId} is not available` }, { status: 400 })
       }
 
-      if (!product.isPreorder && (!product.isInStock || product.stockQuantity < item.quantity)) {
-        const errorMsg = !product.isInStock 
+      const totalAvailable = product.stockQuantity + (product.isPreorder ? (product.preorderLimit || 0) : 0);
+      
+      if (item.quantity > totalAvailable) {
+        const errorMsg = totalAvailable === 0
           ? `Product ${product.name} is currently out of stock` 
-          : `Insufficient stock for ${product.name}`;
+          : `Insufficient availability for ${product.name}. Only ${totalAvailable} remaining (including pre-orders).`;
         return NextResponse.json({ error: errorMsg }, { status: 400 })
       }
 

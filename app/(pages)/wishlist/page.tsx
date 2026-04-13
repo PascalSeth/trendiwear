@@ -94,7 +94,7 @@ export default function WishlistPage() {
             {wishlistItems.map((item) => (
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative">
-                  <Link href={`/shopping/products/${item.product.slug || item.product.id}`}>
+                  <Link href={`/shopping/products/${item.product.slug}`}>
                     <div className="aspect-square relative overflow-hidden bg-gray-100">
                       {item.product.images[0] ? (
                         <Image

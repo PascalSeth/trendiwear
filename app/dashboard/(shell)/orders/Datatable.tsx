@@ -58,6 +58,7 @@ type Order = {
   riderPhone?: string;
   manualDeliveryFee?: number;
   trackingNumber?: string;
+  paystackPaidAt?: string;
   riderId?: string;
   createdAt: string;
   customer: {
@@ -104,7 +105,12 @@ type Order = {
     riderName?: string;
     riderPhone?: string;
   }>;
-  paymentEscrow?: { status: string };
+  paymentEscrows: Array<{ status: string }>;
+  shippingInvoices?: Array<{
+    id: string;
+    amount: number;
+    status: string;
+  }>;
 };
 
 interface ManualDeliveryDetails {
@@ -172,12 +178,14 @@ function OrderDetailSheet({
   onClose,
   onStatusUpdate,
   onManualDelivery,
+  onRefund,
 }: {
   order: Order | null;
   open: boolean;
   onClose: () => void;
   onStatusUpdate: (id: string, status: string, extra?: { trackingNumber?: string; notes?: string }) => Promise<void>;
   onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
+  onRefund: (id: string) => Promise<void>;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -195,7 +203,7 @@ function OrderDetailSheet({
   const currentStepIndex = activeTimelineSteps.indexOf(packageStatus);
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+    <Sheet open={open} onOpenChange={(v: boolean) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl">
         {/* Premium Header */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b px-8 py-6 flex justify-between items-center">
@@ -403,6 +411,21 @@ function OrderDetailSheet({
                        <SendHorizontal className="w-4 h-4 mr-2" /> Ship Now
                      </Button>
                    )}
+                   {order.paymentStatus === 'PAID' && !['CANCELLED', 'REFUNDED', 'DELIVERED'].includes(packageStatus) && (
+                      <Button 
+                        size="lg" 
+                        variant="ghost" 
+                        className="rounded-full px-8 text-stone-500 hover:text-rose-500 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest h-14" 
+                        onClick={() => {
+                          if (confirm('Are you sure you want to refund this order?')) {
+                            onRefund(order.id);
+                          }
+                        }} 
+                        disabled={!!loading}
+                      >
+                         <RotateCcw className="w-4 h-4 mr-2" /> Refund
+                      </Button>
+                    )}
                    {!["CANCELLED", "DELIVERED", "REFUNDED"].includes(packageStatus) && (
                      <Button size="lg" variant="ghost" className="rounded-full px-8 text-stone-500 hover:text-rose-500 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("CANCELLED")} disabled={!!loading}>
                         <Ban className="w-4 h-4 mr-2" /> Cancel
@@ -424,11 +447,13 @@ function QuickActions({
   onOpen,
   onStatusUpdate,
   onManualDelivery,
+  onSendInvoice,
 }: {
   order: Order;
   onOpen: () => void;
   onStatusUpdate: (id: string, status: string) => Promise<void>;
   onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
+  onSendInvoice: (id: string, amount: number) => Promise<void>;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -439,18 +464,41 @@ function QuickActions({
   };
 
   const packageStatus = order.items[0]?.status || order.status;
+  const hasActiveInvoice = order.shippingInvoices?.some(inv => inv.status === 'PENDING' || inv.status === 'PAID');
+  const isShippingPaid = order.items[0]?.isPreorder ? order.shippingInvoices?.some(inv => inv.status === 'PAID') : true;
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
+      {order.items[0]?.isPreorder && !hasActiveInvoice && (packageStatus === "PROCESSING" || packageStatus === "CONFIRMED" || packageStatus === "PENDING") && (
+        <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-100 border-none transition-all hover:scale-105 active:scale-95" 
+          onClick={() => {
+             if (order.deliveryMethod === 'PICKUP') {
+                if (confirm('Mark Pre-order as Arrived and send Ready For Pickup notification?')) {
+                     onSendInvoice(order.id, 0);
+                }
+             } else {
+                const amount = prompt('Enter the International Shipping customs/import fee (GHS):', '0');
+                if (amount !== null && !isNaN(Number(amount)) && Number(amount) >= 0) {
+                     onSendInvoice(order.id, Number(amount));
+                }
+             }
+          }}
+          disabled={!!loading}
+        >
+          {order.deliveryMethod === 'PICKUP' ? <Package className="w-3.5 h-3.5 mr-1.5" /> : <SendHorizontal className="w-3.5 h-3.5 mr-1.5" />}
+          {order.deliveryMethod === 'PICKUP' ? 'Mark Arrived' : 'Req. Shipping Fee'}
+        </Button>
+      )}
+
+      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && isShippingPaid && (
         <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
           <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md shadow-teal-100 border-none transition-all hover:scale-105 active:scale-95" disabled={!!loading}>
             {loading === "READY_FOR_DELIVERY" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Truck className="w-3.5 h-3.5 mr-1.5" />}
-            Fulfill
+            Set Rider Details
           </Button>
         </ManualDeliveryDialog>
       )}
-      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
+      {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && isShippingPaid && (
         <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-100 border-none transition-all hover:scale-105 active:scale-95" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
           {loading === "READY_FOR_PICKUP" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5 mr-1.5" />}
           Ready
@@ -571,6 +619,44 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     }
   };
 
+  const handleRefund = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) {
+        showToast("Order refunded and cancelled.");
+        await fetchOrders();
+        setSheetOpen(false);
+      } else {
+        const data = await response.json();
+        showToast(data.error || "Failed to process refund.");
+      }
+    } catch {
+      showToast("Network error. Please try again.");
+    }
+  };
+
+  const handleSendInvoice = async (orderId: string, amount: number) => {
+    try {
+      const response = await fetch(`/api/shipping-invoices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, amount }),
+      });
+      if (response.ok) {
+        showToast("Shipping Invoice / Pickup Notification sent successfully!");
+        await fetchOrders();
+      } else {
+        const data = await response.json();
+        showToast(data.error || "Failed to issue invoice.");
+      }
+    } catch {
+      showToast("Network error. Please try again.");
+    }
+  };
+
   const openOrder = (order: Order) => {
     setSelectedOrder(order);
     setSheetOpen(true);
@@ -589,14 +675,14 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       header: ({ table }) => (
         <Checkbox
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(value: boolean) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onCheckedChange={(value: boolean) => row.toggleSelected(!!value)}
           aria-label="Select row"
         />
       ),
@@ -695,6 +781,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
           onOpen={() => openOrder(row.original)}
           onStatusUpdate={handleStatusUpdate}
           onManualDelivery={handleManualDelivery}
+          onSendInvoice={handleSendInvoice}
         />
       ),
     },
@@ -769,6 +856,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         onClose={() => setSheetOpen(false)}
         onStatusUpdate={handleStatusUpdate}
         onManualDelivery={handleManualDelivery}
+        onRefund={handleRefund}
       />
 
       {/* Header */}
@@ -806,7 +894,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
           <Input
             placeholder="Search by name, email, order ID..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9 text-sm"
           />
         </div>
@@ -966,6 +1054,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
                      onOpen={() => openOrder(row.original)}
                      onStatusUpdate={handleStatusUpdate}
                      onManualDelivery={handleManualDelivery}
+                     onSendInvoice={handleSendInvoice}
                    />
                 </div>
               </div>
@@ -1100,7 +1189,7 @@ function ManualDeliveryDialog({
               placeholder="e.g. John Doe"
               className="col-span-3 h-9"
               value={details.riderName}
-              onChange={(e) => setDetails({ ...details, riderName: e.target.value, riderId: "" })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetails({ ...details, riderName: e.target.value, riderId: "" })}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -1112,7 +1201,7 @@ function ManualDeliveryDialog({
               placeholder="024 XXX XXXX"
               className="col-span-3 h-9"
               value={details.riderPhone}
-              onChange={(e) => setDetails({ ...details, riderPhone: e.target.value, riderId: "" })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetails({ ...details, riderPhone: e.target.value, riderId: "" })}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -1125,7 +1214,7 @@ function ManualDeliveryDialog({
               placeholder="0.00"
               className="col-span-3 h-9"
               value={details.manualDeliveryFee}
-              onChange={(e) => setDetails({ ...details, manualDeliveryFee: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetails({ ...details, manualDeliveryFee: e.target.value })}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -1137,7 +1226,7 @@ function ManualDeliveryDialog({
               placeholder="Optional tracking ID"
               className="col-span-3 h-9"
               value={details.trackingNumber}
-              onChange={(e) => setDetails({ ...details, trackingNumber: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetails({ ...details, trackingNumber: e.target.value })}
             />
           </div>
         </div>

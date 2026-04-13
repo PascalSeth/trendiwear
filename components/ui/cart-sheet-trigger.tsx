@@ -113,7 +113,7 @@ export function CartSheetTrigger() {
                       <div className="flex gap-4">
                         {/* Product Image */}
                         <Link
-                          href={`/shopping/products/${item.product.id}`}
+                          href={`/shopping/products/${item.product.slug}`}
                           onClick={() => setOpen(false)}
                           className="relative w-24 h-24 rounded-xl overflow-hidden bg-white flex-shrink-0 shadow-sm"
                         >
@@ -128,7 +128,7 @@ export function CartSheetTrigger() {
                         {/* Product Details */}
                         <div className="flex-1 min-w-0 py-1">
                           <Link
-                            href={`/shopping/products/${item.product.id}`}
+                            href={`/shopping/products/${item.product.slug}`}
                             onClick={() => setOpen(false)}
                           >
                             <h4 className="font-semibold text-stone-900 hover:text-black line-clamp-2 leading-snug">

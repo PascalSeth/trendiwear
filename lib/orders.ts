@@ -33,10 +33,15 @@ export async function fulfillOrder(orderId: string) {
   await prisma.$transaction(async (tx) => {
     // 1. Update product stock and sold count
     for (const item of order.items) {
+      const product = item.product
+      const stockToDecrement = Math.min(item.quantity, product.stockQuantity)
+      const preorderToDecrement = Math.max(0, item.quantity - product.stockQuantity)
+
       await tx.product.update({
         where: { id: item.productId },
         data: {
-          stockQuantity: { decrement: item.quantity },
+          stockQuantity: { decrement: stockToDecrement },
+          preorderLimit: preorderToDecrement > 0 ? { decrement: preorderToDecrement } : undefined,
           soldCount: { increment: item.quantity },
         },
       })
@@ -86,6 +91,29 @@ export async function fulfillOrder(orderId: string) {
           totalOrders: 1,
           totalRevenue: sellerTotal,
         },
+      })
+
+      const hasPreorder = sellerItems.some(item => item.product?.isPreorder || item.isPreorder);
+      const initialEscrowStatus = hasPreorder ? 'RELEASED' : 'HELD';
+
+      // 3.1 Create Escrow record for this seller
+      await tx.paymentEscrow.upsert({
+        where: {
+          orderId_professionalId: {
+            orderId: order.id,
+            professionalId: sellerId,
+          }
+        },
+        update: {
+          amount: sellerTotal,
+          status: initialEscrowStatus,
+        },
+        create: {
+          orderId: order.id,
+          professionalId: sellerId,
+          amount: sellerTotal,
+          status: initialEscrowStatus,
+        }
       })
     }
 

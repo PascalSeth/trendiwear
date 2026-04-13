@@ -26,79 +26,44 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const {
-      bust,
-      waist,
-      hips,
-      shoulder,
-      armLength,
-      inseam,
-      height,
-      weight,
-      topSize,
-      bottomSize,
-      dressSize,
-      shoeSize,
-      bodyType,
-      stylePreferences,
-      preferredColors,
-      notes,
+      bust, waist, hips, shoulder, armLength, inseam,
+      neck, underbust, hpsToWaist, napeToWaist, bicep, wrist,
+      thigh, knee, ankle, crotchRise,
+      height, weight,
+      topSize, bottomSize, dressSize, shoeSize,
+      bodyType, stylePreferences, preferredColors, notes,
+      unit,
     }: {
-      bust?: number
-      waist?: number
-      hips?: number
-      shoulder?: number
-      armLength?: number
-      inseam?: number
-      height?: number
-      weight?: number
-      topSize?: string
-      bottomSize?: string
-      dressSize?: string
-      shoeSize?: string
-      bodyType?: BodyType
-      stylePreferences?: StylePreference[]
-      preferredColors?: string[]
-      notes?: string
+      bust?: number; waist?: number; hips?: number; shoulder?: number; armLength?: number; inseam?: number;
+      neck?: number; underbust?: number; hpsToWaist?: number; napeToWaist?: number; bicep?: number; wrist?: number;
+      thigh?: number; knee?: number; ankle?: number; crotchRise?: number;
+      height?: number; weight?: number;
+      topSize?: string; bottomSize?: string; dressSize?: string; shoeSize?: string;
+      bodyType?: BodyType; stylePreferences?: StylePreference[];
+      preferredColors?: string[]; notes?: string;
+      unit?: string;
     } = body
 
     const measurements = await prisma.measurement.upsert({
       where: { userId: user.id },
       update: {
-        bust,
-        waist,
-        hips,
-        shoulder,
-        armLength,
-        inseam,
-        height,
-        weight,
-        topSize,
-        bottomSize,
-        dressSize,
-        shoeSize,
-        bodyType,
-        stylePreferences,
-        preferredColors,
-        notes,
+        bust, waist, hips, shoulder, armLength, inseam,
+        neck, underbust, hpsToWaist, napeToWaist, bicep, wrist,
+        thigh, knee, ankle, crotchRise,
+        height, weight,
+        topSize, bottomSize, dressSize, shoeSize,
+        bodyType, stylePreferences, preferredColors, notes,
+        unit,
       },
       create: {
         userId: user.id,
-        bust,
-        waist,
-        hips,
-        shoulder,
-        armLength,
-        inseam,
-        height,
-        weight,
-        topSize,
-        bottomSize,
-        dressSize,
-        shoeSize,
-        bodyType,
-        stylePreferences,
-        preferredColors,
-        notes,
+        bust, waist, hips, shoulder, armLength, inseam,
+        neck, underbust, hpsToWaist, napeToWaist, bicep, wrist,
+        thigh, knee, ankle, crotchRise,
+        height, weight,
+        topSize, bottomSize, dressSize, shoeSize,
+        bodyType, stylePreferences, preferredColors, notes,
+        unit,
       },
     })
 

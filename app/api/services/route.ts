@@ -176,7 +176,10 @@ export async function POST(request: NextRequest) {
     try {
       const profile = await prisma.professionalProfile.findUnique({
         where: { userId: user.id },
-        include: { subscription: true }
+        include: { 
+          subscription: true,
+          trial: true
+        }
       });
 
       if (!profile) {
@@ -189,7 +192,7 @@ export async function POST(request: NextRequest) {
       const now = new Date();
       
       // Check if has active trial
-      const hasActiveTrial = profile.isOnTrial && profile.trialEndDate && now < profile.trialEndDate;
+      const hasActiveTrial = profile.trial && now < profile.trial.endDate;
       
       // Check if has active subscription
       const hasActiveSubscription = profile.subscription && 

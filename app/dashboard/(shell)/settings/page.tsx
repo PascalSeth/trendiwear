@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { SystemSetting } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,27 +10,23 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Save, Settings, User, Lock } from 'lucide-react'
+import { Save, Settings, User, Lock, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSearchParams } from 'next/navigation'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
-
-interface SystemSetting {
-  id: string
-  key: string
-  value: string
-  description?: string
-  category: string
-  updatedAt?: string
-}
+import VerificationCenter from '@/app/dashboard/components/VerificationCenter'
 
 interface UserProfileSummary {
-  firstName?: string
-  lastName?: string
-  email?: string
-  role?: string
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
 }
 
 export default function DashboardSettingsPage() {
+  const searchParams = useSearchParams()
+  const defaultTab = searchParams.get('tab') || 'account'
+  
   const [settings, setSettings] = useState<SystemSetting[]>([])
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({})
   const [savingKey, setSavingKey] = useState<string | null>(null)
@@ -133,7 +130,7 @@ export default function DashboardSettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="account" className="space-y-4">
+      <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="account" className="flex items-center gap-2"><User className="h-4 w-4"/>Account</TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2"><Settings className="h-4 w-4"/>Platform</TabsTrigger>
@@ -142,6 +139,7 @@ export default function DashboardSettingsPage() {
           )}
           {/* Payments tab mirrors /settings payments (MoMo setup) */}
           <TabsTrigger value="payments" className="flex items-center gap-2"><User className="h-4 w-4"/>Payments</TabsTrigger>
+          <TabsTrigger value="verification" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4"/>Verification</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account">
@@ -251,6 +249,10 @@ export default function DashboardSettingsPage() {
             </Card>
           </TabsContent>
         )}
+
+        <TabsContent value="verification">
+          <VerificationCenter />
+        </TabsContent>
       </Tabs>
     </div>
   )

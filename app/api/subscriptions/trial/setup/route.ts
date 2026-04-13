@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { initializeTrial } from '@/lib/subscription-service'
 
 /**
  * POST /api/subscriptions/trial/setup
@@ -28,37 +29,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const now = new Date()
-    const trialEndDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) // 3 months
-
-    // Update professional profile with trial dates
-    const updated = await prisma.professionalProfile.update({
-      where: { id: professionalId },
-      data: {
-        trialStartDate: now,
-        trialEndDate,
-        isOnTrial: true,
-        subscriptionStatus: 'TRIAL',
-      },
-    })
-
-    // Create trial record
-    const trial = await prisma.professionalTrial.create({
-      data: {
-        professionalId,
-        startDate: now,
-        endDate: trialEndDate,
-        daysRemaining: 90,
-      },
-    })
+    // Step 1: Use shared service for trial initialization
+    const trial = await initializeTrial(professionalId)
 
     return NextResponse.json({
       success: true,
       message: 'Trial initialized successfully',
       data: {
-        trialStartDate: updated.trialStartDate,
-        trialEndDate: updated.trialEndDate,
-        daysRemaining: 90,
         trial,
       },
     })

@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Heart, MapPin, Ruler, Settings, HelpCircle, DollarSign, Menu, Calendar, MessageSquare } from "lucide-react";
+import { Search, User, LogOut, Package, Heart, Settings, Menu, Calendar, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useSWR, { useSWRConfig } from "swr";
 import { motion } from "framer-motion";
@@ -21,7 +21,7 @@ const CartSheetTrigger = dynamic(() => import("@/components/ui/cart-sheet-trigge
   loading: () => <div className="h-6 w-6" />
 });
 
-type User = {
+type UserType = {
   id?: string;
   name?: string | null;
   email?: string | null;
@@ -31,7 +31,7 @@ type User = {
 
 type NavbarProps = {
   role: Role;
-  user: User | null;
+  user: UserType | null;
   profileSlug?: string;
 };
 
@@ -77,17 +77,11 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   };
 
   const handleCategoryClick = async (label: string) => {
-    // Optimistic UI: Hide dot immediately
     setClearedCategories(prev => new Set(prev).add(label));
-
-    // Persistence: Mark as read in DB
     try {
       if (label === 'Messages') {
-        // Special PATCH for messages API
         await fetch('/api/conversations', { method: 'PATCH' });
       }
-
-      // Also clear any general notification of this category
       const types = CATEGORY_TYPES[label];
       if (types && types.length > 0) {
         await fetch('/api/notifications', {
@@ -96,8 +90,6 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
           body: JSON.stringify({ types })
         });
       }
-      
-      // Force refresh batch data to reflect changes
       mutate('/api/batch');
     } catch (err) {
       console.error('Failed to persist notification clearance:', err);
@@ -116,7 +108,6 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     { href: "/tailors-designers", label: "Tailors & Designers" },
     { href: "/shopping", label: "Shopping" },
     { href: "/blog", label: "Blog" },
-    // { href: "/about", label: "About Us" },
   ];
 
   return (
@@ -124,327 +115,94 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
       className={cn(
         "fixed w-full top-0 z-50 transition-all duration-500 ease-out border-b",
         scrolled
-          ? 'bg-[#FAFAF9]/95 backdrop-blur-md border-stone-200 py-4'
-          : 'bg-[#FAFAF9]/80 backdrop-blur-md border-transparent py-6'
+          ? 'bg-[#FAFAF9]/95 backdrop-blur-md border-stone-200 py-3 md:py-4'
+          : 'bg-[#FAFAF9]/90 backdrop-blur-md border-transparent py-5 md:py-6'
       )}
     >
-      <div className="max-w-[1600px] mx-auto px-6 flex items-center justify-between">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between relative h-10 md:h-12">
 
-        {/* Left: Original Logo */}
-        <Link href="/" className="flex-shrink-0 group">
-          <Image
-            src="/navlogo.png"
-            alt="TrendiZip"
-            width={40}
-            height={40}
-            className="transition-transform duration-300 group-hover:scale-105"
-          />
-        </Link>
-
-        {/* Center: Navigation Links (Styled Editorially) */}
-        <nav className="hidden md:flex items-center gap-10">
-          {navLinks.map((link, idx) => (
-            <Link
-              key={idx}
-              href={link.href}
-              className={cn(
-                "relative text-xs font-mono uppercase tracking-[0.2em] transition-colors duration-300",
-                isActive(link.href) ? "text-red-900" : "text-stone-500 hover:text-red-900"
-              )}
-            >
-              {link.label}
-              <span className={cn(
-                "absolute -bottom-2 left-0 w-full h-[1px] bg-stone-900 transition-transform duration-300",
-                isActive(link.href) ? "scale-x-100" : "scale-x-0 hover:scale-x-100"
-              )}></span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-6">
-          {/* Minimal Search (Keeps original placeholder) */}
-          <div className="hidden lg:flex items-center group">
-            <Search className="w-4 h-4 text-stone-400 group-hover:text-red-900 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search product or brand..."
-              className="ml-3 bg-transparent border-b border-transparent focus:border-stone-300 focus:outline-none text-sm text-stone-600 placeholder-stone-400 w-0 group-hover:w-48 transition-all duration-500 ease-out"
-            />
-          </div>
-
-          {/* Icons */}
-          <div className="hidden md:flex items-center gap-4">
-            <NotificationBell context="personal" />
-            <CartSheetTrigger />
-          </div>
-
-          {/* User Actions */}
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 group relative">
-                  <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-2 group-hover:ring-stone-400 transition-all duration-300">
-                    <Image
-                      src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
-                      alt="User"
-                      width={36}
-                      height={36}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {unreadCount > 0 && !Array.from(clearedCategories).some(c => hasUnreadCategory(c)) && (
-                    <motion.span
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ 
-                        scale: [1, 1.2, 1],
-                        opacity: [1, 0.7, 1],
-                        backgroundColor: ['#ef4444', '#f87171', '#ef4444']
-                      }}
-                      transition={{ 
-                        repeat: Infinity, 
-                        duration: 3,
-                        ease: "easeInOut"
-                      }}
-                      className="absolute -top-0.5 -right-0.5 w-3 h-3 border-2 border-[#FAFAF9] rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)] z-10"
-                      style={{ willChange: 'transform, opacity' }}
-                    />
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-
-              {/* Minimal Awwards-worthy Dropdown */}
-              <DropdownMenuContent
-                align="end"
-                sideOffset={8}
-                className="w-64 p-0 bg-white border-0 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden"
-              >
-                {/* User Header */}
-                <div className="px-5 py-4 border-b border-stone-100">
-                  <p className="text-sm font-medium text-stone-900 truncate">{user.name}</p>
-                  <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
-                </div>
-
-                {/* Scrollable Menu */}
-                <div className="max-h-[50vh] overflow-y-auto overscroll-contain py-2">
-                  {[
-                    { icon: User, label: 'Profile', href: getProfileUrl() },
-                    { icon: MessageSquare, label: 'Messages', href: '/messages' },
-                    { icon: Package, label: 'Orders', href: '/orders' },
-                    { icon: Calendar, label: 'Bookings', href: '/bookings' },
-                    { icon: Heart, label: 'Wishlist', href: '/wishlist' },
-                  ].map((item, idx) => (
-                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 group/item">
-                      <Link 
-                        href={item.href} 
-                        onClick={() => handleCategoryClick(item.label)}
-                        className="flex items-center justify-between w-full px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <item.icon size={16} strokeWidth={1.5} />
-                          <span className="text-sm">{item.label}</span>
-                        </div>
-                        {hasUnreadCategory(item.label) && (
-                          <span className="w-1.5 h-1.5 bg-red-500 rounded-full group-hover/item:scale-125 transition-transform shadow-[0_0_5px_rgba(239,68,68,0.4)]" />
-                        )}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-
-                  {/* Dashboard for Professionals */}
-                  {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                    <>
-                      <div className="h-px bg-stone-100 my-2 mx-5" />
-                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 group/item">
-                        <Link 
-                          href="/dashboard" 
-                          onClick={() => handleCategoryClick('Dashboard')}
-                          className="flex items-center justify-between w-full px-5 py-2.5 text-stone-900 font-medium transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Settings size={16} strokeWidth={1.5} />
-                            <span className="text-sm">Dashboard</span>
-                          </div>
-                          {hasUnreadCategory('Dashboard') && (
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full group-hover/item:scale-125 transition-transform shadow-[0_0_5px_rgba(239,68,68,0.4)]" />
-                          )}
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  {/* Become Professional */}
-                  {role === "CUSTOMER" && (
-                    <>
-                      <div className="h-px bg-stone-100 my-2 mx-5" />
-                      <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50">
-                        <Link href="/register-as-professional" className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
-                          <DollarSign size={16} strokeWidth={1.5} />
-                          <span className="text-sm">Become a Pro</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  <div className="h-px bg-stone-100 my-2 mx-5" />
-
-                  {[
-                    { icon: MapPin, label: 'Addresses', href: '/addresses' },
-                    { icon: Ruler, label: 'Measurements', href: '/measurements' },
-                    { icon: Settings, label: 'Settings', href: '/settings' },
-                    { icon: HelpCircle, label: 'Help', href: '/help' },
-                  ].map((item, idx) => (
-                    <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50">
-                      <Link href={item.href} className="flex items-center gap-3 px-5 py-2.5 text-stone-600 hover:text-stone-900 transition-colors">
-                        <item.icon size={16} strokeWidth={1.5} />
-                        <span className="text-sm">{item.label}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-
-                {/* Logout */}
-                <div className="border-t border-stone-100 p-2">
-                  <DropdownMenuItem asChild className="cursor-pointer focus:bg-red-50 rounded-lg">
-                    <button
-                      onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <LogOut size={16} strokeWidth={1.5} />
-                      <span className="text-sm">Sign out</span>
-                    </button>
-                  </DropdownMenuItem>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="hidden md:flex items-center gap-3">
-              <button onClick={() => window.location.href = '/auth/signin?mode=signin'} className="text-xs font-mono uppercase tracking-[0.2em] text-stone-500 hover:text-red-900 transition-colors">
-                Login
-              </button>
-              <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors">
-                Sign up
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Hamburger */}
+        {/* --- MOBILE: LEFT ACTION (Menu Trigger) --- */}
+        <div className="md:hidden flex-1 flex items-center">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <button className="p-2 -mr-2 text-stone-500 hover:text-red-900 transition-colors">
-                <Menu size={24} />
+            <SheetTrigger asChild>
+              <button className="p-2 -ml-2 text-stone-900 transition-colors">
+                <Menu size={22} />
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:w-[400px] bg-[#FAFAF9] p-0 border-l border-stone-200">
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <div className="h-full flex flex-col">
-                {/* Mobile Header */}
                 <div className="flex items-center justify-between p-6 border-b border-stone-200">
                   <Image src="/navlogo.png" alt="TrendiZip" width={32} height={32} />
                 </div>
-
-                {/* Mobile Search */}
-                <div className="px-6 py-4">
-                  <div className="relative">
-                    <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                    <input
-                      type="text"
-                      placeholder="Search product or brand..."
-                      className="w-full pl-8 py-2 bg-transparent border-b border-stone-200 focus:outline-none focus:border-stone-900 text-red-900 placeholder-stone-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Mobile Nav Links (Original Text) */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                  {navLinks.map((link, idx) => (
-                    <Link
-                      key={idx}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        "block text-lg font-serif text-red-900 hover:italic transition-all duration-300",
-                        isActive(link.href) && "font-bold"
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-
-                  {user && (
-                    <div className="pt-6 mt-6 border-t border-stone-100 space-y-6">
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Personal Curation</p>
-                      {[
-                        { icon: MessageSquare, label: 'Messages', href: '/messages' },
-                        { icon: Package, label: 'Orders', href: '/orders' },
-                        { icon: Calendar, label: 'Bookings', href: '/bookings' },
-                        { icon: Heart, label: 'Wishlist', href: '/wishlist' },
-                      ].map((item, idx) => (
+                
+                {/* Mobile Secondary Menu */}
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Main Collection</p>
+                    <div className="space-y-4">
+                      {navLinks.map((link, idx) => (
                         <Link
                           key={idx}
-                          href={item.href}
-                          onClick={() => {
-                            handleCategoryClick(item.label);
-                            setMobileMenuOpen(false);
-                          }}
-                          className="flex items-center gap-4 text-stone-600 hover:text-stone-900 transition-all font-serif italic text-lg"
+                          href={link.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            "block text-2xl font-serif text-stone-900 hover:italic transition-all duration-300",
+                            isActive(link.href) && "italic font-semibold"
+                          )}
                         >
-                          <div className="relative">
-                            <item.icon size={20} strokeWidth={1} />
-                            {hasUnreadCategory(item.label) && (
-                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#FF3B30] border-2 border-[#FAFAF9] rounded-full shadow-sm" />
-                            )}
-                          </div>
-                          {item.label}
+                          {link.label}
                         </Link>
                       ))}
+                    </div>
+                  </div>
+
+                  {user && (
+                    <div className="pt-8 border-t border-stone-100 space-y-6">
+                      <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Digital Atelier</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { icon: MessageSquare, label: 'Messages', href: '/messages' },
+                          { icon: Package, label: 'Orders', href: '/orders' },
+                          { icon: Calendar, label: 'Bookings', href: '/bookings' },
+                          { icon: Heart, label: 'Wishlist', href: '/wishlist' },
+                        ].map((item, idx) => (
+                          <Link
+                            key={idx}
+                            href={item.href}
+                            onClick={() => {
+                              handleCategoryClick(item.label);
+                              setMobileMenuOpen(false);
+                            }}
+                            className="flex flex-col gap-2 p-4 bg-white border border-stone-100 rounded-2xl hover:border-stone-200 transition-colors"
+                          >
+                            <div className="relative w-fit">
+                              <item.icon size={20} strokeWidth={1.5} className="text-stone-400" />
+                              {hasUnreadCategory(item.label) && (
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
+                              )}
+                            </div>
+                            <span className="text-xs font-mono uppercase tracking-widest text-stone-600 font-medium">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Mobile Auth Footer */}
-                <div className="p-6 border-t border-stone-200 bg-stone-50">
+                {/* Mobile Footer Logout/Auth */}
+                <div className="p-6 border-t border-stone-200 bg-stone-50/50">
                   {user ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
-                          alt="User"
-                          width={40}
-                          height={40}
-                          className="w-10 h-10 rounded-full"
-                        />
-                        <div>
-                          <p className="font-serif font-medium text-red-900">{user.name}</p>
-                          <p className="text-xs font-mono text-stone-500">{role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'PROFESSIONAL' ? 'Professional' : 'Member'}</p>
-                        </div>
-                      </div>
-                      {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                        <Link
-                          href="/dashboard"
-                          onClick={() => {
-                            handleCategoryClick('Dashboard');
-                            setMobileMenuOpen(false);
-                          }}
-                          className="relative block w-full py-3 mt-4 text-center text-sm font-mono uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800 transition-colors"
-                        >
-                          Dashboard
-                          {hasUnreadCategory('Dashboard') && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
-                          )}
-                        </Link>
-                      )}
-                      <button onClick={() => signOut()} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-600 hover:text-red-700">
-                        Logout
-                      </button>
-                    </div>
+                    <button onClick={() => signOut()} className="w-full py-4 text-center text-[10px] font-mono uppercase tracking-[0.3em] text-red-600 hover:bg-white transition-colors border border-stone-200 bg-white rounded-xl">
+                      Sign Out
+                    </button>
                   ) : (
-                    <div className="space-y-3">
-                      <button onClick={() => window.location.href = '/auth/signin?mode=signin'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-red-900 border border-stone-300 hover:border-stone-900 transition-colors">
-                        Login
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => window.location.href='/auth/signin?mode=signin'} className="py-4 text-center text-[10px] font-mono uppercase tracking-[0.3em] text-stone-900 border border-stone-200 bg-white rounded-xl">
+                        Log In
                       </button>
-                      <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="block w-full py-3 text-center text-sm font-mono uppercase tracking-widest text-white bg-stone-900 hover:bg-stone-800 transition-colors">
-                        Sign up
+                      <button onClick={() => window.location.href='/auth/signin?mode=signup'} className="py-4 text-center text-[10px] font-mono uppercase tracking-[0.3em] text-white bg-stone-900 rounded-xl shadow-lg">
+                        Sign Up
                       </button>
                     </div>
                   )}
@@ -453,6 +211,134 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
             </SheetContent>
           </Sheet>
         </div>
+
+        {/* --- LOGO: CENTER ON MOBILE, LEFT ON DESKTOP --- */}
+        <div className="md:flex-shrink-0 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 transition-all duration-700 z-10">
+          <Link href="/" className="group block">
+            <Image
+              src="/navlogo.png"
+              alt="TrendiZip"
+              width={34}
+              height={34}
+              className="transition-transform duration-500 group-hover:scale-110 md:w-10 md:h-10"
+            />
+          </Link>
+        </div>
+
+        {/* --- DESKTOP: CENTER NAVIGATION LINKS --- */}
+        <nav className="hidden md:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
+          {navLinks.map((link, idx) => (
+            <Link
+              key={idx}
+              href={link.href}
+              className={cn(
+                "relative text-[10px] font-mono uppercase tracking-[0.4em] transition-all duration-300",
+                isActive(link.href) ? "text-stone-950 font-black" : "text-stone-400 hover:text-stone-900"
+              )}
+            >
+              {link.label}
+              <span className={cn(
+                "absolute -bottom-1 left-0 w-full h-[1.5px] bg-stone-900 transition-transform duration-500 origin-left ease-out",
+                isActive(link.href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )}></span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* --- RIGHT: ACTIONS (Icon Group) --- */}
+        <div className="flex-1 flex justify-end items-center gap-1 md:gap-4">
+          
+          {/* Desktop Search Trigger */}
+          <div className="hidden lg:flex items-center group relative cursor-pointer">
+            <Search className="w-4 h-4 text-stone-400 group-hover:text-stone-900 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="ml-3 bg-transparent border-b border-transparent focus:border-stone-300 focus:outline-none text-[10px] font-mono uppercase tracking-widest text-stone-600 placeholder-stone-400 w-0 group-hover:w-32 transition-all duration-500 ease-out"
+            />
+          </div>
+
+          {/* Action Row - Mobile Capsule Styling */}
+          <div className="flex items-center gap-1 md:gap-4 bg-stone-100/50 md:bg-transparent backdrop-blur-sm md:backdrop-blur-0 px-1.5 md:px-0 py-1 md:py-0 rounded-full border border-stone-200/50 md:border-0">
+            <NotificationBell context="personal" />
+            <CartSheetTrigger />
+            
+            {/* User Access Point */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center group relative outline-none">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-2 group-hover:ring-stone-400 transition-all duration-300">
+                      <Image
+                        src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
+                        alt="User"
+                        width={36}
+                        height={36}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {unreadCount > 0 && !Array.from(clearedCategories).some(c => hasUnreadCategory(c)) && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-stone-950 border-2 border-white rounded-full z-10"
+                      />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={12}
+                  className="w-64 p-2 bg-white/95 backdrop-blur-xl border-stone-200 shadow-2xl rounded-2xl overflow-hidden"
+                >
+                  <div className="px-4 py-3 mb-2 bg-stone-50 rounded-xl">
+                    <p className="text-xs font-bold font-mono uppercase tracking-widest text-stone-900 truncate">{user.name}</p>
+                    <p className="text-[10px] font-mono text-stone-400 truncate mt-0.5 uppercase tracking-tighter">{user.email}</p>
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { icon: User, label: 'Profile', href: getProfileUrl() },
+                      { icon: MessageSquare, label: 'Messages', href: '/messages' },
+                      { icon: Package, label: 'Orders', href: '/orders' },
+                      { icon: Calendar, label: 'Bookings', href: '/bookings' },
+                    ].map((item, idx) => (
+                      <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                        <Link href={item.href} onClick={() => handleCategoryClick(item.label)} className="flex items-center justify-between w-full px-3 py-2 text-stone-600 hover:text-stone-950">
+                          <div className="flex items-center gap-3">
+                            <item.icon size={16} strokeWidth={1.5} />
+                            <span className="text-xs font-mono uppercase tracking-widest">{item.label}</span>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                    {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                      <div className="pt-2 mt-2 border-t border-stone-100">
+                        <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-stone-900 font-bold rounded-lg hover:bg-stone-50 transition-colors">
+                          <Settings size={16} strokeWidth={1.5} />
+                          <span className="text-xs font-mono uppercase tracking-widest">Dashboard</span>
+                        </Link>
+                      </div>
+                    )}
+                    <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors mt-2">
+                       <LogOut size={16} strokeWidth={1.5} />
+                       <span className="text-xs font-mono uppercase tracking-widest">Sign Out</span>
+                    </button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => window.location.href='/auth/signin'} className="p-2 text-stone-400 hover:text-stone-900 sm:hidden">
+                  <User size={20} strokeWidth={1.5} />
+                </button>
+                <button onClick={() => window.location.href='/auth/signin'} className="hidden sm:block text-[10px] font-mono uppercase tracking-[0.3em] text-stone-500 hover:text-stone-900 px-4 py-2 transition-colors">
+                  Login
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { MultiCategoryPicker } from "@/app/components/MultiCategoryPicker";
 
@@ -13,12 +15,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { suggestTags } from "@/lib/fashion-engine";
 import { Sparkles } from "lucide-react";
 
-// --- Types ---
 type SizeOption =
   | "US 2" | "US 4" | "US 6" | "US 8" | "US 10" | "US 12" | "US 14" | "US 16"
   | "EU 34" | "EU 36" | "EU 38" | "EU 40" | "EU 42" | "EU 44" | "EU 46" | "EU 48"
@@ -48,14 +47,19 @@ const STEPS = [
   { id: 'details', title: 'Details', icon: <Palette className="w-5 h-5" /> },
 ];
 
-export default function AddProductPage() {
+export default function EditProductPage() {
+  const params = useParams();
   const router = useRouter();
+  const productId = params.id as string;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
 
   // --- Form State ---
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [price, setPrice] = useState("");
@@ -74,9 +78,10 @@ export default function AddProductPage() {
   const [isUnisex, setIsUnisex] = useState(true);
   const [isOnSale, setIsOnSale] = useState(false);
   const [isPreorder, setIsPreorder] = useState(false);
+  const [preorderLimit, setPreorderLimit] = useState("0");
   const [discountPercentage, setDiscountPercentage] = useState("");
-  const [discountStartDate] = useState("");
-  const [discountEndDate] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("");
+  const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
   const [estimatedDelivery, setEstimatedDelivery] = useState("0");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -91,17 +96,66 @@ export default function AddProductPage() {
   const [selectedCategoryCollections, setSelectedCategoryCollections] = useState<Collection[]>([]);
 
   useEffect(() => {
-    async function fetchFilters() {
-      // Use the first selected category for collections context if any
-      const mainCatId = selectedCategoryIds.length > 0 ? selectedCategoryIds[0] : "";
-      const url = mainCatId ? `/api/product-selection-filters?categoryId=${mainCatId}` : "/api/product-selection-filters";
-      const res = await fetch(url);
-      const data = await res.json();
-      setParentCategories(data.parentCategories);
-      setSelectedCategoryCollections(data.selectedCategoryCollections);
-    }
-    fetchFilters();
-  }, [selectedCategoryIds]);
+    const fetchAll = async () => {
+      setFetchLoading(true);
+      try {
+        const pRes = await fetch(`/api/products/${productId}`);
+        if (!pRes.ok) throw new Error("Failed to fetch product");
+        const productData = await pRes.json();
+        
+        setName(productData.name || "");
+        setDescription(productData.description || "");
+        
+        const catIds = productData.categories?.map((c: Category) => c.id) || (productData.categoryId ? [productData.categoryId] : []);
+        setSelectedCategoryIds(catIds);
+        
+        setSelectedCollections(productData.collections?.map((c: Collection) => c.id) || []);
+        setSelectedSizes(productData.sizes || []);
+        setColors(productData.colors || []);
+        setMaterial(productData.material || "");
+        setCareInstructions(productData.careInstructions || "");
+        setIsCustomizable(productData.isCustomizable || false);
+        setIsUnisex(productData.isUnisex || true);
+        setSubmittedForShowcase(productData.submittedForShowcase || false);
+        setIsOnSale(productData.isOnSale || false);
+        
+        // Handle complex discount logic
+        setDiscountType(productData.discountType || "PERCENTAGE");
+        setDiscountPercentage(productData.discountPercentage?.toString() || "");
+        setDiscountPrice(productData.discountPrice?.toString() || "");
+        
+        setIsPreorder(productData.isPreorder || false);
+        setPreorderLimit(productData.preorderLimit?.toString() || "0");
+        setEstimatedDelivery(productData.estimatedDelivery?.toString() || "0");
+        setUploadedImageUrls(productData.images || []);
+        setUploadedVideoUrl(productData.videoUrl || "");
+        setPrice(productData.price?.toString() || "0");
+        setCurrency(productData.currency || "GHS");
+        setStockQuantity(productData.stockQuantity?.toString() || "0");
+
+        const mainCatId = catIds[0] || "";
+        const fUrl = mainCatId ? `/api/product-selection-filters?categoryId=${mainCatId}` : "/api/product-selection-filters";
+        const fRes = await fetch(fUrl);
+        const fData = await fRes.json();
+        setParentCategories(fData.parentCategories);
+        setSelectedCategoryCollections(fData.selectedCategoryCollections);
+
+        // Fetch verification status
+        try {
+          const vRes = await fetch('/api/professional-profiles');
+          const vData = await vRes.json();
+          setIsVerified(Boolean(vData.isVerified));
+        } catch {}
+        
+      } catch (err) {
+        console.error(err);
+        router.push('/dashboard/catalogue/products');
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+    fetchAll();
+  }, [productId, router]);
 
   const sizeOptions = {
     US: ["US 2", "US 4", "US 6", "US 8", "US 10", "US 12", "US 14", "US 16"] as SizeOption[],
@@ -113,15 +167,21 @@ export default function AddProductPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    if (selectedImages.length + files.length > 4) return;
+    if (uploadedImageUrls.length + selectedImages.length + files.length > 4) return;
     setSelectedImages(prev => [...prev, ...files]);
     const urls = files.map(f => URL.createObjectURL(f));
     setUploadedImageUrls(prev => [...prev, ...urls]);
   };
 
   const removeImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-    setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
+    const existingCount = uploadedImageUrls.length - selectedImages.length;
+    if (index < existingCount) {
+       setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
+    } else {
+       const newIdx = index - existingCount;
+       setSelectedImages(prev => prev.filter((_, i) => i !== newIdx));
+       setUploadedImageUrls(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,34 +200,13 @@ export default function AddProductPage() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setSelectedCategoryIds([]);
-    setSelectedCollections([]);
-    setPrice("");
-    setStockQuantity("0");
-    setSelectedImages([]);
-    setUploadedImageUrls([]);
-    setSelectedVideo(null);
-    setUploadedVideoUrl("");
-    setSelectedSizes([]);
-    setColors([]);
-    setMaterial("");
-    setCareInstructions("");
-    setIsCustomizable(false);
-    setIsUnisex(true);
-    setIsPreorder(false);
-    setEstimatedDelivery("0");
-    setSubmittedForShowcase(false);
-    setCurrentStep(0);
-    setShowSuccessModal(false);
-  };
-
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const imgUrls = await Promise.all(selectedImages.map(async file => {
+      const existingCount = uploadedImageUrls.length - selectedImages.length;
+      const keepUrls = uploadedImageUrls.slice(0, existingCount);
+      
+      const newImgUrls = await Promise.all(selectedImages.map(async file => {
         const fd = new FormData();
         fd.append('file', file);
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
@@ -175,7 +214,9 @@ export default function AddProductPage() {
         return data.url;
       }));
 
-      let finalVideoUrl = "";
+      const finalImages = [...keepUrls, ...newImgUrls];
+
+      let finalVideoUrl = uploadedVideoUrl;
       if (selectedVideo) {
         const fd = new FormData();
         fd.append('file', selectedVideo);
@@ -188,10 +229,10 @@ export default function AddProductPage() {
       const productData = {
         name,
         description,
-        price,
+        price: parseFloat(price),
         currency,
         stockQuantity: parseInt(stockQuantity),
-        images: imgUrls,
+        images: finalImages,
         videoUrl: finalVideoUrl || undefined,
         categoryIds: selectedCategoryIds,
         collectionIds: selectedCollections,
@@ -202,18 +243,17 @@ export default function AddProductPage() {
         isCustomizable,
         isUnisex,
         isPreorder,
+        preorderLimit: parseInt(preorderLimit),
         estimatedDelivery: parseInt(estimatedDelivery),
         submittedForShowcase,
-        discountPercentage: discountPercentage || undefined,
-        discountStartDate: discountStartDate || undefined,
-        discountEndDate: discountEndDate || undefined,
+        discountType,
+        discountPercentage: discountType === 'PERCENTAGE' ? (parseFloat(discountPercentage) || undefined) : undefined,
+        discountPrice: discountType === 'FIXED' ? (parseFloat(discountPrice) || undefined) : undefined,
         isOnSale,
-        allowPickup: true,
-        allowDelivery: true,
       };
 
-      const res = await fetch('/api/products', {
-        method: 'POST',
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
       });
@@ -235,6 +275,14 @@ export default function AddProductPage() {
     return true;
   }, [currentStep, name, description, selectedCategoryIds, uploadedImageUrls, price, currency]);
 
+  if (fetchLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#F8FAFC] flex flex-col relative">
       <div className="flex flex-col min-w-0">
@@ -251,9 +299,9 @@ export default function AddProductPage() {
             <div className="flex items-center gap-4">
               {STEPS.map((step, i) => (
                 <button
-                  key={step.id}
-                  onClick={() => i <= currentStep && setCurrentStep(i)}
-                  className="flex items-center gap-2 group"
+                   key={step.id}
+                   onClick={() => i <= currentStep && setCurrentStep(i)}
+                   className="flex items-center gap-2 group"
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
                     i === currentStep 
@@ -284,24 +332,18 @@ export default function AddProductPage() {
             </button>
           </div>
         </div>
+
         <div className="max-w-5xl mx-auto w-full px-6 pt-12 pb-6 lg:pt-20 lg:pb-8">
-          
-          {/* Editorial Step Header */}
-          <motion.div 
-            key={currentStep + "header"}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12 lg:mb-20"
-          >
+          <motion.div key={currentStep + "header"} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 lg:mb-20">
              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Product Creation — Step {currentStep + 1}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Editing Product — Step {currentStep + 1}</span>
                 <div className="h-px w-12 bg-blue-200" />
              </div>
              <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                {currentStep === 0 && "Define the soul of your piece."}
-                {currentStep === 1 && "Capture the masterpiece."}
-                {currentStep === 2 && "The value of your craft."}
-                {currentStep === 3 && "Fine details & options."}
+                {currentStep === 0 && "Update the identity."}
+                {currentStep === 1 && "Refine the presentation."}
+                {currentStep === 2 && "Update the value."}
+                {currentStep === 3 && "Fine-tune the details."}
              </h1>
           </motion.div>
 
@@ -432,51 +474,91 @@ export default function AddProductPage() {
 
               {/* STEP 2: MEDIA (The Visuals) */}
               {currentStep === 1 && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                  <div className="lg:col-span-7 space-y-8">
-                     <div className="grid grid-cols-2 gap-6">
-                        {uploadedImageUrls.map((url, idx) => (
-                           <motion.div 
-                            key={idx}
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="aspect-[4/5] rounded-[2.5rem] overflow-hidden group relative shadow-2xl shadow-slate-200"
-                           >
-                              <Image src={url} alt="Preview" fill className="object-cover" />
-                              <button onClick={() => removeImage(idx)} className="absolute top-6 right-6 p-3 bg-white/90 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-all text-rose-500">
-                                 <X className="w-5 h-5" />
-                              </button>
-                           </motion.div>
-                        ))}
-                        {uploadedImageUrls.length < 4 && (
-                           <label className="aspect-[4/5] rounded-[2.5rem] bg-white border-4 border-dashed border-slate-100 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-slate-50 hover:border-blue-200 transition-all group">
-                              <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
-                              <div className="w-16 h-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                 <Upload className="w-6 h-6" />
-                              </div>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Add Image {uploadedImageUrls.length + 1}/4</span>
-                           </label>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: Focused Hero Gallery */}
+                  <div className="lg:col-span-8 bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm space-y-10">
+                    <div className="flex items-center justify-between border-b border-slate-50 pb-8">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900">Hero Gallery</h3>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Refine the presentation</p>
+                      </div>
+                      <div className="px-4 py-2 bg-slate-50 rounded-xl">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{uploadedImageUrls.length} / 4 Images</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-6">
+                      <div className="col-span-4 lg:col-span-2 aspect-[4/5] relative rounded-3xl overflow-hidden group shadow-2xl shadow-slate-100 ring-4 ring-slate-50">
+                        {uploadedImageUrls[0] ? (
+                          <>
+                            <Image src={uploadedImageUrls[0]} alt="Main Preview" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute top-6 right-6 flex gap-2">
+                               <span className="bg-white/90 backdrop-blur-md text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-slate-900 border border-white/20">Cover</span>
+                               <button onClick={() => removeImage(0)} className="bg-rose-500 text-white p-2 rounded-lg shadow-lg hover:bg-rose-600 transition-all">
+                                  <X className="w-4 h-4" />
+                               </button>
+                            </div>
+                          </>
+                        ) : (
+                          <label className="w-full h-full flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-slate-50 transition-all border-4 border-dashed border-slate-100 rounded-3xl group/label">
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover/label:bg-blue-600 group-hover/label:text-white transition-all scale-110">
+                              <Upload className="w-8 h-8" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Mandatory Hero Slot</span>
+                          </label>
                         )}
-                     </div>
+                      </div>
+
+                      <div className="col-span-4 lg:col-span-2 grid grid-cols-2 gap-4">
+                        {[1, 2, 3].map((idx) => (
+                           <div key={idx} className="aspect-[4/5] relative rounded-2xl overflow-hidden group border-2 border-slate-50 bg-slate-50/10">
+                              {uploadedImageUrls[idx] ? (
+                                <>
+                                  <Image src={uploadedImageUrls[idx]} alt={`Preview ${idx}`} fill className="object-cover" />
+                                  <button onClick={() => removeImage(idx)} className="absolute top-3 right-3 p-1.5 bg-white/90 rounded-lg shadow-sm text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
+                                     <X className="w-3 h-3" />
+                                  </button>
+                                </>
+                              ) : (
+                                <label className="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all group/sub">
+                                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center group-hover/sub:bg-blue-50 group-hover/sub:text-blue-600 transition-all">
+                                    <Plus className="w-5 h-5" />
+                                  </div>
+                                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Add Image</span>
+                                </label>
+                              )}
+                           </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="lg:col-span-5 space-y-8">
-                     <div className="p-8 bg-blue-50 rounded-[3rem] border border-blue-100">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-6 block">Video Experience</Label>
+                  <div className="lg:col-span-4 space-y-8">
+                     <div className="p-8 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-6">
+                        <div className="flex items-center gap-2 mb-2">
+                           <Video className="w-4 h-4 text-blue-600" />
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-blue-900">In-Motion Experience</Label>
+                        </div>
+                        
                         {uploadedVideoUrl ? (
-                           <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative group">
+                           <div className="aspect-square rounded-[1.5rem] overflow-hidden relative group ring-4 ring-white shadow-xl">
                               <video src={uploadedVideoUrl} className="w-full h-full object-cover" autoPlay muted loop />
-                              <button onClick={() => setUploadedVideoUrl("")} className="absolute top-4 right-4 p-2 bg-white rounded-xl">
+                              <button onClick={() => {setUploadedVideoUrl(""); setSelectedVideo(null);}} className="absolute top-4 right-4 p-2 bg-white/90 text-rose-500 rounded-xl shadow-lg hover:scale-110 transition-transform">
                                  <X className="w-4 h-4" />
                               </button>
                            </div>
                         ) : (
-                           <label className="aspect-[4/5] rounded-[2rem] border-4 border-dashed border-blue-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-blue-100/50 transition-all group">
+                           <label className="aspect-square rounded-[1.5rem] border-4 border-dashed border-blue-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-blue-100/50 transition-all group/video">
                               <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} />
-                              <Video className="w-10 h-10 text-blue-300 group-hover:scale-110 transition-transform" />
+                              <div className="w-14 h-14 rounded-full bg-white text-blue-400 flex items-center justify-center group-hover/video:scale-110 transition-transform shadow-sm">
+                                <Video className="w-6 h-6" />
+                              </div>
                               <div className="text-center">
-                                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Add Brand Video</p>
-                                 <p className="text-[8px] text-blue-300 font-bold uppercase mt-1">Max 50MB · Vertical preferred</p>
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Upload Video</p>
+                                 <p className="text-[8px] text-blue-400 font-bold uppercase mt-1">Short Loops · MP4 preferred</p>
                               </div>
                            </label>
                         )}
@@ -524,20 +606,83 @@ export default function AddProductPage() {
                          </div>
                       </div>
 
-                      {/* Stock Bento Block */}
-                      <div className="md:col-span-5 bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-8">
-                         <div className="flex items-center gap-2">
-                           <Package className="w-4 h-4 text-slate-400" />
-                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inventory</Label>
+                      {/* Inventory Bento Block */}
+                      <div className="md:col-span-5 bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm flex flex-col gap-8">
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             <Package className="w-4 h-4 text-slate-400" />
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inventory</Label>
+                           </div>
+                           <div 
+                             onClick={() => {
+                               if (!isVerified && !isPreorder) {
+                                 alert("You must be a Verified Seller to accept Pre-orders. Please submit your verification documents in your account settings.");
+                                 return;
+                               }
+                               setIsPreorder(!isPreorder)
+                             }}
+                             className={`flex items-center gap-2 ${!isVerified && !isPreorder ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} group px-3 py-1.5 rounded-xl transition-all ${isPreorder ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-50'}`}
+                           >
+                             <span className="text-[9px] font-black uppercase tracking-widest">Allow Pre-orders</span>
+                             <div className={`w-8 h-5 rounded-full p-1 transition-all ${isPreorder ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                                <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${isPreorder ? 'translate-x-3' : 'translate-x-0'}`} />
+                             </div>
+                           </div>
                          </div>
-                         <div className="space-y-3">
-                           <Label className="text-[10px] font-bold text-slate-400">In-Stock Quantity</Label>
-                           <input 
-                              type="number"
-                              value={stockQuantity}
-                              onChange={(e) => setStockQuantity(e.target.value)}
-                              className="w-full h-14 bg-slate-50 border border-transparent focus:border-blue-600 rounded-xl outline-none px-6 text-xl font-black transition-all"
-                           />
+
+                         <div className="space-y-6">
+                           <div className="space-y-3">
+                             <Label className="text-[10px] font-bold text-slate-400">Physical Stock</Label>
+                             <Input 
+                                type="number"
+                                value={stockQuantity}
+                                onChange={(e) => setStockQuantity(e.target.value)}
+                                className="h-14 bg-slate-50 border-transparent focus:border-blue-600 font-black text-xl px-6 rounded-xl"
+                                placeholder="0"
+                             />
+                           </div>
+
+                           <AnimatePresence>
+                             {isPreorder && (
+                               <motion.div 
+                                 initial={{ height: 0, opacity: 0 }}
+                                 animate={{ height: 'auto', opacity: 1 }}
+                                 exit={{ height: 0, opacity: 0 }}
+                                 className="overflow-hidden pt-6 border-t border-slate-50 space-y-6"
+                               >
+                                  <div className="space-y-3">
+                                     <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Pre-order Limit</Label>
+                                     <div className="relative">
+                                        <Input 
+                                          type="number"
+                                          value={preorderLimit}
+                                          onChange={(e) => setPreorderLimit(e.target.value)}
+                                          className="h-12 rounded-xl bg-slate-50 border-slate-100 focus:border-blue-600 font-bold px-4"
+                                          placeholder="50"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">Waitlist Cap</span>
+                                     </div>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                     <div className="flex items-center justify-between mb-1">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Lead Time</Label>
+                                        <Clock className="w-3 h-3 text-blue-400" />
+                                     </div>
+                                     <div className="relative">
+                                        <Input 
+                                          type="number"
+                                          value={estimatedDelivery}
+                                          onChange={(e) => setEstimatedDelivery(e.target.value)}
+                                          className="h-12 rounded-xl bg-slate-50 border-slate-100 focus:border-blue-600 font-bold px-4"
+                                          placeholder="14"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">Days to Deliver</span>
+                                     </div>
+                                  </div>
+                               </motion.div>
+                             )}
+                           </AnimatePresence>
                          </div>
                       </div>
                    </div>
@@ -570,23 +715,60 @@ export default function AddProductPage() {
                              exit={{ height: 0, opacity: 0 }}
                              className="space-y-6 pt-6 border-t border-orange-200/30 overflow-hidden"
                            >
+                              <div className="flex gap-2 p-1 bg-white/50 rounded-2xl w-fit">
+                                 {["PERCENTAGE", "FIXED"].map((type) => (
+                                   <button
+                                     key={type}
+                                     onClick={() => setDiscountType(type as "PERCENTAGE" | "FIXED")}
+                                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                       discountType === type 
+                                         ? 'bg-orange-600 text-white shadow-md' 
+                                         : 'text-slate-400 hover:text-slate-600'
+                                     }`}
+                                   >
+                                     {type === 'PERCENTAGE' ? 'Percentage %' : 'Fixed Price'}
+                                   </button>
+                                 ))}
+                              </div>
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                 {discountType === 'PERCENTAGE' ? (
+                                   <div className="space-y-3">
+                                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Discount %</Label>
+                                      <div className="relative">
+                                         <Input 
+                                           type="number"
+                                           value={discountPercentage} 
+                                           onChange={e => setDiscountPercentage(e.target.value)} 
+                                           className="h-14 rounded-xl bg-white border border-orange-100 font-black text-xl px-6 focus:ring-orange-200" 
+                                           placeholder="20" 
+                                         />
+                                         <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-orange-200">%</span>
+                                      </div>
+                                   </div>
+                                 ) : (
+                                   <div className="space-y-3">
+                                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sale Price ({currency})</Label>
+                                      <div className="relative">
+                                         <Input 
+                                           type="number"
+                                           value={discountPrice} 
+                                           onChange={e => setDiscountPrice(e.target.value)} 
+                                           className="h-14 rounded-xl bg-white border border-orange-100 font-black text-xl px-6 focus:ring-orange-200" 
+                                           placeholder="100.00" 
+                                         />
+                                         <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-orange-200">{currency}</span>
+                                      </div>
+                                   </div>
+                                 )}
+
                                  <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Discount %</Label>
-                                    <div className="relative">
-                                       <Input 
-                                         value={discountPercentage} 
-                                         onChange={e => setDiscountPercentage(e.target.value)} 
-                                         className="h-14 rounded-xl bg-white border border-orange-100 font-black text-xl px-6 focus:ring-orange-200" 
-                                         placeholder="20" 
-                                       />
-                                       <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-orange-200">%</span>
-                                    </div>
-                                 </div>
-                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Promo Listing Price</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Final Price (Preview)</Label>
                                     <div className="h-14 rounded-xl bg-slate-900 flex items-center px-6 text-white text-xl font-black shadow-inner shadow-black/20">
-                                       {currency} {(parseFloat(price) * (1 - (parseFloat(discountPercentage) || 0) / 100)).toFixed(2)}
+                                       {currency} {discountType === 'PERCENTAGE' 
+                                         ? (parseFloat(price || "0") * (1 - (parseFloat(discountPercentage || "0") || 0) / 100)).toFixed(2)
+                                         : (parseFloat(discountPrice || price || "0")).toFixed(2)
+                                       }
                                     </div>
                                  </div>
                               </div>
@@ -604,7 +786,6 @@ export default function AddProductPage() {
                    <div className="lg:col-span-7 space-y-8">
                       {/* Sizing Bento Block */}
                       <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-8">
-                        {/* Grouped Size Summary */}
                         <div className="space-y-6">
                            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
                               <div className="flex items-center gap-2">
@@ -725,66 +906,29 @@ export default function AddProductPage() {
                             {[
                               { id: 'custom', label: 'Customizable Request', state: isCustomizable, set: setIsCustomizable, icon: <Save className="w-3 h-3" /> },
                               { id: 'unisex', label: 'Gender Neutral', state: isUnisex, set: setIsUnisex, icon: <Check className="w-3 h-3" /> },
-                              { id: 'preorder', label: 'Pre-order', state: isPreorder, set: setIsPreorder, icon: <Loader2 className="w-3 h-3" /> },
                               { id: 'showcase', label: 'Marketplace Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-3 h-3" /> },
-                            ].map(opt => (
-                              <button
-                                key={opt.id}
-                                onClick={() => opt.set(!opt.state)}
-                                className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${
-                                  opt.state 
-                                    ? 'bg-blue-50/50 border-blue-100 text-blue-900' 
-                                    : 'bg-slate-50 border-transparent text-slate-400 opacity-60'
-                                }`}
-                              >
-                                 <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-lg ${opt.state ? 'bg-white text-blue-600 shadow-sm' : 'bg-slate-100'}`}>
-                                       {opt.icon}
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{opt.label}</span>
-                                 </div>
-                                 <div className={`w-10 h-6 rounded-full p-1 transition-all ${opt.state ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${opt.state ? 'translate-x-4' : 'translate-x-0'}`} />
-                                 </div>
-                              </button>
-                            ))}
-                         </div>
-
-                         <AnimatePresence>
-                           {isPreorder && (
-                             <motion.div 
-                               initial={{ height: 0, opacity: 0 }}
-                               animate={{ height: 'auto', opacity: 1 }}
-                               exit={{ height: 0, opacity: 0 }}
-                               className="overflow-hidden"
-                             >
-                               <div className="pt-6 border-t border-slate-100 space-y-4">
+                             ].map(opt => (
+                               <button
+                                 key={opt.id}
+                                 onClick={() => opt.set(!opt.state)}
+                                 className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                                   opt.state 
+                                     ? 'bg-blue-50/50 border-blue-100 text-blue-900' 
+                                     : 'bg-slate-50 border-transparent text-slate-400 opacity-60'
+                                 }`}
+                               >
                                   <div className="flex items-center gap-3">
-                                     <div className="p-2 rounded-lg bg-blue-600 text-white shadow-sm">
-                                        <Clock className="w-3.5 h-3.5" />
+                                     <div className={`p-2 rounded-lg ${opt.state ? 'bg-white text-blue-600 shadow-sm' : 'bg-slate-100'}`}>
+                                        {opt.icon}
                                      </div>
-                                     <div className="text-left">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Pre-order Fulfillment</Label>
-                                        <p className="text-[8px] text-slate-400 font-bold lowercase block">Configure your shipment lead time</p>
-                                     </div>
+                                     <span className="text-[10px] font-black uppercase tracking-widest">{opt.label}</span>
                                   </div>
-
-                                  <div className="space-y-3">
-                                     <div className="relative">
-                                        <Input 
-                                          type="number"
-                                          value={estimatedDelivery}
-                                          onChange={(e) => setEstimatedDelivery(e.target.value)}
-                                          className="h-12 rounded-xl bg-slate-50 border-slate-100 focus:border-blue-600 font-bold px-4"
-                                          placeholder="14"
-                                        />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">DAYS LEAD TIME</span>
-                                     </div>
+                                  <div className={`w-10 h-6 rounded-full p-1 transition-all ${opt.state ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                                     <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${opt.state ? 'translate-x-4' : 'translate-x-0'}`} />
                                   </div>
-                               </div>
-                             </motion.div>
-                           )}
-                         </AnimatePresence>
+                               </button>
+                             ))}
+                          </div>
                       </div>
                    </div>
                 </div>
@@ -794,52 +938,23 @@ export default function AddProductPage() {
         </div>
       </div>
 
-      {/* The Navigation Dock (Static at bottom) */}
+      {/* Navigation Dock (Static at bottom) */}
       <div className="relative mt-4 mb-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-6">
-         <div className="bg-slate-900/90 backdrop-blur-2xl px-3 py-3 rounded-full flex items-center justify-between shadow-2xl shadow-slate-900/40 border border-white/10 relative overflow-hidden group">
-            <Button 
-               variant="ghost" 
-               onClick={prevStep}
-               disabled={currentStep === 0 || loading}
-               className="text-white hover:bg-white/10 rounded-full h-12 w-12 p-0 transition-all disabled:opacity-20"
-            >
+         <div className="bg-slate-900/90 backdrop-blur-2xl px-3 py-3 rounded-full flex items-center justify-between shadow-2xl border border-white/10 overflow-hidden relative group">
+            <Button variant="ghost" onClick={prevStep} disabled={currentStep === 0 || loading} className="text-white hover:bg-white/10 rounded-full h-12 w-12 p-0 transition-all disabled:opacity-20">
                <ChevronLeft className="w-6 h-6" />
             </Button>
-
             <div className="flex-1 flex flex-col items-center">
-              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1">
-                {STEPS[currentStep].title}
-              </span>
-              <div className="flex gap-1.5">
-                 {STEPS.map((_, i) => (
-                    <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === currentStep ? 'w-6 bg-blue-500' : 'w-1 bg-white/20'}`} />
-                 ))}
-              </div>
+              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1">{STEPS[currentStep].title}</span>
+              <div className="flex gap-1.5">{STEPS.map((_, i) => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === currentStep ? 'w-6 bg-blue-500' : 'w-1 bg-white/20'}`} />)}</div>
             </div>
-
             {currentStep === STEPS.length - 1 ? (
-              <Button 
-                 onClick={handleSubmit}
-                 disabled={loading || !canGoNext}
-                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 px-6 font-black uppercase tracking-widest text-[10px] group/btn"
-              >
-                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                   <>
-                    Create <Save className="w-4 h-4 ml-2 group-hover/btn:translate-y-[-2px] transition-transform" />
-                   </>
-                 )}
+              <Button onClick={handleSubmit} disabled={loading || !canGoNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 px-6 font-black uppercase tracking-widest text-[10px] group/btn">
+                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Save <Save className="w-4 h-4 ml-2 group-hover/btn:translate-y-[-2px] transition-transform" /></>}
               </Button>
             ) : (
-              <Button 
-                 onClick={nextStep}
-                 disabled={!canGoNext}
-                 className="bg-white hover:bg-slate-100 text-slate-900 rounded-full h-12 w-24 p-0 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 group/btn"
-              >
-                 Next <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-              </Button>
+              <Button onClick={nextStep} disabled={!canGoNext} className="bg-white hover:bg-slate-100 text-slate-900 rounded-full h-12 w-24 p-0 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 group/btn">Next <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" /></Button>
             )}
-
-            {/* Shine effect */}
             <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:left-[200%] transition-all duration-1000 pointer-events-none" />
          </div>
       </div>
@@ -869,18 +984,18 @@ export default function AddProductPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-serif text-slate-900 italic">Product Live.</h3>
+                  <h3 className="text-2xl font-serif text-slate-900 italic">Saved.</h3>
                   <p className="text-slate-500 text-xs font-medium leading-relaxed">
-                    Your creation has been successfully added to your catalogue and is now ready for the world.
+                    Your changes have been successfully applied to this creation.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 w-full gap-3 pt-4">
                   <Button
-                    onClick={resetForm}
+                    onClick={() => setShowSuccessModal(false)}
                     className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
                   >
-                    Add Another Product
+                    Continue Editing
                   </Button>
                   <Button
                     variant="ghost"

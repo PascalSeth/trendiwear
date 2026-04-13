@@ -77,13 +77,11 @@ Tracks trial periods for professionals.
 ### Updated Models
 
 #### **ProfessionalProfile**
-Added subscription-related fields:
-- `trialStartDate`: When trial begins
-- `trialEndDate`: When trial ends
-- `isOnTrial`: Boolean flag (true if within trial)
+Linked to trial and subscription models:
 - `subscriptionId`: Current active subscription (one-to-one)
-- `subscriptionStatus`: TRIAL, ACTIVE, INACTIVE, EXPIRED
 - `lastSubscriptionRenew`: Last successful renewal date
+- `trial`: One-to-one relation to ProfessionalTrial
+- `subscription`: One-to-one relation to Subscription
 
 ---
 
@@ -129,10 +127,60 @@ Create a new subscription tier.
 
 ---
 
+### **3. Legend**
+*For the masters and iconic fashion houses in the industry.*
+- **Weekly**: GH₵ 120
+- **Monthly**: GH₵ 450
+- **Yearly**: GH₵ 4,500
+- **Included Features**:
+    - Everything in Professional
+    - **Advanced Market Trends & Analytics**
+    - **Top Slot Search Placement**
+    - Featured Gallery Backgrounds
+
+---
+
+## Trial Guard (New Restriction)
+
+To prevent the platform from being overwhelmed during the free trial period:
+
+- **Trial Duration**: 3 Months free
+- **Product Limit**: Maximum of **8 Product Listings** allowed during the trial.
+- **Upgrade Path**: To list more than 8 products, the seller must upgrade to any paid tier (**Chop Life**, **Obaahemaa/Ohene**, or **Legend**).
+
+---
+
+## API Endpoints
+
+### Subscription Tiers
+
+#### `GET /api/subscriptions/tiers`
+Fetch all available subscription tiers (Chop Life, Ohene, Legend).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "tier_1",
+      "name": "Chop Life",
+      "weeklyPrice": 20,
+      "monthlyPrice": 70,
+      "yearlyPrice": 700,
+      "features": ["Feature 1", "Feature 2"],
+      ...
+    }
+  ]
+}
+```
+
+---
+
 ### Professional Trial
 
 #### `GET /api/subscriptions/trial`
-Get current professional's trial status.
+Get current professional's trial status and product count toward the 8-product limit.
 
 **Response:**
 ```json
@@ -140,11 +188,11 @@ Get current professional's trial status.
   "success": true,
   "data": {
     "isOnTrial": true,
-    "trialStartDate": "2024-03-17T00:00:00Z",
-    "trialEndDate": "2024-06-16T00:00:00Z",
     "daysRemaining": 87,
-    "subscriptionStatus": "TRIAL",
-    "isTrialExpired": false
+    "productCount": 3,
+    "productLimit": 8,
+    "isLimitReached": false,
+    "trialEndDate": "2024-06-16T00:00:00Z"
   }
 }
 ```

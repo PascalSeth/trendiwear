@@ -45,6 +45,12 @@ interface Order {
       }
     }
   }>
+  shippingInvoices?: Array<{
+    id: string
+    amount: number
+    status: string
+    expiresAt: string
+  }>
 }
 
 interface OrdersClientProps {
@@ -91,6 +97,7 @@ const getStatusLabel = (order: Order) => {
 
 export default function OrdersClient({ initialOrders, totalPages: total, currentPage }: OrdersClientProps) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null)
 
   const { data, mutate } = useSWR(
     `/api/orders?page=${currentPage}&limit=10&view=buyer`,
@@ -151,6 +158,41 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
       toast.error('Something went wrong')
     } finally {
       setConfirmingId(null)
+    }
+  }
+
+  const handlePayOrder = async (orderId: string) => {
+    setPayingOrderId(orderId)
+    try {
+      const res = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, callbackUrl: window.location.origin + `/orders/${orderId}/payment-complete` })
+      })
+      const data = await res.json()
+      if (data.authorizationUrl) {
+         window.location.href = data.authorizationUrl
+      } else {
+         toast.error(data.error || 'Failed to initialize payment')
+         setPayingOrderId(null)
+      }
+    } catch {
+      toast.error('Network error')
+      setPayingOrderId(null)
+    }
+  }
+
+  const handlePayInvoice = async (invoiceId: string) => {
+    try {
+      const res = await fetch(`/api/shipping-invoices/${invoiceId}/pay`, { method: 'POST' })
+      const data = await res.json()
+      if (data.authorization_url) {
+         window.location.href = data.authorization_url
+      } else {
+         toast.error(data.error || 'Failed to initialize payment')
+      }
+    } catch {
+      toast.error('Network error')
     }
   }
 
@@ -314,10 +356,41 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
                            </div>
                          )}
 
+                         {/* Pending Shipping Invoices Block */}
+                         {order.shippingInvoices && order.shippingInvoices.some(inv => inv.status === 'PENDING') && (
+                           <div className="mt-4 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col gap-3">
+                              <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-widest">
+                                <AlertCircle size={14} /> Attention Required
+                              </div>
+                              <p className="text-[11px] text-rose-500 font-medium">Your pre-order has arrived! Please pay the remaining shipping fee before the deadline to avoid forfeiture.</p>
+                              {order.shippingInvoices.filter(i => i.status === 'PENDING').map(inv => (
+                                <button 
+                                  key={inv.id}
+                                  onClick={() => handlePayInvoice(inv.id)}
+                                  className="mt-2 w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white h-10 rounded-xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all"
+                                >
+                                  <CreditCard size={14} /> Pay GHS {inv.amount.toFixed(2)}
+                                </button>
+                              ))}
+                           </div>
+                         )}
+
                          {order.status === 'PROCESSING' && (
                            <div className="flex items-center gap-3 pt-4 border-t border-stone-200 text-blue-600">
                              <Package size={16} />
                              <span className="text-xs font-mono uppercase tracking-widest">Being Prepared</span>
+                           </div>
+                         )}
+
+                         {order.status === 'READY_FOR_DELIVERY' && order.deliveryMethod === 'DELIVERY' && (
+                           <div className="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex flex-col gap-3">
+                              <div className="flex items-center gap-2 text-teal-700 font-bold text-xs uppercase tracking-widest">
+                                <Truck size={14} /> Dispatch Ready
+                              </div>
+                              <p className="text-[11px] text-teal-700 font-medium leading-relaxed">
+                                Your package is ready for local delivery. <br/><br/>
+                                <strong className="text-teal-900 border-b border-teal-200 pb-0.5">Please note: The delivery rider must be paid directly in cash or via mobile money upon arrival.</strong>
+                              </p>
                            </div>
                          )}
 
@@ -328,12 +401,25 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
                            </div>
                          )}
 
-                         {order.status === 'PENDING' && (
-                           <div className="flex items-center gap-3 pt-4 border-t border-stone-200 text-amber-600">
-                             <AlertCircle size={16} />
-                             <span className="text-xs font-mono uppercase tracking-widest">Awaiting Payment</span>
-                           </div>
-                         )}
+                          {order.status === 'PENDING' && (
+                            <div className="pt-4 border-t border-stone-200 space-y-4">
+                              <div className="flex items-center gap-3 text-amber-600">
+                                <AlertCircle size={16} />
+                                <span className="text-xs font-mono uppercase tracking-widest">Awaiting Payment</span>
+                              </div>
+                              <button
+                                onClick={() => handlePayOrder(order.id)}
+                                disabled={payingOrderId === order.id}
+                                className="w-full flex items-center justify-center gap-3 bg-stone-900 hover:bg-black text-white h-12 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 shadow-lg shadow-stone-900/10"
+                              >
+                                {payingOrderId === order.id ? (
+                                  <><Loader2 size={14} className="animate-spin" /> Preparing Checkout...</>
+                                ) : (
+                                  <><CreditCard size={14} /> Pay Acquisition Now</>
+                                )}
+                              </button>
+                            </div>
+                          )}
                       </div>
                       <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                          <ShoppingBag size={200} />

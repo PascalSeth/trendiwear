@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 
 export interface CartProduct {
   id: string
+  slug: string
   name: string
   price: number
   currency: string
@@ -162,6 +163,7 @@ export const useCartStore = create<CartState>()(
           productId,
           product: {
             id: productId,
+            slug: '',
             name: 'Loading...',
             price: 0,
             currency: 'GHS',

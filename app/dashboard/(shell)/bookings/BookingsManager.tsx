@@ -7,7 +7,7 @@ import {
   Loader2, AlertCircle, 
   User, CheckCircle, Smartphone, Mail,
   CalendarCheck, CreditCard, Wallet, Hourglass,
-  BadgeCheck, Coins
+  BadgeCheck, Coins, Ruler
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -27,12 +27,18 @@ interface Booking {
   id: string;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   paymentMethod: 'PLATFORM' | 'IN_PERSON';
-  paymentStatus: 'UNPAID' | 'PAID' | 'PENDING_IN_PERSON' | 'REFUNDED';
+  paymentStatus: 'UNPAID' | 'PAID' | 'PENDING_IN_PERSON' | 'REFUNDED' | 'PARTIALLY_PAID';
   bookingDate: string;
   totalPrice: number;
   location?: string;
   notes?: string;
   requestExpiresAt?: string;
+  isQuoteBased?: boolean;
+  quoteStatus?: string;
+  depositAmount?: number;
+  balanceAmount?: number;
+  inspirationImages?: string[];
+  snapshotMeasurements?: Record<string, string | number | boolean | null | undefined>;
   service: {
     name: string;
     imageUrl?: string;
@@ -90,6 +96,30 @@ export function BookingsManager() {
     }
   };
 
+  const handleRequestBalance = async (id: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/bookings/${id}/invoice`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Invoice generation failed');
+      }
+
+      await res.json();
+      toast.success('Final Balance invoice sent to customer!');
+      // Refresh to update UI if needed
+      await fetchBookings();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to request balance';
+      toast.error(errorMessage);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
 
 
   const getStatusColor = (status: Booking['status']) => {
@@ -140,6 +170,9 @@ export function BookingsManager() {
               const isPaid = booking.paymentStatus === 'PAID';
               const isInPersonPending = booking.paymentMethod === 'IN_PERSON' && booking.status === 'CONFIRMED' && booking.paymentStatus === 'PENDING_IN_PERSON';
               const isPlatformUnpaid = booking.paymentMethod === 'PLATFORM' && booking.status === 'CONFIRMED' && booking.paymentStatus === 'UNPAID';
+              
+              const isWaitingForTailorQuote = booking.isQuoteBased && booking.quoteStatus === 'REQUESTED';
+              const isWaitingForClientQuote = booking.isQuoteBased && booking.quoteStatus === 'QUOTE_PROVIDED';
 
               return (
                 <motion.div
@@ -256,11 +289,104 @@ export function BookingsManager() {
                                    <p className="text-xs text-slate-600 leading-relaxed italic">{booking.notes}</p>
                                 </div>
                               )}
-                              {isPlatformUnpaid && (
+                              
+                              {/* Display Snapshot Measurements */}
+                              {booking.snapshotMeasurements && (
+                                <div className="flex-1 p-8 rounded-[2.5rem] border border-blue-50 bg-blue-50/10 space-y-6">
+                                  <div className="flex justify-between items-center">
+                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                                      <Ruler size={14} /> Bespoke Specification
+                                    </p>
+                                    <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                      Unit: {booking.snapshotMeasurements?.unit || 'in'}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                    {/* Group 1: Core */}
+                                    <div className="space-y-3">
+                                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100 pb-1">Core Metrics</p>
+                                      <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-medium">
+                                        {[
+                                          { label: 'Chest', key: 'bust' },
+                                          { label: 'Waist', key: 'waist' },
+                                          { label: 'Hips', key: 'hips' },
+                                          { label: 'Height', key: 'height' },
+                                        ].map(m => booking.snapshotMeasurements?.[m.key] && (
+                                          <div key={m.key} className="flex justify-between border-b border-slate-50/50 pb-1">
+                                            <span className="text-slate-400 capitalize">{m.label}:</span>
+                                            <span className="font-black text-slate-900">{booking.snapshotMeasurements?.[m.key]}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Group 2: Upper */}
+                                    {(booking.snapshotMeasurements?.neck || booking.snapshotMeasurements?.shoulder || booking.snapshotMeasurements?.armLength) && (
+                                      <div className="space-y-3">
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100 pb-1">Upper Body</p>
+                                        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-medium">
+                                          {[
+                                            { label: 'Neck', key: 'neck' },
+                                            { label: 'Shoulders', key: 'shoulder' },
+                                            { label: 'Sleeve', key: 'armLength' },
+                                            { label: 'Bicep', key: 'bicep' },
+                                            { label: 'Wrist', key: 'wrist' },
+                                          ].map(m => booking.snapshotMeasurements?.[m.key] && (
+                                            <div key={m.key} className="flex justify-between border-b border-slate-50/50 pb-1">
+                                              <span className="text-slate-400 capitalize">{m.label}:</span>
+                                              <span className="font-black text-slate-900">{booking.snapshotMeasurements?.[m.key]}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Group 3: Lower */}
+                                    {(booking.snapshotMeasurements?.inseam || booking.snapshotMeasurements?.thigh || booking.snapshotMeasurements?.crotchRise) && (
+                                      <div className="space-y-3">
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100 pb-1">Lower Body</p>
+                                        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-medium">
+                                          {[
+                                            { label: 'Inner Leg', key: 'inseam' },
+                                            { label: 'Thigh', key: 'thigh' },
+                                            { label: 'Knee', key: 'knee' },
+                                            { label: 'Ankle', key: 'ankle' },
+                                            { label: 'Seat Depth', key: 'crotchRise' },
+                                          ].map(m => booking.snapshotMeasurements?.[m.key] && (
+                                            <div key={m.key} className="flex justify-between border-b border-slate-50/50 pb-1">
+                                              <span className="text-slate-400 capitalize">{m.label}:</span>
+                                              <span className="font-black text-slate-900">{booking.snapshotMeasurements?.[m.key]}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Display Inspiration Images */}
+                              {booking.inspirationImages && booking.inspirationImages.length > 0 && (
+                                <div className="flex-1 p-6 rounded-3xl border border-purple-50 bg-purple-50/20">
+                                  <p className="text-[9px] font-black text-purple-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <AlertCircle size={12} /> Inspiration References
+                                  </p>
+                                  <div className="flex gap-2 overflow-x-auto pb-1">
+                                    {booking.inspirationImages.map((img, idx) => (
+                                      <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 shadow-sm border border-slate-100">
+                                        <Image src={img} alt={`Ref ${idx}`} fill className="object-cover hover:scale-150 transition-transform" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {isPlatformUnpaid && !booking.isQuoteBased && (
                                 <div className="flex-1 p-6 rounded-3xl border border-amber-200 bg-amber-50/50 flex items-center gap-4">
                                    <CreditCard className="text-amber-500 shrink-0" size={24} />
                                    <div>
-                                      <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest leading-none">Awaiting Online Payment</p>
+                                      <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest leading-none">Awaiting Online Deposit</p>
                                       <p className="text-[10px] font-bold text-amber-500 mt-1">Confirmed but not secured. Others can still pay for this slot.</p>
                                    </div>
                                 </div>
@@ -279,14 +405,15 @@ export function BookingsManager() {
 
                         {/* Right: Actions */}
                         <div className="w-full lg:w-48 space-y-4 pt-10 lg:pt-0">
-                           {booking.status === 'PENDING' && !isExpired && (
+                           {/* Standard Service Actions */}
+                           {booking.status === 'PENDING' && !isExpired && !booking.isQuoteBased && (
                               <div className="space-y-3">
                                  <Button 
                                    disabled={updatingId === booking.id}
                                    onClick={() => handleUpdateStatus(booking.id, 'CONFIRMED')}
                                    className="w-full h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-100 transition-all active:scale-95"
                                  >
-                                    {updatingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <><Check size={18} className="mr-2" strokeWidth={3} /> Approve</>}
+                                    {updatingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <><Check size={18} className="mr-2" strokeWidth={3} /> Approve Slot</>}
                                  </Button>
                                  <Button 
                                    disabled={updatingId === booking.id}
@@ -296,6 +423,39 @@ export function BookingsManager() {
                                  >
                                     <X size={16} className="mr-2" strokeWidth={3} /> Decline
                                  </Button>
+                              </div>
+                           )}
+
+                           {/* Request For Quote Actions */}
+                           {booking.status === 'PENDING' && !isExpired && isWaitingForTailorQuote && (
+                              <div className="space-y-3">
+                                 <Button 
+                                   disabled={updatingId === booking.id}
+                                   onClick={() => {
+                                      const quote = prompt('Enter your Custom Service Quote to charge the client (GHS):', '0');
+                                      if (quote && !isNaN(Number(quote)) && Number(quote) > 0) {
+                                         handleUpdateStatus(booking.id, 'PENDING', { quoteStatus: 'QUOTE_PROVIDED', quotePrice: Number(quote) });
+                                      }
+                                   }}
+                                   className="w-full h-16 bg-gradient-to-br from-violet-600 to-indigo-700 hover:from-violet-700 hover:to-indigo-800 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest shadow-xl shadow-violet-200 transition-all active:scale-95"
+                                 >
+                                    {updatingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <><CreditCard size={18} className="mr-2" /> Submit Quote</>}
+                                 </Button>
+                                 <Button 
+                                   disabled={updatingId === booking.id}
+                                   variant="outline"
+                                   onClick={() => handleUpdateStatus(booking.id, 'CANCELLED')}
+                                   className="w-full h-14 border-slate-100 hover:border-red-500 hover:text-red-600 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all"
+                                 >
+                                    <X size={16} className="mr-2" strokeWidth={3} /> Reject Request
+                                 </Button>
+                              </div>
+                           )}
+
+                           {booking.status === 'PENDING' && !isExpired && isWaitingForClientQuote && (
+                              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Quote Sent</p>
+                                 <p className="text-[10px] font-bold text-slate-800">Waiting for client to pay deposit</p>
                               </div>
                            )}
 
@@ -315,13 +475,34 @@ export function BookingsManager() {
                                  <p className="text-[10px] font-medium text-red-400">Request expired before confirmation</p>
                               </div>
                            )}
+                           
+                           {booking.paymentStatus === 'PARTIALLY_PAID' && (
+                              <div className="pt-2">
+                                <Button 
+                                  disabled={updatingId === booking.id}
+                                  onClick={() => handleRequestBalance(booking.id)}
+                                  className="w-full h-12 bg-white hover:bg-slate-50 border-2 border-slate-900 text-slate-900 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all"
+                                >
+                                  {updatingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <><Wallet size={16} className="mr-2" /> Request Balance</>}
+                                </Button>
+                              </div>
+                           )}
 
                            <div className="pt-6 text-center border-t border-slate-50">
                               <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Fee Accrual</p>
                               <div className="flex items-center justify-center gap-1">
-                                 <p className="text-3xl font-black text-slate-900 tracking-tighter">GHS {booking.totalPrice.toFixed(2)}</p>
+                                 {booking.isQuoteBased && booking.quoteStatus === 'REQUESTED' ? (
+                                   <p className="text-xl font-black text-slate-400 tracking-tighter italic">Pending Quote</p>
+                                 ) : (
+                                   <p className="text-3xl font-black text-slate-900 tracking-tighter">GHS {booking.totalPrice?.toFixed(2) || '0.00'}</p>
+                                 )}
                                  {booking.paymentMethod === 'IN_PERSON' && <Coins size={14} className="text-blue-500" />}
                               </div>
+                              {booking.depositAmount && booking.totalPrice && (
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">
+                                  {((booking.depositAmount / booking.totalPrice) * 100).toFixed(0)}% Deposit Setup
+                                </p>
+                              )}
                            </div>
                         </div>
                      </div>

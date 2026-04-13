@@ -18,7 +18,7 @@ export async function POST(
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        paymentEscrow: true,
+        paymentEscrows: true,
       },
     })
 
@@ -87,13 +87,11 @@ export async function POST(
         },
       })
 
-      // Update escrow record if it exists
-      if (order.paymentEscrow) {
-        await tx.paymentEscrow.update({
-          where: { orderId: orderId },
-          data: { status: "REFUNDED" as EscrowStatus },
-        })
-      }
+      // Update escrow records if they exist
+      await tx.paymentEscrow.updateMany({
+        where: { orderId: orderId },
+        data: { status: "REFUNDED" as EscrowStatus },
+      })
 
       // Restore stock (optional but recommended)
       const orderItems = await tx.orderItem.findMany({

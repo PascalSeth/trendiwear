@@ -47,45 +47,59 @@ export async function GET() {
       })
     }
 
+    // Safe sequential fetch to bypass Prisma P2022 join error
     const profile = await prisma.professionalProfile.findUnique({
-      where: { userId: dbUser.id },
-      include: {
-        subscription: {
-          include: {
-            tier: true,
-            payments: {
-              orderBy: { createdAt: 'desc' },
-              take: 5,
-            },
-          },
-        },
-      },
+      where: { userId: dbUser.id }
     })
 
-    // Check trial status from ProfessionalProfile
+    if (!profile) {
+      return NextResponse.json({ error: 'Professional profile not found' }, { status: 404 })
+    }
+
+    // Fetch related data independently
+    const [trial, subscription] = await Promise.all([
+      prisma.professionalTrial.findUnique({
+        where: { professionalId: profile.id }
+      }),
+      prisma.subscription.findUnique({
+        where: { professionalId: profile.id },
+        include: {
+          tier: true,
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
+        }
+      })
+    ])
+
+    // Check trial status from relation
     const now = new Date()
-    const isTrialActive = profile && profile.isOnTrial && profile.trialEndDate && profile.trialEndDate > now
-    const daysRemaining = profile && profile.trialEndDate 
-      ? Math.ceil((profile.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) 
+    const isTrialActive = trial && trial.endDate > now
+    const daysRemaining = trial
+      ? Math.max(0, Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
       : null
 
     // Check if has active subscription
-    const hasActiveSubscription = profile?.subscription
-      && profile.subscription.status === 'ACTIVE'
-      && profile.subscription.nextRenewalDate > now
+    const hasActiveSubscription = subscription
+      && subscription.status === 'ACTIVE'
+      && subscription.nextRenewalDate > now
 
     // Determine permissions
     const canAccess = isTrialActive || hasActiveSubscription
-    const analyticsAccess = profile?.subscription?.tier?.analyticsAccess ?? false
+    const analyticsAccess = subscription?.tier?.analyticsAccess ?? false
 
     return NextResponse.json({
       success: true,
       data: {
+        ...profile,
+        trial,
+        subscription,
         canAddProducts: canAccess,
         canCreateServices: canAccess,
         canViewAnalytics: canAccess && analyticsAccess,
         canUploadVideo: canAccess,
-        subscription: profile?.subscription,
+        subscriptionStatus: subscription?.status || (isTrialActive ? 'TRIAL' : 'INACTIVE'),
         isTrialActive,
         daysRemaining,
         hasActiveSubscription,
@@ -179,59 +193,58 @@ export async function POST(request: NextRequest) {
     const nextRenewalDate = new Date(now.getTime() + renewalDays * 24 * 60 * 60 * 1000)
 
     // Create or update subscription
-    let subscription
-    if (profile.subscriptionId) {
-      // Update existing subscription
-      subscription = await prisma.subscription.update({
-        where: { id: profile.subscriptionId },
-        data: {
-          tierId,
-          billingCycle,
-          status: 'ACTIVE',
-          currentAmount: price,
-          startDate: now,
-          nextRenewalDate,
-          autoRenew: true,
-        },
-        include: { tier: true },
-      })
+    const subscription = await prisma.$transaction(async (tx) => {
+      if (profile.subscriptionId) {
+        // Update existing subscription
+        const sub = await tx.subscription.update({
+          where: { id: profile.subscriptionId },
+          data: {
+            tierId,
+            billingCycle,
+            status: 'ACTIVE',
+            currentAmount: price,
+            startDate: now,
+            nextRenewalDate,
+            autoRenew: true,
+          },
+          include: { tier: true },
+        })
 
-      // ✅ Fixed: also sync the profile on upgrade
-      await prisma.professionalProfile.update({
-        where: { id: profile.id },
-        data: {
-          subscriptionStatus: 'ACTIVE',
-          isOnTrial: false,
-          lastSubscriptionRenew: now,
-        },
-      })
-    } else {
-      // Create new subscription
-      subscription = await prisma.subscription.create({
-        data: {
-          professionalId: profile.id,
-          tierId,
-          billingCycle,
-          status: 'ACTIVE',
-          currentAmount: price,
-          startDate: now,
-          nextRenewalDate,
-          autoRenew: true,
-        },
-        include: { tier: true },
-      })
+        // Sync the profile (link subscription)
+        await tx.professionalProfile.update({
+          where: { id: profile.id },
+          data: {
+            lastSubscriptionRenew: now,
+          },
+        })
+        return sub
+      } else {
+        // Create new subscription
+        const sub = await tx.subscription.create({
+          data: {
+            professionalId: profile.id,
+            tierId,
+            billingCycle,
+            status: 'ACTIVE',
+            currentAmount: price,
+            startDate: now,
+            nextRenewalDate,
+            autoRenew: true,
+          },
+          include: { tier: true },
+        })
 
-      // Update professional profile
-      await prisma.professionalProfile.update({
-        where: { id: profile.id },
-        data: {
-          subscriptionId: subscription.id,
-          subscriptionStatus: 'ACTIVE',
-          isOnTrial: false,
-          lastSubscriptionRenew: now,
-        },
-      })
-    }
+        // Update professional profile (link subscription)
+        await tx.professionalProfile.update({
+          where: { id: profile.id },
+          data: {
+            subscriptionId: sub.id,
+            lastSubscriptionRenew: now,
+          },
+        })
+        return sub
+      }
+    })
 
     return NextResponse.json({
       success: true,
@@ -291,7 +304,6 @@ export async function DELETE(request: NextRequest) {
       where: { id: profile.id },
       data: {
         subscriptionId: null,
-        subscriptionStatus: 'INACTIVE',
       },
     })
 

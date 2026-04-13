@@ -142,7 +142,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       isDiscountActive,
       discountAmount,
     })
-  } catch (error) {
+  } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'products.[id].GET' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })
@@ -165,6 +165,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (existingProduct.professionalId !== user.id && !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    // Enforce Verified Tier for Pre-orders
+    if (body.isPreorder) {
+      const profile = await prisma.professionalProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (!profile || !profile.isVerified) {
+         return NextResponse.json(
+            { error: "Only Verified Professionals can accept Pre-orders." },
+            { status: 403 }
+         );
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -203,7 +216,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (body.price) updateData.price = Number.parseFloat(body.price)
     if (body.stockQuantity !== undefined) updateData.stockQuantity = Number.parseInt(body.stockQuantity)
+    if (body.preorderLimit !== undefined) updateData.preorderLimit = Number.parseInt(body.preorderLimit)
     if (body.estimatedDelivery !== undefined) updateData.estimatedDelivery = Number.parseInt(body.estimatedDelivery)
+    if (body.discountType !== undefined) updateData.discountType = body.discountType
     if (body.discountPercentage !== undefined) updateData.discountPercentage = body.discountPercentage ? Number.parseFloat(body.discountPercentage) : null
     if (body.discountPrice !== undefined) updateData.discountPrice = body.discountPrice ? Number.parseFloat(body.discountPrice) : null
     if (body.discountStartDate !== undefined) updateData.discountStartDate = body.discountStartDate ? new Date(body.discountStartDate) : null
@@ -232,7 +247,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     })
 
     return NextResponse.json(product)
-  } catch (error) {
+  } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'products.[id].PUT' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })
@@ -258,7 +273,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     await prisma.product.delete({ where: { id } })
     return NextResponse.json({ message: "Product deleted successfully" })
-  } catch (error) {
+  } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'products.[id].DELETE' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
     return NextResponse.json({ error: message }, { status })

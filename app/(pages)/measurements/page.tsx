@@ -1,33 +1,35 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Ruler, Save, User } from 'lucide-react'
+import { Ruler, Save, User, Info, Shirt, Scissors } from 'lucide-react'
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Measurement {
   id: string
-  bust?: number
-  waist?: number
-  hips?: number
-  shoulder?: number
-  armLength?: number
-  inseam?: number
-  height?: number
-  weight?: number
-  topSize?: string
-  bottomSize?: string
-  dressSize?: string
-  shoeSize?: string
-  bodyType?: string
-  stylePreferences?: string[]
-  preferredColors?: string[]
-  notes?: string
+  // Core
+  bust?: number; waist?: number; hips?: number; shoulder?: number;  armLength?: number; inseam?: number; height?: number; weight?: number;
+  // Upper
+  neck?: number; underbust?: number; hpsToWaist?: number; napeToWaist?: number; bicep?: number; wrist?: number;
+  // Lower
+  thigh?: number; knee?: number; ankle?: number; crotchRise?: number;
+  // Metadata
+  unit?: string;
+  topSize?: string; bottomSize?: string; dressSize?: string; shoeSize?: string;
+  bodyType?: string; stylePreferences?: string[]; preferredColors?: string[]; notes?: string;
 }
 
 interface MeasurementsResponse {
@@ -37,24 +39,57 @@ interface MeasurementsResponse {
 export default function MeasurementsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [activeSegment, setActiveSegment] = useState<'CORE' | 'UPPER' | 'LOWER'>('CORE')
+  const [unit, setUnit] = useState<'in' | 'cm'>('in')
+  
   const [formData, setFormData] = useState({
-    bust: '',
-    waist: '',
-    hips: '',
-    shoulder: '',
-    armLength: '',
-    inseam: '',
-    height: '',
-    weight: '',
-    topSize: '',
-    bottomSize: '',
-    dressSize: '',
-    shoeSize: '',
-    bodyType: '',
-    stylePreferences: [] as string[],
-    preferredColors: [] as string[],
-    notes: '',
+    bust: '', waist: '', hips: '', shoulder: '', armLength: '', inseam: '', height: '', weight: '',
+    neck: '', underbust: '', hpsToWaist: '', napeToWaist: '', bicep: '', wrist: '',
+    thigh: '', knee: '', ankle: '', crotchRise: '',
+    topSize: '', bottomSize: '', dressSize: '', shoeSize: '',
+    bodyType: '', stylePreferences: [] as string[], preferredColors: [] as string[], notes: '',
   })
+
+  // Conversion logic for UI
+  const convertValue = (val: string, toUnit: 'in' | 'cm') => {
+    if (!val) return '';
+    const num = parseFloat(val);
+    if (isNaN(num)) return '';
+    if (toUnit === 'cm') return (num * 2.54).toFixed(1);
+    return (num / 2.54).toFixed(1);
+  };
+
+  const handleToggleUnit = () => {
+    const nextUnit = unit === 'in' ? 'cm' : 'in';
+    const newData = { ...formData };
+    
+    // Length conversion (in <-> cm)
+    const lengthKeys = [
+      'bust', 'waist', 'hips', 'shoulder', 'armLength', 'inseam', 
+      'height', 'neck', 'underbust', 'hpsToWaist', 
+      'napeToWaist', 'bicep', 'wrist', 'thigh', 'knee', 'ankle', 'crotchRise'
+    ];
+    lengthKeys.forEach(key => {
+      const k = key as keyof typeof formData;
+      const val = formData[k];
+      if (typeof val === 'string' && val) {
+        (newData as Record<string, string | string[] | number | undefined>)[k] = convertValue(val, nextUnit);
+      }
+    });
+
+    // Weight conversion (lbs <-> kg)
+    if (formData.weight) {
+      const w = parseFloat(formData.weight);
+      if (!isNaN(w)) {
+        (newData as Record<string, string | string[] | number | undefined>).weight = nextUnit === 'in' 
+          ? (w * 2.20462).toFixed(1) // to lbs
+          : (w / 2.20462).toFixed(1); // to kg
+      }
+    }
+
+    setFormData(newData);
+    setUnit(nextUnit);
+  };
 
   const fetchMeasurements = async () => {
     try {
@@ -62,23 +97,36 @@ export default function MeasurementsPage() {
       if (response.ok) {
         const data: MeasurementsResponse = await response.json()
         if (data.measurements) {
+          const m = data.measurements;
+          const savedUnit = (m.unit as 'in' | 'cm') || 'in';
+          setUnit(savedUnit);
           setFormData({
-            bust: data.measurements.bust?.toString() || '',
-            waist: data.measurements.waist?.toString() || '',
-            hips: data.measurements.hips?.toString() || '',
-            shoulder: data.measurements.shoulder?.toString() || '',
-            armLength: data.measurements.armLength?.toString() || '',
-            inseam: data.measurements.inseam?.toString() || '',
-            height: data.measurements.height?.toString() || '',
-            weight: data.measurements.weight?.toString() || '',
-            topSize: data.measurements.topSize || '',
-            bottomSize: data.measurements.bottomSize || '',
-            dressSize: data.measurements.dressSize || '',
-            shoeSize: data.measurements.shoeSize || '',
-            bodyType: data.measurements.bodyType || '',
-            stylePreferences: data.measurements.stylePreferences || [],
-            preferredColors: data.measurements.preferredColors || [],
-            notes: data.measurements.notes || '',
+            bust: m.bust?.toString() || '',
+            waist: m.waist?.toString() || '',
+            hips: m.hips?.toString() || '',
+            shoulder: m.shoulder?.toString() || '',
+            armLength: m.armLength?.toString() || '',
+            inseam: m.inseam?.toString() || '',
+            height: m.height?.toString() || '',
+            weight: m.weight?.toString() || '',
+            neck: m.neck?.toString() || '',
+            underbust: m.underbust?.toString() || '',
+            hpsToWaist: m.hpsToWaist?.toString() || '',
+            napeToWaist: m.napeToWaist?.toString() || '',
+            bicep: m.bicep?.toString() || '',
+            wrist: m.wrist?.toString() || '',
+            thigh: m.thigh?.toString() || '',
+            knee: m.knee?.toString() || '',
+            ankle: m.ankle?.toString() || '',
+            crotchRise: m.crotchRise?.toString() || '',
+            topSize: m.topSize || '',
+            bottomSize: m.bottomSize || '',
+            dressSize: m.dressSize || '',
+            shoeSize: m.shoeSize || '',
+            bodyType: m.bodyType || '',
+            stylePreferences: m.stylePreferences || [],
+            preferredColors: m.preferredColors || [],
+            notes: m.notes || '',
           })
         }
       }
@@ -99,6 +147,7 @@ export default function MeasurementsPage() {
 
     try {
       const dataToSend = {
+        unit,
         ...Object.fromEntries(
           Object.entries(formData).map(([key, value]) => [
             key,
@@ -164,264 +213,317 @@ export default function MeasurementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Measurements</h1>
-          <p className="text-gray-600">Keep your body measurements up to date for better recommendations</p>
-        </div>
+    <TooltipProvider>
+      <div className="min-h-screen bg-stone-50 pt-32 pb-20">
+        <div className="max-w-5xl mx-auto px-6">
+          
+          {/* Header Area: Compact & Clean */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-10">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-stone-100">
+                  <Scissors className="text-stone-900" size={20} />
+               </div>
+               <div>
+                  <h1 className="text-2xl font-black text-stone-900 tracking-tight">Measurement Studio</h1>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Bespoke Specifications</p>
+               </div>
+            </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Body Measurements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Ruler className="w-5 h-5 mr-2" />
-                  Body Measurements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="height">Height (cm)</Label>
-                    <Input
-                      id="height"
-                      type="number"
-                      step="0.1"
-                      value={formData.height}
-                      onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                      placeholder="170.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      step="0.1"
-                      value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                      placeholder="65.5"
-                    />
-                  </div>
-                </div>
+            <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl border border-stone-100 shadow-sm">
+               <div className="flex bg-stone-50 p-1 rounded-lg">
+                  {['in', 'cm'].map((u) => (
+                    <button 
+                      key={u} 
+                      onClick={handleToggleUnit}
+                      className={cn(
+                        "px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all",
+                        unit === u ? "bg-stone-900 text-white shadow-sm" : "text-stone-400 hover:text-stone-600"
+                      )}
+                    >
+                       {u}
+                    </button>
+                  ))}
+               </div>
+               <Button 
+                 onClick={() => (document.querySelector('form') as HTMLFormElement)?.requestSubmit()}
+                 disabled={saving}
+                 className="h-10 px-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[9px] shadow-lg shadow-blue-100"
+               >
+                  {saving ? <Loader2 className="animate-spin" /> : <><Save size={14} className="mr-2" /> Save Blueprint</>}
+               </Button>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="bust">Bust (cm)</Label>
-                    <Input
-                      id="bust"
-                      type="number"
-                      step="0.1"
-                      value={formData.bust}
-                      onChange={(e) => setFormData({ ...formData, bust: e.target.value })}
-                      placeholder="90"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="waist">Waist (cm)</Label>
-                    <Input
-                      id="waist"
-                      type="number"
-                      step="0.1"
-                      value={formData.waist}
-                      onChange={(e) => setFormData({ ...formData, waist: e.target.value })}
-                      placeholder="70"
-                    />
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              
+              {/* Navigation Sidebar: Tighter */}
+              <div className="lg:col-span-1 space-y-2">
+                 {[
+                    { id: 'CORE', label: 'Core Metrics', icon: Ruler },
+                    { id: 'UPPER', label: 'Upper Body', icon: Shirt },
+                    { id: 'LOWER', label: 'Lower Body', icon: User },
+                 ].map((seg) => (
+                    <button
+                      key={seg.id}
+                      type="button"
+                      onClick={() => setActiveSegment(seg.id as 'CORE' | 'UPPER' | 'LOWER')}
+                      className={cn(
+                        "w-full p-4 rounded-2xl border text-left transition-all flex items-center gap-3",
+                        activeSegment === seg.id 
+                          ? "border-stone-900 bg-white shadow-md translate-x-1" 
+                          : "border-transparent bg-stone-100/50 opacity-60 hover:opacity-100 hover:bg-white"
+                      )}
+                    >
+                       <seg.icon size={16} className={activeSegment === seg.id ? "text-stone-900" : "text-stone-400"} />
+                       <span className="text-[9px] font-black uppercase tracking-[0.15em]">{seg.label}</span>
+                    </button>
+                 ))}
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="hips">Hips (cm)</Label>
-                    <Input
-                      id="hips"
-                      type="number"
-                      step="0.1"
-                      value={formData.hips}
-                      onChange={(e) => setFormData({ ...formData, hips: e.target.value })}
-                      placeholder="95"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shoulder">Shoulder (cm)</Label>
-                    <Input
-                      id="shoulder"
-                      type="number"
-                      step="0.1"
-                      value={formData.shoulder}
-                      onChange={(e) => setFormData({ ...formData, shoulder: e.target.value })}
-                      placeholder="40"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="armLength">Arm Length (cm)</Label>
-                    <Input
-                      id="armLength"
-                      type="number"
-                      step="0.1"
-                      value={formData.armLength}
-                      onChange={(e) => setFormData({ ...formData, armLength: e.target.value })}
-                      placeholder="60"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="inseam">Inseam (cm)</Label>
-                    <Input
-                      id="inseam"
-                      type="number"
-                      step="0.1"
-                      value={formData.inseam}
-                      onChange={(e) => setFormData({ ...formData, inseam: e.target.value })}
-                      placeholder="75"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Size Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="w-5 h-5 mr-2" />
-                  Size Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="bodyType">Body Type</Label>
-                  <Select
-                    value={formData.bodyType}
-                    onValueChange={(value) => setFormData({ ...formData, bodyType: value })}
+              {/* Dynamic Measurement Sections */}
+              <div className="lg:col-span-3">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeSegment}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select body type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HOURGLASS">Hourglass</SelectItem>
-                      <SelectItem value="PEAR">Pear</SelectItem>
-                      <SelectItem value="APPLE">Apple</SelectItem>
-                      <SelectItem value="RECTANGLE">Rectangle</SelectItem>
-                      <SelectItem value="INVERTED_TRIANGLE">Inverted Triangle</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Card className="rounded-3xl border border-stone-100 shadow-sm bg-white">
+                      <CardContent className="pt-16 p-8 space-y-8">
+                        
+                        {activeSegment === 'CORE' && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                             {[
+                                { id: 'height', label: 'Height', help: 'Total height.' },
+                                { id: 'weight', label: `Weight (${unit === 'in' ? 'lbs' : 'kg'})`, help: 'Total body mass.' },
+                                { id: 'bust', label: 'Chest', help: 'Fullest part.' },
+                                { id: 'waist', label: 'Waist', help: 'Natural waist.' },
+                                { id: 'hips', label: 'Hips', help: 'Fullest seat.' },
+                                { id: 'shoulder', label: 'Shoulder', help: 'Shoulder width.' },
+                             ].map(f => (
+                                <div key={f.id} className="space-y-3">
+                                   <div className="flex justify-between px-1">
+                                      <Label className="text-[9px] font-black uppercase tracking-widest text-stone-400">{f.label}</Label>
+                                      <Tooltip>
+                                         <TooltipTrigger><Info size={12} className="text-stone-200" /></TooltipTrigger>
+                                         <TooltipContent side="top">{f.help}</TooltipContent>
+                                      </Tooltip>
+                                   </div>
+                                   <div className="relative">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={formData[f.id as keyof typeof formData] as string}
+                                        onChange={(e) => setFormData({ ...formData, [f.id]: e.target.value })}
+                                        className="h-12 rounded-xl text-sm font-black bg-stone-50 border-none pr-10 shadow-inner focus-visible:ring-1 focus-visible:ring-stone-200"
+                                      />
+                                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-stone-300 uppercase tracking-widest">
+                                        {f.id === 'weight' ? (unit === 'in' ? 'lbs' : 'kg') : unit}
+                                      </span>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                        )}
+
+                        {activeSegment === 'UPPER' && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                             {[
+                                { id: 'neck', label: 'Neck', help: 'Around base of neck.' },
+                                { id: 'armLength', label: 'Sleeve', help: 'Shoulder to wrist.' },
+                                { id: 'bicep', label: 'Bicep', help: 'Upper arm circle.' },
+                                { id: 'wrist', label: 'Wrist', help: 'Around wrist bone.' },
+                                { id: 'underbust', label: 'Lower Chest', help: 'Under the bust.' },
+                                { id: 'hpsToWaist', label: 'Shld-Waist', help: 'Front vertical.' },
+                                { id: 'napeToWaist', label: 'Back Length', help: 'Neck to waist.' },
+                             ].map(f => (
+                                <div key={f.id} className="space-y-3">
+                                   <div className="flex justify-between px-1">
+                                      <Label className="text-[9px] font-black uppercase tracking-widest text-stone-400">{f.label}</Label>
+                                      <Tooltip>
+                                         <TooltipTrigger><Info size={12} className="text-stone-200" /></TooltipTrigger>
+                                         <TooltipContent side="top">{f.help}</TooltipContent>
+                                      </Tooltip>
+                                   </div>
+                                   <div className="relative">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={formData[f.id as keyof typeof formData] as string}
+                                        onChange={(e) => setFormData({ ...formData, [f.id]: e.target.value })}
+                                        className="h-12 rounded-xl text-sm font-black bg-stone-50 border-none pr-10 shadow-inner focus-visible:ring-1 focus-visible:ring-stone-200"
+                                      />
+                                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-stone-300 uppercase tracking-widest">{unit}</span>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                        )}
+
+                        {activeSegment === 'LOWER' && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                             {[
+                                { id: 'inseam', label: 'Inner Leg', help: 'Crotch to ankle.' },
+                                { id: 'thigh', label: 'Thigh', help: 'Upper leg circle.' },
+                                { id: 'knee', label: 'Knee', help: 'Around knee.' },
+                                { id: 'ankle', label: 'Ankle', help: 'Around ankle bone.' },
+                                { id: 'crotchRise', label: 'Seat Depth', help: 'Waist to crotch.' },
+                             ].map(f => (
+                                <div key={f.id} className="space-y-3">
+                                   <div className="flex justify-between px-1">
+                                      <Label className="text-[9px] font-black uppercase tracking-widest text-stone-400">{f.label}</Label>
+                                      <Tooltip>
+                                         <TooltipTrigger><Info size={12} className="text-stone-200" /></TooltipTrigger>
+                                         <TooltipContent side="top">{f.help}</TooltipContent>
+                                      </Tooltip>
+                                   </div>
+                                   <div className="relative">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={formData[f.id as keyof typeof formData] as string}
+                                        onChange={(e) => setFormData({ ...formData, [f.id]: e.target.value })}
+                                        className="h-12 rounded-xl text-sm font-black bg-stone-50 border-none pr-10 shadow-inner focus-visible:ring-1 focus-visible:ring-stone-200"
+                                      />
+                                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-stone-300 uppercase tracking-widest">{unit}</span>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                        )}
+
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </AnimatePresence>
+                
+                {/* Secondary Preferences: Single Column / More Compact */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                   <Card className="rounded-3xl border border-stone-100 shadow-sm p-6 bg-white">
+                      <h3 className="text-[9px] font-black uppercase tracking-widest text-stone-900 mb-4 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-lg bg-stone-50 flex items-center justify-center font-black text-[8px] text-stone-400">04</div>
+                         Body Shape
+                      </h3>
+                      <Select
+                        value={formData.bodyType}
+                        onValueChange={(value) => setFormData({ ...formData, bodyType: value })}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl bg-stone-50 border-none text-[10px] font-black uppercase tracking-widest px-6 focus:ring-1 focus:ring-stone-200">
+                          <SelectValue placeholder="Identify body type" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-none shadow-2xl p-1">
+                          {['HOURGLASS', 'PEAR', 'APPLE', 'RECTANGLE', 'INVERTED_TRIANGLE'].map(bt => (
+                            <SelectItem key={bt} value={bt} className="h-10 rounded-lg text-[9px] font-black uppercase tracking-widest">{bt.replace('_', ' ')}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                   </Card>
+
+                   <Card className="rounded-3xl border border-stone-100 shadow-sm p-6 bg-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-[9px] font-black uppercase tracking-widest text-stone-900 flex items-center gap-2">
+                           <div className="w-6 h-6 rounded-lg bg-stone-50 flex items-center justify-center font-black text-[8px] text-stone-400">05</div>
+                           Retail Sizes
+                        </h3>
+                        <Tooltip>
+                           <TooltipTrigger><Info size={12} className="text-stone-300" /></TooltipTrigger>
+                           <TooltipContent side="top">Reference sizes from brands you already wear (e.g. Nike, Zara).</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                         {[
+                           { id: 'topSize', label: 'Top' },
+                           { id: 'bottomSize', label: 'Btm' },
+                           { id: 'dressSize', label: 'Drs' },
+                           { id: 'shoeSize', label: 'Shoe' }
+                         ].map(s => (
+                            <div key={s.id} className="space-y-1">
+                               <p className="text-[7px] font-black uppercase text-stone-400 text-center">{s.label}</p>
+                               <Input
+                                 placeholder="M"
+                                 value={formData[s.id as keyof typeof formData] as string}
+                                 onChange={(e) => setFormData({ ...formData, [s.id]: e.target.value })}
+                                 className="h-10 rounded-xl bg-stone-50 border-none text-center font-black uppercase tracking-widest text-[10px] focus-visible:ring-1 focus-visible:ring-stone-200 shadow-inner"
+                               />
+                            </div>
+                         ))}
+                      </div>
+                   </Card>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="topSize">Top Size</Label>
-                    <Input
-                      id="topSize"
-                      value={formData.topSize}
-                      onChange={(e) => setFormData({ ...formData, topSize: e.target.value })}
-                      placeholder="M"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bottomSize">Bottom Size</Label>
-                    <Input
-                      id="bottomSize"
-                      value={formData.bottomSize}
-                      onChange={(e) => setFormData({ ...formData, bottomSize: e.target.value })}
-                      placeholder="32"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                   <Card className="rounded-3xl border border-stone-100 shadow-sm p-6 bg-white">
+                      <h3 className="text-[9px] font-black uppercase tracking-widest text-stone-900 mb-6 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-lg bg-stone-50 flex items-center justify-center font-black text-[8px] text-stone-400">06</div>
+                         Primary Style
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {styleOptions.map((style) => (
+                          <Badge
+                            key={style}
+                            variant={formData.stylePreferences.includes(style) ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                              formData.stylePreferences.includes(style) ? "bg-stone-900 text-white" : "bg-stone-50 border-none text-stone-400 hover:bg-stone-100"
+                            )}
+                            onClick={() => toggleStylePreference(style)}
+                          >
+                            {style.toLowerCase()}
+                          </Badge>
+                        ))}
+                      </div>
+                   </Card>
+
+                   <Card className="rounded-3xl border border-stone-100 shadow-sm p-6 bg-white">
+                      <h3 className="text-[9px] font-black uppercase tracking-widest text-stone-900 mb-6 flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-lg bg-stone-50 flex items-center justify-center font-black text-[8px] text-stone-400">07</div>
+                         Color Likes
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {colorOptions.map((color) => (
+                          <Badge
+                            key={color}
+                            variant={formData.preferredColors.includes(color) ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                              formData.preferredColors.includes(color) ? "bg-stone-900 text-white" : "bg-stone-50 border-none text-stone-400 hover:bg-stone-100"
+                            )}
+                            onClick={() => togglePreferredColor(color)}
+                          >
+                            {color.toLowerCase()}
+                          </Badge>
+                        ))}
+                      </div>
+                   </Card>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="dressSize">Dress Size</Label>
-                    <Input
-                      id="dressSize"
-                      value={formData.dressSize}
-                      onChange={(e) => setFormData({ ...formData, dressSize: e.target.value })}
-                      placeholder="8"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shoeSize">Shoe Size</Label>
-                    <Input
-                      id="shoeSize"
-                      value={formData.shoeSize}
-                      onChange={(e) => setFormData({ ...formData, shoeSize: e.target.value })}
-                      placeholder="8"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Style Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Style Preferences</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {styleOptions.map((style) => (
-                    <Badge
-                      key={style}
-                      variant={formData.stylePreferences.includes(style) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleStylePreference(style)}
-                    >
-                      {style.toLowerCase().replace('_', ' ')}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preferred Colors */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Preferred Colors</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {colorOptions.map((color) => (
-                    <Badge
-                      key={color}
-                      variant={formData.preferredColors.includes(color) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => togglePreferredColor(color)}
-                    >
-                      {color.toLowerCase()}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Notes */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Additional Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Any additional notes about your fit preferences, allergies, or special requirements..."
-                  rows={4}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex justify-end mt-8">
-            <Button type="submit" disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Measurements'}
-            </Button>
-          </div>
-        </form>
+                <Card className="rounded-3xl border border-stone-100 shadow-sm p-6 bg-white mt-6">
+                   <h3 className="text-[9px] font-black uppercase tracking-widest text-stone-900 mb-4">Master Tailor Notes</h3>
+                   <Textarea
+                     value={formData.notes}
+                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                     placeholder="Add special requirements..."
+                     className="bg-stone-50 border-none rounded-xl p-4 text-[10px] font-medium shadow-inner focus-visible:ring-1 focus-visible:ring-stone-200"
+                     rows={3}
+                   />
+                </Card>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
+    </TooltipProvider>
+  )
+}
+
+function Loader2({ className }: { className?: string }) {
+  return (
+    <div className={cn("relative flex items-center justify-center gap-1", className)}>
+       <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-duration:0.6s]" />
+       <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s] [animation-duration:0.6s]" />
+       <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.4s] [animation-duration:0.6s]" />
     </div>
   )
 }

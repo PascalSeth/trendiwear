@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/common/ProductCard';
 
 type ClothingItem = {
   id: string;
+  slug: string;
   name: string;
   images: string[];
   price: number;
@@ -53,6 +54,7 @@ function NewArrivals() {
           const data = await response.json();
           const transformedProducts = data.products.map((product: {
             id: string;
+            slug: string;
             name: string;
             images: string[];
             price: number;
@@ -98,6 +100,7 @@ function NewArrivals() {
             const sellerName = product.professional.professionalProfile?.businessName || `${product.professional.firstName} ${product.professional.lastName}`;
             return {
             id: product.id,
+            slug: product.slug,
             name: product.name,
             images: product.images,
             price: product.price,
