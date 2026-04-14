@@ -173,9 +173,9 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
           setIsOpen(!isOpen);
           if (!isOpen) mutate();
         }}
-        className="relative hover:text-red-900 text-stone-400 transition-colors p-1"
+        className="relative hover:text-red-900 text-stone-400 transition-colors p-2 rounded-full hover:bg-stone-50"
       >
-        <Bell size={18} />
+        <Bell size={20} />
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}

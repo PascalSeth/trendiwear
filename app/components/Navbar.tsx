@@ -137,7 +137,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
             : 'bg-transparent border-transparent py-4'
         )}
       >
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between relative h-10 md:h-12">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between relative h-12 md:h-16">
 
           {/* --- MOBILE: LEFT ACTION (Menu Trigger) --- */}
           <div className="md:hidden flex-1 flex items-center">
@@ -156,11 +156,11 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               <Image
                 src="/navlogo.png"
                 alt="TrendiZip"
-                width={34}
-                height={34}
+                width={50}
+                height={50}
                 className={cn(
-                  "transition-all duration-500 group-hover:scale-110",
-                  scrolled ? "w-8 h-8" : "w-10 h-10"
+                  "transition-all duration-500 group-hover:scale-110 object-contain w-auto",
+                  scrolled ? "h-10" : "h-12 md:h-16"
                 )}
               />
             </Link>
@@ -172,9 +172,9 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               <Image
                 src="/navlogo.png"
                 alt="TrendiZip"
-                width={34}
-                height={34}
-                className="transition-all duration-500 group-hover:scale-110"
+                width={50}
+                height={50}
+                className="transition-all duration-500 group-hover:scale-110 object-contain w-auto h-12"
               />
             </Link>
           </div>
@@ -212,14 +212,14 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
           {/* --- RIGHT: ACTIONS (Icon Group) --- */}
           <div className="flex-1 flex justify-end items-center gap-1 md:gap-4">
             <div className="flex items-center gap-1.5 md:gap-3 bg-stone-100/50 md:bg-transparent backdrop-blur-sm md:backdrop-blur-0 px-2 md:px-0 py-1 md:py-0 rounded-full border border-stone-200/50 md:border-0 ml-auto">
-              <button 
+              <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-1.5 text-stone-600 hover:text-stone-950 transition-colors"
+                className="p-2 text-stone-600 hover:text-stone-950 transition-colors rounded-full hover:bg-stone-100/50 md:hover:bg-stone-100"
                 aria-label="Search"
               >
-                <Search size={18} strokeWidth={1.5} />
+                <Search size={20} strokeWidth={1.5} />
               </button>
-              
+
               {user ? (
                 <>
                   <NotificationBell context="personal" />
