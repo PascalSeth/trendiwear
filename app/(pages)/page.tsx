@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Bespoke Tailoring & Luxury Fashion Marketplace",
+  title: "TrendiZip | Home",
   description: "Experience the pinnacle of fashion at TrendiZip. Discover expert tailors, bespoke designers, and a curated marketplace for the modern trendsetter.",
   alternates: {
     canonical: 'https://trendizip.com',
@@ -111,7 +111,7 @@ export default async function Page() {
       orderBy: { approvedAt: "desc" },
       take: 6,
     }),
-    
+
     // Top Sellers (Professionals)
     prisma.professionalProfile.findMany({
       where: {},
@@ -145,7 +145,7 @@ export default async function Page() {
       orderBy: { completedOrders: "desc" },
       take: 10,
     }),
-    
+
     // Total Metrics for CTA
     prisma.user.count(),
     prisma.professionalProfile.count()
@@ -201,20 +201,20 @@ export default async function Page() {
     <div className='w-full min-h-screen'>
       {/* Search Engine Optimized Main Heading (Visually Hidden) */}
       <h1 className="sr-only">TrendiZip | Bespoke Tailoring, Custom Fashion Design & Luxury Artisan Marketplace</h1>
-      
+
       {/* Hero Section - First Impression (Hydrated with server data) */}
       <ShowCase initialProducts={JSON.parse(JSON.stringify(hydratedShowcase))} />
 
       {/* Fashion Inspiration - Educational Content */}
       <section className="relative">
         <FashionInspo />
-      </section>   
+      </section>
 
       {/* New Arrivals - Fresh Content */}
       <section className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-white to-slate-50/50 -z-10" />
         <NewArrivals />
-      </section> 
+      </section>
 
       {/* Top Sellers - Social Proof (Hydrated with server data) */}
       <section className="relative">
@@ -223,9 +223,9 @@ export default async function Page() {
       </section>
 
       {/* Professional Registration CTA */}
-      <ProfessionalCTA 
-        totalUsers={totalUsers} 
-        totalProfessionals={totalProfessionals} 
+      <ProfessionalCTA
+        totalUsers={totalUsers}
+        totalProfessionals={totalProfessionals}
       />
 
       {/* Blog Content - Additional Insights */}
