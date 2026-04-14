@@ -79,9 +79,9 @@ function FashionInspo() {
               <span className="font-mono text-xs uppercase tracking-widest text-stone-400">Curated Vibe Collection</span>
               <div className="h-px w-12 bg-stone-400"></div>
             </div>
-            <h1 className="text-7xl md:text-9xl font-serif font-medium text-stone-900 leading-[0.85] -tracking-widest">
+            <h2 className="text-7xl md:text-9xl font-serif font-medium text-stone-900 leading-[0.85] -tracking-widest">
               Moodboard
-            </h1>
+            </h2>
           </div>
           <div className="max-w-sm text-right hidden md:block mt-6">
             <p className="font-serif text-lg italic text-stone-600 leading-relaxed">

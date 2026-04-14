@@ -1,5 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import ShoppingClient from './ShoppingClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Shop Luxury Fashion & Artisan Collections",
+  description: "Explore a carefully curated selection of unique fashion pieces, handmade designs, and exclusive artisan collections at the TrendiZip marketplace.",
+  alternates: {
+    canonical: 'https://trendizip.com/shopping',
+  },
+};
 
 export default async function Page() {
   // Fetch all primary data in parallel on the server

@@ -7,6 +7,15 @@ import BlogIntro from '../components/sections/BlogIntro';
 import ProfessionalCTA from '../components/sections/ProfessionalCTA';
 import FashionInspo from '../components/Intro';
 import { prisma } from '@/lib/prisma';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Bespoke Tailoring & Luxury Fashion Marketplace",
+  description: "Experience the pinnacle of fashion at TrendiZip. Discover expert tailors, bespoke designers, and a curated marketplace for the modern trendsetter.",
+  alternates: {
+    canonical: 'https://trendizip.com',
+  },
+};
 
 interface ShowcaseProduct {
   id: string;
@@ -190,6 +199,9 @@ export default async function Page() {
 
   return (
     <div className='w-full min-h-screen'>
+      {/* Search Engine Optimized Main Heading (Visually Hidden) */}
+      <h1 className="sr-only">TrendiZip | Bespoke Tailoring, Custom Fashion Design & Luxury Artisan Marketplace</h1>
+      
       {/* Hero Section - First Impression (Hydrated with server data) */}
       <ShowCase initialProducts={JSON.parse(JSON.stringify(hydratedShowcase))} />
 

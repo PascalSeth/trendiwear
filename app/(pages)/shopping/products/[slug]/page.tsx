@@ -1,8 +1,32 @@
-// Product Detail Page - Community Edition
 import { prisma } from '@/lib/prisma';
 import ProductClient from './ProductClient';
 import { notFound } from 'next/navigation';
 import { getAuthSession } from '@/lib/auth';
+import { Metadata } from 'next';
+import { JsonLd } from '@/components/seo';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await prisma.product.findUnique({
+    where: { slug, isActive: true },
+    select: { name: true, description: true, images: true }
+  });
+
+  if (!product) return { title: 'Product Not Found' };
+
+  return {
+    title: product.name,
+    description: product.description || `Shop ${product.name} on TrendiZip. Best quality luxury fashion.`,
+    openGraph: {
+      title: `${product.name} | TrendiZip`,
+      description: product.description || `Discover ${product.name} on TrendiZip.`,
+      images: product.images[0] ? [{ url: product.images[0] }] : [],
+    },
+    alternates: {
+      canonical: `https://trendizip.com/shopping/products/${slug}`,
+    },
+  };
+}
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -120,21 +144,42 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     return notFound();
   }
 
-  // Pre-calculate effective price or discounts if needed here on server
-  // ... existing calculation logic is already in Client Component but moving basic ones here is fine
-
-  // Hydrate with clean, serialized data
-  const initialData = JSON.parse(JSON.stringify(product));
-  const initialReviews = JSON.parse(JSON.stringify(reviews));
+  // Structured Data (JSON-LD)
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images,
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": product.professional.professionalProfile?.businessName || "TrendiZip"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `https://trendizip.com/shopping/products/${product.slug}`,
+      "priceCurrency": product.currency,
+      "price": product.price,
+      "availability": product.isInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": product.professional.professionalProfile?.businessName || "TrendiZip"
+      }
+    }
+  };
 
   return (
-    <ProductClient 
-      initialProduct={initialData} 
-      initialReviews={initialReviews}
-      isLoggedIn={!!session?.user}
-      hasPurchased={!!purchase}
-      hasReviewed={!!hasReviewed}
-    />
+    <>
+      <JsonLd schema={productSchema} />
+      <ProductClient 
+        initialProduct={initialData} 
+        initialReviews={initialReviews}
+        isLoggedIn={!!session?.user}
+        hasPurchased={!!purchase}
+        hasReviewed={!!hasReviewed}
+      />
+    </>
   );
 
 }

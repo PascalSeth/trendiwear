@@ -3,6 +3,7 @@ import { getAuthSession } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import ProfileClient, { ProfessionalProfile, PortfolioCollection } from './ProfileClient';
+import { JsonLd } from '@/components/seo';
 
 // Generate metadata for SEO with instant data access
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -16,13 +17,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const displayName = profile.businessName || `${profile.user.firstName} ${profile.user.lastName}`;
   
   return {
-    title: `${displayName} | TrendiZip Atelier`,
-    description: profile.bio || `${displayName} - Expert ${profile.specialization.name} on TrendiZip`,
+    title: `${displayName} | Expert ${profile.specialization.name}`,
+    description: profile.bio || `${displayName} - Award-winning ${profile.specialization.name} on TrendiZip. Discover custom fashion and bespoke tailoring.`,
+    alternates: {
+      canonical: `https://trendizip.com/tz/${slug}`,
+    },
     openGraph: {
-      title: `${displayName} | TrendiZip`,
+      title: `${displayName} | TrendiZip Atelier`,
+      description: profile.bio || `${displayName} - ${profile.specialization.name}`,
+      url: `https://trendizip.com/tz/${slug}`,
+      siteName: 'TrendiZip',
+      images: profile.businessImage ? [profile.businessImage] : [],
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary',
+      title: displayName,
       description: profile.bio || `${displayName} - ${profile.specialization.name}`,
       images: profile.businessImage ? [profile.businessImage] : [],
-    },
+    }
   };
 }
 
@@ -311,12 +324,32 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
   const initialData = JSON.parse(JSON.stringify(profile));
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
+  // Professional Structured Data
+  const profileSchema = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": profile.businessName || `${profile.user.firstName} ${profile.user.lastName}`,
+    "description": profile.bio,
+    "image": profile.businessImage,
+    "jobTitle": profile.specialization.name,
+    "url": `https://trendizip.com/tz/${slug}`,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": profile.location.city,
+      "addressCountry": profile.location.country
+    },
+    "sameAs": Object.values(profile.socials)
+  };
+
   return (
-    <ProfileClient 
-      profile={initialData} 
-      slug={slug} 
-      isOwner={isOwner} 
-      baseUrl={isOwner ? baseUrl : undefined} 
-    />
+    <>
+      <JsonLd schema={profileSchema} />
+      <ProfileClient 
+        profile={initialData} 
+        slug={slug} 
+        isOwner={isOwner} 
+        baseUrl={isOwner ? baseUrl : undefined} 
+      />
+    </>
   );
 }

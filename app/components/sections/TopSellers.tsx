@@ -174,9 +174,9 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400 mb-2 block">
                 Seasonal Performance
               </span>
-              <h1 className="text-5xl md:text-7xl font-serif font-medium text-stone-900 leading-none">
+              <h2 className="text-5xl md:text-7xl font-serif font-medium text-stone-900 leading-none">
                 Top Sellers
-              </h1>
+              </h2>
             </div>
             <div className="text-right hidden md:block">
               <p className="font-serif text-stone-500 italic text-lg max-w-xs">

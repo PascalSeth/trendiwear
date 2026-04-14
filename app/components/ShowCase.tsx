@@ -243,7 +243,7 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
               <div className="flex justify-between items-start">
                  <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500 block mb-1">{product.category}</span>
-                    <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 leading-none">{product.name}</h1>
+                    <h2 className="text-3xl sm:text-4xl font-serif text-stone-900 leading-none">{product.name}</h2>
                  </div>
                  <div className="text-right">
                     <span className="text-2xl sm:text-3xl font-serif text-stone-900 block">{product.currency} {product.price.toFixed(2)}</span>
@@ -361,9 +361,9 @@ function LuxuryShowcase({ initialProducts }: { initialProducts?: APIProduct[] })
               <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500 block mb-2">
                 {product.category}
               </span>
-              <h1 className="text-4xl lg:text-5xl font-serif text-stone-900 leading-[0.95]">
+              <h2 className="text-4xl lg:text-5xl font-serif text-stone-900 leading-[0.95]">
                 {product.name}
-              </h1>
+              </h2>
             </div>
 
             {/* Price & Rating */}

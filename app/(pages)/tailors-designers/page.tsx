@@ -1,5 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import TailorsClient from './TailorsClient';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Bespoke Tailors & Custom Fashion Designers",
+  description: "Connect with the most talented tailors and designers. Discover artisans who specialize in custom clothing, traditional wear, and high-fashion bespoke design.",
+  alternates: {
+    canonical: 'https://trendizip.com/tailors-designers',
+  },
+};
 
 export default async function Page() {
   // Fetch all professionals directly on the server
