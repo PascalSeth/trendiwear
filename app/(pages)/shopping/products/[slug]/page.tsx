@@ -144,6 +144,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     return notFound();
   }
 
+  // Hydrate with clean, serialized data
+  const initialData = JSON.parse(JSON.stringify(product));
+  const initialReviews = JSON.parse(JSON.stringify(reviews));
+
   // Structured Data (JSON-LD)
   const productSchema = {
     "@context": "https://schema.org/",

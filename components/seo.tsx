@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SEOProps {
-  schema: any;
+  schema: Record<string, unknown>;
 }
 
 export const JsonLd: React.FC<SEOProps> = ({ schema }) => {

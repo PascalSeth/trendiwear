@@ -335,10 +335,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
     "url": `https://trendizip.com/tz/${slug}`,
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": profile.location.city,
-      "addressCountry": profile.location.country
+      "addressLocality": profile.location?.city,
+      "addressCountry": profile.location?.country
     },
-    "sameAs": Object.values(profile.socials)
+    "sameAs": Object.values(profile.socials || {})
   };
 
   return (

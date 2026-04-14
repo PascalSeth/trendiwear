@@ -14,6 +14,27 @@ interface SearchOverlayProps {
   onClose: () => void;
 }
 
+interface SearchCollection {
+  id: string;
+  name: string;
+  imageUrl?: string | null;
+}
+
+interface SearchProduct {
+  id: string;
+  name: string;
+  slug: string;
+  image: string;
+  category: string;
+  price: string;
+}
+
+interface SearchCategory {
+  id: string;
+  name: string;
+}
+
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
@@ -42,16 +63,15 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     if (saved) setRecentSearches(JSON.parse(saved).slice(0, 5));
   }, [isOpen]);
 
-  const saveSearch = (term: string) => {
-    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem("recent_searches", JSON.stringify(updated));
-  };
+
 
   const handleSearch = useCallback((searchTerm: string) => {
     if (searchTerm.trim()) {
-      saveSearch(searchTerm.trim());
-      router.push(`/shopping?q=${encodeURIComponent(searchTerm.trim())}`);
+      const term = searchTerm.trim();
+      const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+      setRecentSearches(updated);
+      localStorage.setItem("recent_searches", JSON.stringify(updated));
+      router.push(`/shopping?q=${encodeURIComponent(term)}`);
       onClose();
       setQuery("");
     }
@@ -146,7 +166,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       <Sparkles size={14} /> Featured Collections
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
-                      {searchResults.collections.map((item: any, i: number) => (
+                      {searchResults.collections.map((item: SearchCollection) => (
                         <Link
                           key={item.id}
                           href={`/shopping?collectionId=${item.id}`}
@@ -190,7 +210,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       <button className="text-[11px] font-bold uppercase tracking-widest text-stone-900 hover:underline">View All</button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      {searchResults.products.map((product: any) => (
+                      {searchResults.products.map((product: SearchProduct) => (
                         <Link
                           key={product.id}
                           href={`/shopping/products/${product.slug}`}
@@ -220,7 +240,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       )}
                       {!isLoading && searchResults.products.length === 0 && (
                         <div className="col-span-full py-12 text-center">
-                          <p className="text-stone-400 text-sm">No products found for "{query}"</p>
+                          <p className="text-stone-400 text-sm">No products found for &quot;{query}&quot;</p>
                         </div>
                       )}
                     </div>
@@ -230,7 +250,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     <section className="pt-4 border-t border-stone-100">
                       <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-stone-400 mb-4">Categories</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {searchResults.categories.map((cat: any) => (
+                        {searchResults.categories.map((cat: SearchCategory) => (
                           <Link
                             key={cat.id}
                             href={`/shopping?categoryId=${cat.id}`}
@@ -252,7 +272,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                           <ShoppingBag size={18} className="text-stone-600" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-stone-900">Search for "{query}" in Shop</p>
+                          <p className="text-sm font-medium text-stone-900">Search for &quot;{query}&quot; in Shop</p>
                           <p className="text-xs text-stone-400">Look across all curated categories</p>
                         </div>
                       </button>

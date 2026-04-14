@@ -1,12 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import BlogDetailClient, { BlogPost } from './BlogDetailClient';
+import BlogDetailClient from './BlogDetailClient';
 import { JsonLd } from '@/components/seo';
 
 // Fetch specific blog by slug or ID
 async function getBlog(slugOrId: string) {
-  const blog = await prisma.blogPost.findFirst({
+  const blog = await prisma.blog.findFirst({
     where: {
       OR: [
         { slug: slugOrId },
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   return {
     title: post.title,
-    description: post.excerpt || `Read ${post.title} on the TrendiZip Journal. Fashion insights, trends, and spotlight stories.`,
+    description: post.excerpt || `Read ${post.title} on the Trendizip Journal. Fashion insights, trends, and spotlight stories.`,
     openGraph: {
       title: post.title,
       description: post.excerpt || post.title,
@@ -70,7 +70,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (!post) notFound();
 
   // Fetch related posts for the client
-  const relatedPosts = await prisma.blogPost.findMany({
+  const relatedPosts = await prisma.blog.findMany({
     where: { isPublished: true, id: { not: post.id } },
     include: {
       author: {
