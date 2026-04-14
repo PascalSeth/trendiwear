@@ -6,11 +6,36 @@ export default function robots(): MetadataRoute.Robots {
     : process.env.NEXTAUTH_URL || 'https://trendizip.com';
 
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/api/', '/dashboard/', '/auth/', '/checkout/'],
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: [
+          '/',
+          '/shopping/',
+          '/shopping/products/',
+          '/shopping/categories/',
+          '/shopping/collections/',
+          '/tailors-designers/',
+          '/tz/',
+          '/blog/',
+          '/fashion-trends/',
+          '/professionals/',
+        ],
+        disallow: [
+          '/api/',
+          '/dashboard/',
+          '/auth/',
+          '/checkout/',
+          '/cart/',
+          '/orders/',
+          '/messages/',
+          '/settings/',
+          '/measurements/',
+          '/bookings/',
+          '/wishlist/',
+        ],
+      },
+    ],
     sitemap: `${baseUrl}/sitemap.xml`,
   }
 }

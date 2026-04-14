@@ -1,12 +1,28 @@
 import { prisma } from '@/lib/prisma';
 import ShoppingClient from './ShoppingClient';
 import { Metadata } from 'next';
+import { JsonLd } from '@/components/seo';
 
 export const metadata: Metadata = {
-  title: "Shop Luxury Fashion & Artisan Collections",
-  description: "Explore a carefully curated selection of unique fashion pieces, handmade designs, and exclusive artisan collections at the TrendiZip marketplace.",
+  title: "Buy Ankara, Kente & African Dresses Online in Ghana",
+  description: "Shop Ghana's largest curated fashion marketplace. Discover Ankara, Kente, African print dresses, church wear, wedding guest & graduation styles. Fast delivery to Accra, Kumasi & nationwide.",
+  keywords: [
+    "buy dresses online Ghana", "Ankara dresses Ghana", "Kente dresses Ghana",
+    "African print dresses Ghana", "church dresses Ghana", "church dresses Accra",
+    "wedding guest dresses Ghana", "graduation dresses Kente", "ladies dresses Ghana",
+    "African fashion online Ghana", "made in Ghana fashion", "Ghanaian traditional wear online",
+    "buy African fashion online Ghana", "affordable Ankara online Accra", "fashion Ghana"
+  ],
   alternates: {
     canonical: 'https://trendizip.com/shopping',
+  },
+  openGraph: {
+    title: "Buy Ankara, Kente & African Dresses | TrendiZip Ghana",
+    description: "Discover curated Ankara, Kente & African print collections. Shop church wear, wedding dresses & more. Fast delivery across Ghana.",
+    url: 'https://trendizip.com/shopping',
+    siteName: 'TrendiZip',
+    locale: 'en_GH',
+    type: 'website',
   },
 };
 
@@ -132,5 +148,32 @@ export default async function Page() {
     collections
   }));
 
-  return <ShoppingClient initialData={initialData} />;
+  const shoppingSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Buy Ankara, Kente & African Dresses Online in Ghana",
+    "description": "Ghana's largest curated fashion marketplace featuring Ankara, Kente, African print dresses and more.",
+    "url": "https://trendizip.com/shopping",
+    "inLanguage": "en-GH",
+    "provider": {
+      "@type": "Organization",
+      "name": "TrendiZip",
+      "url": "https://trendizip.com",
+      "areaServed": { "@type": "Country", "name": "Ghana" }
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://trendizip.com" },
+        { "@type": "ListItem", "position": 2, "name": "Shop", "item": "https://trendizip.com/shopping" }
+      ]
+    }
+  };
+
+  return (
+    <>
+      <JsonLd schema={shoppingSchema} />
+      <ShoppingClient initialData={initialData} />
+    </>
+  );
 }
