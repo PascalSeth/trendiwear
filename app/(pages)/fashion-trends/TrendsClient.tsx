@@ -95,7 +95,7 @@ export default function TrendsClient({ initialEvents }: TrendsClientProps) {
 
       <div className="max-w-[1600px] mx-auto relative z-10 px-6 md:px-12 py-24">
         {/* Header */}
-        <header className="mb-16 pt-12 lg:pt-24">
+        <header className="mb-16 pt-28 lg:pt-40">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-stone-200 pb-12 gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-6">

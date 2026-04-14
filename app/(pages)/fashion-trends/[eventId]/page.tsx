@@ -149,13 +149,13 @@ export default function EventDetailPage() {
       </div>
 
       {/* LUXURY SPLIT-SCREEN SPOTLIGHT HERO */}
-      <section className="relative z-10 pt-12 lg:pt-24 px-6 md:px-12 max-w-[1600px] mx-auto min-h-[70vh] flex flex-col lg:flex-row gap-16 lg:gap-24">
+      <section className="relative z-10 pt-28 lg:pt-40 px-6 md:px-12 max-w-[1600px] mx-auto min-h-[70vh] flex flex-col lg:flex-row gap-16 lg:gap-24">
         
         {/* Left: Interactive Editorial Frame */}
         <div className="w-full lg:w-1/2 relative group">
           <Link 
             href="/fashion-trends"
-            className="absolute -top-12 left-0 z-20 flex items-center gap-4 text-stone-400 hover:text-stone-900 transition-colors group/back"
+            className="flex items-center gap-4 text-stone-400 hover:text-stone-900 transition-colors group/back mb-8 md:mb-12"
           >
             <div className="h-px w-8 bg-stone-300 group-hover/back:w-12 transition-all" />
             <span className="text-[10px] font-mono uppercase tracking-[0.5em]">Back to Directory</span>
