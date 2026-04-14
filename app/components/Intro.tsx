@@ -102,7 +102,7 @@ function FashionInspo() {
             </p>
           </div>
         ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-8 space-y-8 pb-48">
+          <div className="columns-2 md:columns-2 lg:columns-3 xl:columns-4 gap-4 md:gap-8 space-y-4 md:space-y-8 pb-48">
             <AnimatePresence mode="popLayout">
               {events.map((event, index) => (
                 <motion.div
@@ -124,7 +124,7 @@ function FashionInspo() {
                     {/* LUXURY EDITORIAL FRAME (PASS-PARTOUT) */}
                     <div className="absolute inset-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-1000 group-hover:shadow-[0_20px_50px_rgb(0,0,0,0.08)] overflow-hidden border border-stone-100">
                       {/* THE INNER FLOATING IMAGE */}
-                      <div className="absolute inset-[10px] md:inset-[15px] bg-stone-50 overflow-hidden">
+                      <div className="absolute inset-[6px] md:inset-[15px] bg-stone-50 overflow-hidden">
                         {event.imageUrl ? (
                           <Image
                             src={event.imageUrl}
@@ -141,7 +141,7 @@ function FashionInspo() {
                         {/* OVERLAY CONTENT (Sequential Reveal) */}
                         <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                        <div className="absolute inset-0 p-6 flex flex-col justify-between">
+                        <div className="absolute inset-0 p-3 md:p-6 flex flex-col justify-between">
                           {/* Top Metadata */}
                           <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100 transform -translate-y-4 group-hover:translate-y-0">
                               <span className="text-[7px] font-mono text-white tracking-[0.4em] uppercase bg-stone-900/40 px-2 py-1 backdrop-blur-[2px] border border-white/10">
@@ -154,7 +154,7 @@ function FashionInspo() {
 
                           {/* Bottom Content */}
                           <div className="space-y-4">
-                            <h3 className="text-2xl md:text-3xl font-serif text-white font-medium leading-[0.85] italic opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-200 transform translate-y-8 group-hover:translate-y-0">
+                            <h3 className="text-lg md:text-3xl font-serif text-white font-medium leading-[0.85] italic opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-200 transform translate-y-8 group-hover:translate-y-0">
                               {event.name}
                             </h3>
                             
@@ -179,13 +179,13 @@ function FashionInspo() {
                   </Link>
                   
                   {/* STATIC MINI LABELS */}
-                  <div className="absolute top-0 right-0 p-6 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:scale-90">
+                  <div className="absolute top-0 right-0 p-3 md:p-6 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:scale-90">
                      <span className="text-[8px] font-mono text-stone-400 tracking-[0.5em] uppercase border-r border-stone-200 pr-4">
                        {String(index + 1).padStart(2, '0')}
                      </span>
                   </div>
 
-                  <div className="absolute bottom-0 left-0 p-8 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:-translate-x-8">
+                  <div className="absolute bottom-0 left-0 p-4 md:p-8 z-20 pointer-events-none transition-all duration-700 group-hover:opacity-0 group-hover:-translate-x-8">
                      <h4 className="text-[9px] font-mono text-stone-900 tracking-[0.5em] uppercase leading-none">
                        {event.name}
                      </h4>
