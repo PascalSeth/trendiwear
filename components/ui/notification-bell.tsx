@@ -180,7 +180,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+            className="absolute -top-1 -right-1 w-4 h-4 bg-stone-950 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-[#FAFAF9]"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.span>
@@ -200,9 +200,9 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
             >
               <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-stone-900">Notifications</h3>
+                  <h3 className="text-[15px] font-bold text-stone-900">Notifications</h3>
                   {unreadCount > 0 && (
-                    <p className="text-xs text-stone-500">{unreadCount} unread</p>
+                    <p className="text-[12px] text-stone-500 font-medium">{unreadCount} unread items</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -225,9 +225,9 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1 hover:bg-stone-100 rounded-full transition-colors ml-1"
+                    className="p-1.5 hover:bg-stone-50 rounded-full transition-colors ml-1"
                   >
-                    <X size={16} className="text-stone-400" />
+                    <X size={17} strokeWidth={1.5} className="text-stone-400" />
                   </button>
                 </div>
               </div>
@@ -262,17 +262,17 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                             !notification.isRead && "bg-blue-50/50"
                           )}
                         >
-                          <div className={cn("w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0", colorClass)}>
-                            <Icon size={16} />
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0", colorClass)}>
+                            <Icon size={18} strokeWidth={1.25} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={cn("text-sm line-clamp-1", !notification.isRead ? "font-semibold text-stone-900" : "text-stone-700")}>
+                            <p className={cn("text-[14px] line-clamp-1 leading-tight", !notification.isRead ? "font-bold text-stone-950" : "font-medium text-stone-700")}>
                                 {notification.title}
                             </p>
-                            <p className="text-xs text-stone-500 line-clamp-2 mt-0.5">
+                            <p className="text-[13px] text-stone-500 line-clamp-2 mt-0.5 leading-snug">
                               {notification.message}
                             </p>
-                            <p className="text-[10px] text-stone-400 mt-1">
+                            <p className="text-[11px] font-medium text-stone-400 mt-1.5 uppercase tracking-wider">
                               {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                             </p>
                           </div>

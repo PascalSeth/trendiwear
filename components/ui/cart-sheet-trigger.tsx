@@ -58,7 +58,7 @@ export function CartSheetTrigger() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button className="relative p-2 rounded-full hover:bg-stone-100 transition-all duration-200 group">
-          <ShoppingCart className="h-5 w-5 text-stone-700 group-hover:text-black transition-colors" strokeWidth={2} />
+          <ShoppingCart className="h-5 w-5 text-stone-600 group-hover:text-stone-950 transition-colors" strokeWidth={1.5} />
           <div className="absolute -top-0.5 -right-0.5">
             <CartCountBadge />
           </div>
@@ -67,12 +67,12 @@ export function CartSheetTrigger() {
 
       <SheetContent className="w-full sm:max-w-md z-[10000] bg-white p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-stone-100">
-          <SheetTitle className="flex items-center gap-3 text-xl font-bold tracking-tight">
-            <div className="p-2 bg-black rounded-full">
-              <ShoppingCart className="h-4 w-4 text-white" strokeWidth={2.5} />
+          <SheetTitle className="flex items-center gap-3 text-lg font-bold tracking-tight">
+            <div className="p-2 bg-stone-950 rounded-full">
+              <ShoppingCart className="h-4 w-4 text-white" strokeWidth={1.5} />
             </div>
             Your Bag
-            <span className="text-stone-400 font-normal text-base">({summary?.itemCount || 0})</span>
+            <span className="text-stone-400 font-normal text-sm">({summary?.itemCount || 0})</span>
           </SheetTitle>
         </SheetHeader>
 
@@ -131,7 +131,7 @@ export function CartSheetTrigger() {
                             href={`/shopping/products/${item.product.slug}`}
                             onClick={() => setOpen(false)}
                           >
-                            <h4 className="font-semibold text-stone-900 hover:text-black line-clamp-2 leading-snug">
+                            <h4 className="text-[14px] font-semibold text-stone-900 hover:text-stone-950 line-clamp-2 leading-tight">
                               {item.product.name}
                             </h4>
                           </Link>
@@ -227,9 +227,9 @@ export function CartSheetTrigger() {
                   <span className="text-stone-500">Handling Fee (3%)</span>
                   <span className="font-medium text-stone-900">{((summary?.subtotal || 0) * 0.03).toFixed(2)} GHS</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold pt-2 border-t border-stone-200">
+                <div className="flex justify-between text-[16px] font-bold pt-2 border-t border-stone-200">
                   <span className="text-stone-900">Total</span>
-                  <span className="text-black">{summary?.estimatedTotal.toFixed(2)} GHS</span>
+                  <span className="text-stone-950">{summary?.estimatedTotal.toFixed(2)} GHS</span>
                 </div>
               </div>
 
@@ -241,7 +241,7 @@ export function CartSheetTrigger() {
                       setOpen(false)
                       router.push('/checkout')
                     }}
-                    className="w-full bg-black hover:bg-stone-800 text-white py-6 rounded-full font-semibold text-base shadow-lg hover:shadow-xl transition-all"
+                    className="w-full bg-stone-950 hover:bg-stone-900 text-white py-6 rounded-full font-bold text-[15px] shadow-lg hover:shadow-xl transition-all"
                   >
                     Checkout
                     <ArrowRight className="w-5 h-5 ml-2" />
