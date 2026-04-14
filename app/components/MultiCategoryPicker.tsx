@@ -76,7 +76,7 @@ export const MultiCategoryPicker: React.FC<MultiCategoryPickerProps> = ({
                 <Sparkles className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Define the piece's identity</p>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Define the piece&apos;s identity</p>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Select up to {maxSelections} categories below</p>
               </div>
             </motion.div>
