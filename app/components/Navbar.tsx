@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, ShoppingBag } from "lucide-react";
+import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, ShoppingBag, Plus, Layout } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useSWR, { useSWRConfig } from "swr";
 import { motion, AnimatePresence } from "framer-motion";
@@ -280,12 +280,38 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                           </Link>
                         </DropdownMenuItem>
                       ))}
+
+                      {/* Customer: Professional Menu */}
+                      {role === "CUSTOMER" && (
+                        <div className="pt-2 mt-2 border-t border-stone-100">
+                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Professional Hub</p>
+                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg mt-0.5">
+                            <Link href="/register-as-professional" className="flex items-center gap-3 px-3 py-2 text-stone-600 hover:text-stone-950 transition-colors group">
+                                <Plus size={17} strokeWidth={1.25} />
+                                <span className="text-[13px]">Become a Professional</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        </div>
+                      )}
+
                       {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
                         <div className="pt-2 mt-2 border-t border-stone-100">
-                          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-stone-900 font-medium rounded-lg hover:bg-stone-50 transition-colors">
-                            <Settings size={17} strokeWidth={1.25} />
-                            <span className="text-[13px]">Dashboard</span>
-                          </Link>
+                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Management</p>
+                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-stone-900 font-medium transition-colors">
+                              <Settings size={17} strokeWidth={1.25} />
+                              <span className="text-[13px]">Dashboard</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          
+                          {role === "PROFESSIONAL" && profileSlug && (
+                            <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                              <Link href={`/tz/${profileSlug}`} className="flex items-center gap-3 px-3 py-2 text-stone-600 hover:text-stone-950 transition-colors">
+                                <Layout size={17} strokeWidth={1.25} />
+                                <span className="text-[13px]">My Public Profile</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                         </div>
                       )}
                       <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 font-medium rounded-lg hover:bg-red-50/50 transition-colors mt-1">

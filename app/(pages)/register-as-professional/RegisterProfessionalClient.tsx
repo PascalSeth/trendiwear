@@ -390,9 +390,14 @@ export default function RegisterProfessionalForm() {
       body: uploadFormData
     });
 
-    if (!response.ok) throw new Error('Upload failed');
-    const { url } = await response.json();
-    return url;
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errorMsg = data.details || data.error || 'Upload failed';
+      throw new Error(errorMsg);
+    }
+    
+    return data.url;
   };
 
   const handleNext = () => {

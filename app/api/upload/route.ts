@@ -17,148 +17,148 @@ const supabase = supabaseUrl && supabaseServiceKey
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Upload API called")
+    console.log("Upload API: Request received");
+
+    // Validate environment variables at runtime for better logging
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+      console.error("Upload API: Missing Supabase environment variables", {
+        hasUrl: !!url,
+        hasKey: !!key
+      });
+      return NextResponse.json({
+        error: "Server Configuration Error",
+        details: "Supabase environment variables are missing. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+        missingConfigs: {
+          url: !url,
+          key: !key
+        }
+      }, { status: 500 });
+    }
 
     // Check if Supabase is properly configured
     if (!supabase) {
-      console.log("Supabase not configured")
+      console.error("Upload API: Supabase client failed to initialize");
       return NextResponse.json({
-        error: "File upload service is not configured. Please check environment variables."
-      }, { status: 500 })
+        error: "Upload Service Offline",
+        details: "The Supabase client could not be initialized. Please check your system logs."
+      }, { status: 500 });
     }
 
-    console.log("Authenticating user...")
-    const user = await requireAuth()
-    console.log("User authenticated:", user.id)
+    console.log("Upload API: Authenticating user...");
+    let user;
+    try {
+      user = await requireAuth();
+      console.log("Upload API: User authenticated:", user.id);
+    } catch (authError) {
+      console.error("Upload API: Authentication failed", authError);
+      return NextResponse.json({ 
+        error: "Authentication required", 
+        details: "You must be logged in to upload files." 
+      }, { status: 401 });
+    }
 
-    console.log("Parsing form data...")
-    const formData = await request.formData()
-    const file = formData.get("file") as File
-    const bucket = (formData.get("bucket") as string) || "images"
-    const folder = (formData.get("folder") as string) || "uploads"
+    console.log("Upload API: Parsing form data...");
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch (e) {
+      console.error("Upload API: Failed to parse form data", e);
+      return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+    }
 
-    console.log("Form data parsed:", { bucket, folder, hasFile: !!file })
+    const file = formData.get("file") as File;
+    const bucket = (formData.get("bucket") as string) || "images";
+    const folder = (formData.get("folder") as string) || "uploads";
 
     if (!file) {
-      console.log("No file provided in form data")
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+      console.log("Upload API: No file provided");
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     // Validate bucket - only allow images, documents, videos
-    const allowedBuckets = ['images', 'documents', 'videos', 'categories']
-    let targetBucket = bucket || "images" // Default to images if not specified
-    let targetFolder = folder || "uploads"
+    const allowedBuckets = ['images', 'documents', 'videos', 'categories'];
+    let targetBucket = bucket || "images";
+    let targetFolder = folder || "uploads";
 
-    // If bucket is not a valid storage bucket, treat it as a folder and use 'images' as bucket
     if (!allowedBuckets.includes(targetBucket)) {
-      console.log(`Bucket '${targetBucket}' not valid, treating as folder path`)
-      targetFolder = targetBucket // Use the provided bucket as folder
-      targetBucket = "images" // Default to images bucket
+      targetFolder = targetBucket;
+      targetBucket = "images";
     }
 
-    // Validate file type based on bucket
-    console.log("Validating file type:", file.type, "for bucket:", targetBucket)
-    let allowedTypes: string[] = []
-
+    // Validate file type
+    let allowedTypes: string[] = [];
     if (targetBucket === 'videos') {
-      allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/mkv']
+      allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/mkv'];
     } else if (targetBucket === 'images' || targetBucket === 'categories') {
-      allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
     } else if (targetBucket === 'documents') {
-      allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf']
+      allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf'];
     }
 
     if (!allowedTypes.includes(file.type)) {
-      console.log("Invalid file type:", file.type, "for bucket:", targetBucket)
       return NextResponse.json({
-        error: `Invalid file type for ${targetBucket} bucket. Allowed types: ${allowedTypes.join(', ')}`
-      }, { status: 400 })
+        error: "Invalid file type",
+        details: `Allowed types for ${targetBucket}: ${allowedTypes.join(', ')}`
+      }, { status: 400 });
     }
 
-    // Validate file size based on bucket
-    console.log("Validating file size:", file.size)
-    let maxSize: number
-    let sizeText: string
-
-    if (targetBucket === 'videos') {
-      maxSize = 50 * 1024 * 1024 // 50MB for videos
-      sizeText = "50MB"
-    } else if (targetBucket === 'documents') {
-      maxSize = 25 * 1024 * 1024 // 25MB for documents
-      sizeText = "25MB"
-    } else {
-      maxSize = 10 * 1024 * 1024 // 10MB for images/categories
-      sizeText = "10MB"
-    }
+    // Validate file size
+    let maxSize: number;
+    if (targetBucket === 'videos') maxSize = 50 * 1024 * 1024;
+    else if (targetBucket === 'documents') maxSize = 25 * 1024 * 1024;
+    else maxSize = 10 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      console.log("File too large:", file.size, "max:", maxSize)
       return NextResponse.json({
-        error: `File too large. Maximum size for ${targetBucket} is ${sizeText}.`
-      }, { status: 400 })
+        error: "File too large",
+        details: `Maximum size for ${targetBucket} is ${targetBucket === 'videos' ? '50MB' : targetBucket === 'documents' ? '25MB' : '10MB'}.`
+      }, { status: 400 });
     }
 
-    const fileExt = file.name.split(".").pop()
-    const timestamp = Date.now()
-    // Structured path: targetFolder/userId/timestamp.ext
-    const fileName = `${targetFolder}/${user.id}/${timestamp}.${fileExt}`
+    const fileExt = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const fileName = `${targetFolder}/${user.id}/${timestamp}.${fileExt}`;
 
-    console.log(`Attempting upload to bucket: '${targetBucket}', path: '${fileName}'`)
-
-    if (!supabase) {
-      console.error("Supabase client is null")
-      return NextResponse.json({
-        error: "Supabase storage is not configured. File uploads require Supabase."
-      }, { status: 500 })
-    }
+    console.log(`Upload API: Attempting upload to bucket: '${targetBucket}', path: '${fileName}'`);
 
     // Upload to specified bucket
     const { data, error } = await supabase.storage.from(targetBucket).upload(fileName, file, {
       cacheControl: "3600",
       upsert: false,
-    })
+    });
 
     if (error) {
-      console.error(`Supabase upload error in bucket '${targetBucket}':`, error)
-
-      // Handle specific Supabase errors
-      if (error.message?.includes('signature verification failed')) {
-        return NextResponse.json({
-          error: "Supabase authentication failed. Please check your SUPABASE_SERVICE_ROLE_KEY.",
-          details: "The service role key appears to be invalid or expired."
-        }, { status: 500 })
-      }
-
+      console.error(`Upload API: Supabase error:`, error);
+      
       if (error.message?.includes('Bucket not found')) {
         return NextResponse.json({
-          error: `Storage bucket '${targetBucket}' not found. Please create it in your Supabase dashboard.`,
-          details: "Go to Storage → Create bucket"
-        }, { status: 500 })
+          error: "Storage bucket missing",
+          details: `The '${targetBucket}' bucket does not exist in Supabase storage.`
+        }, { status: 500 });
       }
 
-      return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 })
+      return NextResponse.json({ 
+        error: "Upload failed", 
+        details: error.message 
+      }, { status: 500 });
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(targetBucket).getPublicUrl(fileName)
+    const { data: { publicUrl } } = supabase.storage.from(targetBucket).getPublicUrl(fileName);
 
-    console.log("Supabase upload successful")
-    const uploadResult = {
+    console.log("Upload API: Success");
+    return NextResponse.json({
       url: publicUrl,
       path: data.path,
       bucket: targetBucket,
-      provider: 'supabase'
-    }
-
-    console.log("Upload completed successfully:", uploadResult)
-    return NextResponse.json({
-      ...uploadResult,
+      provider: 'supabase',
       success: true
-    })
+    });
   } catch (error) {
-    const { status, message } = mapErrorToResponse(error, { route: 'upload.POST' })
-    if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })
-    return NextResponse.json({ error: message }, { status })
+    console.error("Upload API: Unexpected error", error);
+    const { status, message } = mapErrorToResponse(error, { route: 'upload.POST' });
+    return NextResponse.json({ error: "Internal Server Error", details: message }, { status: status || 500 });
   }
 }

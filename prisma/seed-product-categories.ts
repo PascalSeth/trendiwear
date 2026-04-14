@@ -112,6 +112,22 @@ const categoryData = [
       { name: "Cardholders", description: "Slim holders for cards and cash." },
     ],
   },
+  {
+    name: "Cosmetics",
+    description: "Beauty, skincare and professional grooming essentials.",
+    subcategories: [
+      { name: "Makeup", description: "Foundations, palettes, lipsticks, and eye enhancers." },
+      { name: "Skincare", description: "Cleansers, moisturizers, serums, and sun protection." },
+      { name: "Haircare", description: "Shampoos, oils, styling gels, and professional treatments." },
+      { name: "Fragrance", description: "Luxury perfumes, colognes, and body mists." },
+      { name: "Men's Grooming", description: "Beard oils, shaving kits, and men's skincare." },
+      { name: "Nail Care", description: "Polishes, acrylic kits, and manicure tools." },
+      { name: "Bath & Body", description: "Body washes, scrubs, and aromatic bath salts." },
+      { name: "Sun Care", description: "SPF lotions, after-sun gels, and tanning oils." },
+      { name: "Tools & Accessories", description: "Makeup brushes, sponges, and beauty blenders." },
+      { name: "Organic & Natural", description: "Vegan and chemical-free beauty products." },
+    ],
+  },
 ];
 
 async function main() {
