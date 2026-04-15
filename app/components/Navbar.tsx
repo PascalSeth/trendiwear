@@ -74,12 +74,19 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     'Dashboard': ['PAYMENT_RECEIVED', 'PAYMENT_RELEASED', 'REVIEW_RECEIVED', 'DELIVERY_CONFIRMATION_REQUEST', 'STOCK_ALERT']
   };
 
+  const hasUnreadCategory = (label: string) => {
+    if (clearedCategories.has(label)) return false;
+    if (label === 'Messages') return unreadMessagesCount > 0;
+    const types = CATEGORY_TYPES[label] || [];
+    return notifications.some((n: { type: string }) => types.includes(n.type));
+  };
+
   const handleCategoryClick = async (label: string) => {
     setClearedCategories(prev => new Set(prev).add(label));
     try {
       if (label === 'Messages') await fetch('/api/conversations', { method: 'PATCH' });
       const types = CATEGORY_TYPES[label];
-      if (types?.length > 0) {
+      if (types && types.length > 0) {
         await fetch('/api/notifications', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -103,108 +110,126 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   return (
     <>
       <div className={cn(
-        "fixed w-full top-0 z-50 transition-all duration-500 ease-in-out border-b",
-        scrolled ? 'bg-white/80 backdrop-blur-xl border-stone-200/60 py-2' : 'bg-transparent border-transparent py-4'
+        "fixed w-full top-0 z-50 transition-all duration-500 border-b",
+        scrolled ? 'bg-white/90 backdrop-blur-xl border-stone-200/60 py-2' : 'bg-transparent border-transparent py-4'
       )}>
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between h-12 md:h-16">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between relative h-12 md:h-16">
 
-          {/* --- LEFT SECTION: MENU + LOGO (JOINED) --- */}
-          <div className="flex items-center gap-2 md:gap-8 flex-1">
+          {/* --- LEFT: MENU + LOGO (The requested "joined" look) --- */}
+          <div className="flex items-center gap-2 md:gap-0 flex-1">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 -ml-2 text-stone-900 transition-all active:scale-90"
+              aria-label="Open Menu"
             >
-              <div className="flex flex-col gap-1 w-5">
-                <span className="h-[1.5px] w-full bg-current" />
-                <span className="h-[1.5px] w-[70%] bg-current" />
-              </div>
+              <Menu size={24} strokeWidth={1.5} />
             </button>
-
-            <Link href="/" className="group flex items-center">
+            <Link href="/" className="group block">
               <Image
                 src="/navlogo.png"
-                alt="Logo"
+                alt="TrendiZip"
                 width={50}
                 height={50}
                 className={cn(
                   "transition-all duration-500 group-hover:scale-105 object-contain w-auto",
-                  scrolled ? "h-9 md:h-10" : "h-11 md:h-16"
+                  scrolled ? "h-9" : "h-11 md:h-16"
                 )}
               />
             </Link>
           </div>
 
           {/* --- DESKTOP: CENTER NAVIGATION --- */}
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+          <nav className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
             {navLinks.map((link, idx) => (
               <Link key={idx} href={link.href} className={cn(
-                "group relative text-[13px] font-medium tracking-tight transition-all",
-                isActive(link.href) ? "text-stone-950" : "text-stone-500 hover:text-stone-950"
+                "group relative text-[13px] font-medium tracking-wide transition-all",
+                isActive(link.href) ? "text-stone-950" : "text-stone-500 hover:text-stone-900"
               )}>
                 <span>{link.label}</span>
                 {isActive(link.href) && (
-                  <motion.span layoutId="nav-underline" className="absolute -bottom-1 left-0 w-full h-[1.5px] bg-stone-950" />
+                  <motion.span layoutId="nav-underline" className="absolute -bottom-1.5 left-0 w-full h-[1.5px] bg-stone-950" />
                 )}
               </Link>
             ))}
           </nav>
 
-          {/* --- RIGHT SECTION: ACTIONS --- */}
-          <div className="flex items-center justify-end flex-1 gap-1 md:gap-3">
-            <div className={cn(
-              "flex items-center gap-0.5 md:gap-2 px-1.5 py-1 rounded-full transition-all duration-500",
-              scrolled ? "bg-stone-100/50 border border-stone-200/20" : "bg-white/10"
-            )}>
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2 text-stone-600 hover:text-stone-950 transition-colors"
-              >
-                <Search size={19} strokeWidth={1.5} />
+          {/* --- RIGHT: ACTIONS (Grouped) --- */}
+          <div className="flex items-center justify-end flex-1 gap-1 md:gap-4">
+            <div className="flex items-center gap-1 md:gap-3 px-2 py-1 rounded-full bg-stone-100/40 md:bg-transparent backdrop-blur-md md:backdrop-blur-0 border border-stone-200/30 md:border-0">
+              <button onClick={() => setIsSearchOpen(true)} className="p-2 text-stone-600 hover:text-stone-950 transition-colors">
+                <Search size={20} strokeWidth={1.5} />
               </button>
-
               <NotificationBell context="personal" />
               <CartSheetTrigger />
 
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="relative ml-1 outline-none">
-                      <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-200 ring-offset-2 ring-stone-950 transition-all hover:ring-1">
+                    <button className="relative ml-1 outline-none group">
+                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-stone-900 transition-all">
                         <Image
                           src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
-                          alt="User"
-                          width={32}
-                          height={32}
-                          className="w-full h-full object-cover"
+                          alt="User" width={36} height={36} className="w-full h-full object-cover"
                         />
                       </div>
-                      {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />}
                     </button>
                   </DropdownMenuTrigger>
-                  {/* Dropdown Content - same logic as before */}
-                  <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-stone-200">
-                    {/* ... Existing Dropdown items ... */}
-                    <div className="px-4 py-3 mb-2 bg-stone-50 rounded-xl">
-                      <p className="text-[13px] font-semibold truncate">{user.name}</p>
-                      <p className="text-[11px] text-stone-500 truncate">{user.email}</p>
+                  <DropdownMenuContent align="end" className="w-64 p-2 bg-white/95 backdrop-blur-xl border-stone-200 shadow-2xl rounded-2xl">
+                    <div className="px-4 py-3 mb-2 bg-stone-50/50 rounded-xl">
+                      <p className="text-[13px] font-semibold text-stone-900 truncate">{user.name}</p>
+                      <p className="text-[11px] text-stone-500 truncate mt-0.5">{user.email}</p>
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       {[
                         { icon: User, label: 'Profile', href: getProfileUrl() },
                         { icon: MessageSquare, label: 'Messages', href: '/messages' },
                         { icon: Package, label: 'Orders', href: '/orders' },
                         { icon: Calendar, label: 'Bookings', href: '/bookings' },
                       ].map((item, idx) => (
-                        <DropdownMenuItem key={idx} asChild className="rounded-lg">
-                          <Link href={item.href} onClick={() => handleCategoryClick(item.label)} className="flex items-center gap-3 px-3 py-2 text-[13px] text-stone-600">
-                            <item.icon size={16} strokeWidth={1.5} />
-                            {item.label}
+                        <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                          <Link href={item.href} onClick={() => handleCategoryClick(item.label)} className="flex items-center gap-3 px-3 py-2 text-stone-600">
+                            <item.icon size={17} strokeWidth={1.25} />
+                            <span className="text-[13px]">{item.label}</span>
                           </Link>
                         </DropdownMenuItem>
                       ))}
-                      <div className="h-px bg-stone-100 my-1" />
-                      <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-red-600 font-medium">
-                        <LogOut size={16} strokeWidth={1.5} /> Sign Out
+
+                      {/* Customer Role logic */}
+                      {role === "CUSTOMER" && (
+                        <div className="pt-2 mt-2 border-t border-stone-100">
+                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Professional Hub</p>
+                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg mt-0.5">
+                            <Link href="/register-as-professional" className="flex items-center gap-3 px-3 py-2 text-stone-600">
+                              <Plus size={17} strokeWidth={1.25} />
+                              <span className="text-[13px]">Become a Professional</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        </div>
+                      )}
+
+                      {/* Management logic */}
+                      {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                        <div className="pt-2 mt-2 border-t border-stone-100">
+                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Management</p>
+                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-stone-900 font-medium">
+                              <Settings size={17} strokeWidth={1.25} />
+                              <span className="text-[13px]">Dashboard</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          {role === "PROFESSIONAL" && profileSlug && (
+                            <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
+                              <Link href={`/tz/${profileSlug}`} className="flex items-center gap-3 px-3 py-2 text-stone-600">
+                                <Layout size={17} strokeWidth={1.25} />
+                                <span className="text-[13px]">My Public Profile</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                        </div>
+                      )}
+                      <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 font-medium rounded-lg hover:bg-red-50/50 mt-1 transition-colors">
+                        <LogOut size={17} strokeWidth={1.25} />
+                        <span className="text-[13px]">Sign Out</span>
                       </button>
                     </div>
                   </DropdownMenuContent>
@@ -212,9 +237,10 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               ) : (
                 <button
                   onClick={() => window.location.href = '/auth/signin'}
-                  className="ml-2 w-8 h-8 flex items-center justify-center bg-stone-950 text-white rounded-full hover:bg-stone-800 transition-all"
+                  className="w-8 h-8 md:w-auto md:px-4 md:py-2 flex items-center justify-center bg-stone-950 text-white md:text-stone-900 md:bg-transparent rounded-full md:text-[13px] md:font-medium"
                 >
-                  <User size={14} strokeWidth={2.5} />
+                  <User size={16} className="md:hidden" />
+                  <span className="hidden md:block">Login</span>
                 </button>
               )}
             </div>
@@ -222,94 +248,91 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
         </div>
       </div>
 
-      {/* --- MOBILE OVERLAY (EDITORIAL STYLE) --- */}
+      {/* --- CREATIVE MOBILE MENU OVERLAY --- */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="fixed inset-0 z-[100] bg-white md:hidden flex flex-col"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[100] bg-white md:hidden overflow-hidden flex flex-col"
           >
-            {/* Overlay Header */}
-            <div className="flex items-center justify-between px-6 h-20 border-b border-stone-100">
-              <div className="flex items-center gap-2">
-                <Image src="/navlogo.png" alt="Logo" width={40} height={40} className="opacity-50" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Navigation</span>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-6 border-b border-stone-50">
+              <div className="flex items-center gap-3">
+                <Image src="/navlogo.png" alt="Logo" width={32} height={32} />
+                <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Navigation</span>
               </div>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-stone-50 text-stone-900"
-              >
+              <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-stone-100 text-stone-900 active:scale-95 transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Links Section */}
-            <div className="flex-1 overflow-y-auto px-8 py-10">
-              <nav className="space-y-8">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-8 py-10 space-y-12">
+              {/* Main Links */}
+              <nav className="space-y-6">
                 {navLinks.map((link, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                  >
-                    <Link
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="group block"
-                    >
-                      <div className="flex items-end justify-between border-b border-stone-100 pb-4">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mb-1">{link.sub}</p>
-                          <p className="text-3xl font-light tracking-tight text-stone-900 group-active:translate-x-2 transition-transform">
-                            {link.label}
-                          </p>
-                        </div>
-                        <ArrowRight size={20} className="text-stone-300 group-active:text-stone-950 transition-colors" />
+                  <motion.div key={idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + idx * 0.05 }}>
+                    <Link href={link.href} onClick={() => setMobileMenuOpen(false)} className="group flex items-end justify-between border-b border-stone-100 pb-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-300 mb-1">{link.sub}</p>
+                        <p className={cn("text-3xl font-light tracking-tight", isActive(link.href) ? "text-stone-950 font-normal" : "text-stone-500")}>
+                          {link.label}
+                        </p>
                       </div>
+                      <ArrowRight size={20} className="text-stone-200 group-hover:text-stone-950 transition-colors" />
                     </Link>
                   </motion.div>
                 ))}
               </nav>
 
-              {/* Editorial Footer for Menu */}
-              <div className="mt-16 grid grid-cols-2 gap-4">
-                <div className="p-4 bg-stone-50 rounded-2xl">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase mb-2">Need help?</p>
-                  <p className="text-xs text-stone-600 leading-relaxed">Browse our curated guides or contact support.</p>
-                </div>
-                <div className="p-4 bg-stone-950 rounded-2xl text-white">
-                  <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Exclusive</p>
-                  <p className="text-xs leading-relaxed">Join as a pro to list your designs.</p>
+              {/* Dashboard & Pro Logic Section inside Mobile Menu */}
+              <div className="space-y-6 pt-6">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Your Hub</p>
+                <div className="grid grid-cols-1 gap-3">
+                  {user && (role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 bg-stone-950 text-white rounded-2xl shadow-xl shadow-stone-200">
+                      <div className="flex items-center gap-3">
+                        <Settings size={20} strokeWidth={1.5} />
+                        <span className="font-medium text-sm">Open Dashboard</span>
+                      </div>
+                      <ArrowRight size={18} />
+                    </Link>
+                  )}
+                  {user && role === "CUSTOMER" && (
+                    <Link href="/register-as-professional" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 bg-stone-50 border border-stone-200 rounded-2xl">
+                      <div className="flex items-center gap-3 text-stone-900">
+                        <Plus size={20} strokeWidth={1.5} />
+                        <span className="font-medium text-sm">Become a Professional</span>
+                      </div>
+                      <ArrowRight size={18} className="text-stone-400" />
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Auth Action Footer */}
-            <div className="p-6 bg-stone-50 border-t border-stone-100">
+            {/* Footer */}
+            <div className="p-8 bg-stone-50/80 border-t border-stone-100">
               {user ? (
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Image src={user.image || '/avatar-placeholder.png'} alt="" width={40} height={40} className="rounded-full ring-2 ring-white shadow-sm" />
+                  <div className="flex items-center gap-4">
+                    <Image src={user.profileImage || user.image || ""} alt="" width={44} height={44} className="rounded-full ring-2 ring-white" />
                     <div>
-                      <p className="text-sm font-semibold">{user.name}</p>
-                      <p className="text-[10px] text-stone-500 uppercase tracking-tighter">View Account</p>
+                      <p className="text-sm font-bold text-stone-900">{user.name}</p>
+                      <p className="text-[10px] text-stone-400 uppercase tracking-widest">Verified Member</p>
                     </div>
                   </div>
-                  <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="px-4 py-2 text-xs font-bold uppercase border border-stone-200 rounded-full">
-                    Logout
+                  <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="p-3 text-red-600 bg-red-50 rounded-full active:scale-90 transition-all">
+                    <LogOut size={20} />
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => window.location.href = '/auth/signin'} className="py-4 text-[11px] font-bold uppercase tracking-widest bg-white border border-stone-200 rounded-xl">
-                    Login
-                  </button>
-                  <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="py-4 text-[11px] font-bold uppercase tracking-widest bg-stone-950 text-white rounded-xl shadow-lg shadow-stone-200">
-                    Sign Up
-                  </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => window.location.href = '/auth/signin'} className="py-4 text-[11px] font-bold uppercase tracking-widest text-stone-900 border border-stone-200 bg-white rounded-xl">Login</button>
+                  <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="py-4 text-[11px] font-bold uppercase tracking-widest text-white bg-stone-950 rounded-xl">Sign Up</button>
                 </div>
               )}
             </div>
