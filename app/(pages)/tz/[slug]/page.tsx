@@ -294,9 +294,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
       country: profileData.location?.split(', ').slice(-1)[0] || 'Region',
       hours: parseBusinessHours(profileData.availability),
       availabilityRaw: profileData.availability || undefined,
-      embedUrl: (profileData.latitude && profileData.longitude) 
-        ? `https://www.google.com/maps/embed/v1/view?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&center=${profileData.latitude},${profileData.longitude}&zoom=15`
-        : undefined
+      latitude: profileData.latitude || undefined,
+      longitude: profileData.longitude || undefined,
     },
     reviews: reviews.map(r => ({
       id: r.id,

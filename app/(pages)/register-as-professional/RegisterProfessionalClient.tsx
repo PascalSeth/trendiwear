@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // --- Constants & Types ---
+const BIO_WORD_LIMIT = 60;
+const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
 interface ProfessionalType {
   id: string;
   name: string;
@@ -270,15 +273,35 @@ const StepCraft = ({
         </div>
       </div>
 
-      <div className="space-y-1.5 px-1">
-        <Label className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Your Business Story</Label>
+      <div className="space-y-1.5 px-1 relative">
+        <div className="flex justify-between items-center">
+          <Label className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Your Business Story</Label>
+          <span className={cn(
+            "text-[9px] font-mono uppercase tracking-widest",
+            countWords(formData.bio) > BIO_WORD_LIMIT ? "text-red-500 font-bold" : "text-stone-400"
+          )}>
+            {countWords(formData.bio)} / {BIO_WORD_LIMIT} words
+          </span>
+        </div>
         <Textarea 
           placeholder="Tell customers what makes your work unique..." 
           onFocus={onFocus}
           value={formData.bio}
-          onChange={(e) => setFormData((p: FormData) => ({ ...p, bio: e.target.value }))}
-          className="min-h-[140px] bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 rounded-2xl resize-none p-5"
+          onChange={(e) => {
+            const val = e.target.value;
+            // We allow typing but we'll show error if over limit
+            setFormData((p: FormData) => ({ ...p, bio: val }));
+          }}
+          className={cn(
+            "min-h-[140px] bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 rounded-2xl resize-none p-5 transition-colors",
+            countWords(formData.bio) > BIO_WORD_LIMIT && "border-red-200 bg-red-50/10 focus:border-red-500"
+          )}
         />
+        {countWords(formData.bio) > BIO_WORD_LIMIT && (
+          <p className="text-[9px] font-mono text-red-500 uppercase tracking-tight mt-1 animate-pulse">
+            Please shorten your story to under {BIO_WORD_LIMIT} words to continue.
+          </p>
+        )}
       </div>
     </div>
   </div>
@@ -500,6 +523,11 @@ export default function RegisterProfessionalForm() {
     }
     if (currentStep === 2) {
       if (!selectedSpecialization) return toast.error("Please select your profession.");
+    }
+    if (currentStep === 3) {
+      if (countWords(formData.bio) > BIO_WORD_LIMIT) {
+        return toast.error(`Your bio is too long. Please shorten it to ${BIO_WORD_LIMIT} words or less.`);
+      }
     }
     if (currentStep === 4) {
         if (!latitude || !longitude) return toast.error("Please select your location on the map.");

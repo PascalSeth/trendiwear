@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,7 +44,8 @@ interface Location {
   country: string;
   hours: string;
   availabilityRaw?: string;
-  embedUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // Helper to check if currently open
@@ -201,6 +203,59 @@ export interface ProfileClientProps {
   isOwner: boolean;
   baseUrl?: string;
 }
+
+// --- Profile Map Component ---
+const ProfileMap = ({ lat, lng }: { lat: number, lng: number }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setOptions({
+      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      v: "weekly"
+    });
+
+    Promise.all([
+      importLibrary("maps"),
+      importLibrary("marker")
+    ]).then(() => {
+      if (mapRef.current) {
+        const center = { lat, lng };
+        const map = new google.maps.Map(mapRef.current, {
+          center,
+          zoom: 15,
+          disableDefaultUI: true,
+          zoomControl: true,
+          styles: [
+            {
+              "featureType": "all",
+              "elementType": "all",
+              "stylers": [{ "saturation": -100 }, { "gamma": 0.5 }]
+            },
+            {
+              "featureType": "water",
+              "elementType": "all",
+              "stylers": [{ "color": "#e9e9e9" }, { "visibility": "on" }]
+            }
+          ]
+        });
+
+        new google.maps.Marker({
+          position: center,
+          map,
+          title: "Atelier Location",
+          animation: google.maps.Animation.DROP
+        });
+      }
+    }).catch(err => console.error("Google Maps failed to load", err));
+  }, [lat, lng]);
+
+  return (
+    <div 
+      ref={mapRef} 
+      className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 ease-out" 
+    />
+  );
+};
 
 const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) => {
   const displayName = profile.businessName || `${profile.user.firstName} ${profile.user.lastName}`;
@@ -478,16 +533,11 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             viewport={{ once: true }}
             className="max-w-7xl mx-auto rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative group bg-stone-100"
           >
-            {profile.location.embedUrl ? (
-              <div className="aspect-[21/6] w-full grayscale hover:grayscale-0 transition-all duration-1500 ease-out">
-                <iframe
-                  src={profile.location.embedUrl}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
+            {(profile.location.latitude && profile.location.longitude) ? (
+              <div className="aspect-[21/6] w-full">
+                <ProfileMap 
+                  lat={profile.location.latitude} 
+                  lng={profile.location.longitude} 
                 />
               </div>
             ) : (

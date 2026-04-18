@@ -19,6 +19,10 @@ import { useEffect } from 'react'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
 import { useSession } from 'next-auth/react'
 
+// --- Constants & Helper ---
+const BIO_WORD_LIMIT = 60;
+const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
 // --- Types ---
 interface DayHours {
   enabled: boolean
@@ -223,6 +227,9 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
 
   const saveBusinessInfo = async () => {
     if (!pp) return
+    if (countWords(businessForm.bio) > BIO_WORD_LIMIT) {
+      return toast.error(`Your bio is too long. Please shorten it to ${BIO_WORD_LIMIT} words or less.`);
+    }
     setSaving(true)
     try {
       const res = await fetch(`/api/professional-profiles/${pp.id}`, {
@@ -535,15 +542,31 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                       </div>
                    </div>
 
-                   <div className="space-y-6">
-                      <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Business Bio</Label>
-                      <Textarea 
-                        value={businessForm.bio} 
-                        onChange={e => setBusinessForm({...businessForm, bio: e.target.value})} 
-                        className="min-h-[200px] rounded-[2rem] p-8 font-serif italic text-xl border-stone-100 bg-white leading-relaxed focus:border-stone-900 transition-all" 
-                        placeholder="Describe your business..."
-                      />
-                   </div>
+                    <div className="space-y-6">
+                       <div className="flex justify-between items-center">
+                          <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Business Bio</Label>
+                          <span className={cn(
+                            "text-[9px] font-mono uppercase tracking-widest",
+                            countWords(businessForm.bio) > BIO_WORD_LIMIT ? "text-red-500 font-bold" : "text-stone-400"
+                          )}>
+                            {countWords(businessForm.bio)} / {BIO_WORD_LIMIT} words
+                          </span>
+                       </div>
+                       <Textarea 
+                         value={businessForm.bio} 
+                         onChange={e => setBusinessForm({...businessForm, bio: e.target.value})} 
+                         className={cn(
+                           "min-h-[200px] rounded-[2rem] p-8 font-serif italic text-xl border-stone-100 bg-white leading-relaxed focus:border-stone-900 transition-all",
+                           countWords(businessForm.bio) > BIO_WORD_LIMIT && "border-red-200 bg-red-50/10 focus:border-red-500"
+                         )}
+                         placeholder="Describe your business..."
+                       />
+                       {countWords(businessForm.bio) > BIO_WORD_LIMIT && (
+                         <p className="text-[10px] font-mono text-red-500 uppercase tracking-widest animate-pulse">
+                           Registry Alert: Bio exceeds the {BIO_WORD_LIMIT} word limit.
+                         </p>
+                       )}
+                    </div>
 
                   {/* Portfolio Collections */}
                   <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
