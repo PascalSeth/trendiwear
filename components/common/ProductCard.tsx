@@ -45,6 +45,7 @@ interface ProductCardProps {
     createdAt?: string | Date;
   };
   index: number;
+  hrefOverride?: string;
 }
 
 // Countdown hook for discount timer
@@ -78,7 +79,7 @@ function useCountdown(endDate: string | null | undefined) {
   return timeLeft;
 }
 
-export const ProductCard = ({ item, index }: ProductCardProps) => {
+export const ProductCard = ({ item, index, hrefOverride }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -283,7 +284,7 @@ export const ProductCard = ({ item, index }: ProductCardProps) => {
         </div>
 
         {/* View Link */}
-        <Link href={`/shopping/products/${item.slug}`} className="block">
+        <Link href={hrefOverride || `/shopping/products/${item.slug}`} className="block">
           <button className="w-full py-2.5 rounded-lg border border-stone-100 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-stone-900 hover:text-white transition-all duration-700 flex items-center justify-center gap-2 group/btn">
              Explore <ArrowUpRight size={12} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
           </button>

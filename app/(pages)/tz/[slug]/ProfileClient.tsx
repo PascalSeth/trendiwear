@@ -788,11 +788,12 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                        key={product.id}
                      >
                        <ProductCard 
-                         item={{ 
-                           ...product, 
-                         }} 
-                         index={index} 
-                       />
+                          item={{ 
+                            ...product, 
+                          }} 
+                          index={index}
+                          hrefOverride={`/tz/${slug}/shop/${product.slug}`}
+                        />
                      </motion.div>
                    ))}
                    {(!profile.featuredProducts || profile.featuredProducts.length === 0) && (

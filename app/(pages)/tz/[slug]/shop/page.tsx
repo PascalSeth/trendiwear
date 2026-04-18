@@ -25,6 +25,7 @@ interface Category {
 
 interface Product {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   price: number;
@@ -1184,7 +1185,7 @@ const ShopPage = ({ params }: { params: Promise<{ slug: string }> }) => {
               : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           )}>
             {filteredProducts.map((product, index) => (
-              <ProductCard key={product.id} item={product} index={index} />
+              <ProductCard key={product.id} item={product} index={index} hrefOverride={`/tz/${slug}/shop/${product.slug}`} />
             ))}
           </div>
         ) : (
