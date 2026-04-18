@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, Upload, ChevronLeft, Check, Store, 
   Palette, Scissors, Loader2, Info, MapPin,
-  Smartphone, Award, Sparkles, Building2, Archive,
+  Smartphone, Sparkles, Building2, Archive,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
