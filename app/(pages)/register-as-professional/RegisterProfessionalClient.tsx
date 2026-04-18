@@ -33,10 +33,11 @@ interface MOMOProvider {
 }
 
 const STEPS = [
-  { id: 1, name: "About You", description: "Business details" },
-  { id: 2, name: "Your Work", description: "Photos & bio" },
-  { id: 3, name: "Location", description: "Where you are" },
-  { id: 4, name: "Payments", description: "Mobile Money setup" },
+  { id: 1, name: "Business", description: "Business Name" },
+  { id: 2, name: "Craft", description: "Your Profession" },
+  { id: 3, name: "Showcase", description: "Photos & bio" },
+  { id: 4, name: "Location", description: "Where you are" },
+  { id: 5, name: "Payments", description: "Momo details" },
 ];
 
 interface FormData {
@@ -49,13 +50,16 @@ interface FormData {
   momoProvider: string;
 }
 
-interface StepIdentityProps {
+interface StepNameProps {
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+  onFocus?: FocusHandler;
+}
+
+interface StepSpecializationProps {
   professionalTypes: ProfessionalType[];
   selectedSpecialization: string;
   setSelectedSpecialization: React.Dispatch<React.SetStateAction<string>>;
-  onFocus?: FocusHandler;
 }
 
 // --- Sub-Components (Defined outside to prevent focus loss) ---
@@ -122,12 +126,12 @@ const LoginPrompt = () => {
 };
 
 
-const StepIdentity = ({ 
-  formData, setFormData, professionalTypes, selectedSpecialization, setSelectedSpecialization, onFocus 
-}: StepIdentityProps) => (
+const StepBusinessName = ({ 
+  formData, setFormData, onFocus 
+}: StepNameProps) => (
   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div className="space-y-2">
-      <Label className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400">Step 01 / Business Info</Label>
+      <Label className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400">Step 01 / Identity</Label>
       <h2 className="text-3xl font-serif text-stone-900 tracking-tight">Tell us your <br />Business Name.</h2>
     </div>
 
@@ -142,52 +146,63 @@ const StepIdentity = ({
         />
         <Building2 className="absolute right-5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" size={18} />
       </div>
+    </div>
+  </div>
+);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {professionalTypes.slice(0, 6).map((type: ProfessionalType) => {
-          const isSelected = selectedSpecialization === type.id;
-          return (
-            <button
-              key={type.id}
-              type="button"
-              onClick={() => setSelectedSpecialization(type.id)}
-              className={cn(
-                "flex items-start p-5 rounded-3xl border-2 transition-all duration-500 gap-5 text-left group relative overflow-hidden",
-                isSelected 
-                  ? "bg-stone-900 border-stone-900 text-white shadow-2xl scale-[1.02]" 
-                  : "bg-white border-stone-100 text-stone-600 hover:border-stone-300"
-              )}
-            >
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-500",
-                isSelected ? "bg-white/10 rotate-12" : "bg-stone-50 group-hover:bg-stone-100"
+const StepSpecialization = ({ 
+  professionalTypes, selectedSpecialization, setSelectedSpecialization 
+}: StepSpecializationProps) => (
+  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-2">
+      <Label className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400">Step 02 / Expertise</Label>
+      <h2 className="text-3xl font-serif text-stone-900 tracking-tight">Select your <br />Profession.</h2>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {professionalTypes.slice(0, 6).map((type: ProfessionalType) => {
+        const isSelected = selectedSpecialization === type.id;
+        return (
+          <button
+            key={type.id}
+            type="button"
+            onClick={() => setSelectedSpecialization(type.id)}
+            className={cn(
+              "flex items-start p-5 rounded-3xl border-2 transition-all duration-500 gap-5 text-left group relative overflow-hidden",
+              isSelected 
+                ? "bg-stone-900 border-stone-900 text-white shadow-2xl scale-[1.02]" 
+                : "bg-white border-stone-100 text-stone-600 hover:border-stone-300"
+            )}
+          >
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-500",
+              isSelected ? "bg-white/10 rotate-12" : "bg-stone-50 group-hover:bg-stone-100"
+            )}>
+              {type.name.toLowerCase().includes('tailor') ? <Scissors size={22} /> : 
+               type.name.toLowerCase().includes('designer') ? <Palette size={22} /> :
+               type.name.toLowerCase().includes('boutique') ? <Store size={22} /> : <Archive size={22} />}
+            </div>
+            
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono uppercase tracking-[0.2em] font-bold block">{type.name}</span>
+              <p className={cn(
+                "text-[10px] leading-relaxed transition-colors",
+                isSelected ? "text-stone-400" : "text-stone-400 group-hover:text-stone-500"
               )}>
-                {type.name.toLowerCase().includes('tailor') ? <Scissors size={22} /> : 
-                 type.name.toLowerCase().includes('designer') ? <Palette size={22} /> :
-                 type.name.toLowerCase().includes('boutique') ? <Store size={22} /> : <Archive size={22} />}
-              </div>
-              
-              <div className="space-y-1">
-                <span className="text-[11px] font-mono uppercase tracking-[0.2em] font-bold block">{type.name}</span>
-                <p className={cn(
-                  "text-[10px] leading-relaxed transition-colors",
-                  isSelected ? "text-stone-400" : "text-stone-400 group-hover:text-stone-500"
-                )}>
-                  {type.description || `Specialized services in ${type.name.toLowerCase()}.`}
-                </p>
-              </div>
+                {type.description || `Specialized services in ${type.name.toLowerCase()}.`}
+              </p>
+            </div>
 
-              {isSelected && (
-                <div className="absolute top-2 right-2">
-                  <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Check size={10} className="text-white" />
-                  </div>
+            {isSelected && (
+              <div className="absolute top-2 right-2">
+                <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Check size={10} className="text-white" />
                 </div>
-              )}
-            </button>
-          )
-        })}
-      </div>
+              </div>
+            )}
+          </button>
+        )
+      })}
     </div>
   </div>
 );
@@ -385,7 +400,7 @@ export default function RegisterProfessionalForm() {
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
   };
   
@@ -482,12 +497,14 @@ export default function RegisterProfessionalForm() {
   const handleNext = () => {
     if (currentStep === 1) {
       if (!formData.businessName) return toast.error("Business Name is required.");
-      if (!selectedSpecialization) return toast.error("Select your craft.");
     }
-    if (currentStep === 3) {
-        if (!latitude || !longitude) return toast.error("Please select your location on the map.");
+    if (currentStep === 2) {
+      if (!selectedSpecialization) return toast.error("Please select your profession.");
     }
     if (currentStep === 4) {
+        if (!latitude || !longitude) return toast.error("Please select your location on the map.");
+    }
+    if (currentStep === 5) {
       if (!formData.momoNumber || !formData.momoProvider) {
         return toast.error("Payment details are required to receive your earnings.");
       }
@@ -638,30 +655,34 @@ export default function RegisterProfessionalForm() {
               <div className="flex items-center justify-between">
                  <div className="flex gap-1.5 h-1">
                    {STEPS.map((s) => (
-                     <div 
-                      key={s.id} 
-                      className={cn(
-                        "w-12 h-full rounded-full transition-all duration-700",
-                        currentStep >= s.id ? "bg-stone-900" : "bg-stone-200"
-                      )} 
-                     />
-                   ))}
-                 </div>
-                 <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">{STEPS[currentStep-1].name} — {currentStep}/4</span>
+                      <div 
+                       key={s.id} 
+                       className={cn(
+                         "w-12 h-full rounded-full transition-all duration-700",
+                         currentStep >= s.id ? "bg-stone-900" : "bg-stone-200"
+                       )} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">{STEPS[currentStep-1].name} — {currentStep}/5</span>
               </div>
 
               <div className="min-h-[400px]">
                 {currentStep === 1 && (
-                  <StepIdentity 
+                  <StepBusinessName 
                     formData={formData} 
                     setFormData={setFormData}
-                    professionalTypes={professionalTypes}
-                    selectedSpecialization={selectedSpecialization}
-                    setSelectedSpecialization={setSelectedSpecialization}
                     onFocus={handleFocus}
                   />
                 )}
                 {currentStep === 2 && (
+                  <StepSpecialization 
+                    professionalTypes={professionalTypes}
+                    selectedSpecialization={selectedSpecialization}
+                    setSelectedSpecialization={setSelectedSpecialization}
+                  />
+                )}
+                {currentStep === 3 && (
                   <StepCraft 
                     formData={formData} 
                     setFormData={setFormData}
@@ -670,7 +691,7 @@ export default function RegisterProfessionalForm() {
                     onFocus={handleFocus}
                   />
                 )}
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                   <StepAtelier 
                     latitude={latitude}
                     longitude={longitude}
@@ -680,7 +701,7 @@ export default function RegisterProfessionalForm() {
                     setLocationAddress={setLocationAddress}
                   />
                 )}
-                {currentStep === 4 && (
+                {currentStep === 5 && (
                   <StepConnectivity 
                     formData={formData} 
                     setFormData={setFormData}
@@ -712,7 +733,7 @@ export default function RegisterProfessionalForm() {
                     <><Loader2 className="animate-spin" size={18} /> {submissionStatus}</>
                   ) : (
                     <>
-                      {currentStep === 4 ? "Open My Shop" : "Next Step"}
+                      {currentStep === 5 ? "Open My Shop" : "Next Step"}
                       <ArrowRight size={18} />
                     </>
                   )}
