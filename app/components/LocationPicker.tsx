@@ -68,13 +68,6 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
             zoom: 16,
             disableDefaultUI: true,
             zoomControl: true,
-            styles: [
-                {
-                    "featureType": "poi",
-                    "elementType": "labels",
-                    "stylers": [{ "visibility": "off" }]
-                }
-            ]
         };
 
         if (!mapInstanceRef.current) {

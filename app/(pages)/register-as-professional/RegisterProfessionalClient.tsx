@@ -55,9 +55,12 @@ interface StepIdentityProps {
   professionalTypes: ProfessionalType[];
   selectedSpecialization: string;
   setSelectedSpecialization: React.Dispatch<React.SetStateAction<string>>;
+  onFocus?: FocusHandler;
 }
 
 // --- Sub-Components (Defined outside to prevent focus loss) ---
+
+type FocusHandler = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 
 const LoginPrompt = () => {
   const router = useRouter();
@@ -120,7 +123,7 @@ const LoginPrompt = () => {
 
 
 const StepIdentity = ({ 
-  formData, setFormData, professionalTypes, selectedSpecialization, setSelectedSpecialization 
+  formData, setFormData, professionalTypes, selectedSpecialization, setSelectedSpecialization, onFocus 
 }: StepIdentityProps) => (
   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div className="space-y-2">
@@ -132,6 +135,7 @@ const StepIdentity = ({
       <div className="group relative">
         <Input 
           value={formData.businessName}
+          onFocus={onFocus}
           onChange={(e) => setFormData((p: FormData) => ({ ...p, businessName: e.target.value }))}
           placeholder="e.g. Maison Noir Design"
           className="h-14 bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 text-lg rounded-2xl px-6 transition-all"
@@ -193,10 +197,11 @@ interface StepCraftProps {
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
   businessImagePreview: string;
   setBusinessImage: React.Dispatch<React.SetStateAction<File | null>>;
+  onFocus?: FocusHandler;
 }
 
 const StepCraft = ({ 
-  formData, setFormData, businessImagePreview, setBusinessImage 
+  formData, setFormData, businessImagePreview, setBusinessImage, onFocus 
 }: StepCraftProps) => (
   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div className="space-y-2">
@@ -228,32 +233,38 @@ const StepCraft = ({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-500 ml-1">Experience (Years)</Label>
+        <div className="space-y-1.5 px-1">
+          <Label className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Experience (Years)</Label>
           <Input 
             type="number" 
-            value={formData.experience}
+            onFocus={onFocus}
+            value={formData.experience} 
             onChange={(e) => setFormData((p: FormData) => ({ ...p, experience: parseInt(e.target.value) || 0 }))}
-            className="bg-white/50 border-stone-200 rounded-xl"
+            className="h-12 bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 rounded-2xl" 
           />
         </div>
-        <div className="space-y-2">
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-stone-500 ml-1">Your Website or Socials</Label>
+        <div className="space-y-1.5 px-1">
+          <Label className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Portfolio URL</Label>
           <Input 
-            placeholder="e.g. instagram.com/name"
-            value={formData.portfolioUrl}
+            placeholder="e.g. instagram.com/..." 
+            onFocus={onFocus}
+            value={formData.portfolioUrl} 
             onChange={(e) => setFormData((p: FormData) => ({ ...p, portfolioUrl: e.target.value }))}
-            className="bg-white/50 border-stone-200 rounded-xl"
+            className="h-12 bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 rounded-2xl" 
           />
         </div>
       </div>
 
-      <Textarea 
-        placeholder="Short description of your business..."
-        value={formData.bio}
-        onChange={(e) => setFormData((p: FormData) => ({ ...p, bio: e.target.value }))}
-        className="h-24 bg-white/50 border-stone-200 rounded-2xl p-4 resize-none"
-      />
+      <div className="space-y-1.5 px-1">
+        <Label className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Your Business Story</Label>
+        <Textarea 
+          placeholder="Tell customers what makes your work unique..." 
+          onFocus={onFocus}
+          value={formData.bio}
+          onChange={(e) => setFormData((p: FormData) => ({ ...p, bio: e.target.value }))}
+          className="min-h-[140px] bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 rounded-2xl resize-none p-5"
+        />
+      </div>
     </div>
   </div>
 );
@@ -300,10 +311,11 @@ interface StepConnectivityProps {
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
   momoProviders: MOMOProvider[];
+  onFocus?: FocusHandler;
 }
 
 const StepConnectivity = ({ 
-  formData, setFormData, momoProviders 
+  formData, setFormData, momoProviders, onFocus 
 }: StepConnectivityProps) => (
   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
     <div className="space-y-2">
@@ -354,11 +366,12 @@ const StepConnectivity = ({
       <div className="group relative">
         <Input 
           placeholder="Mobile Money Number"
+          onFocus={onFocus}
           value={formData.momoNumber}
           onChange={(e) => setFormData((p: FormData) => ({ ...p, momoNumber: e.target.value }))}
           className="h-14 bg-white/50 border-stone-200 focus:border-stone-900 focus:ring-0 text-lg rounded-2xl px-6"
         />
-        <Award className="absolute right-5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" size={18} />
+        <Smartphone className="absolute right-5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" size={18} />
       </div>
     </div>
   </div>
@@ -369,6 +382,12 @@ const StepConnectivity = ({
 export default function RegisterProfessionalForm() {
   const router = useRouter();
   const { status, update } = useSession();
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
   
   // --- Form State ---
   const [currentStep, setCurrentStep] = useState(1);
@@ -612,7 +631,7 @@ export default function RegisterProfessionalForm() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-h-[calc(100vh-72px)] lg:h-full lg:overflow-y-auto bg-stone-50/10 snap-start scroll-mt-[72px]">
+        <main className="flex-1 min-h-[calc(100dvh-72px)] lg:h-full lg:overflow-y-auto bg-stone-50/10 snap-start scroll-mt-[72px]">
           <div className="min-h-full flex flex-col items-center justify-start lg:justify-center p-6 lg:p-12 xl:p-24 w-full">
             <div className="w-full max-w-xl space-y-12 py-10 lg:py-0">
               
@@ -639,6 +658,7 @@ export default function RegisterProfessionalForm() {
                     professionalTypes={professionalTypes}
                     selectedSpecialization={selectedSpecialization}
                     setSelectedSpecialization={setSelectedSpecialization}
+                    onFocus={handleFocus}
                   />
                 )}
                 {currentStep === 2 && (
@@ -647,6 +667,7 @@ export default function RegisterProfessionalForm() {
                     setFormData={setFormData}
                     businessImagePreview={businessImagePreview}
                     setBusinessImage={setBusinessImage}
+                    onFocus={handleFocus}
                   />
                 )}
                 {currentStep === 3 && (
@@ -664,6 +685,7 @@ export default function RegisterProfessionalForm() {
                     formData={formData} 
                     setFormData={setFormData}
                     momoProviders={momoProviders}
+                    onFocus={handleFocus}
                   />
                 )}
               </div>
