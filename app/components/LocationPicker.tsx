@@ -4,13 +4,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, Search, Loader2, Info, Check, Navigation, Globe, X, Map as MapIcon } from 'lucide-react'
+import { MapPin, Search, Loader2, Check, Navigation, Globe, X, Map as MapIcon, ChevronRight } from 'lucide-react'
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
 
 interface LocationSuggestion {
-    place_id: number | string
+    place_id: string
     description: string
-    lat: number
-    lng: number
+    mainText?: string
+    secondaryText?: string
 }
 
 interface LocationPickerProps {
@@ -26,9 +27,79 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
     const [showSuggestions, setShowSuggestions] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    
     const inputRef = useRef<HTMLInputElement>(null)
     const suggestionsRef = useRef<HTMLDivElement>(null)
+    const mapRef = useRef<HTMLDivElement>(null)
+    const googleRef = useRef<typeof google | null>(null)
+    const mapInstanceRef = useRef<google.maps.Map | null>(null)
+    const markerRef = useRef<google.maps.Marker | null>(null)
 
+    // --- Initialization ---
+    useEffect(() => {
+        setOptions({
+            key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+            v: "weekly"
+        });
+
+        Promise.all([
+            importLibrary("maps"),
+            importLibrary("places"),
+            importLibrary("geocoding"),
+            importLibrary("marker")
+        ]).then(() => {
+            googleRef.current = google;
+            if (latitude && longitude && mapRef.current) {
+                initMap(latitude, longitude);
+            }
+        }).catch(err => {
+            console.error("Google Maps failed to load", err as Error);
+            setError("Map engine failed to initialize.");
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const initMap = (lat: number, lng: number) => {
+        if (!googleRef.current || !mapRef.current) return;
+
+        const center = { lat, lng };
+        const mapOptions: google.maps.MapOptions = {
+            center,
+            zoom: 16,
+            disableDefaultUI: true,
+            zoomControl: true,
+            styles: [
+                {
+                    "featureType": "poi",
+                    "elementType": "labels",
+                    "stylers": [{ "visibility": "off" }]
+                }
+            ]
+        };
+
+        if (!mapInstanceRef.current) {
+            mapInstanceRef.current = new googleRef.current.maps.Map(mapRef.current, mapOptions);
+            
+            markerRef.current = new googleRef.current.maps.Marker({
+                position: center,
+                map: mapInstanceRef.current,
+                draggable: true,
+                animation: googleRef.current.maps.Animation.DROP
+            });
+
+            markerRef.current?.addListener('dragend', () => {
+                const pos = markerRef.current?.getPosition();
+                if (pos) {
+                    handleReverseGeocode(pos.lat(), pos.lng());
+                }
+            });
+        } else {
+            mapInstanceRef.current.setCenter(center);
+            markerRef.current?.setPosition(center);
+        }
+    };
+
+    // --- Search Logic ---
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (searchQuery.trim().length > 2 && searchQuery !== location) {
@@ -37,134 +108,153 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 setSuggestions([])
                 setShowSuggestions(false)
             }
-        }, 600)
+        }, 400)
 
         return () => clearTimeout(timeoutId)
     }, [searchQuery, location])
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                inputRef.current &&
-                !inputRef.current.contains(event.target as Node) &&
-                suggestionsRef.current &&
-                !suggestionsRef.current.contains(event.target as Node)
-            ) {
-                setShowSuggestions(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
     const searchSuggestions = async (query: string) => {
-        if (!query.trim()) return
+        if (!query.trim() || !googleRef.current) return;
 
-        setIsSearching(true)
-        setError(null)
+        setIsSearching(true);
+        setError(null);
 
         try {
-            // Restrict search to Ghana using countrycodes=gh
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&countrycodes=gh`,
-                {
-                    headers: {
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'User-Agent': 'Trendiwear-App'
-                    }
+            const service = new googleRef.current.maps.places.AutocompleteService();
+            const request: google.maps.places.AutocompletionRequest = {
+                input: query,
+                componentRestrictions: { country: 'gh' }
+            };
+
+            service.getPlacePredictions(request, (predictions: google.maps.places.AutocompletePrediction[] | null, status: string) => {
+                if (googleRef.current && status === googleRef.current.maps.places.PlacesServiceStatus.OK && predictions) {
+                    const results: LocationSuggestion[] = predictions.map((p) => ({
+                        place_id: p.place_id,
+                        description: p.description,
+                        mainText: p.structured_formatting.main_text,
+                        secondaryText: p.structured_formatting.secondary_text
+                    }));
+                    setSuggestions(results);
+                    setShowSuggestions(results.length > 0);
+                } else {
+                    setSuggestions([]);
+                    setShowSuggestions(false);
                 }
-            )
-
-            if (!response.ok) throw new Error('Search failed')
-
-            const data = await response.json()
-
-            const results: LocationSuggestion[] = data.map((item: { place_id: number | string; display_name: string; lat: string; lon: string }) => ({
-                place_id: item.place_id,
-                description: item.display_name,
-                lat: parseFloat(item.lat),
-                lng: parseFloat(item.lon),
-            }))
-
-            setSuggestions(results)
-            setShowSuggestions(results.length > 0)
+                setIsSearching(false);
+            });
         } catch (err) {
-            console.error('Error searching location:', err)
-            setError('Geospatial indexing failed. Please try a different query.')
-        } finally {
-            setIsSearching(false)
+            console.error('Error searching location:', err);
+            setIsSearching(false);
         }
-    }
+    };
 
     const handleSuggestionSelect = (suggestion: LocationSuggestion) => {
-        onLocationChange(suggestion.lat, suggestion.lng, suggestion.description)
-        setSearchQuery(suggestion.description)
-        setShowSuggestions(false)
-    }
+        if (!googleRef.current) return;
+
+        setIsSearching(true);
+        const geocoder = new googleRef.current.maps.Geocoder();
+        
+        geocoder.geocode({ placeId: suggestion.place_id }, (results: google.maps.GeocoderResult[] | null, status: string) => {
+            if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
+                const { lat, lng } = results[0].geometry.location;
+                const address = results[0].formatted_address;
+                
+                onLocationChange(lat(), lng(), address);
+                setSearchQuery(address);
+                initMap(lat(), lng());
+            } else {
+                setError("Failed to resolve location details.");
+            }
+            setIsSearching(false);
+            setShowSuggestions(false);
+        });
+    };
+
+    const handleReverseGeocode = (lat: number, lng: number) => {
+        if (!googleRef.current) return;
+
+        const geocoder = new googleRef.current.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results: google.maps.GeocoderResult[] | null, status: string) => {
+            if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
+                const address = results[0].formatted_address;
+                onLocationChange(lat, lng, address);
+                setSearchQuery(address);
+            }
+        });
+    };
 
     const handleDetectLocation = () => {
         if (!navigator.geolocation) {
-            setError('Geolocation not supported.')
-            return
+            setError('Geolocation not supported.');
+            return;
         }
 
-        setIsSearching(true)
+        setIsSearching(true);
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const { latitude: lat, longitude: lng } = position.coords
+            (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                
+                if (googleRef.current) {
+                    const geocoder = new googleRef.current.maps.Geocoder();
+                    geocoder.geocode({ location: { lat, lng } }, (results: google.maps.GeocoderResult[] | null, status: string) => {
+                        if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
+                            // Security check: Verify if in Ghana (though restricted in query before, we check result here too)
+                            const isGhana = results[0].address_components.some((comp) => 
+                                comp.short_name === 'GH' || comp.long_name === 'Ghana'
+                            );
 
-                try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-                        {
-                            headers: { 'User-Agent': 'Trendiwear-App' }
+                            if (!isGhana) {
+                                setError('Registration is currently only available for locations in Ghana.');
+                                setIsSearching(false);
+                                return;
+                            }
+
+                            const address = results[0].formatted_address;
+                            onLocationChange(lat, lng, address);
+                            setSearchQuery(address);
+                            initMap(lat, lng);
+                        } else {
+                            setError('Failed to resolve detected coordinates.');
                         }
-                    )
-                    const data = await res.json()
-                    
-                    // Verify if the location is in Ghana
-                    const countryCode = data.address?.country_code;
-                    if (countryCode && countryCode.toLowerCase() !== 'gh') {
-                        setError('Registration is currently only available for locations in Ghana.');
                         setIsSearching(false);
-                        return;
-                    }
-
-                    const address = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-
-                    onLocationChange(lat, lng, address)
-                    setSearchQuery(address)
-                    setIsSearching(false)
-                } catch {
-                    setError('Failed to resolve detected coordinates. Please search manually.')
-                    setIsSearching(false)
+                    });
                 }
             },
             () => {
-                setIsSearching(false)
-                setError('Access to location coordinates denied.')
+                setIsSearching(false);
+                setError('Access to location coordinates denied.');
             }
-        )
-    }
+        );
+    };
+
+    // Close suggestions on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
-        <div className="space-y-6 relative group">
+        <div className="space-y-6 relative">
             <div className="space-y-3">
                 <div className="flex items-center justify-between pb-1">
                     <Label htmlFor="location-search" className="text-stone-500 text-[10px] font-semibold uppercase tracking-[0.25em] flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-stone-900" />
-                        Precise Business Address
+                        <div className="w-1.5 h-1.5 rounded-full bg-stone-900" />
+                        Business Workshop Address
                     </Label>
                     <motion.button
-                        whileHover={{ y: -1 }}
+                        whileHover={{ y: -1, backgroundColor: '#f5f5f4' }}
                         whileTap={{ y: 0 }}
                         type="button"
                         onClick={handleDetectLocation}
-                        className="text-[10px] font-bold uppercase tracking-widest text-stone-900 hover:text-stone-600 transition-colors flex items-center gap-2 bg-stone-100 px-4 py-2 rounded-full border border-stone-200"
+                        className="text-[10px] font-bold uppercase tracking-widest text-stone-900 flex items-center gap-2 bg-stone-100 px-4 py-2 rounded-full border border-stone-200 transition-all"
                     >
                         <Navigation size={10} className={isSearching ? 'animate-pulse' : ''} />
-                        Detect My Coordinates
+                        Detect Me
                     </motion.button>
                 </div>
 
@@ -175,16 +265,12 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                        placeholder="Search for your location..."
+                        placeholder="e.g. Osu, Accra or Kumasi Central..."
                         className="bg-white border-stone-200 text-stone-900 placeholder-stone-400 focus:ring-0 focus:border-stone-900 h-14 rounded-2xl pl-12 pr-12 transition-shadow hover:shadow-sm"
                         required
                     />
                     <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                        {isSearching ? (
-                            <Loader2 size={18} className="animate-spin text-stone-400" />
-                        ) : (
-                            <Search size={18} className="text-stone-300 transition-colors" />
-                        )}
+                        {isSearching ? <Loader2 size={18} className="animate-spin text-stone-400" /> : <Search size={18} className="text-stone-300" />}
                     </div>
                     {searchQuery && (
                         <button
@@ -198,11 +284,7 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 </div>
 
                 {error && (
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-[10px] font-bold uppercase tracking-widest text-red-500 px-2"
-                    >
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] font-bold uppercase tracking-widest text-red-500 px-2">
                         {error}
                     </motion.p>
                 )}
@@ -216,108 +298,77 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 5 }}
-                        className="absolute z-[60] w-full mt-2 bg-white/95 backdrop-blur-xl border border-stone-200 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.08)] overflow-hidden"
+                        className="absolute z-[100] w-full mt-2 bg-white/95 backdrop-blur-xl border border-stone-200 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden"
                     >
-                        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Search Results</span>
-                            <Globe size={12} className="text-stone-200" />
+                        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Search Results — Ghana</span>
+                            <Globe size={11} className="text-stone-400" />
                         </div>
-                        <div className="max-h-80 overflow-y-auto custom-scrollbar italic-none">
-                            {suggestions.map((suggestion, idx) => (
-                                <motion.button
+                        <div className="max-h-80 overflow-y-auto">
+                            {suggestions.map((suggestion) => (
+                                <button
                                     key={suggestion.place_id}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: idx * 0.03 }}
                                     onClick={() => handleSuggestionSelect(suggestion)}
-                                    className="w-full text-left px-6 py-5 hover:bg-stone-50 border-b border-stone-50 last:border-b-0 group/item transition-colors"
+                                    className="w-full text-left px-6 py-4 hover:bg-stone-50 border-b border-stone-50 last:border-b-0 group transition-colors"
                                 >
                                     <div className="flex items-start gap-4">
-                                        <div className="mt-1 w-9 h-9 rounded-xl bg-stone-50 border border-stone-100 flex items-center justify-center group-hover/item:bg-white transition-colors">
-                                            <MapPin size={15} className="text-stone-400 group-hover/item:text-stone-900" />
+                                        <div className="mt-1 w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center group-hover:bg-stone-900 transition-colors">
+                                            <MapPin size={14} className="text-stone-400 group-hover:text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-semibold text-sm text-stone-800 group-hover/item:text-black truncate">
-                                                {suggestion.description.split(',')[0]}
-                                            </div>
-                                            <div className="text-[11px] text-stone-400 group-hover/item:text-stone-500 truncate mt-1">
-                                                {suggestion.description.split(',').slice(1).join(',').trim()}
-                                            </div>
+                                            <div className="font-semibold text-sm text-stone-900 truncate tracking-tight">{suggestion.mainText}</div>
+                                            <div className="text-[11px] text-stone-400 truncate mt-0.5">{suggestion.secondaryText}</div>
                                         </div>
+                                        <ChevronRight size={14} className="mt-2 text-stone-300" />
                                     </div>
-                                </motion.button>
+                                </button>
                             ))}
-                        </div>
-                        <div className="px-6 py-4 bg-stone-50/50 flex items-center gap-3">
-                            <Info size={11} className="text-stone-300" />
-                            <p className="text-[10px] text-stone-400 font-medium">
-                                Provided by the open community at OpenStreetMap.
-                            </p>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {latitude && longitude && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white p-7 rounded-[2rem] border border-stone-200 shadow-sm relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 opacity-50" />
-                        
-                        <div className="flex items-start justify-between relative">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center">
-                                        <Check size={12} className="text-emerald-700" />
-                                    </div>
-                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.25em] text-stone-900">
-                                        Verification Secured
-                                    </h4>
-                                </div>
-                                <p className="text-stone-900 text-lg font-serif mb-5 line-clamp-2 leading-tight">
-                                    {location}
-                                </p>
-                                
-                                <div className="flex items-center gap-6">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                        <span className="text-[11px] font-mono font-bold text-stone-400 tracking-tighter">
-                                            {latitude.toFixed(6)} / {longitude.toFixed(6)}
-                                        </span>
-                                    </div>
-                                    <a 
-                                        href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=16`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold uppercase tracking-[0.15em] text-stone-900 hover:underline flex items-center gap-2"
-                                    >
-                                        <MapIcon size={12} />
-                                        Examine Map
-                                    </a>
-                                </div>
-                            </div>
+            {/* Visual Map Area */}
+            <div className={latitude && longitude ? "block" : "hidden"}>
+                <div 
+                    ref={mapRef} 
+                    className="w-full h-56 rounded-3xl bg-stone-100 border-2 border-stone-100 overflow-hidden shadow-inner grayscale-[0.2]"
+                />
+                
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-5 bg-white border border-stone-100 rounded-3xl flex items-start gap-4 shadow-sm"
+                >
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <Check size={18} className="text-emerald-600" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pin Location Verified</p>
+                        <p className="text-sm text-stone-700 leading-relaxed max-w-[280px]">{location}</p>
+                        <div className="pt-2 flex items-center gap-3">
+                            <span className="text-[10px] font-mono text-stone-400">{latitude?.toFixed(6)}</span>
+                            <span className="text-stone-200">|</span>
+                            <span className="text-[10px] font-mono text-stone-400">{longitude?.toFixed(6)}</span>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                </motion.div>
+            </div>
+
+            {!latitude && (
+                <div className="p-10 border-2 border-dashed border-stone-100 rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="w-12 h-12 bg-stone-50 rounded-full flex items-center justify-center">
+                        <MapIcon className="text-stone-200" size={24} />
+                    </div>
+                    <p className="text-xs text-stone-400 max-w-[200px] leading-relaxed">
+                        Search or detect your location to pin it on the map. Drag the marker if needed.
+                    </p>
+                </div>
+            )}
             
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 5px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #e7e5e4;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #d6d3d1;
-                }
+                .gm-style-cc { display: none !important; }
+                .gm-svpc { display: none !important; }
             `}</style>
         </div>
     )

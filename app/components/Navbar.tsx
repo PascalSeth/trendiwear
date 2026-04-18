@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, ShoppingBag, Plus, Layout, ArrowRight } from "lucide-react";
+import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, Plus, Layout, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useSWR, { useSWRConfig } from "swr";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,12 +60,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   }, []);
 
   const { mutate } = useSWRConfig();
-  const { data: batchData } = useSWR(user ? `/api/batch` : null, fetcher, { refreshInterval: 10000 });
-
-  const [clearedCategories, setClearedCategories] = useState<Set<string>>(new Set());
-  const notifications = batchData?.notifications?.unread || [];
-  const unreadMessagesCount = batchData?.notifications?.unreadMessagesCount || 0;
-  const unreadCount = notifications.length + unreadMessagesCount;
+  useSWR(user ? `/api/batch` : null, fetcher, { refreshInterval: 10000 });
 
   const CATEGORY_TYPES: Record<string, string[]> = {
     'Messages': ['MESSAGE_RECEIVED'],
@@ -74,15 +69,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     'Dashboard': ['PAYMENT_RECEIVED', 'PAYMENT_RELEASED', 'REVIEW_RECEIVED', 'DELIVERY_CONFIRMATION_REQUEST', 'STOCK_ALERT']
   };
 
-  const hasUnreadCategory = (label: string) => {
-    if (clearedCategories.has(label)) return false;
-    if (label === 'Messages') return unreadMessagesCount > 0;
-    const types = CATEGORY_TYPES[label] || [];
-    return notifications.some((n: { type: string }) => types.includes(n.type));
-  };
-
   const handleCategoryClick = async (label: string) => {
-    setClearedCategories(prev => new Set(prev).add(label));
     try {
       if (label === 'Messages') await fetch('/api/conversations', { method: 'PATCH' });
       const types = CATEGORY_TYPES[label];

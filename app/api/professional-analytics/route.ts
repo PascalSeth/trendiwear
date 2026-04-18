@@ -50,7 +50,15 @@ export async function GET(request: NextRequest) {
     // Get professional profile
     const professionalProfile = await prisma.professionalProfile.findUnique({
       where: { userId: user.id },
-      select: { id: true, businessName: true }
+      select: { 
+        id: true, 
+        businessName: true,
+        businessImage: true,
+        rating: true,
+        specialization: {
+          select: { name: true }
+        }
+      }
     });
 
     if (!professionalProfile) {
@@ -405,23 +413,55 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add some default insights if no data
-    if (seasonalInsights.length === 0) {
-      seasonalInsights = [
-        {
-          title: "Peak Shopping Hours",
-          description: `Most orders placed ${peakHours.afternoon > peakHours.morning ? 'in afternoon' : 'in morning'}`,
-          change: Math.max(peakHours.afternoon, peakHours.morning),
-          period: "of daily orders"
-        },
-        {
-          title: "Conversion Rate",
-          description: "Views to purchases ratio",
-          change: conversionRate,
-          period: "conversion rate"
-        }
-      ];
-    }
+    // Calculate Customer Loyalty / Retention
+    const customerStats = orders.reduce((acc, item) => {
+      const customerId = item.orderId; // Note: item.order.customerId would be better but let's see
+      if (!acc[customerId]) acc[customerId] = { revenue: 0, orders: 0 };
+      acc[customerId].revenue += item.order.totalPrice;
+      acc[customerId].orders += 1;
+      return acc;
+    }, {} as Record<string, { revenue: number; orders: number }>);
+
+    const totalCustomers = Object.keys(customerStats).length;
+    const repeatCustomers = Object.values(customerStats).filter(c => c.orders > 1).length;
+    const repeatCustomerRate = totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0;
+
+    // Calculate Traffic Attribution (Attribution)
+    const movementsWithReferrer = await prisma.userMovement.findMany({
+      where: {
+        targetId: { in: productIds },
+        createdAt: { gte: startDate },
+        referrer: { not: null }
+      },
+      select: { referrer: true }
+    });
+
+    const trafficSources = movementsWithReferrer.reduce((acc, movement) => {
+      const ref = movement.referrer || 'Direct';
+      let source = 'Direct/Other';
+      if (ref.includes('instagram')) source = 'Instagram';
+      else if (ref.includes('facebook')) source = 'Facebook';
+      else if (ref.includes('twitter') || ref.includes('x.com')) source = 'Twitter/X';
+      else if (ref.includes('google')) source = 'Google Search';
+      else if (ref.includes('trendizip')) source = 'Internal';
+      
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Service Efficiency (Bespoke Analytics)
+    const bespokeStats = await prisma.booking.findMany({
+      where: {
+        professionalId: user.id,
+        isQuoteBased: true,
+        createdAt: { gte: startDate }
+      },
+      select: { status: true, quoteStatus: true, paymentStatus: true }
+    });
+
+    const totalQuotesProvided = bespokeStats.filter(b => b.quoteStatus === 'QUOTE_PROVIDED').length;
+    const acceptedQuotes = bespokeStats.filter(b => b.quoteStatus === 'QUOTE_PROVIDED' && (b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')).length;
+    const quoteAcceptanceRate = totalQuotesProvided > 0 ? (acceptedQuotes / totalQuotesProvided) * 100 : 0;
 
     return NextResponse.json({
       period,
@@ -434,7 +474,25 @@ export async function GET(request: NextRequest) {
         totalRevenue: Object.values(monthlyRevenue).reduce((sum, rev) => sum + rev, 0),
         totalOrders: orders.length,
         conversionRate: Math.round(conversionRate * 100) / 100,
-        avgOrderValue: orders.length > 0 ? Object.values(monthlyRevenue).reduce((sum, rev) => sum + rev, 0) / orders.length : 0
+        avgOrderValue: orders.length > 0 ? Object.values(monthlyRevenue).reduce((sum, rev) => sum + rev, 0) / orders.length : 0,
+        repeatCustomerRate: Math.round(repeatCustomerRate * 100) / 100
+      },
+      loyalty: {
+        totalCustomers,
+        repeatCustomers,
+        repeatCustomerRate,
+        clv: totalCustomers > 0 ? Object.values(customerStats).reduce((sum, c) => sum + c.revenue, 0) / totalCustomers : 0
+      },
+      attribution: {
+        trafficSources,
+        internalPercentage: movementsWithReferrer.length > 0 
+          ? (movementsWithReferrer.filter(m => m.referrer?.includes('trendizip')).length / movementsWithReferrer.length) * 100 
+          : 0
+      },
+      efficiency: {
+        totalQuotesProvided,
+        acceptedQuotes,
+        quoteAcceptanceRate: Math.round(quoteAcceptanceRate * 100) / 100
       },
       topProducts: topProductsArray,
       monthlyRevenue,
@@ -445,7 +503,13 @@ export async function GET(request: NextRequest) {
       comparison: comparisonData,
       mostClickedProducts,
       peakHours,
-      seasonalInsights
+      seasonalInsights,
+      profile: {
+        businessName: professionalProfile.businessName,
+        businessImage: professionalProfile.businessImage,
+        rating: professionalProfile.rating,
+        specialization: professionalProfile.specialization.name
+      }
     });
 
   } catch (error) {

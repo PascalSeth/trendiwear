@@ -33,7 +33,7 @@ const EMPTY_FORM = {
   city: '',
   state: '',
   zipCode: '',
-  country: 'Kenya',
+  country: 'Ghana',
   latitude: null as number | null,
   longitude: null as number | null,
   isDefault: false,
@@ -208,13 +208,13 @@ function AddressForm({
         </div>
 
         <div className="form-grid two-col">
-          <Field label="City" id="ci" value={form.city} onChange={set('city')} required placeholder="Nairobi" />
-          <Field label="State / Province" id="stt" value={form.state} onChange={set('state')} required placeholder="Nairobi County" />
+          <Field label="City" id="ci" value={form.city} onChange={set('city')} required placeholder="Accra" />
+          <Field label="State / Province" id="stt" value={form.state} onChange={set('state')} required placeholder="Greater Accra" />
         </div>
 
         <div className="form-grid two-col">
-          <Field label="ZIP / Postal code" id="zp" value={form.zipCode} onChange={set('zipCode')} required placeholder="00100" />
-          <Field label="Country" id="co" value={form.country} onChange={set('country')} required placeholder="Kenya" />
+          <Field label="ZIP / Postal code" id="zp" value={form.zipCode} onChange={set('zipCode')} required placeholder="GA-123-4567" />
+          <Field label="Country" id="co" value={form.country} onChange={set('country')} required placeholder="Ghana" />
         </div>
 
         <AnimatePresence>

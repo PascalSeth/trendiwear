@@ -97,7 +97,7 @@ export async function GET() {
         subscription,
         canAddProducts: canAccess,
         canCreateServices: canAccess,
-        canViewAnalytics: canAccess && analyticsAccess,
+        canViewAnalytics: isTrialActive || (hasActiveSubscription && analyticsAccess),
         canUploadVideo: canAccess,
         subscriptionStatus: subscription?.status || (isTrialActive ? 'TRIAL' : 'INACTIVE'),
         isTrialActive,

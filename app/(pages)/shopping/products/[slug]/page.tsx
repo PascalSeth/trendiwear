@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { getAuthSession } from '@/lib/auth';
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
+import { AnalyticsTracker } from '@/lib/analytics';
+import { headers } from 'next/headers';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -164,6 +166,24 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (!product) {
     return notFound();
   }
+
+  // Track view realistically (Server-side)
+  const headerList = await headers();
+  const ip = headerList.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+  const userAgent = headerList.get('user-agent') || 'unknown';
+  const referrer = headerList.get('referer') || undefined;
+
+  // Fire and forget (optional: await if you want to be absolute)
+  AnalyticsTracker.trackMovement(
+    session?.user?.id || null,
+    'VIEW_PRODUCT',
+    'PRODUCT',
+    product.id,
+    referrer,
+    undefined, // sessionId could be added if available from cookies
+    ip,
+    userAgent
+  );
 
   // Hydrate with clean, serialized data
   const initialData = JSON.parse(JSON.stringify(product));

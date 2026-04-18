@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, Upload, ChevronLeft, Check, Store, 
@@ -58,6 +58,66 @@ interface StepIdentityProps {
 }
 
 // --- Sub-Components (Defined outside to prevent focus loss) ---
+
+const LoginPrompt = () => {
+  const router = useRouter();
+  
+  return (
+    <div className="fixed inset-0 z-[100] bg-stone-950 flex flex-col items-center justify-center p-6 text-center select-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-full max-w-sm space-y-12"
+      >
+        <div className="flex flex-col items-center gap-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, rotate: -10 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+            className="p-4 bg-white/5 rounded-[2.5rem] backdrop-blur-2xl border border-white/10 shadow-2xl"
+          >
+            <Image 
+              src="/navlogo.png" 
+              alt="TrendiZip" 
+              width={64} 
+              height={64} 
+              className="object-contain"
+            />
+          </motion.div>
+          <div className="space-y-4">
+            <h2 className="text-3xl font-serif text-stone-50 tracking-tight leading-tight">Access Restricted</h2>
+            <p className="text-stone-500 text-[13px] leading-relaxed max-w-[280px] mx-auto font-medium">
+              You need to login to your TrendiZip account to register as a professional.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 w-full px-2">
+          <Button 
+            onClick={() => signIn(undefined, { callbackUrl: '/register-as-professional' })}
+            className="h-16 rounded-2xl bg-stone-50 text-stone-950 hover:bg-white font-mono text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-stone-50/5 transition-all group overflow-hidden relative"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              Log in to continue <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </span>
+          </Button>
+          <button 
+            type="button"
+            onClick={() => router.push('/')}
+            className="text-stone-600 hover:text-stone-300 transition-colors py-4 font-mono text-[9px] uppercase tracking-[0.3em] font-bold"
+          >
+            Cancel and Return Home
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Background Decorative Element */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-stone-400/5 rounded-full blur-[120px] -z-10" />
+    </div>
+  );
+};
+
 
 const StepIdentity = ({ 
   formData, setFormData, professionalTypes, selectedSpecialization, setSelectedSpecialization 
@@ -308,7 +368,7 @@ const StepConnectivity = ({
 
 export default function RegisterProfessionalForm() {
   const router = useRouter();
-  const { update } = useSession();
+  const { status, update } = useSession();
   
   // --- Form State ---
   const [currentStep, setCurrentStep] = useState(1);
@@ -473,8 +533,38 @@ export default function RegisterProfessionalForm() {
     }
   };
 
+
+  if (status === "loading") {
+    return (
+      <div className="fixed inset-0 z-[100] bg-stone-950 flex flex-col items-center justify-center p-6 text-center">
+        <motion.div
+          animate={{ 
+            rotate: [0, 360],
+            opacity: [0.5, 1, 0.5]
+          }}
+          transition={{ 
+            duration: 2, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+          className="relative"
+        >
+          <div className="w-16 h-16 rounded-3xl border-2 border-stone-800 flex items-center justify-center">
+             <Loader2 size={24} className="text-stone-500" />
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-stone-400/5 rounded-full blur-2xl -z-10" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return <LoginPrompt />;
+  }
+
   return (
     <div className="fixed inset-0 z-40 bg-stone-50 selection:bg-stone-900 selection:text-white overflow-hidden pt-[72px] lg:pt-[88px]">
+
       {/* Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-40">
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-200/30 blur-[120px] rounded-full" />

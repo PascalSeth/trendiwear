@@ -74,48 +74,76 @@ export class AnalyticsTracker {
         const productId = targetId;
 
         switch (action) {
-          case 'VIEW_PRODUCT':
-            if (userId === null) {
-              // Increment for anonymous users
+          case 'VIEW_PRODUCT': {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            
+            // Check for previous view within 24h
+            const previousView = await prisma.userMovement.findFirst({
+              where: {
+                action: 'VIEW_PRODUCT',
+                targetId: productId,
+                createdAt: { gte: twentyFourHoursAgo },
+                OR: [
+                  userId ? { userId } : { id: 'non-existent' }, // If logged in, check by ID
+                  ipAddress ? { ipAddress } : { id: 'non-existent' } // For guests, check by IP
+                ]
+              }
+            });
+
+            if (!previousView) {
+              // 1. Increment on main Product model (Legacy/Quick access)
               await prisma.product.update({
                 where: { id: productId },
                 data: { viewCount: { increment: 1 } }
               });
-            } else {
-              // Check if logged-in user has already viewed this product
-              const existingView = await prisma.userMovement.findFirst({
-                where: {
-                  userId,
-                  action: 'VIEW_PRODUCT',
-                  targetId: productId
-                }
+
+              // 2. Increment total views on ProductAnalytics
+              await prisma.productAnalytics.upsert({
+                where: { productId },
+                create: { productId, totalViews: 1 },
+                update: { totalViews: { increment: 1 } }
               });
-              if (!existingView) {
-                // Only increment if it's the first view by this user
-                await prisma.product.update({
-                  where: { id: productId },
-                  data: { viewCount: { increment: 1 } }
-                });
-              }
+
+              // 3. Update daily performance snapshot
+              await this.updateProductPerformance(productId);
             }
             break;
+          }
           case 'ADD_TO_WISHLIST':
             await prisma.product.update({
               where: { id: productId },
               data: { wishlistCount: { increment: 1 } }
             });
+            await prisma.productAnalytics.upsert({
+              where: { productId },
+              create: { productId, totalWishlisted: 1 },
+              update: { totalWishlisted: { increment: 1 } }
+            });
+            await this.updateProductPerformance(productId);
             break;
           case 'ADD_TO_CART':
             await prisma.product.update({
               where: { id: productId },
               data: { cartCount: { increment: 1 } }
             });
+            await prisma.productAnalytics.upsert({
+              where: { productId },
+              create: { productId, totalCartAdds: 1 },
+              update: { totalCartAdds: { increment: 1 } }
+            });
+            await this.updateProductPerformance(productId);
             break;
           case 'PURCHASE':
             await prisma.product.update({
               where: { id: productId },
               data: { soldCount: { increment: 1 } }
             });
+            await prisma.productAnalytics.upsert({
+              where: { productId },
+              create: { productId, totalPurchases: 1 },
+              update: { totalPurchases: { increment: 1 } }
+            });
+            await this.updateProductPerformance(productId);
             break;
         }
       }

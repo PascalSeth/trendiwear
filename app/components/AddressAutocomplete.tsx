@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from '@/components/ui/input'
-import { MapPin, Search, Loader2, X, Navigation } from 'lucide-react'
+import { MapPin, Search, Loader2, X, Navigation, Globe, ChevronRight } from 'lucide-react'
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
 
 export interface AddressResult {
   street: string
@@ -15,24 +16,11 @@ export interface AddressResult {
   longitude: number
 }
 
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address: {
-    road?: string;
-    pedestrian?: string;
-    suburb?: string;
-    city?: string;
-    town?: string;
-    village?: string;
-    county?: string;
-    state?: string;
-    region?: string;
-    postcode?: string;
-    country?: string;
-  };
+interface GooglePrediction {
+  place_id: string
+  description: string
+  mainText: string
+  secondaryText: string
 }
 
 interface AddressAutocompleteProps {
@@ -50,103 +38,124 @@ export default function AddressAutocomplete({
   label = "Street Address",
   placeholder = "Search for your address..."
 }: AddressAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([])
+  const [suggestions, setSuggestions] = useState<GooglePrediction[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
+  const googleRef = useRef<typeof google | null>(null)
+
+  // --- Initialization ---
+  useEffect(() => {
+    setOptions({
+      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      v: "weekly"
+    });
+
+    Promise.all([
+      importLibrary("places"),
+      importLibrary("geocoding")
+    ]).then(() => {
+      googleRef.current = google;
+    }).catch(err => {
+      console.error("Google Maps failed to load", err as Error);
+      setError("Search engine failed to initialize.");
+    });
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (value.trim().length > 3 && !suggestions.find(s => s.display_name === value)) {
+      if (value.trim().length > 3 && !suggestions.find(s => s.description === value)) {
         searchAddress(value)
       } else if (value.trim().length <= 3) {
         setSuggestions([])
         setShowSuggestions(false)
       }
-    }, 600)
+    }, 400)
 
     return () => clearTimeout(timeoutId)
-  }, [value, suggestions])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node) &&
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
 
   const searchAddress = async (query: string) => {
-    if (!query) return;
+    if (!query || !googleRef.current) return;
+    
     setIsSearching(true)
     setError(null)
 
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
-        {
-          headers: {
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'TrendiZip-Ghana-Verified-App'
-          }
-        }
-      )
+      const service = new googleRef.current.maps.places.AutocompleteService();
+      const request: google.maps.places.AutocompletionRequest = {
+        input: query,
+        componentRestrictions: { country: 'gh' }
+      };
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Service busy (rate limit). Please wait a moment.')
+      service.getPlacePredictions(request, (predictions: google.maps.places.AutocompletePrediction[] | null, status: string) => {
+        if (googleRef.current && status === googleRef.current.maps.places.PlacesServiceStatus.OK && predictions) {
+          const results: GooglePrediction[] = predictions.map((p) => ({
+            place_id: p.place_id,
+            description: p.description,
+            mainText: p.structured_formatting.main_text,
+            secondaryText: p.structured_formatting.secondary_text
+          }));
+          setSuggestions(results)
+          setShowSuggestions(results.length > 0)
+        } else {
+          setSuggestions([])
+          setShowSuggestions(false)
         }
-        throw new Error('Search service temporarily unavailable.')
-      }
-
-      const data = await response.json()
-      setSuggestions(data)
-      setShowSuggestions(data.length > 0)
-      if (data.length === 0) {
-        setError('No exact matches found. Try refining your search.')
-      }
+        setIsSearching(false)
+      });
     } catch (err) {
       console.error('Error searching address:', err)
-      setError(err instanceof Error ? err.message : 'Connection failed. Please check your internet or retry.')
-    } finally {
       setIsSearching(false)
     }
   }
 
-  const handleRetry = () => {
-    if (value.trim().length > 3) {
-      searchAddress(value)
-    }
-  }
+  const parseGoogleAddress = (place: google.maps.GeocoderResult | google.maps.places.PlaceResult): AddressResult => {
+    const components = place.address_components || [];
+    
+    const getComp = (types: string[]) => {
+      const comp = components.find((c) => types.some(t => c.types.includes(t)));
+      return comp ? comp.long_name : '';
+    };
 
-  const handleSelect = (item: NominatimResult) => {
-    const { address, lat, lon } = item;
-    const rawLat = parseFloat(lat)
-    const rawLon = parseFloat(lon)
+    const streetNumber = getComp(['street_number']);
+    const streetName = getComp(['route']);
+    const city = getComp(['locality', 'sublocality', 'neighborhood']);
+    const state = getComp(['administrative_area_level_1']);
+    const zipCode = getComp(['postal_code']);
+    const country = getComp(['country']);
 
-    const result: AddressResult = {
-      street: address.road || address.pedestrian || address.suburb || value,
-      city: address.city || address.town || address.village || address.county || '',
-      state: address.state || address.region || '',
-      zipCode: address.postcode || '',
-      country: address.country || 'Kenya',
-      latitude: isNaN(rawLat) ? 0 : rawLat,
-      longitude: isNaN(rawLon) ? 0 : rawLon
-    }
+    return {
+      street: streetNumber ? `${streetNumber} ${streetName}` : streetName || (place as google.maps.places.PlaceResult).name || value,
+      city: city || state || '',
+      state: state || '',
+      zipCode: zipCode || '',
+      country: country || 'Ghana',
+      latitude: place.geometry?.location?.lat() || 0,
+      longitude: place.geometry?.location?.lng() || 0
+    };
+  };
 
-    onAddressSelect(result)
-    onChange(result.street)
-    setShowSuggestions(false)
+  const handleSelect = (item: GooglePrediction) => {
+    if (!googleRef.current) return;
+    setIsSearching(true);
+
+    const geocoder = new googleRef.current.maps.Geocoder();
+    geocoder.geocode({ placeId: item.place_id }, (results: google.maps.GeocoderResult[] | null, status: string) => {
+      if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
+        const result = parseGoogleAddress(results[0]);
+        onAddressSelect(result);
+        onChange(result.street);
+      } else {
+        setError("Failed to resolve address details.");
+      }
+      setIsSearching(false);
+      setShowSuggestions(false);
+    });
   }
 
   const handleDetectLocation = () => {
@@ -158,46 +167,32 @@ export default function AddressAutocomplete({
     setIsSearching(true)
     setError(null)
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude: lat, longitude: lng } = position.coords
 
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-            {
-              headers: { 'User-Agent': 'Trendiwear-App' }
-            }
-          )
-          if (!res.ok) throw new Error('Reverse geocoding failed')
-          const data = await res.json()
-          
-          const result: AddressResult = {
-            street: data.address.road || data.address.pedestrian || data.address.suburb || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-            city: data.address.city || data.address.town || data.address.village || data.address.county || '',
-            state: data.address.state || data.address.region || '',
-            zipCode: data.address.postcode || '',
-            country: data.address.country || 'Kenya',
-            latitude: lat,
-            longitude: lng
-          }
+        if (googleRef.current) {
+          const geocoder = new googleRef.current.maps.Geocoder();
+          geocoder.geocode({ location: { lat, lng } }, (results: google.maps.GeocoderResult[] | null, status: string) => {
+            if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
+              // Security check: Verify if in Ghana
+              const isGhana = results[0].address_components.some((comp) => 
+                comp.short_name === 'GH' || comp.long_name === 'Ghana'
+              );
 
-          onAddressSelect(result)
-          onChange(result.street)
-          setIsSearching(false)
-        } catch (err) {
-          console.error('Error detecting location:', err)
-          const fallback: AddressResult = {
-            street: `Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-            city: '',
-            state: '',
-            zipCode: '',
-            country: 'Kenya',
-            latitude: lat,
-            longitude: lng
-          }
-          onAddressSelect(fallback)
-          onChange(fallback.street)
-          setIsSearching(false)
+              if (!isGhana) {
+                setError('Registration is currently only available for locations in Ghana.');
+                setIsSearching(false);
+                return;
+              }
+
+              const result = parseGoogleAddress(results[0]);
+              onAddressSelect(result)
+              onChange(result.street)
+            } else {
+              setError('Failed to resolve coordinates.')
+            }
+            setIsSearching(false)
+          });
         }
       },
       () => {
@@ -207,6 +202,17 @@ export default function AddressAutocomplete({
       { enableHighAccuracy: true }
     )
   }
+
+  // Close suggestions on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <div className="space-y-2 relative group">
@@ -260,15 +266,6 @@ export default function AddressAutocomplete({
             <p className="text-[9px] font-bold text-amber-700 uppercase tracking-widest px-1">
               {error}
             </p>
-            {error.includes('Connection') || error.includes('busy') || error.includes('failed') ? (
-              <button
-                type="button"
-                onClick={handleRetry}
-                className="text-[9px] font-black uppercase tracking-widest bg-amber-200 text-amber-800 px-2 py-1 rounded hover:bg-amber-300 transition-colors"
-              >
-                Retry
-              </button>
-            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -280,25 +277,32 @@ export default function AddressAutocomplete({
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
-            className="absolute z-[61] w-full mt-1 bg-white border border-stone-100 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.06)] overflow-hidden"
+            className="absolute z-[61] w-full mt-1 bg-white/95 backdrop-blur-xl border border-stone-200 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden"
           >
+            <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-400">Search Results — Ghana</span>
+                <Globe size={11} className="text-stone-400" />
+            </div>
              <div className="max-h-64 overflow-y-auto custom-scrollbar">
               {suggestions.map((item) => (
                 <button
                   key={item.place_id}
                   onClick={() => handleSelect(item)}
-                  className="w-full text-left px-5 py-3.5 hover:bg-stone-50 border-b border-stone-50 last:border-b-0 group/item transition-colors"
+                  className="w-full text-left px-5 py-3.5 hover:bg-stone-50 border-b border-stone-50 last:border-b-0 group transition-colors"
                 >
-                  <div className="flex items-start gap-3">
-                    <MapPin size={14} className="text-stone-300 group-hover/item:text-stone-900 mt-0.5 flex-shrink-0" />
-                    <div className="min-w-0 text-ellipsis overflow-hidden">
-                      <div className="font-semibold text-xs text-stone-800 group-hover/item:text-black truncate">
-                        {item.display_name.split(',')[0]}
+                  <div className="flex items-start gap-4">
+                    <div className="mt-1 w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center group-hover:bg-stone-900 transition-colors">
+                      <MapPin size={14} className="text-stone-400 group-hover:text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-xs text-stone-900 group-hover:text-black truncate tracking-tight">
+                        {item.mainText}
                       </div>
-                      <div className="text-[10px] text-stone-500 group-hover/item:text-stone-600 truncate mt-0.5">
-                        {item.display_name.split(',').slice(1).join(',').trim()}
+                      <div className="text-[10px] text-stone-400 group-hover:text-stone-600 truncate mt-0.5">
+                        {item.secondaryText}
                       </div>
                     </div>
+                    <ChevronRight size={14} className="mt-2 text-stone-200" />
                   </div>
                 </button>
               ))}

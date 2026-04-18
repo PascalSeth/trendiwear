@@ -26,7 +26,6 @@ import {
   Eye,
   DollarSign,
   Package,
-  BarChart3,
   Clock,
   Target,
   Activity,
@@ -94,12 +93,33 @@ interface AnalyticsData {
     evening: number;
     night: number;
   };
+  loyalty: {
+    totalCustomers: number;
+    repeatCustomers: number;
+    repeatCustomerRate: number;
+    clv: number;
+  };
+  attribution: {
+    trafficSources: Record<string, number>;
+    internalPercentage: number;
+  };
+  efficiency: {
+    totalQuotesProvided: number;
+    acceptedQuotes: number;
+    quoteAcceptanceRate: number;
+  };
   seasonalInsights: Array<{
     title: string;
     description: string;
     change: number;
     period: string;
   }>;
+  profile: {
+    businessName: string;
+    businessImage: string | null;
+    rating: number;
+    specialization: string;
+  };
 }
 
 export default function AnalyticsPage() {
@@ -129,10 +149,17 @@ export default function AnalyticsPage() {
   }, [period]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-GH', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'GHS'
     }).format(amount);
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
   };
 
   const formatPercentage = (value: number) => {
@@ -202,79 +229,114 @@ export default function AnalyticsPage() {
       <div className="min-h-screen bg-neutral-50">
         <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-neutral-900 tracking-tight">Analytics Dashboard</h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                Track your business performance and customer engagement
-              </p>
+        <div className="mb-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="flex items-center gap-5">
+               {analytics.profile?.businessImage ? (
+                  <img 
+                    src={analytics.profile.businessImage} 
+                    alt={analytics.profile.businessName}
+                    className="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white"
+                  />
+               ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                    {analytics.profile?.businessName?.charAt(0)}
+                  </div>
+               )}
+               <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="bg-white/50 backdrop-blur-sm border-indigo-100 text-indigo-700 px-3 py-0.5 rounded-full font-serif italic">
+                      {analytics.profile?.specialization || 'Professional'}
+                    </Badge>
+                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+                       <TrendingUp className="w-3 h-3" />
+                       {analytics.profile?.rating?.toFixed(1) || '5.0'} Rating
+                    </span>
+                  </div>
+                  <h1 className="text-4xl font-semibold text-neutral-900 tracking-tight font-serif italic">
+                    {getGreeting()}, {analytics.profile?.businessName.split(' ')[0]}
+                  </h1>
+                  <p className="text-neutral-500 mt-1 max-w-md">
+                    Here&apos;s how your {analytics.profile?.specialization.toLowerCase()} business is performing this period.
+                  </p>
+               </div>
             </div>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-                <SelectItem value="1y">Last year</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden md:block text-right mr-2">
+                 <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">Selected Period</p>
+                 <p className="text-xs text-neutral-500">
+                    {new Date(analytics.dateRange.start).toLocaleDateString()} - {new Date(analytics.dateRange.end).toLocaleDateString()}
+                 </p>
+              </div>
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger className="w-48 bg-white/50 backdrop-blur-sm border-neutral-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectItem value="1y">Last year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 border-none text-white shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium opacity-90 text-white">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 opacity-70" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(analytics.overview?.totalRevenue || 0)}</div>
-              <p className="text-xs text-muted-foreground">
-                From {analytics.overview?.totalOrders || 0} orders
+              <div className="text-3xl font-bold">{formatCurrency(analytics.overview?.totalRevenue || 0)}</div>
+              <p className="text-xs opacity-70 mt-1">
+                From {analytics.overview?.totalOrders || 0} transactions
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-neutral-600">
+                {analytics.profile?.specialization === 'Model' ? 'Profile Visibility' : 'Customer Loyalty'}
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatPercentage(analytics.overview?.conversionRate || 0)}</div>
-              <p className="text-xs text-muted-foreground">
-                Views to purchases
+              <div className="text-2xl font-bold text-neutral-900">
+                {analytics.profile?.specialization === 'Model' 
+                  ? `${analytics.overview?.totalProducts * 12} views` 
+                  : formatPercentage(analytics.loyalty?.repeatCustomerRate || 0)}
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                {analytics.profile?.specialization === 'Model' ? 'Profile & Portfolio hits' : 'Repeat purchaser rate'}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-neutral-600">Discovery Score</CardTitle>
+              <Activity className="h-4 w-4 text-indigo-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(analytics.overview?.avgOrderValue || 0)}</div>
-              <p className="text-xs text-muted-foreground">
-                Per transaction
-              </p>
+              <div className="text-2xl font-bold text-neutral-900">{Math.round(analytics.attribution.internalPercentage)}%</div>
+              <p className="text-xs text-neutral-500 mt-1">Trendizip internal discovery</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-neutral-600">Active Listings</CardTitle>
+              <Package className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.overview?.totalProducts || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Listed products
-              </p>
+              <div className="text-2xl font-bold text-neutral-900">{analytics.overview?.totalProducts || 0}</div>
+              <p className="text-xs text-neutral-500 mt-1">Live in store</p>
             </CardContent>
           </Card>
         </div>
@@ -315,9 +377,9 @@ export default function AnalyticsPage() {
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="discounts">Discounts</TabsTrigger>
-            <TabsTrigger value="engagement">Engagement</TabsTrigger>
+            <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
+            <TabsTrigger value="attribution">Traffic</TabsTrigger>
+            <TabsTrigger value="efficiency">Service Efficiency</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
           </TabsList>
 
@@ -381,72 +443,50 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* Seasonal Insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Seasonal Insights & Trends</CardTitle>
-                <CardDescription>Key patterns and seasonal performance</CardDescription>
+            <Card className="border-indigo-100 bg-white shadow-sm overflow-hidden">
+              <CardHeader className="bg-indigo-50/50 border-b border-indigo-100/50">
+                <CardTitle className="flex items-center gap-2 text-indigo-900">
+                   <Activity className="w-5 h-5" />
+                   {analytics.profile?.businessName} Growth Insights
+                </CardTitle>
+                <CardDescription>Tailored strategy for your {analytics.profile?.specialization.toLowerCase()} brand</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {analytics.seasonalInsights && analytics.seasonalInsights.length > 0 ? analytics.seasonalInsights.map((insight, index) => (
-                    <div key={index} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div key={index} className="p-4 border rounded-xl hover:bg-neutral-50 transition-colors">
                       <div className="flex items-start gap-3">
-                        <Activity className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <Target className="h-5 w-5 text-indigo-600 mt-0.5" />
                         <div>
-                          <h4 className="font-medium text-sm text-blue-900">{insight.title}</h4>
-                          <p className="text-xs text-blue-700 mt-1">{insight.description}</p>
+                          <h4 className="font-medium text-sm text-neutral-900">{insight.title}</h4>
+                          <p className="text-xs text-neutral-500 mt-1">{insight.description}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant={insight.change >= 0 ? "default" : "destructive"}>
+                            <Badge variant={insight.change >= 0 ? "secondary" : "destructive"} className="text-[10px] px-1.5 py-0">
                               {insight.change >= 0 ? '+' : ''}{typeof insight.change === 'number' && insight.change < 100 ? formatPercentage(insight.change) : insight.change}
                             </Badge>
-                            <span className="text-xs text-blue-600">{insight.period}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   )) : (
                     <>
-                      <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                      <div className="p-4 border rounded-xl bg-indigo-50/30">
                         <div className="flex items-start gap-3">
-                          <Target className="h-5 w-5 text-purple-600 mt-0.5" />
+                          <TrendingUp className="h-5 w-5 text-indigo-600 mt-0.5" />
                           <div>
-                            <h4 className="font-medium text-sm text-purple-900">December Trend</h4>
-                            <p className="text-xs text-purple-700 mt-1">Wedding gowns up 45%</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="default">+45.0%</Badge>
-                              <span className="text-xs text-purple-600">vs last year</span>
-                            </div>
+                            <h4 className="font-medium text-sm text-indigo-900">Discovery Alert</h4>
+                            <p className="text-xs text-indigo-700 mt-1">Your {analytics.profile?.specialization} profile is 20% more active today.</p>
                           </div>
                         </div>
                       </div>
-
-                      <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
-                        <div className="flex items-start gap-3">
-                          <Calendar className="h-5 w-5 text-green-600 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm text-green-900">Holiday Season Peak</h4>
-                            <p className="text-xs text-green-700 mt-1">Last week of December</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="default">85% of Q4 revenue</Badge>
-                              <span className="text-xs text-green-600">annual revenue</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-red-50">
-                        <div className="flex items-start gap-3">
-                          <TrendingUp className="h-5 w-5 text-orange-600 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-sm text-orange-900">Spring Collection</h4>
-                            <p className="text-xs text-orange-700 mt-1">Floral dresses trending</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="default">+32.5%</Badge>
-                              <span className="text-xs text-orange-600">this season</span>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="p-4 border rounded-xl bg-neutral-50">
+                         <div className="flex items-start gap-3">
+                           <Calendar className="h-5 w-5 text-neutral-500 mt-0.5" />
+                           <div>
+                             <h4 className="font-medium text-sm text-neutral-900">Seasonal Tip</h4>
+                             <p className="text-xs text-neutral-600 mt-1">High demand for {analytics.profile?.specialization.toLowerCase() === 'model' ? 'portfolios' : 'custom designs'} this month.</p>
+                           </div>
+                         </div>
                       </div>
                     </>
                   )}
@@ -760,70 +800,137 @@ export default function AnalyticsPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="insights" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Product Performance Insights */}
+          <TabsContent value="loyalty" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Product Performance Insights</CardTitle>
-                  <CardDescription>Detailed product analytics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analytics.productPerformance.slice(0, 5).map((product, index) => (
-                      <div key={index} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-sm">{product.product.name}</h4>
-                          <Badge variant="outline">{formatPercentage(product.conversionRate)} conv.</Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Views:</span>
-                            <span className="ml-1 font-medium">{product.views}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Purchases:</span>
-                            <span className="ml-1 font-medium">{product.purchases}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Revenue:</span>
-                            <span className="ml-1 font-medium">{formatCurrency(product.revenue)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Avg Price:</span>
-                            <span className="ml-1 font-medium">{formatCurrency(product.product.price)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+                 <CardHeader>
+                   <CardTitle className="text-sm font-medium">Repeat Customer Rate</CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="text-3xl font-bold">{formatPercentage(analytics.loyalty.repeatCustomerRate)}</div>
+                   <Progress value={analytics.loyalty.repeatCustomerRate} className="mt-2" />
+                 </CardContent>
               </Card>
-
-              {/* Market Trends */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Market Trends</CardTitle>
-                  <CardDescription>Trending searches in the market</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analytics.trendingSearches.slice(0, 6).map((trend, index) => (
-                      <div key={index} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-sm">&ldquo;{trend.searchTerm}&rdquo;</span>
-                          <Badge variant="outline">{trend.searchCount}</Badge>
-                        </div>
-                        <Progress
-                          value={Math.min((trend.searchCount / analytics.trendingSearches[0]?.searchCount) * 100, 100)}
-                          className="h-2"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+                 <CardHeader>
+                   <CardTitle className="text-sm font-medium">Total Unique Customers</CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="text-3xl font-bold">{analytics.loyalty.totalCustomers}</div>
+                   <p className="text-xs text-muted-foreground mt-1">{analytics.loyalty.repeatCustomers} returning</p>
+                 </CardContent>
+              </Card>
+              <Card>
+                 <CardHeader>
+                   <CardTitle className="text-sm font-medium">Customer Lifetime Value (Avg)</CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="text-3xl font-bold">{formatCurrency(analytics.loyalty.clv)}</div>
+                   <p className="text-xs text-muted-foreground mt-1">Average per customer</p>
+                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="attribution" className="space-y-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Traffic Origin Breakdown</CardTitle>
+                    <CardDescription>Where your customers are discovering you</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(analytics.attribution.trafficSources).map(([name, value]) => ({ name, value }))}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {Object.entries(analytics.attribution.trafficSources).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE'][index % 5]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                <Card>
+                   <CardHeader>
+                     <CardTitle>Internal vs External</CardTitle>
+                     <CardDescription>Platform discovery vs Social/Direct</CardDescription>
+                   </CardHeader>
+                   <CardContent className="flex flex-col items-center justify-center h-[300px]">
+                      <div className="text-5xl font-bold text-indigo-600">{Math.round(analytics.attribution.internalPercentage)}%</div>
+                      <p className="text-sm font-medium mt-2">Internal Platform Discovery</p>
+                      <p className="text-xs text-muted-foreground mt-1 text-center max-w-[200px]">Of your product views happen within TrendiZip&apos;s discovery logs</p>
+                   </CardContent>
+                </Card>
+             </div>
+          </TabsContent>
+
+          <TabsContent value="efficiency" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Quote Acceptance Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{formatPercentage(analytics.efficiency.quoteAcceptanceRate)}</div>
+                    <Progress value={analytics.efficiency.quoteAcceptanceRate} className="mt-2" />
+                  </CardContent>
+                </Card>
+                <Card className="md:col-span-2">
+                   <CardHeader>
+                     <CardTitle>Service Funnel (Bespoke)</CardTitle>
+                     <CardDescription>From Quote Provided to Accepted Booking</CardDescription>
+                   </CardHeader>
+                   <CardContent>
+                      <div className="flex items-center justify-between px-8 py-4">
+                        <div className="text-center">
+                           <div className="text-2xl font-bold">{analytics.efficiency.totalQuotesProvided}</div>
+                           <div className="text-xs text-muted-foreground">Quotes Sent</div>
+                        </div>
+                        <div className="h-0.5 flex-1 bg-muted-foreground/20 mx-4" />
+                        <div className="text-center">
+                           <div className="text-2xl font-bold">{analytics.efficiency.acceptedQuotes}</div>
+                           <div className="text-xs text-muted-foreground">Accepted</div>
+                        </div>
+                      </div>
+                   </CardContent>
+                </Card>
+            </div>
+          </TabsContent>
+          <TabsContent value="insights" className="space-y-6">
+            {/* Market Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Market Trends</CardTitle>
+                <CardDescription>Trending searches in the market</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {analytics.trendingSearches.slice(0, 6).map((trend, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">&ldquo;{trend.searchTerm}&rdquo;</span>
+                        <Badge variant="outline">{trend.searchCount}</Badge>
+                      </div>
+                      <Progress
+                        value={Math.min((trend.searchCount / (analytics.trendingSearches[0]?.searchCount || 1)) * 100, 100)}
+                        className="h-2"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

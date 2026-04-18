@@ -1,5 +1,4 @@
 import { requireAuth } from "@/lib/auth";
-import ServerDashboardShell from "@/app/dashboard/components/ServerDashboardShell";
 import { BookingsManager } from "./BookingsManager";
 import { Metadata } from "next";
 
@@ -21,10 +20,8 @@ export default async function DashboardBookingsPage() {
   }
 
   return (
-    <ServerDashboardShell>
-      <main className="p-8 md:p-12">
-        <BookingsManager />
-      </main>
-    </ServerDashboardShell>
+    <main className="p-8 md:p-12">
+      <BookingsManager />
+    </main>
   );
 }
