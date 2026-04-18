@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import useSWR from 'swr'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
+import OrderMap from '@/app/components/orders/OrderMap'
+
 
 // --- Types ---
 interface OrderItem {
@@ -478,6 +480,40 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
                     </button>
                  </div>
                )}
+
+               {/* Tracking Map Integration */}
+               {(currentOrder.address.latitude && currentOrder.address.longitude) && (
+                  <div className="pt-8 border-t border-stone-100 px-1">
+                    <div className="flex items-center justify-between mb-4">
+                       <h4 className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Trace Location</h4>
+                       <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Live Connect</span>
+                       </div>
+                    </div>
+                    <div className="h-[220px] rounded-3xl overflow-hidden border border-stone-200 shadow-sm shadow-stone-900/5 transition-all">
+                      <OrderMap 
+                        customerLocation={{
+                          lat: currentOrder.address.latitude,
+                          lng: currentOrder.address.longitude,
+                          address: currentOrder.address.street
+                        }}
+                        sellers={Object.values(packages).map(items => {
+                          const s = items[0].product.professional.professionalProfile;
+                          return {
+                            lat: s?.latitude || 0,
+                            lng: s?.longitude || 0,
+                            businessName: s?.businessName || 'Seller',
+                            address: s?.location || ''
+                          };
+                        }).filter(s => s.lat !== 0)}
+                      />
+                    </div>
+                    <p className="mt-4 text-[9px] font-mono text-stone-400 uppercase tracking-[0.2em] leading-relaxed text-center italic opacity-60">
+                      Visualizing the journey of your craft.
+                    </p>
+                  </div>
+                )}
 
                {/* Delivery Address Review */}
                <div className="space-y-4 pt-8 border-t border-stone-100">

@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import 'leaflet/dist/leaflet.css'
-import { calculateDistance } from '@/lib/utils/geo'
-import type * as Leaflet from 'leaflet';
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
+
 
 interface Seller {
   name: string
@@ -25,185 +24,154 @@ interface PickupMapProps {
 }
 
 export default function PickupMap({ userAddress, sellers }: PickupMapProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const initializedRef = useRef(false)
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let map: ReturnType<typeof Leaflet.map> | null = null;
-    let isMounted = true;
+    setOptions({
+      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      v: "weekly"
+    });
 
-    const initMap = async () => {
-      if (!mapContainerRef.current) return;
+    Promise.all([
+      importLibrary("maps"),
+      importLibrary("marker"),
+      importLibrary("geometry")
+    ]).then(() => {
+      if (!mapRef.current) return;
 
-      const L = await import('leaflet');
-      if (!isMounted) return;
-      
-      // Secondary check: Did React already initialize a map on this DOM node during a race?
-      if (initializedRef.current) return;
-      
-      // Fix marker icons using type coercion instead of ts-expect-error
-      const DefaultIcon = L.Icon.Default as unknown as { 
-        prototype: { _fixed?: boolean, _getIconUrl?: unknown }, 
-        mergeOptions: (options: unknown) => void 
-      };
-      
-      if (!DefaultIcon.prototype._fixed) {
-        delete DefaultIcon.prototype._getIconUrl;
-        DefaultIcon.mergeOptions({
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        });
-        DefaultIcon.prototype._fixed = true;
-      }
+      const center = userAddress?.latitude && userAddress?.longitude 
+        ? { lat: userAddress.latitude, lng: userAddress.longitude } 
+        : { lat: 5.6037, lng: -0.1870 }; // Accra default
 
-      const center: [number, number] = userAddress?.latitude && userAddress?.longitude 
-        ? [userAddress.latitude, userAddress.longitude] 
-        : [5.6037, -0.1870];
+      const map = new google.maps.Map(mapRef.current, {
+        center,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          {
+            "featureType": "all",
+            "elementType": "all",
+            "stylers": [{ "saturation": -100 }, { "gamma": 0.5 }]
+          },
+          {
+            "featureType": "water",
+            "elementType": "all",
+            "stylers": [{ "color": "#f1f1f1" }, { "visibility": "on" }]
+          }
+        ]
+      });
 
-      try {
-        map = L.map(mapContainerRef.current, {
-          center,
-          zoom: 12,
-          scrollWheelZoom: false,
-        });
+      const bounds = new google.maps.LatLngBounds();
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Only proceed if still mounted
-        if (!isMounted || !mapContainerRef.current) {
-          if (map) map.remove();
-          return;
-        }
-
-        const bounds = L.latLngBounds([]);
-
-        // Custom Blue Pulse Icon for User
-        const userIcon = L.divIcon({
-          className: 'user-location-marker',
-          html: `
-            <div class="relative flex items-center justify-center">
-              <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full animate-ping"></div>
-              <div class="relative w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg"></div>
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
-        });
-
-        // Add User Marker
-        if (userAddress?.latitude && userAddress?.longitude && isMounted) {
-          const userLatLng: [number, number] = [userAddress.latitude, userAddress.longitude];
-          L.marker(userLatLng, { icon: userIcon })
-            .addTo(map)
-            .bindPopup(`
-              <div class="p-1">
-                <div class="font-mono text-[10px] uppercase tracking-widest text-blue-600 mb-1">Your Delivery Address</div>
-                <div class="font-bold text-stone-900 mb-1">${userAddress.firstName} ${userAddress.lastName}</div>
-                <div class="text-[10px] text-stone-500 leading-relaxed italic">${userAddress.street || 'Selected Location'}</div>
-              </div>
-            `);
-          bounds.extend(userLatLng);
-        }
-
-        // Add Seller Markers & Lines
-        sellers.forEach((seller) => {
-          if (seller.lat && seller.lng && isMounted) {
-            const sellerLatLng: [number, number] = [seller.lat, seller.lng];
-            const dist = userAddress?.latitude && userAddress?.longitude
-              ? calculateDistance(userAddress.latitude, userAddress.longitude, seller.lat, seller.lng)
-              : null;
-
-            const distHtml = dist !== null 
-              ? `<div class="pt-2 border-t border-stone-100 flex items-center justify-between">
-                   <div class="flex items-center gap-1.5">
-                     <div class="w-1 h-1 rounded-full bg-emerald-500"></div>
-                     <span class="font-mono text-[10px] uppercase tracking-widest font-black text-emerald-600">${dist} km</span>
-                   </div>
-                   <span class="text-[9px] font-mono uppercase tracking-[0.2em] text-stone-400">Away</span>
-                 </div>`
-              : '';
-
-            L.marker(sellerLatLng)
-              .addTo(map)
-              .bindPopup(`
-                <div class="p-1 space-y-2 min-w-[150px]">
-                  <div class="font-mono text-[10px] uppercase tracking-widest text-amber-600 flex items-center gap-2">
-                    <span>📍</span> The Seller
-                  </div>
-                  <div class="font-serif text-base text-stone-900 leading-tight">${seller.name}</div>
-                  <div class="text-[10px] text-stone-500 leading-relaxed italic">${seller.address}</div>
-                  ${distHtml}
-                </div>
-              `);
-            
-            bounds.extend(sellerLatLng);
-
-            // Draw dashed line between user and seller
-            if (userAddress?.latitude && userAddress?.longitude) {
-              L.polyline([[userAddress.latitude, userAddress.longitude], sellerLatLng], {
-                color: '#D4D4D8',
-                weight: 1,
-                dashArray: '5, 10',
-                opacity: 0.6
-              }).addTo(map);
-            }
+      // Add User Marker
+      if (userAddress?.latitude && userAddress?.longitude) {
+        const userLatLng = { lat: userAddress.latitude, lng: userAddress.longitude };
+        
+        // Premium pulsating-style marker would need a custom OverlayView or complex SVG
+        // For now, using standard with custom color if possible, or just a prominent title
+        new google.maps.Marker({
+          position: userLatLng,
+          map,
+          title: "Your Location",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#2563eb',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+            scale: 8
           }
         });
-
-        // Auto-fit to show all locations
-        if (bounds.isValid() && isMounted) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-        }
-
-        if (isMounted) {
-          setIsLoaded(true);
-        } else {
-          map.remove();
-        }
-      } catch (err) {
-        console.warn('Map initialization failed:', err);
+        bounds.extend(userLatLng);
       }
-      initializedRef.current = true;
-    };
 
-    initMap();
+      // Add Seller Markers & Path Lines
+      sellers.forEach(seller => {
+        if (seller.lat && seller.lng) {
+          const sellerLatLng = { lat: seller.lat, lng: seller.lng };
+          
+          new google.maps.Marker({
+            position: sellerLatLng,
+            map,
+            title: seller.name,
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              fillColor: '#78716c',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 1,
+              scale: 5
+            }
+          });
+          bounds.extend(sellerLatLng);
 
-    return () => {
-      isMounted = false;
-      if (map) {
-        map.remove();
-        initializedRef.current = false;
+          // Draw dashed line
+          if (userAddress?.latitude && userAddress?.longitude) {
+            new google.maps.Polyline({
+              path: [
+                { lat: userAddress.latitude, lng: userAddress.longitude },
+                sellerLatLng
+              ],
+              geodesic: true,
+              strokeColor: "#a8a29e",
+              strokeOpacity: 0, // Dotted line trick
+              map: map,
+              icons: [{
+                icon: {
+                  path: 'M 0,-1 0,1',
+                  strokeOpacity: 1,
+                  scale: 2
+                },
+                offset: '0',
+                repeat: '10px'
+              }],
+            });
+          }
+        }
+      });
+
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
       }
-    }
+
+      setIsLoaded(true);
+    }).catch(err => {
+      console.error("Google Maps failed in PickupMap", err);
+      setError("Failed to load map engine.");
+    });
   }, [userAddress, sellers]);
 
   return (
-    <div className="relative w-full h-full bg-stone-100 group">
-      {/* Loading State Overlay */}
-      {!isLoaded && (
+    <div className="relative w-full h-full bg-stone-100 group overflow-hidden">
+      {!isLoaded && !error && (
         <div className="absolute inset-0 z-10 bg-stone-50 flex flex-col items-center justify-center gap-3">
           <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Initializing Map...</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Initializing Atelier Map...</span>
+        </div>
+      )}
+      
+      {error && (
+        <div className="absolute inset-0 z-10 bg-stone-100 flex items-center justify-center p-6 text-center">
+          <p className="text-[10px] font-mono text-red-500 uppercase tracking-widest leading-relaxed">
+            {error}
+          </p>
         </div>
       )}
 
-      {/* The Map Div with Profile Aesthetics */}
       <div 
-        ref={mapContainerRef} 
-        className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1500 ease-out z-0"
+        ref={mapRef} 
+        className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 ease-out"
         style={{ minHeight: '350px' }}
       />
 
-      {/* Profile Style Indicator Overlay (Optional, matches tz/id feel) */}
       <div className="absolute top-6 right-6 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
          <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-200 text-[9px] font-mono uppercase tracking-widest text-stone-900 shadow-xl">
            Interacting with Atelier Map
          </span>
       </div>
     </div>
-  )
+  );
 }
