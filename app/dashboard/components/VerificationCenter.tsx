@@ -22,6 +22,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import LiveSelfieCapture from './LiveSelfieCapture'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+
 
 interface VerificationDoc {
   id: string
@@ -43,6 +46,8 @@ export default function VerificationCenter() {
   const [status, setStatus] = useState<{ isVerified: boolean; documents: VerificationDoc[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
+
 
   // Document states
   const [docs, setDocs] = useState<Record<string, FileState>>({
@@ -85,7 +90,12 @@ export default function VerificationCenter() {
     fetchStatus()
   }, [fetchStatus])
 
-  const handleFileChange = async (type: string, file: File | null) => {
+  const handleFileChange = (type: string, file: File | null) => {
+    // Revoke old blob URL if it exists to prevent memory leaks
+    if (docs[type].file && docs[type].url?.startsWith('blob:')) {
+      URL.revokeObjectURL(docs[type].url!)
+    }
+
     if (!file) {
       setDocs(prev => ({
         ...prev,
@@ -94,81 +104,88 @@ export default function VerificationCenter() {
       return
     }
 
-    // Set preview
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setDocs(prev => ({
-        ...prev,
-        [type]: { ...prev[type], file, url: reader.result as string, uploading: true }
-      }))
-    }
-    reader.readAsDataURL(file)
-
-    // Upload to Supabase via our API
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('bucket', 'documents')
-      formData.append('folder', 'verification')
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setDocs(prev => ({
-          ...prev,
-          [type]: { ...prev[type], url: data.url, uploading: false, uploaded: true }
-        }))
-        toast.success(`${type.replace(/_/g, ' ')} uploaded`)
-      } else {
-        throw new Error('Upload failed')
+    // Instant local preview
+    const objectUrl = URL.createObjectURL(file)
+    setDocs(prev => ({
+      ...prev,
+      [type]: { 
+        file, 
+        url: objectUrl, 
+        uploading: false, 
+        uploaded: true 
       }
-    } catch {
-      toast.error('Failed to upload file')
-      setDocs(prev => ({
-        ...prev,
-        [type]: { ...prev[type], file: null, url: null, uploading: false }
-      }))
-    }
+    }))
+  }
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('bucket', 'documents')
+    formData.append('folder', 'verification')
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!res.ok) throw new Error('Upload failed')
+    const data = await res.json()
+    return data.url
   }
 
   const handleSubmit = async () => {
-    const urls = {
-      nationalIdFrontUrl: docs.NATIONAL_ID_FRONT.url,
-      nationalIdBackUrl: docs.NATIONAL_ID_BACK.url,
-      selfieUrl: docs.SELFIE.url,
-      businessProofUrl: docs.BUSINESS_REGISTRATION.url
-    }
+    const requiredTypes = ['NATIONAL_ID_FRONT', 'NATIONAL_ID_BACK', 'SELFIE', 'BUSINESS_REGISTRATION']
+    const missing = requiredTypes.filter(t => !docs[t].uploaded)
 
-    if (!urls.nationalIdFrontUrl || !urls.nationalIdBackUrl || !urls.selfieUrl || !urls.businessProofUrl) {
-      toast.error('Please upload all required documents')
+    if (missing.length > 0) {
+      toast.error(`Please complete all steps (${missing.length} remaining)`)
       return
     }
 
     setIsSubmitting(true)
+    const finalizedUrls: Record<string, string> = {}
+
     try {
+      // 1. Upload new files if necessary
+      for (const type of requiredTypes) {
+        const doc = docs[type]
+        if (doc.file) {
+          // It's a new local file, upload it
+          toast.info(`Uploading ${type.replace(/_/g, ' ')}...`)
+          finalizedUrls[type] = await uploadFile(doc.file)
+        } else if (doc.url) {
+          // Already have a remote URL from initial fetch
+          finalizedUrls[type] = doc.url
+        }
+      }
+
+      // 2. Submit to verification API
       const res = await fetch('/api/professional-profiles/verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(urls)
+        body: JSON.stringify({
+          nationalIdFrontUrl: finalizedUrls.NATIONAL_ID_FRONT,
+          nationalIdBackUrl: finalizedUrls.NATIONAL_ID_BACK,
+          selfieUrl: finalizedUrls.SELFIE,
+          businessProofUrl: finalizedUrls.BUSINESS_REGISTRATION
+        })
       })
 
       if (res.ok) {
-        toast.success('Verification request submitted')
+        toast.success('Verification submitted successfully')
         fetchStatus()
       } else {
         const err = await res.json()
         toast.error(err.error || 'Submission failed')
       }
-    } catch {
-      toast.error('Network error')
+    } catch (error) {
+      console.error('Submission error:', error)
+      toast.error('Failed to process documents. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   const isVerified = status?.isVerified
   const isPending = status?.documents.length === 4 && !isVerified && !status.documents.some(d => d.verificationMessage)
@@ -255,15 +272,18 @@ export default function VerificationCenter() {
         {/* Step 3: Selfie Verification */}
         <UploadCard 
           title="Selfie" 
-          description="Take a clear photo of your face"
+          description="Take a live photo of your face"
           type="SELFIE"
           state={docs.SELFIE}
           onFileChange={handleFileChange}
+          onCameraClick={() => setShowCamera(true)}
           disabled={isVerified || isPending}
           icon={<Camera className="w-5 h-5" />}
+          forceCamera
         />
 
         {/* Step 4: Business Proof */}
+
         <UploadCard 
           title="Business Proof" 
           description="Upload your permit or license"
@@ -324,7 +344,33 @@ export default function VerificationCenter() {
           We use secure systems to verify your identity. Your data is kept private and safe.
         </p>
       </footer>
+
+      <Dialog open={showCamera} onOpenChange={setShowCamera}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden bg-white border-none rounded-[2rem] sm:rounded-[2.5rem] w-[95vw] sm:w-full max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-6 sm:p-8 pb-0">
+
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">
+              Live <span className="text-violet-500">Verification</span>
+            </DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              Please ensure your face is clearly visible in the frame
+            </DialogDescription>
+          </DialogHeader>
+          
+          {showCamera && (
+            <LiveSelfieCapture 
+              onCapture={(file) => {
+                handleFileChange('SELFIE', file)
+                setShowCamera(false)
+              }}
+              onCancel={() => setShowCamera(false)}
+            />
+          )}
+
+        </DialogContent>
+      </Dialog>
     </div>
+
   )
 }
 
@@ -336,9 +382,12 @@ interface UploadCardProps {
   onFileChange: (type: string, file: File | null) => void;
   disabled: boolean;
   icon: React.ReactNode;
+  onCameraClick?: () => void;
+  forceCamera?: boolean;
 }
 
-function UploadCard({ title, description, type, state, onFileChange, disabled, icon }: UploadCardProps) {
+
+function UploadCard({ title, description, type, state, onFileChange, disabled, icon, onCameraClick, forceCamera }: UploadCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
@@ -400,27 +449,32 @@ function UploadCard({ title, description, type, state, onFileChange, disabled, i
         ) : (
           <button 
             disabled={disabled}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => forceCamera ? onCameraClick?.() : fileInputRef.current?.click()}
             className="w-full aspect-video rounded-2xl border-2 border-dashed border-slate-200 hover:border-violet-300 bg-slate-50/50 hover:bg-violet-50 transition-all duration-300 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-violet-500 disabled:opacity-50 disabled:cursor-not-allowed group/btn"
           >
             <div className="p-3 bg-white rounded-xl shadow-sm group-hover/btn:scale-110 transition-transform">
-              <Upload size={20} />
+              {forceCamera ? <Camera size={20} /> : <Upload size={20} />}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Upload File</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+              {forceCamera ? 'Capture Selfie' : 'Upload File'}
+            </span>
           </button>
         )}
       </div>
 
-      <input 
-        type="file" 
-        ref={fileInputRef}
-        className="hidden" 
-        accept="image/*,application/pdf"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) onFileChange(type, file)
-        }}
-      />
+      {!forceCamera && (
+        <input 
+          type="file" 
+          ref={fileInputRef}
+          className="hidden" 
+          accept="image/*,application/pdf"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) onFileChange(type, file)
+          }}
+        />
+      )}
     </div>
+
   )
 }
