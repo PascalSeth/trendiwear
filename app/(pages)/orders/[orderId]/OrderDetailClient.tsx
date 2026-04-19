@@ -464,22 +464,51 @@ export default function OrderDetailClient({ order, isCustomer }: Props) {
                  </div>
                )}
 
-               {/* Refund Action */}
-               {isCustomer && canRefund && (
-                 <div className="pt-8 border-t border-stone-100 flex flex-col gap-4">
-                    <p className="text-[9px] font-mono text-stone-400 leading-relaxed uppercase tracking-widest">
-                       Eligible for instant refund for {Math.max(0, Math.ceil((12 * 60 * 60 * 1000 - (Date.now() - new Date(currentOrder.paystackPaidAt!).getTime())) / (60 * 60 * 1000)))} more hours.
-                    </p>
-                    <button
-                      onClick={requestRefund}
-                      disabled={refunding}
-                      className="w-full h-12 flex items-center justify-center gap-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-2xl text-[10px] font-mono uppercase tracking-widest transition-all"
-                    >
-                      {refunding ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                      Request Order Refund
-                    </button>
-                 </div>
-               )}
+                {/* Refund Action Section */}
+                {isCustomer && (
+                  <div className="pt-8 border-t border-stone-100 flex flex-col gap-4">
+                    {/* Policy Info */}
+                    <div className="bg-stone-50 border border-stone-100 p-4 rounded-2xl flex items-start gap-3">
+                       <Info size={16} className="text-stone-400 mt-0.5 shrink-0" />
+                       <div className="space-y-1">
+                          <p className="text-[10px] font-bold text-stone-900 uppercase tracking-widest">Refund Policy</p>
+                          <p className="text-[10px] text-stone-500 leading-relaxed">
+                             Automatic refunds are only available within **12 hours** of payment. 
+                             The 3% platform fee is non-refundable. After 12 hours, please contact the seller directly for cancellations.
+                          </p>
+                       </div>
+                    </div>
+
+                    {canRefund ? (
+                      <div className="space-y-4">
+                        <p className="text-[9px] font-mono text-emerald-600 leading-relaxed uppercase tracking-widest flex items-center gap-2">
+                           <Clock size={12} />
+                           Eligible for instant refund for {Math.max(0, Math.ceil((12 * 60 * 60 * 1000 - (Date.now() - new Date(currentOrder.paystackPaidAt!).getTime())) / (60 * 60 * 1000)))} more hours.
+                        </p>
+                        <button
+                          onClick={requestRefund}
+                          disabled={refunding}
+                          className="w-full h-12 flex items-center justify-center gap-3 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-2xl text-[10px] font-mono uppercase tracking-widest transition-all shadow-sm"
+                        >
+                          {refunding ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                          Cancel & Refund Order
+                        </button>
+                      </div>
+                    ) : (
+                      currentOrder.paymentStatus === 'PAID' && !['CANCELLED', 'REFUNDED', 'DELIVERED'].includes(currentOrder.status) && (
+                        <div className="p-4 rounded-2xl border border-stone-100 bg-stone-50/30 flex flex-col items-center text-center gap-2">
+                           <Clock size={16} className="text-stone-300" />
+                           <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+                              Standard Refund Window Closed
+                           </p>
+                           <p className="text-[9px] text-stone-400 leading-relaxed">
+                              This order was paid more than 12 hours ago. Automatic cancellation is no longer available.
+                           </p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
 
                {/* Tracking Map Integration */}
                {(currentOrder.address.latitude && currentOrder.address.longitude) && (

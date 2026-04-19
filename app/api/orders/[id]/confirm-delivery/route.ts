@@ -141,9 +141,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             }
           })
       } catch (paystackError) {
-          console.error('Paystack Transfer Error:', paystackError)
-          // We don't rollback the DB transaction if the transfer fails (it might be insufficient balance)
-          // The Escrow status remains 'HELD' for manual intervention or retry.
+          console.error('[Payout] Paystack Transfer Error:', paystackError)
+          // As a Registered Business, we maintain the Escrow model. 
+          // If automated release fails, the status remains 'HELD' for admin review.
       }
 
       return {

@@ -252,5 +252,6 @@ async function handleTransferFailed(data: {
   reason?: string
 }) {
   console.error('Transfer failed:', data.reference, 'Reason:', data.reason)
-  // Handle failed transfers - may need manual intervention
+  // For Registered Business accounts, we monitor transfer failures for administrative audit
+  // and potential automated retries depending on the failure reason.
 }

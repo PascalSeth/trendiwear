@@ -1,6 +1,6 @@
-import prisma from '@/lib/prisma'
-import { getCurrencyCode } from '@/lib/currency'
-import { sendOrderConfirmationEmail } from '@/lib/mail'
+import { sendOrderConfirmationEmail, sendStatusUpdateEmail } from '@/lib/mail'
+import { EscrowStatus } from '@prisma/client'
+import { refundTransaction, toPesewas } from '@/lib/paystack'
 
 /**
  * Perform all actions required when an order is successfully paid.
@@ -149,4 +149,104 @@ export async function fulfillOrder(orderId: string) {
   }
   
   console.log(`Order ${orderId} successfully fulfilled.`)
+}
+
+/**
+ * Handle order cancellation and initiate refund if paid.
+ * @param orderId The ID of the order to cancel
+ * @param options.bypassWindow If true, bypasses the 12-hour refund window check (used for seller/admin cancellations)
+ */
+export async function cancelAndRefundOrder(orderId: string, { bypassWindow = false }: { bypassWindow?: boolean } = {}) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: true,
+      customer: { select: { email: true } }
+    },
+  })
+
+  if (!order) throw new Error("Order not found")
+
+  // 1. Logic for Refund if PAID
+  if (order.paymentStatus === "PAID") {
+    if (!order.paystackReference) throw new Error("Payment information (reference) missing")
+
+    // Check 12 hour window for customer cancellations
+    if (!bypassWindow && order.paystackPaidAt) {
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000)
+      if (new Date(order.paystackPaidAt) < twelveHoursAgo) {
+        throw new Error("Refund window expired. Please contact support or the seller.")
+      }
+    }
+
+    // Calculate refund amount (deduct 3% platform fee)
+    const refundAmount = order.totalPrice - order.platformFee
+    if (refundAmount <= 0) throw new Error("Invalid refund amount")
+
+    // Initiate Paystack Refund
+    try {
+      await refundTransaction(order.paystackReference, toPesewas(refundAmount))
+    } catch (paystackError: any) {
+      console.error("Paystack refund error:", paystackError)
+      throw new Error(`Refund failed: ${paystackError.message || "Provider error"}`)
+    }
+
+    // Update Database
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: "CANCELLED",
+          paymentStatus: "REFUNDED",
+          notes: order.notes ? `${order.notes}\n System: Refunded ${refundAmount} GHS` : `System: Refunded ${refundAmount} GHS`,
+        },
+      })
+
+      await tx.paymentEscrow.updateMany({
+        where: { orderId: orderId },
+        data: { status: "REFUNDED" as EscrowStatus },
+      })
+
+      // Restore stock
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stockQuantity: { increment: item.quantity },
+            soldCount: { decrement: item.quantity },
+          },
+        })
+      }
+    })
+
+    // Notify customer about refund
+    try {
+      if (order.customer.email) {
+        await sendStatusUpdateEmail({
+          to: order.customer.email,
+          orderId,
+          status: 'REFUNDED',
+          message: `Your order #${orderId.slice(-8).toUpperCase()} has been cancelled and a refund of GHS ${refundAmount.toFixed(2)} has been initiated.`,
+        })
+      }
+    } catch (err) {
+      console.error("Failed to send refund email:", err)
+    }
+
+    return { success: true, refunded: true, amount: refundAmount }
+  } else {
+    // 2. Logic for simple cancellation if NOT paid
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: "CANCELLED",
+        },
+      })
+      // If it was PENDING/PROCESSING, items were not yet deducted (actually stock is deducted on fulfillOrder, which only happens after payment)
+      // So no stock restoration needed for unpaid orders.
+    })
+
+    return { success: true, refunded: false }
+  }
 }

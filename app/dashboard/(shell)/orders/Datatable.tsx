@@ -179,6 +179,7 @@ function OrderDetailSheet({
   onStatusUpdate,
   onManualDelivery,
   onRefund,
+  onFulfillment,
 }: {
   order: Order | null;
   open: boolean;
@@ -186,6 +187,7 @@ function OrderDetailSheet({
   onStatusUpdate: (id: string, status: string, extra?: { trackingNumber?: string; notes?: string }) => Promise<void>;
   onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
   onRefund: (id: string) => Promise<void>;
+  onFulfillment: (order: Order) => void;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -205,7 +207,6 @@ function OrderDetailSheet({
   return (
     <Sheet open={open} onOpenChange={(v: boolean) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl">
-        {/* Premium Header */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b px-8 py-6 flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -222,7 +223,6 @@ function OrderDetailSheet({
         </div>
 
         <div className="p-8 space-y-10 pb-32">
-          {/* Progress Map */}
           <div className="bg-stone-50 rounded-[2rem] p-8 border border-stone-100 shadow-sm overflow-hidden relative">
              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
                 <RefreshCw size={120} className="animate-spin-slow" />
@@ -256,7 +256,6 @@ function OrderDetailSheet({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Concierge Details */}
             <div className="space-y-6">
               <section className="space-y-4">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Concierge</h3>
@@ -330,7 +329,6 @@ function OrderDetailSheet({
               </section>
             </div>
 
-            {/* Acquisition Summary */}
             <div className="space-y-6">
               <section className="space-y-4">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Acquisition Summary</h3>
@@ -385,7 +383,32 @@ function OrderDetailSheet({
             </div>
           </div>
 
-          {/* Action Center */}
+          {["READY_FOR_DELIVERY", "SHIPPED", "DELIVERED"].includes(packageStatus) && order.deliveryConfirmations?.[0] && (
+            <section className="space-y-4">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Assigned fulfillment</h3>
+              <div className="bg-teal-50/50 border border-teal-100 rounded-[2rem] p-6 flex flex-col md:flex-row gap-6 items-center">
+                 <div className="w-14 h-14 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow-lg shadow-teal-100 shrink-0">
+                    <Truck size={24} />
+                 </div>
+                 <div className="flex-1 text-center md:text-left">
+                    <p className="font-bold text-stone-900">{order.deliveryConfirmations[0].riderName || 'Unknown Rider'}</p>
+                    <p className="text-xs text-stone-500">{order.deliveryConfirmations[0].riderPhone || 'No phone provided'}</p>
+                    {order.deliveryConfirmations[0].trackingNumber && (
+                      <p className="text-[10px] font-mono text-teal-600 mt-1 uppercase tracking-wider">Tracking: {order.deliveryConfirmations[0].trackingNumber}</p>
+                    )}
+                 </div>
+                 <div className="flex gap-2">
+                    {order.deliveryConfirmations[0].riderPhone && (
+                      <Button variant="outline" size="sm" className="rounded-xl h-9 text-[10px] font-black uppercase" asChild>
+                        <a href={`tel:${order.deliveryConfirmations[0].riderPhone}`}><Phone size={12} className="mr-2" /> Contact</a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" className="rounded-xl h-9 text-[10px] font-black uppercase text-stone-500" onClick={() => onFulfillment(order)}>Edit</Button>
+                 </div>
+              </div>
+            </section>
+          )}
+
           <section className="space-y-4">
              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Action Control</h3>
              <div className="bg-stone-950 text-white rounded-[2rem] p-8 shadow-2xl flex flex-col md:flex-row gap-8 items-center">
@@ -395,11 +418,9 @@ function OrderDetailSheet({
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
                    {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && (
-                     <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
-                       <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" disabled={!!loading}>
-                         <Truck className="w-4 h-4 mr-2" /> Fulfill Order
-                       </Button>
-                     </ManualDeliveryDialog>
+                     <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" disabled={!!loading} onClick={() => onFulfillment(order)}>
+                       <Truck className="w-4 h-4 mr-2" /> Fulfill Order
+                     </Button>
                    )}
                    {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && (
                      <Button size="lg" className="rounded-full px-8 bg-white text-stone-950 hover:bg-stone-200 transition-all font-black uppercase text-[10px] tracking-widest h-14" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
@@ -448,12 +469,14 @@ function QuickActions({
   onStatusUpdate,
   onManualDelivery,
   onSendInvoice,
+  onFulfillment,
 }: {
   order: Order;
   onOpen: () => void;
   onStatusUpdate: (id: string, status: string) => Promise<void>;
   onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
   onSendInvoice: (id: string, amount: number) => Promise<void>;
+  onFulfillment: (order: Order) => void;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -491,12 +514,10 @@ function QuickActions({
       )}
 
       {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "DELIVERY" && isShippingPaid && (
-        <ManualDeliveryDialog order={order} onConfirm={(details) => onManualDelivery(order.id, details)}>
-          <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md shadow-teal-100 border-none transition-all hover:scale-105 active:scale-95" disabled={!!loading}>
-            {loading === "READY_FOR_DELIVERY" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Truck className="w-3.5 h-3.5 mr-1.5" />}
-            Set Rider Details
-          </Button>
-        </ManualDeliveryDialog>
+        <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md shadow-teal-100 border-none transition-all hover:scale-105 active:scale-95" disabled={!!loading} onClick={() => onFulfillment(order)}>
+          {loading === "READY_FOR_DELIVERY" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Truck className="w-3.5 h-3.5 mr-1.5" />}
+          Set Rider Details
+        </Button>
       )}
       {(packageStatus === "PROCESSING" || packageStatus === "CONFIRMED") && order.deliveryMethod === "PICKUP" && isShippingPaid && (
         <Button size="sm" className="h-8 text-[10px] font-black uppercase tracking-wider px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-100 border-none transition-all hover:scale-105 active:scale-95" onClick={() => act("READY_FOR_PICKUP")} disabled={!!loading}>
@@ -521,7 +542,6 @@ function QuickActions({
         </span>
       )}
 
-      {/* More (opens sheet) */}
       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onOpen} title="View & manage">
         <ChevronRight className="w-4 h-4" />
       </Button>
@@ -538,6 +558,8 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
   const [loading, setLoading] = useState(!initialData);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
+  const [isFulfillmentOpen, setIsFulfillmentOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -552,7 +574,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
 
   const fetcher = (url: string) => fetch(url).then(res => res.json());
   const { mutate } = useSWR("/api/orders?page=1&limit=100", fetcher, {
-    refreshInterval: 10000, // Poll every 10 seconds for real-time updates
+    refreshInterval: (sheetOpen || isFulfillmentOpen) ? 0 : 30000, 
     onSuccess: (data) => {
       setData(data.orders || []);
       setLoading(false);
@@ -560,7 +582,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
   });
 
   const fetchOrders = useCallback(async () => {
-    mutate(); // Revalidation via SWR
+    mutate();
   }, [mutate]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string, extra?: { trackingNumber?: string; notes?: string }) => {
@@ -573,7 +595,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       if (response.ok) {
         showToast(`Order updated to: ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`);
         await fetchOrders();
-        // Update selectedOrder if it's the same one
         setSelectedOrder((prev) => {
           if (prev?.id !== orderId) return prev;
           const updatedItems = prev.items.map(item => ({ ...item, status: newStatus }));
@@ -604,11 +625,25 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
       if (response.ok) {
         showToast("Delivery details saved and customer notified!");
         await fetchOrders();
-        // Update selectedOrder locally to reflect the new fulfillment state
         setSelectedOrder((prev) => {
           if (prev?.id !== orderId) return prev;
           const updatedItems = prev.items.map(item => ({ ...item, status: "READY_FOR_DELIVERY" }));
-          return { ...prev, status: "READY_FOR_DELIVERY", items: updatedItems };
+          const updatedConf = {
+            professionalId: prev.items?.[0]?.product.professional.professionalProfile?.businessName || "", 
+            status: "PENDING",
+            customerConfirmed: false,
+            riderName: details.riderName,
+            riderPhone: details.riderPhone,
+            trackingNumber: details.trackingNumber,
+          };
+
+          return { 
+            ...prev, 
+            status: "READY_FOR_DELIVERY", 
+            items: updatedItems,
+            manualDeliveryFee: parseFloat(details.manualDeliveryFee),
+            deliveryConfirmations: [updatedConf]
+          };
         });
       } else {
         const data = await response.json();
@@ -662,7 +697,11 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     setSheetOpen(true);
   };
 
-  // Filtered display data
+  const openFulfillment = (order: Order) => {
+    setFulfillmentOrder(order);
+    setIsFulfillmentOpen(true);
+  };
+
   const filteredData = search
     ? data.filter((o) =>
         `${o.customer.firstName} ${o.customer.lastName} ${o.customer.email} ${o.id}`.toLowerCase().includes(search.toLowerCase())
@@ -782,6 +821,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
           onStatusUpdate={handleStatusUpdate}
           onManualDelivery={handleManualDelivery}
           onSendInvoice={handleSendInvoice}
+          onFulfillment={openFulfillment}
         />
       ),
     },
@@ -804,7 +844,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
 
   const selectedRows = table.getSelectedRowModel().rows;
 
-  // Bulk actions
   const bulkUpdateStatus = async (status: string) => {
     await Promise.all(selectedRows.map((r) => handleStatusUpdate(r.original.id, status)));
     setRowSelection({});
@@ -833,7 +872,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
 
   return (
     <div className="w-full space-y-5">
-      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -849,7 +887,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         )}
       </AnimatePresence>
 
-      {/* Order Detail Sheet */}
       <OrderDetailSheet
         order={selectedOrder}
         open={sheetOpen}
@@ -857,9 +894,20 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         onStatusUpdate={handleStatusUpdate}
         onManualDelivery={handleManualDelivery}
         onRefund={handleRefund}
+        onFulfillment={openFulfillment}
       />
 
-      {/* Header */}
+      {fulfillmentOrder && (
+        <ManualDeliveryDialog 
+          order={fulfillmentOrder} 
+          open={isFulfillmentOpen} 
+          onOpenChange={setIsFulfillmentOpen} 
+          onConfirm={async (details) => {
+            await handleManualDelivery(fulfillmentOrder.id, details);
+          }}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
@@ -870,7 +918,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: "Total", value: stats.total, color: "bg-blue-50 text-blue-700", icon: <ShoppingBag className="w-4 h-4" /> },
@@ -887,7 +934,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         ))}
       </div>
 
-      {/* Search + Filter bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -915,12 +961,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
                     const statuses = Object.entries(STATUS_CONFIG)
                       .filter(([, cfg]) => cfg.workflow === tab.id)
                       .map(([status]) => status);
-                    // Use equality mapping or similar — for now sets to first in category but table needs to handle list
-                    setColumnFilters([{ id: "status", value: { in: statuses } }]); 
-                    // Wait, standard tanstack filters might not handle {in: []} without custom filter function.
-                    // For now, I'll stick to a simpler approach: multiple filters or custom filter.
-                    // Let's use the first status as a fallback but actually we want to filter by category.
-                    // ACTUALLY: We can just use the status directly if we match it.
                     setColumnFilters([{ id: "status", value: statuses[0] }]); 
                   }
                 }}
@@ -942,7 +982,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         </div>
       </div>
 
-      {/* Bulk Actions */}
       <AnimatePresence>
         {selectedRows.length > 0 && (
           <motion.div
@@ -965,9 +1004,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         )}
       </AnimatePresence>
 
-      {/* Table & Mobile View */}
       <div className="rounded-xl border overflow-hidden">
-        {/* Desktop Table View */}
         <div className="hidden md:block">
           <Table>
             <TableHeader className="bg-gray-50 uppercase">
@@ -1012,7 +1049,6 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
           </Table>
         </div>
 
-        {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-stone-100">
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
@@ -1055,6 +1091,7 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
                      onStatusUpdate={handleStatusUpdate}
                      onManualDelivery={handleManualDelivery}
                      onSendInvoice={handleSendInvoice}
+                     onFulfillment={openFulfillment}
                    />
                 </div>
               </div>
@@ -1090,32 +1127,43 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
 
 function ManualDeliveryDialog({ 
   order, 
-  onConfirm, 
-  children 
+  open,
+  onOpenChange,
+  onConfirm 
 }: { 
   order: Order; 
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onConfirm: (details: ManualDeliveryDetails) => Promise<void>; 
-  children: React.ReactNode 
 }) {
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [riders, setRiders] = useState<Rider[]>([]);
-  const [details, setDetails] = useState<ManualDeliveryDetails>({
-    riderName: order.riderName || "",
-    riderPhone: order.riderPhone || "",
-    manualDeliveryFee: order.manualDeliveryFee?.toString() || "0",
-    trackingNumber: order.trackingNumber || "",
-    riderId: order.riderId || "",
-  });
+  const getInitialDetails = useCallback(() => {
+    if (!order) return { riderName: "", riderPhone: "", manualDeliveryFee: "0", trackingNumber: "", riderId: "" };
+    // Attempt to pull from deliveryConfirmations (nested) OR top-level order properties
+    const confirmation = order.deliveryConfirmations?.[0];
+    return {
+      riderName: confirmation?.riderName || order.riderName || "",
+      riderPhone: confirmation?.riderPhone || order.riderPhone || "",
+      manualDeliveryFee: order.manualDeliveryFee?.toString() || order.items?.[0]?.deliveryFee?.toString() || "0",
+      trackingNumber: confirmation?.trackingNumber || order.trackingNumber || "",
+      riderId: order.riderId || "",
+    };
+  }, [order?.id, order?.riderName, order?.riderPhone, order?.manualDeliveryFee, order?.trackingNumber, order?.riderId, order?.deliveryConfirmations]);
 
+  const [details, setDetails] = useState<ManualDeliveryDetails>(getInitialDetails());
+
+  // Only reset details when the modal opens or the order ID actually changes.
+  // This prevents the fields from resetting every 10s due to SWR background polling.
   useEffect(() => {
     if (open) {
+      setDetails(getInitialDetails());
       fetch("/api/riders")
         .then(res => res.json())
         .then(data => setRiders(data.riders || []))
         .catch(err => console.error("Failed to fetch riders:", err));
     }
-  }, [open]);
+  }, [open, order.id]); // Stable dependency on order.id instead of order object
 
   const handleRiderSelect = (riderId: string) => {
     if (riderId === "manual") {
@@ -1137,7 +1185,7 @@ function ManualDeliveryDialog({
     setLoading(true);
     try {
       await onConfirm(details);
-      setOpen(false);
+      onOpenChange(false);
     } catch (error) {
       console.error("Fulfillment failed:", error);
     } finally {
@@ -1146,10 +1194,7 @@ function ManualDeliveryDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] border-none shadow-2xl overflow-hidden rounded-[2rem]">
         <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-500"></div>
         <DialogHeader className="pt-6">

@@ -130,7 +130,7 @@ export async function POST() {
 
         results.push({ orderId, professionalId, status: "success", amount: sellerSubtotal })
       } catch (err: unknown) {
-        console.error(`Auto-payout failed for Order ${orderId}, Seller ${professionalId}:`, err)
+        console.error(`[Auto-Payout] Failed for Order ${orderId}, Seller ${professionalId}:`, err)
         results.push({ orderId, professionalId, status: "failed", error: err instanceof Error ? err.message : String(err) })
       }
     }

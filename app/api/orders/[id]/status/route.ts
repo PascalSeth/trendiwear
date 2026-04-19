@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth"
 import { mapErrorToResponse } from "@/lib/api-utils"
 import { sendDeliveryUpdateEmail, sendStatusUpdateEmail } from "@/lib/mail"
 import { NotificationType, OrderStatus } from "@prisma/client"
+import { cancelAndRefundOrder } from "@/lib/orders"
 
 export async function PUT(
   request: NextRequest,
@@ -93,6 +94,14 @@ export async function PUT(
         else if (statuses.some(s => s === 'SHIPPED')) globalStatus = 'SHIPPED'
         else if (statuses.some(s => s === 'PROCESSING')) globalStatus = 'PROCESSING'
         else globalStatus = order.status
+      }
+
+      // 4. Handle Refund if cancelling a paid order
+      if (status === 'CANCELLED' && order.paymentStatus === 'PAID') {
+        // Sellers/Admins can always trigger refund on cancellation
+        if (isProfessional || isAdmin) {
+          return await cancelAndRefundOrder(orderId, { bypassWindow: true })
+        }
       }
 
       return await tx.order.update({
