@@ -27,7 +27,11 @@ export default async function DashboardLayout({
           <head>
             <link rel="icon" href="/navlogo.png" />
           </head>
-          <body className="w-full h-full antialiased bg-slate-50">
+          <body 
+            className="w-full h-full antialiased bg-slate-50"
+            suppressHydrationWarning={true}
+          >
+
             <Providers>
               {children}
             </Providers>

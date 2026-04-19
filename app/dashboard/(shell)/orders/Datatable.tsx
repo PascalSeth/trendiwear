@@ -35,8 +35,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle, DialogTrigger,
+  DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,7 +105,9 @@ type Order = {
     customerConfirmed: boolean;
     riderName?: string;
     riderPhone?: string;
+    trackingNumber?: string;
   }>;
+
   paymentEscrows: Array<{ status: string }>;
   shippingInvoices?: Array<{
     id: string;
@@ -177,17 +180,17 @@ function OrderDetailSheet({
   open,
   onClose,
   onStatusUpdate,
-  onManualDelivery,
   onRefund,
   onFulfillment,
 }: {
+
   order: Order | null;
   open: boolean;
   onClose: () => void;
   onStatusUpdate: (id: string, status: string, extra?: { trackingNumber?: string; notes?: string }) => Promise<void>;
-  onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
   onRefund: (id: string) => Promise<void>;
   onFulfillment: (order: Order) => void;
+
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -467,17 +470,18 @@ function QuickActions({
   order,
   onOpen,
   onStatusUpdate,
-  onManualDelivery,
   onSendInvoice,
   onFulfillment,
 }: {
+
   order: Order;
   onOpen: () => void;
   onStatusUpdate: (id: string, status: string) => Promise<void>;
-  onManualDelivery: (id: string, details: ManualDeliveryDetails) => Promise<void>;
   onSendInvoice: (id: string, amount: number) => Promise<void>;
   onFulfillment: (order: Order) => void;
 }) {
+
+
   const [loading, setLoading] = useState<string | null>(null);
 
   const act = async (status: string) => {
@@ -819,10 +823,11 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
           order={row.original}
           onOpen={() => openOrder(row.original)}
           onStatusUpdate={handleStatusUpdate}
-          onManualDelivery={handleManualDelivery}
           onSendInvoice={handleSendInvoice}
           onFulfillment={openFulfillment}
         />
+
+
       ),
     },
   ];
@@ -892,10 +897,10 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onStatusUpdate={handleStatusUpdate}
-        onManualDelivery={handleManualDelivery}
         onRefund={handleRefund}
         onFulfillment={openFulfillment}
       />
+
 
       {fulfillmentOrder && (
         <ManualDeliveryDialog 
@@ -1089,10 +1094,10 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
                      order={row.original}
                      onOpen={() => openOrder(row.original)}
                      onStatusUpdate={handleStatusUpdate}
-                     onManualDelivery={handleManualDelivery}
                      onSendInvoice={handleSendInvoice}
                      onFulfillment={openFulfillment}
                    />
+
                 </div>
               </div>
             ))
@@ -1276,7 +1281,8 @@ function ManualDeliveryDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+
           <Button type="button" onClick={handleConfirm} disabled={loading} className="bg-teal-600 hover:bg-teal-700 text-white">
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Truck className="w-4 h-4 mr-2" />}
             Confirm Fulfillment

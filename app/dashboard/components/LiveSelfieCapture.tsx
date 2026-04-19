@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera, RefreshCw, Check, AlertCircle, Loader2, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+
 
 interface LiveSelfieCaptureProps {
   onCapture: (file: File) => void
@@ -54,12 +56,13 @@ export default function LiveSelfieCapture({ onCapture, onCancel }: LiveSelfieCap
           console.error("Video play failed", e)
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError('Allow camera access to take a selfie.')
       setLoading(false)
     }
   }, [stopExistingStream])
+
 
   useEffect(() => {
     startCamera()
@@ -116,8 +119,15 @@ export default function LiveSelfieCapture({ onCapture, onCancel }: LiveSelfieCap
 
         {/* The Snapshot Result */}
         {capturedImage && (
-          <img src={capturedImage} className="absolute inset-0 w-full h-full object-cover" alt="Selfie" />
+          <Image 
+            src={capturedImage} 
+            fill
+            unoptimized
+            className="absolute inset-0 w-full h-full object-cover" 
+            alt="Selfie" 
+          />
         )}
+
 
         {/* Visual Face Guide Overlay */}
         {!capturedImage && !loading && !error && (

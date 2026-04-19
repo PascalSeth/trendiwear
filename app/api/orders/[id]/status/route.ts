@@ -19,7 +19,9 @@ export async function PUT(
       where: { id: orderId },
       include: {
         items: true,
+        customer: { select: { id: true, email: true } }
       }
+
     })
 
     if (!order) {
@@ -119,10 +121,10 @@ export async function PUT(
 
     // Send notification to customer
     const notificationContent = statusMessages[status]
-    if (notificationContent && updatedOrder.customerId) {
+    if (notificationContent && order.customerId) {
         await prisma.notification.create({
           data: {
-            userId: updatedOrder.customerId,
+            userId: order.customerId,
             type: notificationContent.type,
             title: notificationContent.title,
             message: `Order #${orderId.slice(-8).toUpperCase()}: ${notificationContent.message}`,
@@ -132,7 +134,7 @@ export async function PUT(
     }
 
     // Send email to customer on key status changes
-    if (status && updatedOrder.customer?.email) {
+    if (status && order.customer?.email) {
       try {
         if (status === 'SHIPPED') {
           const fullOrder = await prisma.order.findUnique({
@@ -140,7 +142,7 @@ export async function PUT(
             include: { items: { include: { product: { select: { name: true } } } } }
           })
           await sendDeliveryUpdateEmail({
-            to: updatedOrder.customer.email,
+            to: order.customer.email,
             orderId,
             trackingNumber: trackingNumber || undefined,
             items: fullOrder?.items.map((i) => ({ name: i.product.name, quantity: i.quantity })),
@@ -149,7 +151,7 @@ export async function PUT(
           const notifContent = statusMessages[status]
           if (notifContent) {
             await sendStatusUpdateEmail({
-              to: updatedOrder.customer.email,
+              to: order.customer.email,
               orderId,
               status,
               message: `Order #${orderId.slice(-8).toUpperCase()}: ${notifContent.message}`,
@@ -160,6 +162,7 @@ export async function PUT(
         console.error('Failed to send status email:', emailErr)
       }
     }
+
 
     return NextResponse.json({ success: true, order: updatedOrder })
 

@@ -186,10 +186,12 @@ export async function cancelAndRefundOrder(orderId: string, { bypassWindow = fal
     // Initiate Paystack Refund
     try {
       await refundTransaction(order.paystackReference, toPesewas(refundAmount))
-    } catch (paystackError: any) {
+    } catch (paystackError: unknown) {
       console.error("Paystack refund error:", paystackError)
-      throw new Error(`Refund failed: ${paystackError.message || "Provider error"}`)
+      const errorMsg = paystackError instanceof Error ? paystackError.message : "Provider error"
+      throw new Error(`Refund failed: ${errorMsg}`)
     }
+
 
     // Update Database
     await prisma.$transaction(async (tx) => {
