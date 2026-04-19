@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight, Crown, Medal, Award } from 'lucide-react';
 import Image from 'next/image';
 
+// ... (Types and Interfaces remain identical to keep logic consistent)
 type TopSeller = {
   id: string;
   rank: number;
@@ -21,78 +22,71 @@ interface RawProfessionalProfile {
   actualSales?: number | null;
   completedOrders?: number | null;
   rating?: number | null;
-  specialization?: {
-    name: string;
-  } | null;
-  user?: {
-    firstName: string;
-    lastName: string;
-    profileImage?: string | null;
-  } | null;
+  specialization?: { name: string; } | null;
+  user?: { firstName: string; lastName: string; profileImage?: string | null; } | null;
 }
 
 function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
-  // Determine rank icon
   const RankIcon = () => {
-    if (seller.rank === 1) return <Crown className="w-5 h-5 text-amber-600" />;
-    if (seller.rank === 2) return <Medal className="w-5 h-5 text-stone-400" />;
-    if (seller.rank === 3) return <Award className="w-5 h-5 text-amber-700" />;
+    if (seller.rank === 1) return <Crown className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />;
+    if (seller.rank === 2) return <Medal className="w-4 h-4 md:w-5 md:h-5 text-stone-400" />;
+    if (seller.rank === 3) return <Award className="w-4 h-4 md:w-5 md:h-5 text-amber-700" />;
     return null;
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      whileInView={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group relative flex items-center gap-8 py-8 border-b border-stone-100 last:border-0 hover:bg-stone-50 transition-colors duration-500 cursor-pointer"
+      className="group relative flex items-center gap-3 md:gap-8 py-6 md:py-8 border-b border-stone-200 last:border-0 hover:bg-stone-50/50 transition-colors duration-500 cursor-pointer overflow-hidden"
     >
       {/* Large Background Rank Number (Editorial Watermark) */}
-      <div className="absolute -left-6 -top-4 text-[8rem] font-serif font-bold text-stone-100 leading-none opacity-0 group-hover:opacity-100 transition-opacity duration-700 select-none pointer-events-none z-0">
+      <div className="absolute -left-2 md:-left-6 -top-2 md:-top-4 text-[5rem] md:text-[8rem] font-serif font-bold text-stone-100/80 leading-none opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-700 select-none pointer-events-none z-0">
         0{seller.rank}
       </div>
 
       {/* Rank Column */}
-      <div className="w-12 text-center relative z-10">
+      <div className="w-8 md:w-12 text-center relative z-10 flex-shrink-0">
         <div className="flex flex-col items-center gap-1">
           {RankIcon()}
-          <span className="font-mono text-xs font-bold text-stone-400 group-hover:text-stone-900 transition-colors">
+          <span className="font-mono text-[10px] md:text-xs font-bold text-stone-400 group-hover:text-stone-900 transition-colors">
             #{seller.rank}
           </span>
         </div>
       </div>
 
       {/* Profile Image */}
-      <div className="relative w-16 h-16 flex-shrink-0 z-10">
-        <div className="w-full h-full rounded-full border-2 border-stone-100 group-hover:border-stone-900 transition-colors overflow-hidden">
+      <div className="relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0 z-10">
+        <div className="w-full h-full rounded-full border border-stone-200 group-hover:border-stone-900 transition-colors overflow-hidden bg-stone-100">
           <Image
             src={seller.imageUrl}
             alt={seller.name}
             width={64}
             height={64}
-            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+            className="w-full h-full object-cover grayscale md:grayscale group-hover:grayscale-0 transition-all duration-500"
           />
         </div>
       </div>
 
       {/* Seller Info */}
       <div className="flex-1 min-w-0 z-10">
-        <h3 className="text-xl font-serif text-stone-900 group-hover:italic transition-all duration-300">
+        <h3 className="text-base md:text-xl font-serif text-stone-900 group-hover:italic transition-all duration-300 truncate">
           {seller.name}
         </h3>
-        <p className="text-xs font-mono uppercase tracking-widest text-stone-500 mt-1">
+        <p className="text-[9px] md:text-xs font-mono uppercase tracking-[0.15em] text-stone-500 mt-0.5 truncate">
           {seller.profession}
         </p>
       </div>
 
       {/* Stats Column */}
-      <div className="text-right relative z-10 min-w-[120px]">
-        <div className="text-2xl font-serif font-medium text-stone-900 group-hover:translate-x-1 transition-transform duration-300">
+      <div className="text-right relative z-10 flex-shrink-0 ml-auto pr-2 md:pr-0">
+        <div className="text-lg md:text-2xl font-serif font-medium text-stone-900 group-hover:translate-x-[-4px] md:group-hover:translate-x-1 transition-transform duration-300">
           {seller.totalSales.toLocaleString()}
         </div>
-        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="text-xs font-mono text-stone-500 uppercase tracking-widest">Sales</span>
-          <ArrowUpRight size={12} className="text-stone-900" />
+        <div className="flex items-center justify-end gap-1 md:gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span className="text-[8px] md:text-xs font-mono text-stone-500 uppercase tracking-widest">Sales</span>
+          <ArrowUpRight size={10} className="text-stone-900 hidden md:block" />
         </div>
       </div>
     </motion.div>
@@ -103,35 +97,22 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
   const [topSellers, setTopSellers] = useState<TopSeller[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ... (Logic remains identical to keep functionality)
   const transformSellers = useCallback((data: RawProfessionalProfile[]) => {
-    const gradients = [
-      'from-emerald-400 to-teal-600',
-      'from-pink-400 to-rose-600',
-      'from-purple-400 to-indigo-600',
-      'from-orange-400 to-red-600',
-    ];
-
-    const sorted = data
-      .slice()
-      .sort((a, b) => {
-        const aSales = a.actualSales ?? a.completedOrders ?? 0;
-        const bSales = b.actualSales ?? b.completedOrders ?? 0;
-        if (bSales !== aSales) return bSales - aSales;
-        const aRating = a.rating ?? 0;
-        const bRating = b.rating ?? 0;
-        return bRating - aRating;
-      })
-      .slice(0, 4);
+    const gradients = ['from-emerald-400 to-teal-600', 'from-pink-400 to-rose-600', 'from-purple-400 to-indigo-600', 'from-orange-400 to-red-600'];
+    const sorted = data.slice().sort((a, b) => {
+      const aSales = a.actualSales ?? a.completedOrders ?? 0;
+      const bSales = b.actualSales ?? b.completedOrders ?? 0;
+      if (bSales !== aSales) return bSales - aSales;
+      return (b.rating ?? 0) - (a.rating ?? 0);
+    }).slice(0, 4);
 
     return sorted.map((prof, index) => ({
       id: prof.id,
       rank: index + 1,
       name: prof.businessName || `${prof.user?.firstName} ${prof.user?.lastName}`,
       profession: prof.specialization?.name || 'Fashion Professional',
-      imageUrl:
-        prof.businessImage ||
-        prof.user?.profileImage ||
-        'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
+      imageUrl: prof.businessImage || prof.user?.profileImage || 'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
       color: gradients[index % gradients.length],
       totalSales: prof.actualSales ?? prof.completedOrders ?? 0,
     }));
@@ -143,43 +124,35 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
       setLoading(false);
       return;
     }
-
     const fetchTopSellers = async () => {
       try {
         const response = await fetch('/api/professional-profiles?public=true');
-        if (!response.ok) {
-          throw new Error('Failed to load top sellers');
+        if (response.ok) {
+          const data = await response.json();
+          setTopSellers(transformSellers(data));
         }
-
-        const data = await response.json();
-        setTopSellers(transformSellers(data));
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+      } catch (error) { console.error(error); } finally { setLoading(false); }
     };
-
     fetchTopSellers();
   }, [initialSellers, transformSellers]);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] py-24 px-6 md:px-12">
+    <div className="min-h-screen bg-[#FAFAF9] py-12 md:py-24 px-4 md:px-12 overflow-x-hidden">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Editorial Header */}
-        <header className="mb-16 border-b border-stone-200 pb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <header className="mb-10 md:mb-16 border-b border-stone-200 pb-6 md:pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2 md:gap-4">
             <div>
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400 mb-2 block">
+              <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-stone-400 mb-1 md:mb-2 block">
                 Seasonal Performance
               </span>
-              <h2 className="text-5xl md:text-7xl font-serif font-medium text-stone-900 leading-none">
+              <h2 className="text-4xl md:text-7xl font-serif font-medium text-stone-900 leading-tight">
                 Top Sellers
               </h2>
             </div>
-            <div className="text-right hidden md:block">
-              <p className="font-serif text-stone-500 italic text-lg max-w-xs">
+            <div className="text-left md:text-right">
+              <p className="font-serif text-stone-500 italic text-sm md:text-lg max-w-[240px] md:max-w-xs leading-relaxed">
                 The leading voices defining this season&apos;s trends.
               </p>
             </div>
@@ -188,39 +161,38 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
 
         {/* List Container */}
         <div className="relative">
-           {/* Subtle decorative line */}
-           <div className="absolute left-[3.5rem] top-0 bottom-0 w-px bg-stone-200 hidden md:block"></div>
+          {/* Subtle decorative line - Hidden on mobile for cleaner look */}
+          <div className="absolute left-[3.5rem] top-0 bottom-0 w-px bg-stone-200 hidden md:block"></div>
 
-           <div className="space-y-0">
-              {loading && (
-                <div className="py-8 text-sm font-mono text-stone-400 tracking-widest uppercase">
-                  Loading top sellers...
-                </div>
-              )}
+          <div className="divide-y divide-stone-100 md:divide-none">
+            {loading && (
+              <div className="py-8 text-[10px] md:text-sm font-mono text-stone-400 tracking-widest uppercase animate-pulse">
+                Loading top sellers...
+              </div>
+            )}
 
-              {!loading && topSellers.length === 0 && (
-                <div className="py-8 text-sm font-mono text-stone-400 tracking-widest uppercase">
-                  No top sellers yet. Check back soon.
-                </div>
-              )}
+            {!loading && topSellers.length === 0 && (
+              <div className="py-8 text-[10px] md:text-sm font-mono text-stone-400 tracking-widest uppercase">
+                No records found.
+              </div>
+            )}
 
-              {!loading &&
-                topSellers.map((seller, index) => (
-                  <SellerRow key={seller.id} seller={seller} index={index} />
-                ))}
-           </div>
+            {!loading &&
+              topSellers.map((seller, index) => (
+                <SellerRow key={seller.id} seller={seller} index={index} />
+              ))}
+          </div>
         </div>
 
         {/* Footer CTA */}
-        <div className="mt-16 text-center border-t border-stone-200 pt-12">
-          <p className="font-mono text-xs uppercase tracking-widest text-stone-400 mb-6">
+        <div className="mt-12 md:mt-16 text-center border-t border-stone-200 pt-10 md:pt-12">
+          <p className="font-mono text-[10px] md:text-xs uppercase tracking-widest text-stone-400 mb-4 md:mb-6">
             View all rankings
           </p>
-          <button className="group px-8 py-3 border border-stone-900 text-stone-900 text-xs font-mono uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all duration-300">
+          <button className="w-full md:w-auto px-8 py-4 md:py-3 border border-stone-900 text-stone-900 text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-900 hover:text-white transition-all duration-300 active:scale-[0.98]">
             See Full Leaderboard
           </button>
         </div>
-
       </div>
     </div>
   );
