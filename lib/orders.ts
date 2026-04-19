@@ -1,6 +1,9 @@
+import { prisma } from '@/lib/prisma'
 import { sendOrderConfirmationEmail, sendStatusUpdateEmail } from '@/lib/mail'
+
 import { EscrowStatus } from '@prisma/client'
 import { refundTransaction, toPesewas } from '@/lib/paystack'
+import { getCurrencyCode } from './currency'
 
 /**
  * Perform all actions required when an order is successfully paid.
@@ -78,7 +81,7 @@ export async function fulfillOrder(orderId: string) {
           data: JSON.stringify({ orderId: order.id, sellerTotal }),
         },
       })
-      
+
       // Update professional analytics
       await tx.professionalAnalytics.upsert({
         where: { professionalId: sellerId },
@@ -128,7 +131,7 @@ export async function fulfillOrder(orderId: string) {
       },
     })
   })
-  
+
   // 5. Send order confirmation email to customer
   try {
     const currencyCode2 = await getCurrencyCode()
@@ -147,7 +150,7 @@ export async function fulfillOrder(orderId: string) {
   } catch (emailErr) {
     console.error('Failed to send order confirmation email:', emailErr)
   }
-  
+
   console.log(`Order ${orderId} successfully fulfilled.`)
 }
 
