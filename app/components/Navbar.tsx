@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { Role } from "@prisma/client";
 import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, Plus, Layout, ArrowRight } from "lucide-react";
+import { Search, User, LogOut, Package, Settings, Menu, Calendar, MessageSquare, X, Plus, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useSWR, { useSWRConfig } from "swr";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,6 +41,15 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -97,52 +106,141 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   return (
     <>
       <div className={cn(
-        "fixed w-full top-0 z-50 transition-all duration-500 border-b",
-        scrolled ? 'bg-white/90 backdrop-blur-xl border-stone-200/60 py-2' : 'bg-transparent border-transparent py-4'
+        "fixed w-full top-0 z-50 transition-all duration-300",
+        scrolled ? 'py-2' : 'py-4'
       )}>
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 flex items-center justify-between relative h-12 md:h-16">
+        {/* --- BACKGROUND LAYERS --- */}
+        <div className={cn(
+          "absolute inset-0 transition-all duration-300 border-b z-0",
+          scrolled ? 'bg-white/95 backdrop-blur-md border-stone-200 shadow-sm' : 'bg-transparent border-transparent'
+        )} />
 
-          {/* --- LEFT: MENU + LOGO (The requested "joined" look) --- */}
-          <div className="flex items-center gap-2 md:gap-0 flex-1">
+        {/* --- ARTISAN LOOM & PEARLS BACKGROUND (HIGH VISIBILITY) --- */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+          {/* Layer 1: The Loom (Spanning Threads) */}
+          <div className="absolute inset-0 flex flex-col justify-center gap-6 opacity-40">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ 
+                  x: (mousePos.x - (typeof window !== 'undefined' ? window.innerWidth / 2 : 0)) * (0.015 * i),
+                  opacity: i % 2 === 0 ? [0.3, 0.5, 0.3] : [0.15, 0.3, 0.15]
+                }}
+                transition={{ type: "spring", damping: 40, stiffness: 60 }}
+                className={cn(
+                  "w-full h-[1.5px] bg-gradient-to-r from-transparent via-stone-900/30 to-transparent relative",
+                  i === 2 && "h-[0.5px] border-t border-dashed border-stone-950/20 bg-transparent"
+                )}
+              />
+            ))}
+            
+            {/* Signature Sculpted Thread */}
+            <svg width="100%" height="60" viewBox="0 0 1000 60" fill="none" preserveAspectRatio="none" className="absolute top-1/2 -translate-y-1/2 opacity-30">
+              <motion.path 
+                animate={{ 
+                  d: [
+                    "M0 30 Q 250 10, 500 30 T 1000 30",
+                    "M0 30 Q 250 50, 500 30 T 1000 30",
+                    "M0 30 Q 250 10, 500 30 T 1000 30"
+                  ]
+                }}
+                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                stroke="currentColor" 
+                className="text-stone-950"
+                strokeWidth="1" 
+                strokeDasharray="6 12"
+              />
+            </svg>
+          </div>
+
+          {/* Layer 2: The Obsidian Pearls (Right-Side Bubbling Clusters) - High Contrast */}
+          <div className="absolute right-0 top-0 bottom-0 w-[450px]">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ y: 60, opacity: 0 }}
+                animate={{
+                  y: [-20, -100],
+                  x: (i % 2 === 0 ? [0, 40, 20] : [0, -40, -20]),
+                  opacity: [0, 0.4, 0.4, 0],
+                  scale: [0.8, 1.2, 0.9]
+                }}
+                transition={{
+                  duration: 10 + i * 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: i * 2
+                }}
+                className={cn(
+                  "absolute rounded-full flex items-start justify-start p-1.5 overflow-hidden",
+                  i === 1 ? "bottom-[-10px] right-20 w-12 h-12 bg-stone-800/15" :
+                  i === 2 ? "bottom-0 right-40 w-20 h-20 bg-stone-700/10" :
+                  i === 3 ? "bottom-2 right-64 w-28 h-28 bg-stone-900/10" :
+                  i === 4 ? "bottom-[-20px] right-10 w-16 h-16 bg-stone-800/20" :
+                  i === 5 ? "bottom-10 right-80 w-10 h-10 bg-stone-500/20" :
+                  "bottom-0 right-4 w-24 h-24 bg-stone-900/15"
+                )}
+              >
+                {/* Pearl Shine/Glint (Top Left Highlight) */}
+                <div className="w-2 h-2 bg-white/40 rounded-full blur-[1px]" />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Layer 3: Artisan Light Shimmer */}
+          <motion.div
+            animate={{ 
+              x: ["-100%", "200%"],
+              opacity: [0, 0.4, 0]
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-stone-200/40 to-transparent w-[400px] -skew-x-12"
+          />
+        </div>
+
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-10 flex items-center justify-between relative h-12 md:h-16 z-10">
+
+          {/* --- LEFT: MENU + LOGO (Joined Look) --- */}
+          <div className="flex items-center gap-2 lg:flex-1">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-2 text-stone-900 transition-all active:scale-90"
+              className="lg:hidden p-2 -ml-2 text-stone-900 transition-all active:scale-95"
               aria-label="Open Menu"
             >
               <Menu size={24} strokeWidth={1.5} />
             </button>
-            <Link href="/" className="group block">
+            <Link href="/" className="group block shrink-0">
               <Image
                 src="/navlogo.png"
                 alt="TrendiZip"
                 width={50}
                 height={50}
                 className={cn(
-                  "transition-all duration-500 group-hover:scale-105 object-contain w-auto",
-                  scrolled ? "h-9" : "h-11 md:h-16"
+                  "transition-all duration-300 group-hover:opacity-80 object-contain w-auto",
+                  scrolled ? "h-8 md:h-9" : "h-10 md:h-14"
                 )}
               />
             </Link>
           </div>
 
-          {/* --- DESKTOP: CENTER NAVIGATION --- */}
-          <nav className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
+          {/* --- CENTER: NAVIGATION (Desktop Only) --- */}
+          <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navLinks.map((link, idx) => (
               <Link key={idx} href={link.href} className={cn(
-                "group relative text-[13px] font-medium tracking-wide transition-all",
+                "group relative text-[13px] font-medium tracking-tight transition-colors whitespace-nowrap",
                 isActive(link.href) ? "text-stone-950" : "text-stone-500 hover:text-stone-900"
               )}>
                 <span>{link.label}</span>
                 {isActive(link.href) && (
-                  <motion.span layoutId="nav-underline" className="absolute -bottom-1.5 left-0 w-full h-[1.5px] bg-stone-950" />
+                  <motion.span layoutId="nav-underline" className="absolute -bottom-1 left-0 w-full h-[1.5px] bg-stone-950" />
                 )}
               </Link>
             ))}
           </nav>
 
-          {/* --- RIGHT: ACTIONS (Grouped) --- */}
-          <div className="flex items-center justify-end flex-1 gap-1 md:gap-4">
-            <div className="flex items-center gap-1 md:gap-3 px-2 py-1 rounded-full bg-stone-100/40 md:bg-transparent backdrop-blur-md md:backdrop-blur-0 border border-stone-200/30 md:border-0">
+          {/* --- RIGHT: ACTIONS (Consolidated) --- */}
+          <div className="flex items-center justify-end lg:flex-1 gap-1 md:gap-3">
+            <div className="flex items-center gap-1 md:gap-2">
               <button onClick={() => setIsSearchOpen(true)} className="p-2 text-stone-600 hover:text-stone-950 transition-colors">
                 <Search size={20} strokeWidth={1.5} />
               </button>
@@ -152,8 +250,8 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="relative ml-1 outline-none group">
-                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden ring-1 ring-stone-200 group-hover:ring-stone-900 transition-all">
+                    <button className="relative ml-1 outline-none group flex items-center">
+                      <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden border border-stone-200 group-hover:border-stone-900 transition-all">
                         <Image
                           src={user.profileImage || user.image || "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"}
                           alt="User" width={36} height={36} className="w-full h-full object-cover"
@@ -161,62 +259,47 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 p-2 bg-white/95 backdrop-blur-xl border-stone-200 shadow-2xl rounded-2xl">
-                    <div className="px-4 py-3 mb-2 bg-stone-50/50 rounded-xl">
-                      <p className="text-[13px] font-semibold text-stone-900 truncate">{user.name}</p>
-                      <p className="text-[11px] text-stone-500 truncate mt-0.5">{user.email}</p>
+                  <DropdownMenuContent align="end" className="w-60 p-1.5 bg-white border-stone-200 shadow-xl rounded-xl">
+                    <div className="px-3 py-2.5 mb-1 border-b border-stone-50">
+                      <p className="text-xs font-semibold text-stone-900 truncate">{user.name}</p>
+                      <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       {[
                         { icon: User, label: 'Profile', href: getProfileUrl() },
                         { icon: MessageSquare, label: 'Messages', href: '/messages' },
                         { icon: Package, label: 'Orders', href: '/orders' },
                         { icon: Calendar, label: 'Bookings', href: '/bookings' },
                       ].map((item, idx) => (
-                        <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
-                          <Link href={item.href} onClick={() => handleCategoryClick(item.label)} className="flex items-center gap-3 px-3 py-2 text-stone-600">
-                            <item.icon size={17} strokeWidth={1.25} />
-                            <span className="text-[13px]">{item.label}</span>
+                        <DropdownMenuItem key={idx} asChild className="cursor-pointer focus:bg-stone-50 rounded-md">
+                          <Link href={item.href} onClick={() => handleCategoryClick(item.label)} className="flex items-center gap-2.5 px-2.5 py-2 text-stone-600">
+                            <item.icon size={16} strokeWidth={1.5} />
+                            <span className="text-sm">{item.label}</span>
                           </Link>
                         </DropdownMenuItem>
                       ))}
 
-                      {/* Customer Role logic */}
                       {role === "CUSTOMER" && (
-                        <div className="pt-2 mt-2 border-t border-stone-100">
-                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Professional Hub</p>
-                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg mt-0.5">
-                            <Link href="/register-as-professional" className="flex items-center gap-3 px-3 py-2 text-stone-600">
-                              <Plus size={17} strokeWidth={1.25} />
-                              <span className="text-[13px]">Become a Professional</span>
-                            </Link>
-                          </DropdownMenuItem>
-                        </div>
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-md">
+                          <Link href="/register-as-professional" className="flex items-center gap-2.5 px-2.5 py-2 text-stone-600 border-t border-stone-50 mt-1">
+                            <Plus size={16} strokeWidth={1.5} />
+                            <span className="text-sm">Be a Professional</span>
+                          </Link>
+                        </DropdownMenuItem>
                       )}
 
-                      {/* Management logic */}
                       {(role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                        <div className="pt-2 mt-2 border-t border-stone-100">
-                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400">Management</p>
-                          <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
-                            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-stone-900 font-medium">
-                              <Settings size={17} strokeWidth={1.25} />
-                              <span className="text-[13px]">Dashboard</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          {role === "PROFESSIONAL" && profileSlug && (
-                            <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-lg">
-                              <Link href={`/tz/${profileSlug}`} className="flex items-center gap-3 px-3 py-2 text-stone-600">
-                                <Layout size={17} strokeWidth={1.25} />
-                                <span className="text-[13px]">My Public Profile</span>
-                              </Link>
-                            </DropdownMenuItem>
-                          )}
-                        </div>
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-stone-50 rounded-md">
+                          <Link href="/dashboard" className="flex items-center gap-2.5 px-2.5 py-2 text-stone-900 font-medium border-t border-stone-50 mt-1">
+                            <Settings size={16} strokeWidth={1.5} />
+                            <span className="text-sm">Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
                       )}
-                      <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 font-medium rounded-lg hover:bg-red-50/50 mt-1 transition-colors">
-                        <LogOut size={17} strokeWidth={1.25} />
-                        <span className="text-[13px]">Sign Out</span>
+
+                      <button onClick={() => signOut()} className="w-full flex items-center gap-2.5 px-2.5 py-2 text-red-600 text-sm font-medium rounded-md hover:bg-red-50 transition-colors mt-1">
+                        <LogOut size={16} strokeWidth={1.5} />
+                        <span>Sign Out</span>
                       </button>
                     </div>
                   </DropdownMenuContent>
@@ -224,10 +307,9 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               ) : (
                 <button
                   onClick={() => window.location.href = '/auth/signin'}
-                  className="w-8 h-8 md:w-auto md:px-4 md:py-2 flex items-center justify-center bg-stone-950 text-white md:text-stone-900 md:bg-transparent rounded-full md:text-[13px] md:font-medium"
+                  className="px-4 py-2 bg-stone-950 text-white text-[13px] font-medium rounded-full hover:bg-stone-800 transition-all"
                 >
-                  <User size={16} className="md:hidden" />
-                  <span className="hidden md:block">Login</span>
+                  Login
                 </button>
               )}
             </div>
@@ -235,91 +317,67 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
         </div>
       </div>
 
-      {/* --- CREATIVE MOBILE MENU OVERLAY --- */}
+      {/* --- MOBILE/TABLET MENU OVERLAY --- */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[100] bg-white md:hidden overflow-hidden flex flex-col"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            className="fixed inset-0 z-[100] bg-white lg:hidden flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-6 border-b border-stone-50">
-              <div className="flex items-center gap-3">
-                <Image src="/navlogo.png" alt="Logo" width={32} height={32} />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Navigation</span>
-              </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-stone-100 text-stone-900 active:scale-95 transition-all">
+            <div className="flex items-center justify-between px-6 py-6 border-b border-stone-100">
+              <Image src="/navlogo.png" alt="Logo" width={32} height={32} />
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-full bg-stone-100 text-stone-900">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-8 py-10 space-y-12">
-              {/* Main Links */}
-              <nav className="space-y-6">
+            <div className="flex-1 overflow-y-auto px-8 py-10">
+              <nav className="space-y-8">
                 {navLinks.map((link, idx) => (
-                  <motion.div key={idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + idx * 0.05 }}>
-                    <Link href={link.href} onClick={() => setMobileMenuOpen(false)} className="group flex items-end justify-between border-b border-stone-100 pb-4">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-300 mb-1">{link.sub}</p>
-                        <p className={cn("text-3xl font-light tracking-tight", isActive(link.href) ? "text-stone-950 font-normal" : "text-stone-500")}>
-                          {link.label}
-                        </p>
-                      </div>
-                      <ArrowRight size={20} className="text-stone-200 group-hover:text-stone-950 transition-colors" />
-                    </Link>
-                  </motion.div>
+                  <Link
+                    key={idx}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block group"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">{link.sub}</p>
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-3xl font-light", isActive(link.href) ? "text-stone-950" : "text-stone-500")}>
+                        {link.label}
+                      </span>
+                      <ArrowRight size={20} className="text-stone-200" />
+                    </div>
+                  </Link>
                 ))}
               </nav>
 
-              {/* Dashboard & Pro Logic Section inside Mobile Menu */}
-              <div className="space-y-6 pt-6">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Your Hub</p>
-                <div className="grid grid-cols-1 gap-3">
-                  {user && (role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
-                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 bg-stone-950 text-white rounded-2xl shadow-xl shadow-stone-200">
-                      <div className="flex items-center gap-3">
-                        <Settings size={20} strokeWidth={1.5} />
-                        <span className="font-medium text-sm">Open Dashboard</span>
-                      </div>
-                      <ArrowRight size={18} />
-                    </Link>
-                  )}
-                  {user && role === "CUSTOMER" && (
-                    <Link href="/register-as-professional" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 bg-stone-50 border border-stone-200 rounded-2xl">
-                      <div className="flex items-center gap-3 text-stone-900">
-                        <Plus size={20} strokeWidth={1.5} />
-                        <span className="font-medium text-sm">Become a Professional</span>
-                      </div>
-                      <ArrowRight size={18} className="text-stone-400" />
-                    </Link>
-                  )}
-                </div>
+              <div className="mt-12 pt-8 border-t border-stone-100">
+                {user && (role === "PROFESSIONAL" || role === "SUPER_ADMIN" || role === "ADMIN") && (
+                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 bg-stone-950 text-white rounded-xl">
+                    <span className="font-medium">Go to Dashboard</span>
+                    <ArrowRight size={18} />
+                  </Link>
+                )}
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-8 bg-stone-50/80 border-t border-stone-100">
+            <div className="p-8 border-t border-stone-100 bg-stone-50">
               {user ? (
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Image src={user.profileImage || user.image || ""} alt="" width={44} height={44} className="rounded-full ring-2 ring-white" />
-                    <div>
-                      <p className="text-sm font-bold text-stone-900">{user.name}</p>
-                      <p className="text-[10px] text-stone-400 uppercase tracking-widest">Verified Member</p>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Image src={user.profileImage || user.image || ""} alt="" width={40} height={40} className="rounded-full" />
+                    <p className="text-sm font-bold text-stone-900">{user.name}</p>
                   </div>
-                  <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="p-3 text-red-600 bg-red-50 rounded-full active:scale-90 transition-all">
-                    <LogOut size={20} />
+                  <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="text-sm font-semibold text-red-600">
+                    Sign Out
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => window.location.href = '/auth/signin'} className="py-4 text-[11px] font-bold uppercase tracking-widest text-stone-900 border border-stone-200 bg-white rounded-xl">Login</button>
-                  <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="py-4 text-[11px] font-bold uppercase tracking-widest text-white bg-stone-950 rounded-xl">Sign Up</button>
+                  <button onClick={() => window.location.href = '/auth/signin'} className="py-3 text-sm font-bold border border-stone-200 rounded-lg">Login</button>
+                  <button onClick={() => window.location.href = '/auth/signin?mode=signup'} className="py-3 text-sm font-bold bg-stone-950 text-white rounded-lg">Sign Up</button>
                 </div>
               )}
             </div>

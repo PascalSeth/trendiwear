@@ -1154,7 +1154,7 @@ function ManualDeliveryDialog({
       trackingNumber: confirmation?.trackingNumber || order.trackingNumber || "",
       riderId: order.riderId || "",
     };
-  }, [order?.id, order?.riderName, order?.riderPhone, order?.manualDeliveryFee, order?.trackingNumber, order?.riderId, order?.deliveryConfirmations]);
+  }, [order]);
 
   const [details, setDetails] = useState<ManualDeliveryDetails>(getInitialDetails());
 
@@ -1168,7 +1168,7 @@ function ManualDeliveryDialog({
         .then(data => setRiders(data.riders || []))
         .catch(err => console.error("Failed to fetch riders:", err));
     }
-  }, [open, order.id]); // Stable dependency on order.id instead of order object
+  }, [open, order.id, getInitialDetails]); // Stable dependency on order.id and memoized getter
 
   const handleRiderSelect = (riderId: string) => {
     if (riderId === "manual") {

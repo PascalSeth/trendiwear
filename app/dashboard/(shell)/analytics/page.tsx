@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import Image from "next/image";
 import { AccessControlWrapper } from '@/app/dashboard/components/AccessControlWrapper';
 import {
   AreaChart,
@@ -233,9 +234,11 @@ export default function AnalyticsPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="flex items-center gap-5">
                {analytics.profile?.businessImage ? (
-                  <img 
+                  <Image 
                     src={analytics.profile.businessImage} 
                     alt={analytics.profile.businessName}
+                    width={80}
+                    height={80}
                     className="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white"
                   />
                ) : (
