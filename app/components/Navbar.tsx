@@ -41,15 +41,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -115,86 +107,101 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
           scrolled ? 'bg-white/95 backdrop-blur-md border-stone-200 shadow-sm' : 'bg-transparent border-transparent'
         )} />
 
-        {/* --- ARTISAN LOOM & PEARLS BACKGROUND (HIGH VISIBILITY) --- */}
+        {/* --- ARTISAN GARMENTS & SILK STITCHED PATHS (FINAL) --- */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-          {/* Layer 1: The Loom (Spanning Threads) */}
-          <div className="absolute inset-0 flex flex-col justify-center gap-6 opacity-40">
-            {[1, 2, 3, 4].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ 
-                  x: (mousePos.x - (typeof window !== 'undefined' ? window.innerWidth / 2 : 0)) * (0.015 * i),
-                  opacity: i % 2 === 0 ? [0.3, 0.5, 0.3] : [0.15, 0.3, 0.15]
-                }}
-                transition={{ type: "spring", damping: 40, stiffness: 60 }}
-                className={cn(
-                  "w-full h-[1.5px] bg-gradient-to-r from-transparent via-stone-900/30 to-transparent relative",
-                  i === 2 && "h-[0.5px] border-t border-dashed border-stone-950/20 bg-transparent"
-                )}
-              />
+          {/* Layer 1: Silk Stitched Paths (Curved Flowing Stitches) */}
+          <div className="absolute inset-0 flex flex-col justify-center gap-2">
+            {[1, 2, 3].map((i) => (
+              <svg key={i} width="100%" height="80" viewBox="0 0 1000 80" fill="none" preserveAspectRatio="none" className="opacity-30">
+                <defs>
+                  <mask id={`stitch-mask-${i}`}>
+                    <motion.path
+                      d={
+                        i === 1 ? "M0 40 Q 250 10, 500 40 T 1000 40" :
+                        i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
+                        "M0 50 Q 200 20, 450 50 T 1000 50"
+                      }
+                      stroke="white"
+                      strokeWidth="3"
+                      animate={{ 
+                        pathLength: [0, 1, 0],
+                        pathOffset: [0, 0, 1]
+                      }}
+                      transition={{ 
+                        duration: 10 + i * 3, 
+                        repeat: Infinity, 
+                        ease: "easeInOut",
+                        delay: i * 1.5 
+                      }}
+                    />
+                  </mask>
+                </defs>
+                
+                {/* The Visible Dashed Path (Broken Stitches) */}
+                <path
+                  d={
+                    i === 1 ? "M0 40 Q 250 10, 500 40 T 1000 40" :
+                    i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
+                    "M0 50 Q 200 20, 450 50 T 1000 50"
+                  }
+                  stroke="currentColor"
+                  className="text-stone-950"
+                  strokeWidth="2"
+                  strokeDasharray={i === 1 ? "10 12" : i === 2 ? "8 16" : "12 8"}
+                  mask={`url(#stitch-mask-${i})`}
+                />
+              </svg>
             ))}
-            
-            {/* Signature Sculpted Thread */}
-            <svg width="100%" height="60" viewBox="0 0 1000 60" fill="none" preserveAspectRatio="none" className="absolute top-1/2 -translate-y-1/2 opacity-30">
-              <motion.path 
-                animate={{ 
-                  d: [
-                    "M0 30 Q 250 10, 500 30 T 1000 30",
-                    "M0 30 Q 250 50, 500 30 T 1000 30",
-                    "M0 30 Q 250 10, 500 30 T 1000 30"
-                  ]
-                }}
-                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-                stroke="currentColor" 
-                className="text-stone-950"
-                strokeWidth="1" 
-                strokeDasharray="6 12"
-              />
-            </svg>
           </div>
 
-          {/* Layer 2: The Obsidian Pearls (Right-Side Bubbling Clusters) - High Contrast */}
+          {/* Layer 2: Artisan Garments (Shirt & Bag Bubbling Clusters) */}
           <div className="absolute right-0 top-0 bottom-0 w-[450px]">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <motion.div
                 key={i}
-                initial={{ y: 60, opacity: 0 }}
+                initial={{ y: 80, opacity: 0 }}
                 animate={{
-                  y: [-20, -100],
-                  x: (i % 2 === 0 ? [0, 40, 20] : [0, -40, -20]),
-                  opacity: [0, 0.4, 0.4, 0],
-                  scale: [0.8, 1.2, 0.9]
+                  y: [-20, -120],
+                  x: (i % 2 === 0 ? [0, 60, 20] : [0, -60, -20]),
+                  opacity: [0, 0.45, 0.45, 0],
+                  scale: [0.7, 1.2, 0.8],
+                  rotate: [i * 15, i * -15, i * 15]
                 }}
                 transition={{
-                  duration: 10 + i * 3,
+                  duration: 12 + i * 4,
                   repeat: Infinity,
                   ease: "easeInOut",
-                  delay: i * 2
+                  delay: i * 1.5
                 }}
-                className={cn(
-                  "absolute rounded-full flex items-start justify-start p-1.5 overflow-hidden",
-                  i === 1 ? "bottom-[-10px] right-20 w-12 h-12 bg-stone-800/15" :
-                  i === 2 ? "bottom-0 right-40 w-20 h-20 bg-stone-700/10" :
-                  i === 3 ? "bottom-2 right-64 w-28 h-28 bg-stone-900/10" :
-                  i === 4 ? "bottom-[-20px] right-10 w-16 h-16 bg-stone-800/20" :
-                  i === 5 ? "bottom-10 right-80 w-10 h-10 bg-stone-500/20" :
-                  "bottom-0 right-4 w-24 h-24 bg-stone-900/15"
-                )}
+                className="absolute"
+                style={{ 
+                  right: `${10 + (i % 3) * 20}%`, 
+                  top: `${15 + i * 12}%` 
+                }}
               >
-                {/* Pearl Shine/Glint (Top Left Highlight) */}
-                <div className="w-2 h-2 bg-white/40 rounded-full blur-[1px]" />
+                {/* Abstract Shirt or Bag SVG - Bold Artisan Style */}
+                {i % 2 === 0 ? (
+                  <svg width="64" height="64" viewBox="0 0 100 100" fill="currentColor" className="text-stone-950/25 drop-shadow-md">
+                    <path d="M30 15 L40 15 L45 20 L55 20 L60 15 L70 15 L90 40 L75 40 L75 90 L25 90 L25 40 L10 40 Z" />
+                    <circle cx="50" cy="40" r="2.5" className="fill-stone-600/30" />
+                    <circle cx="50" cy="55" r="2.5" className="fill-stone-600/30" />
+                    <circle cx="50" cy="70" r="2.5" className="fill-stone-600/30" />
+                  </svg>
+                ) : (
+                  <svg width="60" height="60" viewBox="0 0 100 100" fill="currentColor" className="text-stone-900/30 drop-shadow-md">
+                    <path d="M25 35 L75 35 L80 90 L20 90 Z M40 35 Q40 15, 50 15 Q60 15, 60 35" fill="none" stroke="currentColor" strokeWidth="8" />
+                    <rect x="25" y="35" width="50" height="55" rx="5" />
+                  </svg>
+                )}
               </motion.div>
             ))}
           </div>
 
-          {/* Layer 3: Artisan Light Shimmer */}
+          {/* Artisan Precision Light Sweep */}
           <motion.div
-            animate={{ 
-              x: ["-100%", "200%"],
-              opacity: [0, 0.4, 0]
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-stone-200/40 to-transparent w-[400px] -skew-x-12"
+            animate={{ x: ["-100%", "250%"], opacity: [0, 0.4, 0] }}
+            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-stone-200/50 to-transparent w-[300px] -skew-x-12"
           />
         </div>
 
