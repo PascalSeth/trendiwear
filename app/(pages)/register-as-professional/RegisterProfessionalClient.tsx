@@ -6,8 +6,8 @@ import { useSession, signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Upload, ChevronLeft, Check, Store,
-  Palette, Scissors, Loader2, MapPin,
-  Smartphone, Sparkles, Building2, Archive,
+  Scissors, Loader2,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,17 @@ const STEPS = [
   { id: 2, label: "Showcase", sub: "Visual Portfolio" },
   { id: 3, label: "Logistics", sub: "Location & Payouts" },
 ];
+
+interface ProfessionalType {
+  id: string;
+  name: string;
+}
+
+interface MomoProvider {
+  code: string;
+  name?: string;
+  displayName?: string;
+}
 
 export default function RegisterProfessionalForm() {
   const router = useRouter();
@@ -48,8 +59,8 @@ export default function RegisterProfessionalForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState<string>("");
-  const [professionalTypes, setProfessionalTypes] = useState<any[]>([]);
-  const [momoProviders, setMomoProviders] = useState<any[]>([]);
+  const [professionalTypes, setProfessionalTypes] = useState<ProfessionalType[]>([]);
+  const [momoProviders, setMomoProviders] = useState<MomoProvider[]>([]);
 
   useEffect(() => {
     // API Fetching logic remains same
@@ -61,7 +72,7 @@ export default function RegisterProfessionalForm() {
           const d = await p.json();
           setMomoProviders(d.providers || d.fallbackProviders || []);
         }
-      } catch (err) { }
+      } catch { }
     };
     fetchData();
   }, []);
@@ -122,7 +133,7 @@ export default function RegisterProfessionalForm() {
         <div className="relative z-10 flex flex-col h-full p-8 lg:p-12 justify-between">
           <div className="space-y-8 lg:space-y-12">
             <div className="space-y-2">
-              <h3 className="text-white font-serif text-2xl lg:text-3xl leading-tight">Master Artisan <br /><span className="italic text-stone-500">Collective</span></h3>
+              <h3 className="text-white font-serif text-2xl lg:text-3xl leading-tight">Grow Your <br /><span className="italic text-stone-500">Business</span></h3>
               <div className="h-px w-12 bg-stone-700" />
             </div>
 
@@ -155,7 +166,7 @@ export default function RegisterProfessionalForm() {
 
           <div className="hidden lg:block bg-white/5 border border-white/10 p-6 backdrop-blur-sm">
             <p className="text-[10px] text-stone-400 leading-relaxed font-serif italic">
-              "Design is not just what it looks like and feels like. Design is how it works."
+              &quot;Design is not just what it looks like and feels like. Design is how it works.&quot;
             </p>
           </div>
         </div>
