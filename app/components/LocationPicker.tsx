@@ -325,13 +325,13 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
             <div className={latitude && longitude ? "block" : "hidden"}>
                 <div 
                     ref={mapRef} 
-                    className="w-full h-56 rounded-3xl bg-stone-100 border-2 border-stone-100 overflow-hidden shadow-inner grayscale-[0.2]"
+                    className="w-full h-44 lg:h-56 rounded-3xl bg-stone-100 border-2 border-stone-100 overflow-hidden shadow-inner grayscale-[0.2]"
                 />
                 
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-5 bg-white border border-stone-100 rounded-3xl flex items-start gap-4 shadow-sm"
+                    className="mt-4 p-4 lg:p-5 bg-white border border-stone-100 rounded-3xl flex items-start gap-3 lg:gap-4 shadow-sm"
                 >
                     <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0">
                         <Check size={18} className="text-emerald-600" />
