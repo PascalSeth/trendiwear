@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Crown, Medal, Award } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 // ... (Types and Interfaces remain identical to keep logic consistent)
 type TopSeller = {
@@ -13,6 +14,7 @@ type TopSeller = {
   imageUrl: string;
   color: string;
   totalSales: number;
+  slug: string;
 };
 
 interface RawProfessionalProfile {
@@ -22,6 +24,7 @@ interface RawProfessionalProfile {
   actualSales?: number | null;
   completedOrders?: number | null;
   rating?: number | null;
+  slug?: string | null;
   specialization?: { name: string; } | null;
   user?: { firstName: string; lastName: string; profileImage?: string | null; } | null;
 }
@@ -57,7 +60,7 @@ function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
       </div>
 
       {/* Profile Image */}
-      <div className="relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0 z-10">
+      <Link href={`/tz/${seller.slug}`} className="relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0 z-20">
         <div className="w-full h-full rounded-full border border-stone-200 group-hover:border-stone-900 transition-colors overflow-hidden bg-stone-100">
           <Image
             src={seller.imageUrl}
@@ -67,13 +70,15 @@ function SellerRow({ seller, index }: { seller: TopSeller; index: number }) {
             className="w-full h-full object-cover grayscale md:grayscale group-hover:grayscale-0 transition-all duration-500"
           />
         </div>
-      </div>
+      </Link>
 
       {/* Seller Info */}
-      <div className="flex-1 min-w-0 z-10">
-        <h3 className="text-base md:text-xl font-serif text-stone-900 group-hover:italic transition-all duration-300 truncate">
-          {seller.name}
-        </h3>
+      <div className="flex-1 min-w-0 z-20">
+        <Link href={`/tz/${seller.slug}`}>
+          <h3 className="text-base md:text-xl font-serif text-stone-900 group-hover:italic transition-all duration-300 truncate">
+            {seller.name}
+          </h3>
+        </Link>
         <p className="text-[9px] md:text-xs font-mono uppercase tracking-[0.15em] text-stone-500 mt-0.5 truncate">
           {seller.profession}
         </p>
@@ -115,6 +120,7 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
       imageUrl: prof.businessImage || prof.user?.profileImage || 'https://images.pexels.com/photos/3760854/pexels-photo-3760854.jpeg',
       color: gradients[index % gradients.length],
       totalSales: prof.actualSales ?? prof.completedOrders ?? 0,
+      slug: prof.slug || prof.id,
     }));
   }, []);
 
@@ -189,9 +195,12 @@ function TopSellers({ initialSellers }: { initialSellers?: RawProfessionalProfil
           <p className="font-mono text-[10px] md:text-xs uppercase tracking-widest text-stone-400 mb-4 md:mb-6">
             View all rankings
           </p>
-          <button className="w-full md:w-auto px-8 py-4 md:py-3 border border-stone-900 text-stone-900 text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-900 hover:text-white transition-all duration-300 active:scale-[0.98]">
+          <Link 
+            href="/top-sellers"
+            className="inline-block w-full md:w-auto px-8 py-4 md:py-3 border border-stone-900 text-stone-900 text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-900 hover:text-white transition-all duration-300 active:scale-[0.98]"
+          >
             See Full Leaderboard
-          </button>
+          </Link>
         </div>
       </div>
     </div>

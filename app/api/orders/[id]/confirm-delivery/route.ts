@@ -117,6 +117,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // 3. Initiate Paystack Transfer (Escrow Release)
       // Use the confirmation ID as a deterministic reference for idempotency
       const payoutReference = `PAY_${confirmation.id.replace(/-/g, '')}`
+      let transferSuccess = false
+      let failureReason = null
+
       try {
           await initiateTransfer({
             source: 'balance',
@@ -126,7 +129,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             reference: payoutReference,
             currency: 'GHS'
           })
-
+          transferSuccess = true
+          
           // Update Escrow status to reflect successful release
           await tx.paymentEscrow.update({
             where: {
@@ -137,17 +141,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             },
             data: {
               status: 'RELEASED',
-              releasedAt: new Date()
+              releasedAt: new Date(),
+              failureReason: null,
+              lastAttemptAt: new Date()
             }
           })
-      } catch (paystackError) {
+      } catch (paystackError: unknown) {
           console.error('[Payout] Paystack Transfer Error:', paystackError)
-          // As a Registered Business, we maintain the Escrow model. 
-          // If automated release fails, the status remains 'HELD' for admin review.
+          const errorMsg = (paystackError as Error).message || ""
+          const isBalanceError = errorMsg.toLowerCase().includes('balance') || errorMsg.toLowerCase().includes('insufficient')
+          failureReason = isBalanceError ? 'Insufficient Balance' : 'Transfer Failed'
+
+          await tx.paymentEscrow.update({
+            where: {
+              orderId_professionalId: {
+                orderId,
+                professionalId
+              }
+            },
+            data: {
+              failureReason,
+              lastAttemptAt: new Date()
+            }
+          })
       }
 
       return {
         success: true,
+        transferSuccess,
+        failureReason,
         amount: sellerSubtotal,
         businessName: profProfile.businessName
       }
@@ -161,19 +183,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // 4. Notifications
+    const notificationTitle = result.transferSuccess ? 'Payout Initiated!' : 'Receipt Confirmed'
+    const notificationMessage = result.transferSuccess 
+      ? `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} has been initiated and will reflect in your account within 24-48 hours.`
+      : `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} is being processed by our system and will reflect once finalized.`
+
     await prisma.notification.create({
       data: {
         userId: professionalId,
         type: 'DELIVERY_ARRIVAL',
-        title: 'Payout Initiated!',
-        message: `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} has been initiated and will reflect in your account within 24-48 hours.`,
-        data: JSON.stringify({ orderId, amount: result.amount }),
+        title: notificationTitle,
+        message: notificationMessage,
+        data: JSON.stringify({ 
+          orderId, 
+          amount: result.amount, 
+          status: result.transferSuccess ? 'INITIATED' : 'PROCESSING' 
+        }),
       },
     })
 
     return NextResponse.json({
       success: true,
-      message: `Receipt confirmed for ${result.businessName}. Payout initiated.`,
+      message: result.transferSuccess 
+        ? `Receipt confirmed for ${result.businessName}. Payout initiated.` 
+        : `Receipt confirmed for ${result.businessName}. Payout pending (Balance Check Required).`,
       data: result
     })
 

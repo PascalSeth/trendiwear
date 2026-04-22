@@ -92,6 +92,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     { href: "/fashion-trends", label: "Fashion Trends", sub: "Visual Inspirations" },
     { href: "/tailors-designers", label: "Tailors & Designers", sub: "Craftsmanship & Artistry" },
     { href: "/shopping", label: "Shopping", sub: "The Curated Collection" },
+    { href: "/top-sellers", label: "Top Sellers", sub: "Hall of Fame" },
     { href: "/blog", label: "Blog", sub: "Editorial & News" },
   ];
 

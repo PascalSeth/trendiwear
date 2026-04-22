@@ -90,45 +90,85 @@ export async function POST() {
 
           // Initiate Paystack Transfer (Idempotent reference)
           const payoutReference = `PAY_${conf.id.replace(/-/g, '')}`
+          let transferSuccess = false
+          let failureReason = null
           
-          await initiateTransfer({
-            source: 'balance',
-            amount: toPesewas(sellerSubtotal),
-            recipient: profProfile.paystackRecipientCode as string,
-            reason: `Auto-Release Payout Order #${orderId.slice(-8).toUpperCase()} - ${profProfile.businessName}`,
-            reference: payoutReference,
-            currency: 'GHS'
-          })
+          try {
+            await initiateTransfer({
+              source: 'balance',
+              amount: toPesewas(sellerSubtotal),
+              recipient: profProfile.paystackRecipientCode as string,
+              reason: `Auto-Release Payout Order #${orderId.slice(-8).toUpperCase()} - ${profProfile.businessName}`,
+              reference: payoutReference,
+              currency: 'GHS'
+            })
+            transferSuccess = true
 
-          // Update Escrow status to reflect successful release
-          await tx.paymentEscrow.update({
-            where: {
-              orderId_professionalId: {
-                orderId,
-                professionalId
+            // Update Escrow status to reflect successful release
+            await tx.paymentEscrow.update({
+              where: {
+                orderId_professionalId: {
+                  orderId,
+                  professionalId
+                }
+              },
+              data: {
+                status: 'RELEASED',
+                releasedAt: new Date(),
+                failureReason: null,
+                lastAttemptAt: new Date()
               }
-            },
-            data: {
-              status: 'RELEASED',
-              releasedAt: new Date()
-            }
-          })
+            })
+          } catch (paystackError: unknown) {
+            console.error('[Auto-Payout] Paystack Transfer Error:', paystackError)
+            const errorMsg = (paystackError as Error).message || ""
+            const isBalanceError = errorMsg.toLowerCase().includes('balance') || errorMsg.toLowerCase().includes('insufficient')
+            failureReason = isBalanceError ? 'Insufficient Balance' : 'Transfer Failed'
 
-          return { amount: sellerSubtotal }
+            await tx.paymentEscrow.update({
+              where: {
+                orderId_professionalId: {
+                  orderId,
+                  professionalId
+                }
+              },
+              data: {
+                failureReason,
+                lastAttemptAt: new Date()
+              }
+            })
+          }
+
+          return { amount: sellerSubtotal, transferSuccess, failureReason }
         })
 
         // Notifications
+        const notificationTitle = result.transferSuccess ? 'Automated Payout Released' : 'Auto-Release Confirmed'
+        const notificationMessage = result.transferSuccess
+          ? `Order #${orderId.slice(-8).toUpperCase()} has reached the 3-day confirmation deadline. Your payout of GHS ${result.amount.toFixed(2)} has been automatically initiated.`
+          : `Order #${orderId.slice(-8).toUpperCase()} has reached the 3-day confirmation deadline. Your payout of GHS ${result.amount.toFixed(2)} is being processed and will reflect once finalized.`
+
         await prisma.notification.create({
           data: {
             userId: professionalId,
             type: 'DELIVERY_ARRIVAL',
-            title: 'Automated Payout Released',
-            message: `Order #${orderId.slice(-8).toUpperCase()} has reached the 3-day confirmation deadline. Your payout of GHS ${result.amount.toFixed(2)} has been automatically initiated.`,
-            data: JSON.stringify({ orderId, amount: result.amount }),
+            title: notificationTitle,
+            message: notificationMessage,
+            data: JSON.stringify({ 
+              orderId, 
+              amount: result.amount,
+              status: result.transferSuccess ? 'INITIATED' : 'PROCESSING'
+            }),
           },
         })
 
-        results.push({ orderId, professionalId, status: "success", amount: sellerSubtotal })
+        results.push({ 
+          orderId, 
+          professionalId, 
+          status: result.transferSuccess ? "success" : "processing", 
+          failureReason: result.failureReason,
+          amount: sellerSubtotal 
+        })
       } catch (err: unknown) {
         console.error(`[Auto-Payout] Failed for Order ${orderId}, Seller ${professionalId}:`, err)
         results.push({ orderId, professionalId, status: "failed", error: err instanceof Error ? err.message : String(err) })

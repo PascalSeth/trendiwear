@@ -661,6 +661,8 @@ model PaymentEscrow {
   order          Order?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   booking        Booking?     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   professional   User         @relation(fields: [professionalId], references: [id])
+  failureReason  String?
+  lastAttemptAt  DateTime?
 
   @@unique([orderId, professionalId])
   @@index([bookingId])
@@ -699,6 +701,8 @@ model Booking {
   requirementAnswers Json?
   customer           User                 @relation("BookingCustomer", fields: [customerId], references: [id])
   professional       User                 @relation("BookingProfessional", fields: [professionalId], references: [id])
+  failureReason      String?
+  lastAttemptAt      DateTime?
   service            Service              @relation(fields: [serviceId], references: [id])
   variant            ServiceVariant?      @relation(fields: [variantId], references: [id])
   paymentEscrows     PaymentEscrow[]

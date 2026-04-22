@@ -551,6 +551,24 @@ export async function verifyTransfer(reference: string): Promise<Record<string, 
 }
 
 /**
+ * Check the available Paystack balance for transfers
+ */
+export async function checkBalance(): Promise<{ status: boolean; message: string; data: Array<{ currency: string; balance: number }> }> {
+  const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/balance`, {
+    method: 'GET',
+    headers: getPaystackHeaders(),
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch balance')
+  }
+  
+  return data
+}
+
+/**
  * Generate a unique transaction reference
  */
 export function generateReference(prefix: string = 'TZ'): string {
