@@ -78,7 +78,7 @@ interface ShoppingClientProps {
 }
 
 // ── CUSTOM CATEGORY PORTAL COMPONENT ──
-function CategoryChapter({ cat, index, variant, isMobile = false }: { cat: any, index: number, variant: 'arch' | 'rect' | 'oval', isMobile?: boolean }) {
+function CategoryChapter({ cat, index, variant, isMobile = false }: { cat: Category, index: number, variant: 'arch' | 'rect' | 'oval', isMobile?: boolean }) {
   const shapeClass = variant === 'arch' ? 'rounded-t-full' : variant === 'oval' ? 'rounded-full' : 'rounded-[3rem]';
   const paddingClass = isMobile ? 'p-6' : 'p-10';
 
@@ -112,7 +112,7 @@ function CategoryChapter({ cat, index, variant, isMobile = false }: { cat: any, 
         {!isMobile && (
           <div className="absolute top-1/2 -right-8 -translate-y-1/2 rotate-90 origin-center hidden xl:block">
             <span className="text-[9px] font-mono uppercase tracking-[0.5em] text-white/40 whitespace-nowrap">
-              Collection No. {index + 1} // {cat._count.products} Pieces
+              Collection No. {index + 1}{" // "}{cat._count.products} Pieces
             </span>
           </div>
         )}
