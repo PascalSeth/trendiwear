@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import LocationPicker from "@/app/components/LocationPicker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import imageCompression from 'browser-image-compression';
 
 const BIO_CHAR_LIMIT = 50;
 
@@ -55,6 +56,7 @@ export default function RegisterProfessionalForm() {
 
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
   const [businessImage, setBusinessImage] = useState<File | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [businessImagePreview, setBusinessImagePreview] = useState<string>("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -315,7 +317,43 @@ export default function RegisterProfessionalForm() {
                           <p className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Profile Image Upload</p>
                         </div>
                       )}
-                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setBusinessImage(e.target.files?.[0] || null)} />
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 15 * 1024 * 1024) { // Absolute 15MB limit before compression
+                              toast.error("Image too large to compress (max 15MB)");
+                              e.target.value = ""; // reset input
+                              return;
+                            }
+                            
+                            setIsCompressing(true);
+                            toast.loading("Optimizing image...", { id: "compress-toast" });
+                            
+                            try {
+                              const options = {
+                                maxSizeMB: 3, // Target safely under 4.5MB Vercel limit
+                                maxWidthOrHeight: 1920,
+                                useWebWorker: true,
+                              };
+                              const compressedFile = await imageCompression(file, options);
+                              setBusinessImage(compressedFile);
+                              toast.success("Image ready", { id: "compress-toast" });
+                            } catch (error) {
+                              console.error("Compression error:", error);
+                              toast.error("Failed to optimize image", { id: "compress-toast" });
+                              e.target.value = "";
+                            } finally {
+                              setIsCompressing(false);
+                            }
+                          } else {
+                            setBusinessImage(null);
+                          }
+                        }} 
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-8 border-y border-stone-100 py-10">
@@ -420,11 +458,11 @@ export default function RegisterProfessionalForm() {
 
                 <Button
                   onClick={handleNext}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCompressing}
                   className="h-16 px-12 bg-stone-900 text-white rounded-none font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-all"
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-3"><Loader2 size={14} className="animate-spin" /> {submissionStatus}</span>
+                  {isSubmitting || isCompressing ? (
+                    <span className="flex items-center gap-3"><Loader2 size={14} className="animate-spin" /> {isCompressing ? "Optimizing..." : submissionStatus}</span>
                   ) : (
                     <span className="flex items-center gap-3">{currentStep === 3 ? "Open Atelier" : "Continue"} <ArrowRight size={14} /></span>
                   )}
