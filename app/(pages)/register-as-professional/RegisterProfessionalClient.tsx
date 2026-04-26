@@ -112,23 +112,29 @@ export default function RegisterProfessionalForm() {
       
       // 1. Upload Business Image if exists
       if (businessImage) {
-        console.log("[RegisterProfessionalForm] Uploading business image...");
+        console.log('[RegisterProfessionalForm] Uploading business image...');
         const formDataUpload = new FormData();
-        formDataUpload.append("file", businessImage);
-        
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
+        formDataUpload.append('file', businessImage);
+        // You can also pass bucket/folder if needed
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
           body: formDataUpload,
         });
-
         if (!uploadRes.ok) {
-          throw new Error("Failed to upload business image");
+          // Try to read error details from response
+          let errorDetails = '';
+          try {
+            const errJson = await uploadRes.json();
+            errorDetails = JSON.stringify(errJson);
+          } catch (_) {}
+          console.error('[RegisterProfessionalForm] Business image upload failed:', uploadRes.status, errorDetails);
+          throw new Error('Failed to upload business image');
         }
-
         const uploadData = await uploadRes.json();
         businessImageUrl = uploadData.url;
-        console.log("[RegisterProfessionalForm] Image uploaded:", businessImageUrl);
+        console.log('[RegisterProfessionalForm] Image uploaded:', businessImageUrl);
       }
+
 
       setSubmissionStatus("Registering profile...");
       console.log("[RegisterProfessionalForm] Sending profile data to API...");
