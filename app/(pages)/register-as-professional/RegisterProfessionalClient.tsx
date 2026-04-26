@@ -123,11 +123,13 @@ export default function RegisterProfessionalForm() {
         if (!uploadRes.ok) {
           // Try to read error details from response
           let errorDetails = '';
-          try {
-            const errJson = await uploadRes.json();
-            errorDetails = JSON.stringify(errJson);
-          } catch (_) {}
-          console.error('[RegisterProfessionalForm] Business image upload failed:', uploadRes.status, errorDetails);
+        try {
+          const errJson = await uploadRes.json();
+          errorDetails = JSON.stringify(errJson);
+        } catch {
+          // ignore JSON parse errors
+        }
+        console.error('[RegisterProfessionalForm] Business image upload failed:', uploadRes.status, errorDetails);
           throw new Error('Failed to upload business image');
         }
         const uploadData = await uploadRes.json();
