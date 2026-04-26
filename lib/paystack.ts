@@ -495,6 +495,7 @@ export async function refundTransaction(reference: string, amountPesewas?: numbe
  * Create a Transfer Recipient
  */
 export async function createTransferRecipient(payload: CreateTransferRecipientPayload): Promise<TransferRecipientResponse> {
+  console.log('[paystack] Creating transfer recipient:', { name: payload.name, account: payload.account_number, bank: payload.bank_code });
   const response = await fetch(`${PAYSTACK_CONFIG.baseUrl}/transferrecipient`, {
     method: 'POST',
     headers: getPaystackHeaders(),
@@ -504,9 +505,11 @@ export async function createTransferRecipient(payload: CreateTransferRecipientPa
   const data = await response.json()
   
   if (!response.ok) {
+    console.error('[paystack] Create transfer recipient failed:', data);
     throw new Error(data.message || 'Failed to create transfer recipient')
   }
   
+  console.log('[paystack] Transfer recipient created:', data.data.recipient_code);
   return data
 }
 

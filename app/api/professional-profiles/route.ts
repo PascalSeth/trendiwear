@@ -235,7 +235,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[professional-profiles:POST] Registration started");
     const user = await requireAuth()
+    console.log("[professional-profiles:POST] Authenticated user:", { id: user.id, email: user.email });
     const body = await request.json()
 
     const existingProfile = await prisma.professionalProfile.findUnique({
@@ -283,7 +285,7 @@ export async function POST(request: NextRequest) {
     let profile;
 
     if (existingProfile) {
-      // Update existing profile
+      console.log("[professional-profiles:POST] Updating existing profile for user:", user.id);
       profile = await prisma.professionalProfile.update({
         where: { userId: user.id },
         data: {
@@ -314,8 +316,9 @@ export async function POST(request: NextRequest) {
           socialMedia: true,
         },
       })
+      console.log("[professional-profiles:POST] Profile updated successfully");
     } else {
-      // Create new profile
+      console.log("[professional-profiles:POST] Creating new profile for user:", user.id);
       profile = await prisma.professionalProfile.create({
         data: {
           userId: user.id,
@@ -342,9 +345,12 @@ export async function POST(request: NextRequest) {
           socialMedia: true,
         },
       })
+      console.log("[professional-profiles:POST] Profile created successfully:", profile.id);
 
       // Initialize Trial
+      console.log("[professional-profiles:POST] Initializing trial for profile:", profile.id);
       await initializeTrial(profile.id)
+      console.log("[professional-profiles:POST] Trial initialized");
     }
 
     // Only update user role if this is a new profile
@@ -424,6 +430,7 @@ export async function POST(request: NextRequest) {
         const recipientCode = res.data.recipient_code
 
         // Persist recipient info
+        console.log("[professional-profiles:POST] Saving Paystack recipient code:", recipientCode);
         await prisma.professionalProfile.update({
           where: { id: freshProfile.id },
           data: {
@@ -433,6 +440,7 @@ export async function POST(request: NextRequest) {
             paymentSetupComplete: true,
           },
         })
+        console.log("[professional-profiles:POST] Payment setup complete");
       } catch (payErr) {
         console.error('Automated payout setup failed:', payErr)
         return NextResponse.json({ error: payErr instanceof Error ? payErr.message : 'Failed to setup Paystack recipient' }, { status: 500 })
@@ -441,6 +449,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(profile, { status: existingProfile ? 200 : 201 })
   } catch (error) {
+    console.error("[professional-profiles:POST] CRITICAL ERROR:", error);
     const { status, message } = mapErrorToResponse(error, { route: 'professional-profiles.POST' })
     return NextResponse.json({ error: message }, { status })
   }

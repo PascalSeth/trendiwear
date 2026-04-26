@@ -103,14 +103,76 @@ export default function RegisterProfessionalForm() {
   };
 
   const handleSubmit = async () => {
+    console.log("[RegisterProfessionalForm] Starting submission...");
     setIsSubmitting(true);
-    setSubmissionStatus("Verifying Identity...");
-    // ... Submission logic ...
-    setTimeout(() => { // Mocking redirect for UI demo
+    setSubmissionStatus("Uploading assets...");
+
+    try {
+      let businessImageUrl = "";
+      
+      // 1. Upload Business Image if exists
+      if (businessImage) {
+        console.log("[RegisterProfessionalForm] Uploading business image...");
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", businessImage);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload business image");
+        }
+
+        const uploadData = await uploadRes.json();
+        businessImageUrl = uploadData.url;
+        console.log("[RegisterProfessionalForm] Image uploaded:", businessImageUrl);
+      }
+
+      setSubmissionStatus("Registering profile...");
+      console.log("[RegisterProfessionalForm] Sending profile data to API...");
+
+      // 2. Submit Professional Profile
+      const registrationRes = await fetch("/api/professional-profiles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          businessImage: businessImageUrl,
+          specializationId: selectedSpecialization,
+          latitude,
+          longitude,
+          location: locationAddress,
+        }),
+      });
+
+      const result = await registrationRes.json();
+
+      if (!registrationRes.ok) {
+        console.error("[RegisterProfessionalForm] API Error:", result);
+        throw new Error(result.error || "Failed to register professional profile");
+      }
+
+      console.log("[RegisterProfessionalForm] Registration successful:", result);
       setSubmissionStatus("Account Verified");
-      update({ role: "PROFESSIONAL" });
-      router.push("/dashboard");
-    }, 2000);
+      
+      // 3. Update session and redirect
+      await update({ role: "PROFESSIONAL" });
+      toast.success("Welcome to the collective!");
+      
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+
+    } catch (err) {
+      console.error("[RegisterProfessionalForm] Submission failed:", err);
+      toast.error(err instanceof Error ? err.message : "Something went wrong during registration");
+      setSubmissionStatus("");
+      setIsSubmitting(false);
+    }
   };
 
   if (status === "unauthenticated") return <LoginPrompt />;

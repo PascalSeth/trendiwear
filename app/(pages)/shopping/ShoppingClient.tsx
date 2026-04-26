@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import Image from 'next/image';
 import { ProductCard } from '@/components/common/ProductCard';
 import { CategoryNavigator } from './components/CategoryNavigator';
-import { ShoppingBag, ArrowRight, Plus } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Plus, Compass } from 'lucide-react';
 
 // --- Types ---
 interface Category {
@@ -77,9 +77,109 @@ interface ShoppingClientProps {
   };
 }
 
+// ── CUSTOM CATEGORY PORTAL COMPONENT ──
+function CategoryChapter({ cat, index, variant, isMobile = false }: { cat: any, index: number, variant: 'arch' | 'rect' | 'oval', isMobile?: boolean }) {
+  const shapeClass = variant === 'arch' ? 'rounded-t-full' : variant === 'oval' ? 'rounded-full' : 'rounded-[3rem]';
+  const paddingClass = isMobile ? 'p-6' : 'p-10';
+
+  return (
+    <Link href={`/shopping/categories/${cat.slug}`} className="group block relative">
+      <motion.div 
+        whileHover={{ y: -10 }}
+        className={`relative w-full aspect-[3/4] overflow-hidden ${shapeClass} transition-all duration-1000 shadow-2xl bg-stone-200`}
+      >
+        <Image 
+          src={cat.imageUrl || "/placeholder-category.jpg"} 
+          alt={cat.name} 
+          fill 
+          className="object-cover transition-transform duration-[2s] group-hover:scale-110" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent opacity-70 group-hover:opacity-80 transition-opacity" />
+        
+        {/* Luxury Numbering */}
+        <div className="absolute top-8 left-10 overflow-hidden">
+          <motion.span 
+            initial={{ y: 40, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 0.2 }}
+            viewport={{ once: true }}
+            className="block text-7xl font-serif italic text-white"
+          >
+            {(index + 1).toString().padStart(2, '0')}
+          </motion.span>
+        </div>
+
+        {/* Product Count Sidebar (Desktop only) */}
+        {!isMobile && (
+          <div className="absolute top-1/2 -right-8 -translate-y-1/2 rotate-90 origin-center hidden xl:block">
+            <span className="text-[9px] font-mono uppercase tracking-[0.5em] text-white/40 whitespace-nowrap">
+              Collection No. {index + 1} // {cat._count.products} Pieces
+            </span>
+          </div>
+        )}
+
+        {/* Content Overlay */}
+        <div className={`absolute inset-x-0 bottom-0 ${paddingClass} flex flex-col items-start`}>
+           <div className="flex items-center gap-3 mb-4 overflow-hidden">
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                className="w-8 h-[1px] bg-amber-500" 
+              />
+              <span className="text-amber-500 text-[10px] font-mono uppercase tracking-[0.3em] font-black">
+                Essential Chapter
+              </span>
+           </div>
+           
+           <h3 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white tracking-tighter leading-[0.9] mb-8">
+             {cat.name.split(' ').map((word: string, i: number) => (
+               <span key={i} className="block">
+                 {i % 2 === 1 ? <span className="italic font-light text-stone-300">{word}</span> : word}
+               </span>
+             ))}
+           </h3>
+
+           <div className="group/btn inline-flex items-center gap-4 text-white/50 text-[10px] font-mono uppercase tracking-[0.4em] hover:text-white transition-colors">
+              Explore Now
+              <div className="w-8 h-px bg-white/20 group-hover/btn:w-16 group-hover/btn:bg-amber-500 transition-all duration-500" />
+           </div>
+        </div>
+      </motion.div>
+      
+      {/* Decorative Floating Label */}
+      {!isMobile && (
+        <motion.div 
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full hidden lg:block"
+        >
+          <span className="text-[9px] font-mono uppercase tracking-widest text-white/80">Premium Access Original</span>
+        </motion.div>
+      )}
+    </Link>
+  );
+}
+
 export default function ShoppingClient({ initialData }: ShoppingClientProps) {
   const { categories, featuredProducts, trendingProducts, collections } = initialData;
   const [activeTab, setActiveTab] = useState<'featured' | 'trending'>('featured');
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"]
+  });
+
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+
+  // Column Speeds
+  const leftY = useTransform(smoothProgress, [0, 1], [0, -150]);
+  const centerY = useTransform(smoothProgress, [0, 1], [0, 150]);
+  const rightY = useTransform(smoothProgress, [0, 1], [0, -80]);
+
+  // Distribution for Triple Column
+  const colLeft = categories.filter((_, i) => i % 3 === 0);
+  const colCenter = categories.filter((_, i) => i % 3 === 1);
+  const colRight = categories.filter((_, i) => i % 3 === 2);
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] relative overflow-hidden selection:bg-stone-900 selection:text-stone-50">
@@ -300,56 +400,94 @@ export default function ShoppingClient({ initialData }: ShoppingClientProps) {
         </section>
       )}
 
-      {/* ── THE DIRECTORY (CARDS) ── */}
-      <section className="py-24 px-6 max-w-[1800px] mx-auto overflow-hidden relative">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 relative z-10">
-          <div className="max-w-xl text-stone-900">
-            <span className="text-amber-700 text-[10px] font-mono uppercase tracking-[0.4em] mb-4 block">The Directory</span>
-            <h2 className="text-5xl md:text-7xl font-serif leading-none tracking-tighter text-stone-900">Essential <span className="italic font-light text-stone-400">Chapters.</span></h2>
-          </div>
-          <p className="max-w-xs text-sm font-serif italic text-stone-500 leading-relaxed">
-            Every category represents a unique story of craft, tradition, and personal style. Discover what resonates with your essence in the search for refined elegance.
-          </p>
-        </div>
-
-        {/* Editorial Grid for Categories */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {categories.map((cat, i) => (
-            <motion.div
-              key={cat.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={`group relative overflow-hidden rounded-3xl ${
-                i === 0 ? 'md:row-span-2 aspect-[4/5] md:aspect-auto' : 'aspect-[4/5]'
-              }`}
-            >
-              <Image 
-                src={cat.imageUrl || "/placeholder-category.jpg"} 
-                alt={cat.name}
-                fill
-                className="object-cover grayscale-0 group-hover:scale-110 group-hover:grayscale-[0.5] transition-all duration-1000"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent" />
-              
-              <div className="absolute inset-x-0 bottom-0 p-8 flex flex-col items-start translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                <span className="text-white/60 text-[10px] font-mono uppercase tracking-widest mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {cat._count.products}+ Collections
-                </span>
-                <h3 className="text-2xl md:text-4xl font-serif text-white mb-6 leading-none">
-                  {cat.name}
-                </h3>
-                <Link href={`/shopping/categories/${cat.slug}`}>
-                  <button className="bg-white/20 backdrop-blur-md text-white border border-white/30 text-[9px] font-mono uppercase tracking-widest px-6 py-3 rounded-full hover:bg-white hover:text-stone-900 transition-all">
-                    Explore Chapter
-                  </button>
-                </Link>
+        {/* ── THE LIQUID PARALLAX GALLERY ── */}
+        <section ref={sectionRef} className="py-44 px-6 max-w-[1800px] mx-auto relative overflow-visible">
+          <div className="flex flex-col lg:flex-row items-baseline justify-between gap-12 mb-40 relative z-20">
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-px bg-stone-900" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-amber-700 font-black">The Atelier Archives</span>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+              <h2 className="text-6xl md:text-[8rem] lg:text-[11rem] font-serif leading-[0.75] tracking-tighter text-stone-900">
+                Essential <br />
+                <span className="italic font-extralight text-stone-300 ml-24 md:ml-40 block">Chapters.</span>
+              </h2>
+            </div>
+            <div className="max-w-xs space-y-8">
+               <div className="p-6 border-l border-stone-200">
+                  <p className="text-base font-serif italic text-stone-500 leading-relaxed">
+                    A fluid exploration of form and texture. Each chapter represents a dedicated study in artisanal craftsmanship.
+                  </p>
+               </div>
+               <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 rounded-full border border-stone-200 flex items-center justify-center text-stone-400 ml-6"
+               >
+                 <Compass size={24} strokeWidth={1} />
+               </motion.div>
+            </div>
+          </div>
+
+          {/* Desktop Parallax View */}
+          <div className="hidden lg:grid grid-cols-3 gap-16 relative perspective-1000">
+             {/* Left Column */}
+             <motion.div style={{ y: leftY }} className="flex flex-col gap-32 mt-40">
+                {colLeft.map((cat, i) => (
+                  <CategoryChapter key={cat.id} cat={cat} index={i * 3} variant="arch" />
+                ))}
+             </motion.div>
+
+             {/* Center Column */}
+             <motion.div style={{ y: centerY }} className="flex flex-col gap-32">
+                {colCenter.map((cat, i) => (
+                  <CategoryChapter key={cat.id} cat={cat} index={i * 3 + 1} variant="rect" />
+                ))}
+             </motion.div>
+
+             {/* Right Column */}
+             <motion.div style={{ y: rightY }} className="flex flex-col gap-32 mt-80">
+                {colRight.map((cat, i) => (
+                  <CategoryChapter key={cat.id} cat={cat} index={i * 3 + 2} variant="oval" />
+                ))}
+             </motion.div>
+
+             {/* Huge background text following scroll */}
+             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none -z-10 overflow-hidden">
+                <motion.h2 
+                  style={{ 
+                    x: centerY,
+                    opacity: useTransform(smoothProgress, [0, 0.5, 1], [0.03, 0.08, 0.03])
+                  }}
+                  className="text-[40vw] font-serif font-black text-stone-900 whitespace-nowrap"
+                >
+                  ARCHIVES
+                </motion.h2>
+             </div>
+          </div>
+
+          {/* Mobile Staggered Grid (Restored as per request) */}
+          <div className="grid lg:hidden grid-cols-2 gap-4">
+            {categories.map((cat, i) => (
+              <div 
+                key={cat.id} 
+                className={`${i % 3 === 0 ? 'col-span-2 aspect-[16/10]' : 'col-span-1 aspect-[3/4]'}`}
+              >
+                  <CategoryChapter cat={cat} index={i} variant="rect" isMobile />
+              </div>
+            ))}
+          </div>
+
+          {/* Floating UI Elements */}
+          <div className="absolute top-0 right-0 p-20 hidden 2xl:block opacity-20 pointer-events-none">
+             <div className="w-[1px] h-[400px] bg-stone-300 relative">
+                <motion.div 
+                  style={{ top: useTransform(smoothProgress, [0, 1], ["0%", "100%"]) }}
+                  className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-stone-900"
+                />
+             </div>
+          </div>
+        </section>
 
       {/* ── SHOPPING SPOTLIGHT ── */}
       <section className="py-32 relative overflow-hidden">
