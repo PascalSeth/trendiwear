@@ -1,7 +1,7 @@
-
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, MapPin, Instagram, Twitter, Linkedin, Facebook, type LucideIcon } from "lucide-react";
+import InstallPWALink from "./InstallPWALink";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -99,7 +99,9 @@ export default function Footer() {
           </div>
 
           {/* Column 2: Explore */}
-          <FooterColumn title="Explore" links={exploreLinks} />
+          <FooterColumn title="Explore" links={exploreLinks}>
+            <InstallPWALink />
+          </FooterColumn>
 
           {/* Column 3: Support */}
           <FooterColumn title="Support" links={supportLinks} />
@@ -137,7 +139,7 @@ export default function Footer() {
 }
 
 // Sub-component for cleaner code
-function FooterColumn({ title, links }: { title: string; links: { label: string; href: string }[] }) {
+function FooterColumn({ title, links, children }: { title: string; links: { label: string; href: string }[]; children?: React.ReactNode }) {
   return (
     <div>
       <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-900 mb-6">
@@ -155,6 +157,7 @@ function FooterColumn({ title, links }: { title: string; links: { label: string;
             </Link>
           </li>
         ))}
+        {children}
       </ul>
     </div>
   );

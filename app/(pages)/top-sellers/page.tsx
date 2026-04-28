@@ -7,7 +7,17 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: "Hall of Fame | Top Sellers Rankings",
-  description: "Discover the most successful and highly-rated fashion professionals on TrendiZip. Our seasonal leaderboard celebrates the top designers and tailors.",
+  description: "Discover the most successful and highly-rated fashion professionals on TrendiZip. Our seasonal leaderboard celebrates the top designers and tailors in Ghana.",
+  keywords: ["top tailors Ghana", "best fashion designers Accra", "TrendiZip top sellers", "African fashion rankings", "best tailors near me", "top rated Ghanaian designers"],
+  openGraph: {
+    title: "Hall of Fame | Top Sellers Rankings",
+    description: "Discover the most successful and highly-rated fashion professionals on TrendiZip. Our seasonal leaderboard celebrates the top designers and tailors.",
+    url: "https://trendizip.com/top-sellers",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://trendizip.com/top-sellers",
+  },
 };
 
 interface TopSeller {

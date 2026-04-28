@@ -264,11 +264,11 @@ export default function RegisterProfessionalForm() {
             >
               <div className="mb-12 space-y-4">
                 <span className="text-[10px] font-mono text-stone-400 uppercase tracking-[0.4em]">Step 0{currentStep} — 03</span>
-                <h2 className="text-5xl lg:text-6xl font-serif text-stone-900 tracking-tight">
+                <h1 className="text-5xl lg:text-6xl font-serif text-stone-900 tracking-tight">
                   {currentStep === 1 && <>Your Craft <br /><span className="text-stone-400 italic">& Brand.</span></>}
                   {currentStep === 2 && <>Visual <br /><span className="text-stone-400 italic">Storytelling.</span></>}
                   {currentStep === 3 && <>Presence <br /><span className="text-stone-400 italic">& Settlement.</span></>}
-                </h2>
+                </h1>
               </div>
 
               {/* FORM FIELDS */}
@@ -502,7 +502,7 @@ const LoginPrompt = () => (
   <div className="fixed inset-0 z-[100] bg-stone-950 flex items-center justify-center p-6">
     <div className="max-w-sm w-full text-center space-y-10">
       <div className="space-y-4">
-        <h2 className="text-3xl font-serif text-white leading-tight">Private Registration</h2>
+        <h1 className="text-3xl font-serif text-white leading-tight">Private Registration</h1>
         <p className="text-stone-500 text-[10px] font-mono uppercase tracking-[0.2em] leading-relaxed">
           You must be signed into TrendiZip <br /> to access professional services.
         </p>
