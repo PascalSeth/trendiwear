@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function InstallPWALink() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,7 +22,14 @@ export default function InstallPWALink() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Fallback for iOS or if already installed/not supported
+      toast.info("How to install", {
+        description: "Tap your browser's Share or Menu button, then select 'Add to Home Screen'.",
+        duration: 5000,
+      });
+      return;
+    }
     
     // Show the install prompt
     deferredPrompt.prompt();
@@ -34,10 +42,6 @@ export default function InstallPWALink() {
     // We've used the prompt, and can't use it again, throw it away
     setDeferredPrompt(null);
   };
-
-  if (!deferredPrompt) {
-    return null; // Don't render anything if the app is not installable (already installed or unsupported)
-  }
 
   return (
     <li>
