@@ -9,8 +9,6 @@ export default function InstallPWALink() {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
     };
