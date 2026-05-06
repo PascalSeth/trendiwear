@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           },
         },
         deliveryConfirmations: true,
-        paymentEscrows: true,
+        paymentEscrows: user.role === "PROFESSIONAL" ? { where: { professionalId: user.id } } : true,
         coupons: {
           include: { coupon: true },
         },
@@ -63,6 +63,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!canView) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (user.role === "PROFESSIONAL") {
+      const professionalTotal = order.items
+        .filter(item => item.professionalId === user.id)
+        .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const responseOrder = {
+        ...order,
+        subtotal: professionalTotal,
+        totalPrice: professionalTotal,
+        platformFee: 0,
+        tax: 0,
+        shippingCost: 0,
+        items: order.items.filter(item => item.professionalId === user.id),
+      };
+      return NextResponse.json(responseOrder)
     }
 
     return NextResponse.json(order)
@@ -180,6 +197,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           console.error('Failed to send status update email:', emailErr)
         }
       }
+    }
+
+    if (user.role === "PROFESSIONAL") {
+      const professionalTotal = updatedOrder.items
+        .filter(item => item.professionalId === user.id)
+        .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      const responseUpdatedOrder = {
+        ...updatedOrder,
+        subtotal: professionalTotal,
+        totalPrice: professionalTotal,
+        platformFee: 0,
+        tax: 0,
+        shippingCost: 0,
+        items: updatedOrder.items.filter(item => item.professionalId === user.id),
+      };
+      return NextResponse.json(responseUpdatedOrder)
     }
 
     return NextResponse.json(updatedOrder)

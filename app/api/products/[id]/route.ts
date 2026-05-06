@@ -94,7 +94,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    if (!product) {
+    if (!product || product.isDeleted) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
@@ -165,6 +165,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (existingProduct.professionalId !== user.id && !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (user.role === "PROFESSIONAL") {
+      const { checkSubscriptionForAction } = await import("@/lib/subscription-middleware");
+      const { allowed, message } = await checkSubscriptionForAction(request, 'EDIT_PRODUCT');
+
+      if (!allowed) {
+        return NextResponse.json(
+          { error: message || "Subscription expired. Please renew your subscription to edit products." },
+          { status: 403 }
+        );
+      }
     }
 
     // Enforce Verified Tier for Pre-orders
@@ -271,7 +283,33 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    await prisma.product.delete({ where: { id } })
+    try {
+      // Try to hard delete first (this will cascade delete cartItems, wishlistItems, etc.)
+      await prisma.product.delete({ where: { id } })
+    } catch (deleteError: unknown) {
+      // P2003 is the Prisma error code for foreign key constraint violation
+      // This happens if the product is linked to an OrderItem
+      if (deleteError && typeof deleteError === 'object' && 'code' in deleteError && deleteError.code === 'P2003') {
+        // Fallback: Perform a "Soft Delete"
+        // 1. Manually clear non-critical relations that don't have order history
+        await prisma.$transaction([
+          prisma.cartItem.deleteMany({ where: { productId: id } }),
+          prisma.wishlistItem.deleteMany({ where: { productId: id } }),
+          // 2. Mark as deleted so it disappears from the shop and dashboard
+          prisma.product.update({
+            where: { id },
+            data: { isDeleted: true }
+          })
+        ])
+        
+        return NextResponse.json({ 
+          message: "Product contains order history and was marked as deleted",
+          softDeleted: true 
+        })
+      }
+      throw deleteError // Re-throw if it's a different error
+    }
+
     return NextResponse.json({ message: "Product deleted successfully" })
   } catch (error: unknown) {
     const { status, message } = mapErrorToResponse(error, { route: 'products.[id].DELETE' })

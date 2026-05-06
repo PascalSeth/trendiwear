@@ -79,6 +79,7 @@ export default async function Page() {
     prisma.product.findMany({
       where: {
         isActive: true,
+        isDeleted: false,
         isInStock: true,
         isShowcaseApproved: true,
       },
@@ -114,7 +115,10 @@ export default async function Page() {
 
     // Top Sellers (Professionals)
     prisma.professionalProfile.findMany({
-      where: {},
+      where: {
+        isActive: true,
+        isDeleted: false,
+      },
       select: {
         id: true,
         userId: true,
@@ -147,8 +151,8 @@ export default async function Page() {
     }),
 
     // Total Metrics for CTA
-    prisma.user.count(),
-    prisma.professionalProfile.count()
+    prisma.user.count({ where: { isDeleted: false } }),
+    prisma.professionalProfile.count({ where: { isDeleted: false } })
   ]);
 
   // Compute actual sales for top sellers from order items

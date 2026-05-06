@@ -173,7 +173,8 @@ export async function GET(request: NextRequest) {
     // Calculate revenue by month for trend analysis
     const monthlyRevenue = orders.reduce((acc, item) => {
       const month = item.order.createdAt.toISOString().slice(0, 7); // YYYY-MM
-      acc[month] = (acc[month] || 0) + item.order.totalPrice;
+      const itemRevenue = item.price * item.quantity;
+      acc[month] = (acc[month] || 0) + itemRevenue;
       return acc;
     }, {} as Record<string, number>);
 
@@ -187,7 +188,8 @@ export async function GET(request: NextRequest) {
           orders: 0
         };
       }
-      acc[productId].revenue += item.order.totalPrice;
+      const itemRevenue = item.price * item.quantity;
+      acc[productId].revenue += itemRevenue;
       acc[productId].orders += 1;
       return acc;
     }, {} as Record<string, { name: string; revenue: number; orders: number }>);
@@ -417,7 +419,8 @@ export async function GET(request: NextRequest) {
     const customerStats = orders.reduce((acc, item) => {
       const customerId = item.orderId; // Note: item.order.customerId would be better but let's see
       if (!acc[customerId]) acc[customerId] = { revenue: 0, orders: 0 };
-      acc[customerId].revenue += item.order.totalPrice;
+      const itemRevenue = item.price * item.quantity;
+      acc[customerId].revenue += itemRevenue;
       acc[customerId].orders += 1;
       return acc;
     }, {} as Record<string, { revenue: number; orders: number }>);

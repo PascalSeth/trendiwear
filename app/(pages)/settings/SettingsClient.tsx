@@ -12,9 +12,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { 
-  Camera, Loader2, ImageIcon, Instagram, Facebook, Link2, Clock, Globe, Bell, BellOff, CheckCircle2,
+  Camera, Loader2, ImageIcon, Link2, Clock, Globe, Bell, BellOff, CheckCircle2,
   Plus, Trash2, ChevronDown, ChevronUp, FolderPlus
 } from 'lucide-react'
+import { FaInstagram, FaFacebook, FaXTwitter, FaTiktok, FaYoutube, FaPinterest, FaLinkedin } from 'react-icons/fa6'
 import { useEffect } from 'react'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
 import { useSession } from 'next-auth/react'
@@ -416,21 +417,27 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
           <TabsContent value="profile" className="space-y-12">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                  <div className="lg:col-span-4 space-y-8">
-                    <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5 shadow-2xl">
-                       <Image 
-                        src={personalForm.profileImage || profile.image || "/placeholder-avatar.jpg"} 
-                        alt="User" 
-                        fill 
-                        className="object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0" 
-                       />
-                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent opacity-60" />
-                       <label className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-[2px]">
-                          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110">
-                            {uploadingImage === 'profile' ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" size={24} />}
-                          </div>
-                          <span className="text-[10px] font-mono text-white uppercase tracking-[0.2em]">Upload Photo</span>
-                          <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'profile')} />
-                       </label>
+                    <div className="space-y-4">
+                       <div className="flex justify-between items-center px-2">
+                          <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Profile Photo</Label>
+                          <span className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Recommended: 1200 × 1600px (3:4)</span>
+                       </div>
+                       <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5 shadow-2xl">
+                          <Image 
+                           src={personalForm.profileImage || profile.image || "/placeholder-avatar.jpg"} 
+                           alt="User" 
+                           fill 
+                           className="object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0" 
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent opacity-60" />
+                          <label className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-[2px]">
+                             <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110">
+                               {uploadingImage === 'profile' ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" size={24} />}
+                             </div>
+                             <span className="text-[10px] font-mono text-white uppercase tracking-[0.2em]">Upload Photo</span>
+                             <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'profile')} />
+                          </label>
+                       </div>
                     </div>
 
                     {!isProfessional && (
@@ -494,12 +501,19 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
           {isProfessional && (
             <TabsContent value="business" className="space-y-12">
                <div className="space-y-12">
-                  <div className="relative h-64 rounded-3xl overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5">
-                     <Image src={businessForm.coverImage || "/placeholder-cover.jpg"} alt="Cover" fill className="object-cover" />
-                     <label className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer">
-                        {uploadingImage === 'cover' ? <Loader2 className="animate-spin text-white" /> : <ImageIcon className="text-white" />}
-                        <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'cover')} />
-                     </label>
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center">
+                        <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Atelier Cover Image</Label>
+                        <span className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Recommended: 1920 × 1080px (16:9)</span>
+                     </div>
+                     <div className="relative h-64 rounded-3xl overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5">
+                        <Image src={businessForm.coverImage || "/default-cover.png"} alt="Cover" fill className="object-cover" />
+                        <label className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer">
+                           {uploadingImage === 'cover' ? <Loader2 className="animate-spin text-white mb-2" /> : <ImageIcon className="text-white mb-2" />}
+                           <span className="text-[10px] font-mono text-white uppercase tracking-[0.2em]">Upload Cover Photo</span>
+                           <input type="file" className="hidden" onChange={e => handleImageUpload(e, 'cover')} />
+                        </label>
+                     </div>
                   </div>
 
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -816,10 +830,15 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                       </header>
 
                       <div className="space-y-6">
-                        <div className="flex gap-4 p-2 bg-stone-50 rounded-2xl w-fit border border-stone-100">
+                        <div className="flex flex-wrap gap-4 p-2 bg-stone-50 rounded-2xl w-fit border border-stone-100">
                           {[
-                            { id: 'INSTAGRAM', Icon: Instagram, color: 'hover:text-pink-600' },
-                            { id: 'FACEBOOK', Icon: Facebook, color: 'hover:text-blue-800' },
+                            { id: 'INSTAGRAM', Icon: FaInstagram, color: 'hover:text-pink-600' },
+                            { id: 'FACEBOOK', Icon: FaFacebook, color: 'hover:text-blue-800' },
+                            { id: 'X', Icon: FaXTwitter, color: 'hover:text-stone-950' },
+                            { id: 'TIKTOK', Icon: FaTiktok, color: 'hover:text-stone-950' },
+                            { id: 'YOUTUBE', Icon: FaYoutube, color: 'hover:text-red-600' },
+                            { id: 'PINTEREST', Icon: FaPinterest, color: 'hover:text-red-700' },
+                            { id: 'LINKEDIN', Icon: FaLinkedin, color: 'hover:text-blue-700' },
                             { id: 'WEBSITE', Icon: Globe, color: 'hover:text-stone-900' }
                           ].map((platform) => {
                             const isActive = socialMedia.some(sm => sm.platform === platform.id);
@@ -835,7 +854,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                                     : "text-stone-400 hover:bg-white " + platform.color
                                 )}
                               >
-                                <platform.Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+                                <platform.Icon size={20} />
                               </button>
                             );
                           })}
@@ -843,14 +862,19 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
 
                         <div className="grid grid-cols-1 gap-4">
                           <AnimatePresence>
-                            {socialMedia.map((sm) => {
-                               const platformInfo = [
-                                 { id: 'INSTAGRAM', prefix: 'instagram.com/', placeholder: 'handle', Icon: Instagram },
-                                 { id: 'FACEBOOK', prefix: 'facebook.com/', placeholder: 'page', Icon: Facebook },
+                             {socialMedia.map((sm) => {
+                                const platformInfo = [
+                                 { id: 'INSTAGRAM', prefix: 'instagram.com/', placeholder: 'handle', Icon: FaInstagram },
+                                 { id: 'FACEBOOK', prefix: 'facebook.com/', placeholder: 'page', Icon: FaFacebook },
+                                 { id: 'X', prefix: 'x.com/', placeholder: 'handle', Icon: FaXTwitter },
+                                 { id: 'TIKTOK', prefix: 'tiktok.com/@', placeholder: 'handle', Icon: FaTiktok },
+                                 { id: 'YOUTUBE', prefix: 'youtube.com/@', placeholder: 'handle', Icon: FaYoutube },
+                                 { id: 'PINTEREST', prefix: 'pinterest.com/', placeholder: 'handle', Icon: FaPinterest },
+                                 { id: 'LINKEDIN', prefix: 'linkedin.com/in/', placeholder: 'username', Icon: FaLinkedin },
                                  { id: 'WEBSITE', prefix: 'https://', placeholder: 'yourdomain.com', Icon: Globe }
-                               ].find(p => p.id === sm.platform);
+                                ].find(p => p.id === sm.platform);
 
-                               if (!platformInfo) return null;
+                                if (!platformInfo) return null;
 
                                return (
                                  <motion.div

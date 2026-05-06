@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
+      isDeleted: false,
     }
 
     // Role-based filtering for dashboard
@@ -79,8 +80,10 @@ export async function GET(request: NextRequest) {
         const user = await requireAuth()
         if (user.role === "PROFESSIONAL") {
           where.professionalId = user.id
-          // For professionals, don't filter by isInStock to show all their products
+          // For professionals, show all their products (active or inactive)
+          delete where.isActive
           delete where.isInStock
+          where.isDeleted = false
         } else if (user.role === "CUSTOMER") {
           where.isInStock = true // Customers only see in-stock products
         }
@@ -300,6 +303,33 @@ export async function POST(request: NextRequest) {
     // Check subscription permission for professionals
     if (user.role === "PROFESSIONAL") {
       try {
+        const { checkSubscriptionForAction } = await import("@/lib/subscription-middleware");
+        const { allowed, message } = await checkSubscriptionForAction(request, 'ADD_PRODUCT');
+
+        if (!allowed) {
+          return NextResponse.json(
+            { error: message || "Subscription expired. Please renew your subscription to add products." },
+            { status: 403 }
+          );
+        }
+
+        // Check listing limits (Trial or Tier specific)
+        const productCount = await prisma.product.count({
+          where: { 
+            professionalId: user.id,
+            isDeleted: false
+          }
+        });
+
+        const serviceCount = await prisma.professionalService.count({
+          where: { 
+            professionalId: user.id,
+            isActive: true
+          }
+        });
+
+        const totalListings = productCount + serviceCount;
+
         const profile = await prisma.professionalProfile.findUnique({
           where: { userId: user.id },
           include: { 
@@ -308,51 +338,12 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        if (!profile) {
-          return NextResponse.json(
-            { error: "Professional profile not found." },
-            { status: 404 }
-          );
-        }
-
-        const now = new Date();
-
-        // Enforce Verified Tier for Pre-orders
-        if (body.isPreorder) {
-          // Re-fetch profile to guarantee we didn't miss it or its verification status
-          if (!profile.isVerified) {
-             return NextResponse.json(
-                { error: "Only Verified Professionals can accept Pre-orders." },
-                { status: 403 }
-             );
-          }
-        }
-
-        // Check if trial is active OR subscription is active
-        const hasActiveTrial = profile.trial && now < profile.trial.endDate;
-        const hasActiveSubscription = profile.subscription && 
-          profile.subscription.status === "ACTIVE" && 
-          profile.subscription.nextRenewalDate && 
-          profile.subscription.nextRenewalDate > now;
-
-        if (!hasActiveTrial && !hasActiveSubscription) {
-          return NextResponse.json(
-            { error: "Subscription expired. Please renew your subscription to add products." },
-            { status: 403 }
-          );
-        }
-
-        // Check product limits
-        const productCount = await prisma.product.count({
-          where: { professionalId: user.id }
-        });
-
-        // 1. Enforce Trial Limit (8 Products)
-        if (hasActiveTrial && !hasActiveSubscription) {
-          if (productCount >= 8) {
+        // 1. Enforce Trial Limit (8 Listings total)
+        if (profile?.trial && !profile.trial.completed && profile.trial.daysRemaining > 0 && !profile.subscription) {
+          if (totalListings >= 8) {
             return NextResponse.json(
               {
-                error: "Trial limit reached (8 products). Please upgrade to a paid plan to list more items.",
+                error: "Trial limit reached (8 listings total). Please upgrade to a paid plan to list more items.",
                 limitReached: true
               },
               { status: 403 }
@@ -360,12 +351,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // 2. Enforce Subscription Tier Limit
-        if (hasActiveSubscription && profile.subscription?.tier?.monthlyListings) {
-          if (productCount >= profile.subscription.tier.monthlyListings) {
+        // 2. Enforce Subscription Tier Limit (monthlyListings applies to products + services)
+        if (profile?.subscription?.status === 'ACTIVE' && profile.subscription.tier?.monthlyListings) {
+          if (totalListings >= profile.subscription.tier.monthlyListings) {
             return NextResponse.json(
               {
-                error: `You've reached the product limit (${profile.subscription.tier.monthlyListings}) for your tier. Please upgrade your subscription.`,
+                error: `You've reached the listing limit (${profile.subscription.tier.monthlyListings}) for your tier. Please upgrade your subscription.`,
                 limitReached: true
               },
               { status: 403 }
@@ -374,7 +365,6 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error("Subscription check error:", error);
-        // Continue anyway to avoid blocking legitimate cases
       }
     } else if (user.role === "SUPER_ADMIN") {
       // Check if super admin requires subscription

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { Save, Settings, User, Lock, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSearchParams } from 'next/navigation'
@@ -17,10 +18,16 @@ import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
 import VerificationCenter from '@/app/dashboard/components/VerificationCenter'
 
 interface UserProfileSummary {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
   role: string;
+  professionalProfile?: {
+    id: string;
+    isActive: boolean;
+    businessName: string;
+  };
 }
 
 export default function DashboardSettingsPage() {
@@ -87,6 +94,37 @@ export default function DashboardSettingsPage() {
     }
   }
 
+  const handleShopStatusToggle = async (value: boolean) => {
+    if (!profileSummary?.professionalProfile) return
+    
+    try {
+      const res = await fetch('/api/professional-profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          isActive: value,
+          businessName: profileSummary.professionalProfile.businessName, // Required by the API
+          specializationId: 'existing', // Hacky but needed if not careful, actually the API should handle updates better
+        }),
+      })
+      
+      if (res.ok) {
+        setProfileSummary({
+          ...profileSummary,
+          professionalProfile: {
+            ...profileSummary.professionalProfile,
+            isActive: value
+          }
+        })
+        toast.success(value ? 'Shop is now visible' : 'Shop is now hidden')
+      } else {
+        throw new Error('Failed')
+      }
+    } catch {
+      toast.error('Failed to update shop status')
+    }
+  }
+
   const handleSuperAdminSubscriptionToggle = async (value: boolean) => {
     setSavingSubscription(true)
     try {
@@ -149,13 +187,36 @@ export default function DashboardSettingsPage() {
             </CardHeader>
             <CardContent>
               {profileSummary ? (
-                <div className="space-y-2">
-                  <div className="font-medium">{profileSummary.firstName} {profileSummary.lastName}</div>
-                  <div className="text-sm text-muted-foreground">{profileSummary.email}</div>
-                  <div className="text-sm">Role: {profileSummary.role}</div>
-                  <div className="mt-3">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="font-medium text-lg">{profileSummary.firstName} {profileSummary.lastName}</div>
+                    <div className="text-sm text-muted-foreground">{profileSummary.email}</div>
+                    <Badge variant="outline" className="mt-1">{profileSummary.role}</Badge>
+                  </div>
+
+                  {profileSummary.professionalProfile && (
+                    <div className="pt-4 border-t space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-base">Shop Visibility</Label>
+                          <p className="text-sm text-muted-foreground">
+                            When disabled, your products and profile will be hidden from the public shop.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={profileSummary.professionalProfile.isActive}
+                          onCheckedChange={handleShopStatusToggle}
+                        />
+                      </div>
+                      <div className={`text-sm px-3 py-2 rounded-md ${profileSummary.professionalProfile.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                        Your shop is currently <strong>{profileSummary.professionalProfile.isActive ? 'Open' : 'Closed'}</strong> to customers.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t">
                     <Link href="/settings">
-                      <Button>Manage Account</Button>
+                      <Button variant="outline">Manage Detailed Account Info</Button>
                     </Link>
                   </div>
                 </div>

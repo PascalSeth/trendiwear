@@ -13,6 +13,7 @@ export interface UserInfo {
   businessName?: string;
   businessImage?: string | null;
   trialEndDate?: string | null;
+  daysRemaining?: number | null;
   subscriptionStatus?: string | null;
   hasActiveSubscription?: boolean;
 }
@@ -74,6 +75,7 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
       ? '/logo3d.jpg' 
       : (user.professionalProfile?.businessImage || undefined),
     trialEndDate: user.professionalProfile?.trial?.endDate?.toISOString() || null,
+    daysRemaining: user.professionalProfile?.trial?.daysRemaining ?? null,
     subscriptionStatus: user.professionalProfile?.subscription?.status || (user.professionalProfile?.trial ? 'TRIAL' : null),
     hasActiveSubscription: (role === Role.SUPER_ADMIN || role === Role.ADMIN) || !!(
       user.professionalProfile?.subscription && 
@@ -81,7 +83,8 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
       new Date(user.professionalProfile.subscription.nextRenewalDate) > new Date()
     ) || !!(
       user.professionalProfile?.trial &&
-      new Date(user.professionalProfile.trial.endDate) > new Date()
+      user.professionalProfile.trial.daysRemaining > 0 &&
+      !user.professionalProfile.trial.completed
     ),
   };
 

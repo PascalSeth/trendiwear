@@ -28,9 +28,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 
 // Define the Service data type based on Prisma schema
 type ServiceCategory = {
@@ -146,12 +150,45 @@ const getColumns = (
   },
   {
     accessorKey: "isActive",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
-        {row.getValue("isActive") ? "Active" : "Inactive"}
-      </Badge>
-    ),
+    header: "Visibility",
+    cell: ({ row }) => {
+      const service = row.original;
+      const toggleActive = async () => {
+        try {
+          const response = await fetch(`/api/services/${service.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: !service.isActive }),
+          });
+          if (response.ok) {
+            const updated = await response.json();
+            setData((prev) => prev.map((s) => s.id === service.id ? { ...s, isActive: updated.isActive } : s));
+          }
+        } catch (error) {
+          console.error('Failed to toggle status:', error);
+        }
+      };
+
+      return (
+        <div className="flex items-center space-x-3">
+          <Switch
+            checked={row.original.isActive}
+            onCheckedChange={toggleActive}
+            className="data-[state=checked]:bg-emerald-500"
+          />
+          <Badge 
+            variant="outline"
+            className={`font-medium border-0 px-2 py-0.5 rounded-md ${
+              row.original.isActive 
+                ? "bg-emerald-50 text-emerald-700" 
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {row.original.isActive ? "Live" : "Draft"}
+          </Badge>
+        </div>
+      );
+    },
   },
   {
     id: "actions",
@@ -291,17 +328,47 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
   if (loading) {
     return (
-      <div className="w-full flex items-center justify-center py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading services...</p>
+      <div className="space-y-8 pt-4">
+        <div className="flex justify-between items-center">
+          <div className="space-y-3">
+            <div className="h-10 bg-gray-50 rounded-lg w-64 animate-pulse"></div>
+            <div className="h-5 bg-gray-50 rounded-lg w-96 animate-pulse"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
+          ))}
+        </div>
+        <div className="h-20 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
+        <div className="border border-gray-100 rounded-3xl overflow-hidden">
+          <div className="h-12 bg-gray-50/50 animate-pulse"></div>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-20 border-t border-gray-50 animate-pulse"></div>
+          ))}
         </div>
       </div>
     );
   }
 
+  const handleStatusFilter = (status: string) => {
+    if (status === "All") {
+      setColumnFilters((filters) =>
+        filters.filter((filter) => filter.id !== "isActive")
+      );
+    } else {
+      const isActive = status === "Active";
+      setColumnFilters([
+        {
+          id: "isActive",
+          value: isActive,
+        },
+      ]);
+    }
+  };
+
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-8 pb-10">
       <ServiceSheet
         categories={categories}
         onServiceAdded={(newService) => {
@@ -315,200 +382,166 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
         onClose={() => setEditingService(null)}
       />
 
-      {/* Header with Add Service Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight">Services</h2>
-          <p className="text-muted-foreground text-sm md:text-base">
-            Manage your service offerings and bookings
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Service Catalog</h1>
+          <p className="text-gray-500 font-medium">
+            Manage your service offerings, pricing, and availability.
           </p>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Services</p>
-              <p className="text-2xl font-bold text-gray-900">{data.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Services</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {data.filter(service => service.isActive).length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Home className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Home Services</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {data.filter(service => service.isHomeService).length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {data.reduce((total, service) => total + service._count.bookings, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Services", value: data.length, icon: Layers, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Active Live", value: data.filter(s => s.isActive).length, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Home Services", value: data.filter(s => s.isHomeService).length, icon: Home, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Total Bookings", value: data.reduce((t, s) => t + s._count.bookings, 0), icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+        ].map((stat, i) => (
+          <Card key={i} className="border-gray-100 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+                <stat.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-0.5">{stat.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col gap-4">
-        <Input
-          placeholder="Search services..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+      {/* Main Table Container */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 overflow-hidden">
+        {/* Table Toolbar */}
+        <div className="p-6 border-b border-gray-50 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="relative w-full lg:max-w-md">
+              <Input
+                placeholder="Search services by name, category..."
+                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn("name")?.setFilterValue(event.target.value)
+                }
+                className="pl-4 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11"
+              />
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <Tabs defaultValue="All" onValueChange={handleStatusFilter} className="w-full sm:w-auto">
+                <TabsList className="bg-gray-100/80 p-1 h-11 rounded-xl">
+                  {["All", "Active", "Inactive"].map((status) => (
+                    <TabsTrigger 
+                      key={status} 
+                      value={status}
+                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                    >
+                      {status}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
 
-        {/* Status Filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setColumnFilters((filters) =>
-                filters.filter((filter) => filter.id !== "isActive")
-              );
-            }}
-            className="text-xs md:text-sm"
-          >
-            All
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setColumnFilters([
-                {
-                  id: "isActive",
-                  value: true,
-                },
-              ]);
-            }}
-            className="text-xs md:text-sm"
-          >
-            Active
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setColumnFilters([
-                {
-                  id: "isActive",
-                  value: false,
-                },
-              ]);
-            }}
-            className="text-xs md:text-sm"
-          >
-            Inactive
-          </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600">
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 p-2">
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1" />
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize rounded-md"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="w-full">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+        {/* Table Content */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-gray-50/50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No services found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-0 sm:space-x-2 py-4">
-        <div className="flex-1 text-xs md:text-sm text-muted-foreground text-center sm:text-left">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} service(s) selected.
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow 
+                    key={row.id} 
+                    className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-6 py-4">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <p className="text-gray-500 font-medium text-lg">No services found</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="flex justify-center sm:justify-end space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="text-xs md:text-sm"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="text-xs md:text-sm"
-          >
-            Next
-          </Button>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+          <p className="text-sm text-gray-500 font-medium">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected
+          </p>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-200 rounded-lg h-9"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-200 rounded-lg h-9"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
 

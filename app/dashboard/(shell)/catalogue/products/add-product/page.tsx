@@ -239,6 +239,14 @@ export default function AddProductPage() {
 
       if (res.ok) {
         setShowSuccessModal(true);
+      } else {
+        const errorData = await res.json();
+        if (res.status === 403 && errorData.error?.includes('limit')) {
+          alert("You've reached your monthly listing limit for your current subscription tier. Please upgrade your subscription to add more products.");
+          router.push('/dashboard/subscription');
+        } else {
+          alert(`Error creating product: ${errorData.error || 'Unknown error'}`);
+        }
       }
     } catch (err) {
       console.error(err);

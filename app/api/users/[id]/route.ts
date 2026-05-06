@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -95,8 +95,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params
     await requireRole(["ADMIN", "SUPER_ADMIN"])
 
-    await prisma.user.delete({ where: { id } })
-    return NextResponse.json({ message: "User deleted successfully" })
+    await prisma.user.update({ 
+      where: { id },
+      data: { isDeleted: true, isActive: false }
+    })
+    return NextResponse.json({ message: "User marked as deleted successfully" })
   } catch (error) {
     const { status, message } = mapErrorToResponse(error, { route: 'users.[id].DELETE' })
     if (status === 401) return NextResponse.json({ error: message, toast: 'You must be logged in to continue.' }, { status })

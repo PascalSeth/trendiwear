@@ -92,7 +92,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
     { href: "/fashion-trends", label: "Fashion Trends", sub: "Visual Inspirations" },
     { href: "/tailors-designers", label: "Tailors & Designers", sub: "Craftsmanship & Artistry" },
     { href: "/shopping", label: "Shopping", sub: "The Curated Collection" },
-    { href: "/top-sellers", label: "Top Sellers", sub: "Hall of Fame" },
+    // { href: "/top-sellers", label: "Top Sellers", sub: "Hall of Fame" },
     { href: "/blog", label: "Blog", sub: "Editorial & News" },
   ];
 
@@ -119,31 +119,31 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                     <motion.path
                       d={
                         i === 1 ? "M0 40 Q 250 10, 500 40 T 1000 40" :
-                        i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
-                        "M0 50 Q 200 20, 450 50 T 1000 50"
+                          i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
+                            "M0 50 Q 200 20, 450 50 T 1000 50"
                       }
                       stroke="white"
                       strokeWidth="3"
-                      animate={{ 
+                      animate={{
                         pathLength: [0, 1, 0],
                         pathOffset: [0, 0, 1]
                       }}
-                      transition={{ 
-                        duration: 10 + i * 3, 
-                        repeat: Infinity, 
+                      transition={{
+                        duration: 10 + i * 3,
+                        repeat: Infinity,
                         ease: "easeInOut",
-                        delay: i * 1.5 
+                        delay: i * 1.5
                       }}
                     />
                   </mask>
                 </defs>
-                
+
                 {/* The Visible Dashed Path (Broken Stitches) */}
                 <path
                   d={
                     i === 1 ? "M0 40 Q 250 10, 500 40 T 1000 40" :
-                    i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
-                    "M0 50 Q 200 20, 450 50 T 1000 50"
+                      i === 2 ? "M0 30 Q 300 60, 600 30 T 1000 30" :
+                        "M0 50 Q 200 20, 450 50 T 1000 50"
                   }
                   stroke="currentColor"
                   className="text-stone-950"
@@ -175,9 +175,9 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
                   delay: i * 1.5
                 }}
                 className="absolute"
-                style={{ 
-                  right: `${10 + (i % 3) * 20}%`, 
-                  top: `${15 + i * 12}%` 
+                style={{
+                  right: `${10 + (i % 3) * 20}%`,
+                  top: `${15 + i * 12}%`
                 }}
               >
                 {/* Abstract Shirt or Bag SVG - Bold Artisan Style */}

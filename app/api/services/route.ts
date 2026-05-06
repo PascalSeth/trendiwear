@@ -172,46 +172,70 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only professionals can create services" }, { status: 403 })
     }
 
-    // Check subscription permission
+    // Check subscription permission and limits
     try {
+      const { checkSubscriptionForAction } = await import("@/lib/subscription-middleware");
+      const { allowed, message } = await checkSubscriptionForAction(request, 'ADD_SERVICE');
+
+      if (!allowed) {
+        return NextResponse.json(
+          { error: message || "Subscription expired. Please renew your subscription to create services." },
+          { status: 403 }
+        );
+      }
+
+      // Check listing limits (Trial or Tier specific)
+      const productCount = await prisma.product.count({
+        where: { 
+          professionalId: user.id,
+          isDeleted: false
+        }
+      });
+
+      const serviceCount = await prisma.professionalService.count({
+        where: { 
+          professionalId: user.id,
+          isActive: true
+        }
+      });
+
+      const totalListings = productCount + serviceCount;
+
       const profile = await prisma.professionalProfile.findUnique({
         where: { userId: user.id },
         include: { 
-          subscription: true,
+          subscription: { include: { tier: true } },
           trial: true
         }
       });
 
-      if (!profile) {
-        return NextResponse.json(
-          { error: "Professional profile not found." },
-          { status: 404 }
-        );
+      // 1. Enforce Trial Limit (8 Listings total)
+      if (profile?.trial && !profile.trial.completed && profile.trial.daysRemaining > 0 && !profile.subscription) {
+        if (totalListings >= 8) {
+          return NextResponse.json(
+            {
+              error: "Trial limit reached (8 listings total). Please upgrade to a paid plan to list more items.",
+              limitReached: true
+            },
+            { status: 403 }
+          );
+        }
       }
 
-      const now = new Date();
-      
-      // Check if has active trial
-      const hasActiveTrial = profile.trial && now < profile.trial.endDate;
-      
-      // Check if has active subscription
-      const hasActiveSubscription = profile.subscription && 
-        profile.subscription.status === "ACTIVE" && 
-        profile.subscription.nextRenewalDate && 
-        profile.subscription.nextRenewalDate > now;
-
-      if (!hasActiveTrial && !hasActiveSubscription) {
-        return NextResponse.json(
-          { error: "Subscription expired. Please renew your subscription to create services." },
-          { status: 403 }
-        );
+      // 2. Enforce Subscription Tier Limit
+      if (profile?.subscription?.status === 'ACTIVE' && profile.subscription.tier?.monthlyListings) {
+        if (totalListings >= profile.subscription.tier.monthlyListings) {
+          return NextResponse.json(
+            {
+              error: `You've reached the listing limit (${profile.subscription.tier.monthlyListings}) for your tier. Please upgrade your subscription.`,
+              limitReached: true
+            },
+            { status: 403 }
+          );
+        }
       }
     } catch (error) {
       console.error("Subscription check error:", error);
-      return NextResponse.json(
-        { error: "Error checking subscription status" },
-        { status: 500 }
-      );
     }
 
     const {

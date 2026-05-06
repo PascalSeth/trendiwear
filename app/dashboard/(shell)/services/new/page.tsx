@@ -204,6 +204,11 @@ export default function NewServicePage() {
 
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 403 && error.error?.includes('limit')) {
+          alert("You've reached your monthly listing limit for your current subscription tier. Please upgrade your subscription to add more services.");
+          router.push('/dashboard/subscription');
+          return;
+        }
         throw new Error(error.error || "Failed to create service");
       }
 

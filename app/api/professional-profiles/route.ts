@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
     if (isPublic) {
       // Public endpoint to fetch all professional profiles
       const profiles = await prisma.professionalProfile.findMany({
-        where: {},
+        where: { 
+          user: { isDeleted: false },
+          isActive: true,
+          isDeleted: false
+        },
         select: {
           id: true,
           userId: true,
@@ -100,7 +104,7 @@ export async function GET(request: NextRequest) {
     // Allow SUPER_ADMIN and ADMIN to fetch all professional profiles
     if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") {
       const profiles = await prisma.professionalProfile.findMany({
-        where: {},
+        where: { user: { isDeleted: false } },
         select: {
           id: true,
           userId: true,
@@ -259,6 +263,7 @@ export async function POST(request: NextRequest) {
       availability,
       freeDeliveryThreshold,
       socialMedia,
+      isActive,
     }: {
       businessName: string
       businessImage?: string
@@ -274,6 +279,7 @@ export async function POST(request: NextRequest) {
       availability?: string
       freeDeliveryThreshold?: number
       socialMedia?: Prisma.SocialMediaCreateWithoutProfessionalInput[]
+      isActive?: boolean
     } = body
 
     // Enforce mandatory payment setup fields
@@ -304,6 +310,7 @@ export async function POST(request: NextRequest) {
           ...(location && { location }),
           availability,
           freeDeliveryThreshold,
+          ...(isActive !== undefined && { isActive }),
           socialMedia: {
             deleteMany: {}, // Clear existing social media
             create: socialMedia || []

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, AlertCircle, Loader2, Award, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Award, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -144,6 +144,11 @@ export function SubscriptionStatusBadge({ role }: { role?: Role }) {
       });
     } finally {
       setLoading(false);
+      // Ensure subscription is at least set to INACTIVE if still null
+      setSubscription(prev => prev || {
+        status: 'INACTIVE',
+        subscriptionStatus: 'EXPIRED',
+      });
     }
   };
 
@@ -326,36 +331,52 @@ export function SubscriptionStatusBadge({ role }: { role?: Role }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all duration-300 cursor-pointer">
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-slate-400/0 via-slate-400/5 to-slate-400/0 group-hover:via-slate-400/10 transition-all" />
+        <button className="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 hover:bg-orange-100 transition-all duration-300 cursor-pointer shadow-sm shadow-orange-100">
+          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-orange-400/0 via-orange-400/5 to-orange-400/0 group-hover:via-orange-400/10 transition-all" />
           <div className="relative flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-600" />
-            <span className="text-xs font-bold tracking-wide text-slate-700 hidden sm:inline">
-              No Subscription
+            <AlertCircle className="h-4 w-4 text-orange-600 animate-pulse" />
+            <span className="text-xs font-black tracking-wide text-orange-700 hidden sm:inline uppercase">
+              Subscription Expired
             </span>
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 bg-white/95 backdrop-blur-md border border-slate-200 shadow-lg rounded-xl">
-        <DropdownMenuLabel className="text-slate-900 font-semibold">No Active Plan</DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-slate-200" />
-        <div className="p-3 space-y-2">
-          <p className="text-sm text-slate-600">Your trial has ended. Subscribe to unlock full features:</p>
-          <ul className="text-xs text-slate-600 space-y-1 ml-2">
-            <li>✓ Create unlimited services</li>
-            <li>✓ Advanced analytics & insights</li>
-            <li>✓ Priority support</li>
-          </ul>
+      <DropdownMenuContent align="end" className="w-72 bg-white/95 backdrop-blur-md border border-orange-200 shadow-xl rounded-xl p-0 overflow-hidden">
+        <div className="bg-orange-600 p-4 text-white">
+          <DropdownMenuLabel className="p-0 font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Account Restricted
+          </DropdownMenuLabel>
+          <p className="text-[10px] text-orange-100 font-medium mt-1 uppercase tracking-wider">Your trial has concluded</p>
         </div>
-        <DropdownMenuSeparator className="bg-slate-200" />
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard/subscription" className="w-full cursor-pointer">
-            <span className="flex items-center gap-2 font-semibold text-blue-600">
-              <span>View Plans</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-          </Link>
-        </DropdownMenuItem>
+        
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-bold text-slate-900">Unlock Full Access:</p>
+            <ul className="text-xs text-slate-600 space-y-2">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                <span>Unlimited product & service listings</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                <span>Advanced market analytics</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                <span>Priority customer support</span>
+              </li>
+            </ul>
+          </div>
+
+          <DropdownMenuItem asChild className="p-0 focus:bg-transparent">
+            <Link href="/dashboard/subscription" className="w-full">
+              <button className="w-full py-3 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 group/btn">
+                Subscribe Now <ArrowRight className="h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
+              </button>
+            </Link>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

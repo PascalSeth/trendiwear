@@ -19,6 +19,7 @@ model User {
   profileImage               String?
   role                       Role                   @default(CUSTOMER)
   isActive                   Boolean                @default(true)
+  isDeleted                  Boolean                @default(false)
   createdAt                  DateTime               @default(now())
   updatedAt                  DateTime               @updatedAt
   accounts                   Account[]
@@ -137,6 +138,8 @@ model ProfessionalProfile {
   location               String?
   availability           String?
   isVerified             Boolean                @default(false)
+  isActive               Boolean                @default(true)
+  isDeleted              Boolean                @default(false)
   rating                 Float?                 @default(4.0)
   totalReviews           Int                    @default(0)
   completedOrders        Int                    @default(0)
@@ -323,6 +326,7 @@ model Product {
   tags                 ProductTag[]
   isUnisex             Boolean              @default(true)
   isActive             Boolean              @default(true)
+  isDeleted            Boolean              @default(false)
   isInStock            Boolean              @default(true)
   viewCount            Int                  @default(0)
   wishlistCount        Int                  @default(0)

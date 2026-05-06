@@ -8,8 +8,9 @@ import { Role } from '@prisma/client';
 import { X } from 'lucide-react';
 import type { UserInfo } from './ServerDashboardShell';
 import { TrialWarning } from '@/components/subscription/TrialWarning';
-import { SubscriptionTiers } from '@/components/subscription/SubscriptionTiers';
-import { AlertCircle } from 'lucide-react';
+
+import { AlertCircle, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -20,66 +21,12 @@ interface DashboardShellProps {
 const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInfo }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
-  // Consider trial expired if trialEndDate exists and is in the past
-  const isTrialExpired = userInfo.trialEndDate 
-    ? new Date(userInfo.trialEndDate) < new Date() 
-    : false;
-  
-  // They must subscribe if they are a PROFESSIONAL, trial is expired, and no active subscription
-  const mustSubscribe = role === Role.PROFESSIONAL && isTrialExpired && !userInfo.hasActiveSubscription;
 
-  useEffect(() => {
-    // Optionally still fetch for most up-to-date trial status or skip if already have from server
-    if (role === Role.PROFESSIONAL) {
-      if (userInfo.trialEndDate) {
-        const remaining = Math.max(0, Math.ceil((new Date(userInfo.trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
-        setDaysRemaining(remaining);
-      } else {
-        const checkTrial = async () => {
-          try {
-            const res = await fetch('/api/subscriptions/trial');
-            if (res.ok) {
-              const response = await res.json();
-              if (response.data?.daysRemaining !== undefined) {
-                setDaysRemaining(response.data.daysRemaining);
-              }
-            }
-          } catch (error) {
-            console.error('Error checking trial status:', error);
-          }
-        };
-        checkTrial();
-      }
-    }
-  }, [role, userInfo.trialEndDate]);
 
-  const handleSelectTier = async (tierId: string, billingCycle: 'WEEKLY' | 'MONTHLY' | 'YEARLY') => {
-    setSubscriptionLoading(true);
-    try {
-      const paymentResponse = await fetch('/api/subscriptions/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tierId,
-          billingCycle,
-          callbackUrl: `${window.location.origin}/dashboard/subscription/payment-complete`,
-        }),
-      });
+  const currentDaysRemaining = userInfo.daysRemaining;
 
-      if (!paymentResponse.ok) throw new Error('Failed to initialize payment');
-      const paymentData = await paymentResponse.json();
-      if (paymentData.data?.authorizationUrl) {
-        window.location.href = paymentData.data.authorizationUrl;
-      }
-    } catch (err) {
-      console.error(err);
-      setSubscriptionLoading(false);
-    }
-  };
-
+  // Handle global search shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -151,6 +98,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-50">
             <DashboardTopBar
+              onMenuClick={() => setIsMobileSidebarOpen(true)}
               onDesktopToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
               isSidebarCollapsed={isSidebarCollapsed}
               userInfo={userInfo}
@@ -158,41 +106,39 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
           </header>
 
           {/* Trial Warning */}
-          {daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 30 && (
+          {typeof currentDaysRemaining === 'number' && currentDaysRemaining > 0 && currentDaysRemaining <= 30 && (
             <div className="px-4 mt-2 max-w-[1600px] mx-auto w-full">
-               <TrialWarning daysRemaining={daysRemaining} />
+               <TrialWarning daysRemaining={currentDaysRemaining} />
+            </div>
+          )}
+
+          {/* Expired Warning */}
+          {typeof currentDaysRemaining === 'number' && currentDaysRemaining <= 0 && role === Role.PROFESSIONAL && !userInfo.hasActiveSubscription && (
+            <div className="px-4 mt-2 max-w-[1600px] mx-auto w-full">
+               <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm shadow-orange-100">
+                 <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                     <AlertCircle className="w-6 h-6 animate-pulse" />
+                   </div>
+                   <div>
+                     <p className="text-orange-900 font-black uppercase tracking-tight text-sm italic">Trial Expired</p>
+                     <p className="text-orange-700 text-xs font-medium">Your free access has concluded. Subscribe to reactivate your shop features.</p>
+                   </div>
+                 </div>
+                 <Link href="/dashboard/subscription">
+                   <button className="px-6 py-2 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all flex items-center gap-2 group/btn whitespace-nowrap">
+                     Subscribe Now <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                   </button>
+                 </Link>
+               </div>
             </div>
           )}
 
           <main className="flex-1 p-4 pb-32 sm:p-6 lg:p-10 overflow-y-auto scrollbar-hide">
             <div className="mx-auto w-full max-w-[1600px] animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {mustSubscribe ? (
-                <div className="flex flex-col items-center justify-center min-h-[75vh] text-center">
-                  <div className="mb-10 p-8 bg-white/70 backdrop-blur-md rounded-3xl border border-white/50 shadow-xl max-w-2xl">
-                    <div className="flex items-center justify-center w-20 h-20 bg-amber-50 text-amber-500 rounded-2xl mx-auto mb-6 shadow-inner">
-                      <AlertCircle className="w-10 h-10" />
-                    </div>
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 mb-3">
-                      Trial Phase <span className="text-violet-600">Expired</span>
-                    </h1>
-                    <p className="text-slate-500 text-lg leading-relaxed">
-                      Your professional trial has ended. Elevate your business by selecting 
-                      a subscription plan that fits your growth ambitions.
-                    </p>
-                  </div>
-                  
-                  <div className="w-full">
-                    <SubscriptionTiers 
-                      onSelectTier={handleSelectTier} 
-                      loading={subscriptionLoading}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="relative">
-                    {children}
-                </div>
-              )}
+              <div className="relative">
+                  {children}
+              </div>
             </div>
           </main>
         </div>

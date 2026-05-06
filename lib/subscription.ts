@@ -19,8 +19,21 @@ export async function canAccessDashboardFeatures(professionalId: string): Promis
     const now = new Date()
 
     // Check if on active trial
-    if (profile.trial && now < profile.trial.endDate) {
-      return true
+    if (profile.trial && !profile.trial.completed) {
+      // Re-calculate to ensure DB is in sync if needed
+      const calculatedDaysRemaining = Math.max(0, Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      
+      if (profile.trial.daysRemaining !== calculatedDaysRemaining) {
+        await prisma.professionalTrial.update({
+          where: { id: profile.trial.id },
+          data: { daysRemaining: calculatedDaysRemaining }
+        })
+        profile.trial.daysRemaining = calculatedDaysRemaining
+      }
+
+      if (profile.trial.daysRemaining > 0) {
+        return true
+      }
     }
 
     // Check if has active subscription
@@ -76,26 +89,37 @@ export async function getProfessionalAccessTier(
     const now = new Date()
 
     // Check trial status
-    if (profile.trial && now < profile.trial.endDate) {
-      const daysRemaining = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (profile.trial && !profile.trial.completed) {
+      // Sync DB if needed so the stored value stays accurate
+      const calculatedDaysRemaining = Math.max(0, Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
       
-      const productCount = await prisma.product.count({
-        where: { professionalId }
-      })
+      if (profile.trial.daysRemaining !== calculatedDaysRemaining) {
+        await prisma.professionalTrial.update({
+          where: { id: profile.trial.id },
+          data: { daysRemaining: calculatedDaysRemaining }
+        })
+        profile.trial.daysRemaining = calculatedDaysRemaining
+      }
 
-      const trialLimit = 8
-      const isLimitReached = productCount >= trialLimit
+      if (profile.trial.daysRemaining > 0) {
+        const productCount = await prisma.product.count({
+          where: { professionalId }
+        })
 
-      return {
-        canView: true,
-        canAddProducts: !isLimitReached,
-        canAddServices: true,
-        canEditProfile: true,
-        canViewAnalytics: false,
-        accessLevel: isLimitReached ? 'VIEW_ONLY' : 'FULL',
-        reason: isLimitReached 
-          ? `Trial limit reached (8 products). Upgrade to add more.` 
-          : `Trial active: ${daysRemaining} days remaining (${productCount}/8 products)`,
+        const trialLimit = 8
+        const isLimitReached = productCount >= trialLimit
+
+        return {
+          canView: true,
+          canAddProducts: !isLimitReached,
+          canAddServices: true,
+          canEditProfile: true,
+          canViewAnalytics: false,
+          accessLevel: isLimitReached ? 'VIEW_ONLY' : 'FULL',
+          reason: isLimitReached 
+            ? `Trial limit reached (8 products). Upgrade to add more.` 
+            : `Trial active: ${profile.trial.daysRemaining} days remaining (${productCount}/8 products)`,
+        }
       }
     }
 
@@ -149,10 +173,8 @@ export async function isTrialExpiringSoon(professionalId: string): Promise<boole
 
     if (!profile || !profile.trial) return false
 
-    const now = new Date()
-    const daysUntilExpiry = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 7
+    return profile.trial.daysRemaining > 0 && profile.trial.daysRemaining <= 7
   } catch (error) {
     console.error('Error checking trial expiry:', error)
     return false
@@ -208,4 +230,36 @@ export async function calculateTrialDaysRemaining(trialEndDate: Date): Promise<n
   if (millisecondsRemaining <= 0) return 0
 
   return Math.ceil(millisecondsRemaining / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Synchronize all active trials (intended for admin/cron use)
+ */
+export async function syncAllTrialDays(): Promise<{ updated: number; total: number }> {
+  try {
+    const trials = await prisma.professionalTrial.findMany({
+      where: { completed: false }
+    })
+
+    let updatedCount = 0
+    const now = new Date()
+
+    for (const trial of trials) {
+      const calculated = Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const final = Math.max(0, calculated)
+
+      if (trial.daysRemaining !== final) {
+        await prisma.professionalTrial.update({
+          where: { id: trial.id },
+          data: { daysRemaining: final }
+        })
+        updatedCount++
+      }
+    }
+
+    return { updated: updatedCount, total: trials.length }
+  } catch (error) {
+    console.error('Error syncing all trials:', error)
+    throw error
+  }
 }

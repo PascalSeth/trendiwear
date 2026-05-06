@@ -56,6 +56,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Professional profile not found' }, { status: 404 })
     }
 
+    const now = new Date()
+
     // Fetch related data independently
     const [trial, subscription] = await Promise.all([
       prisma.professionalTrial.findUnique({
@@ -74,11 +76,19 @@ export async function GET() {
     ])
 
     // Check trial status from relation
-    const now = new Date()
-    const isTrialActive = trial && trial.endDate > now
-    const daysRemaining = trial
+    const calculatedDaysRemaining = trial
       ? Math.max(0, Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
       : null
+
+    if (trial && trial.daysRemaining !== calculatedDaysRemaining && calculatedDaysRemaining !== null) {
+      await prisma.professionalTrial.update({
+        where: { id: trial.id },
+        data: { daysRemaining: calculatedDaysRemaining }
+      })
+    }
+
+    const isTrialActive = trial && (calculatedDaysRemaining ?? 0) > 0 && !trial.completed
+    const daysRemaining = calculatedDaysRemaining
 
     // Check if has active subscription
     const hasActiveSubscription = subscription

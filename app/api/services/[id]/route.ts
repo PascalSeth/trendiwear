@@ -101,6 +101,16 @@ export async function PUT(
     }
 
     if (user.role === "PROFESSIONAL") {
+      const { checkSubscriptionForAction } = await import("@/lib/subscription-middleware");
+      const { allowed, message } = await checkSubscriptionForAction(request, 'EDIT_SERVICE');
+
+      if (!allowed) {
+        return NextResponse.json(
+          { error: message || "Subscription expired. Please renew your subscription to edit services." },
+          { status: 403 }
+        );
+      }
+
       // Professional can update their own ProfessionalService (price, durationOverride, isActive)
       // or update the Service itself if they created it (isCustom)
       const professionalService = await prisma.professionalService.findUnique({

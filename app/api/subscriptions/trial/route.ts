@@ -47,16 +47,41 @@ export async function GET() {
     const trial = profile.trial
     const subscription = profile.subscription
     
-    const isOnTrial = trial && now < trial.endDate
-    const daysRemaining = trial
-      ? Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const calculatedDaysRemaining = trial
+      ? Math.max(0, Math.ceil((trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
       : 0
+    
+    const finalDaysRemaining = calculatedDaysRemaining
+
+    // Sync DB if needed so it doesn't stay stale when endDate changes
+    if (trial && trial.daysRemaining !== finalDaysRemaining) {
+      await prisma.professionalTrial.update({
+        where: { id: trial.id },
+        data: { daysRemaining: finalDaysRemaining }
+      })
+    }
+
+    const isOnTrial = trial && finalDaysRemaining > 0 && !trial.completed
 
     const productCount = await prisma.product.count({
-      where: { professionalId: profile.id }
+      where: { 
+        professionalId: profile.id,
+        isDeleted: false
+      }
     })
-    const productLimit = 8
-    const isLimitReached = productCount >= productLimit
+
+    const serviceCount = await prisma.professionalService.count({
+      where: { 
+        professionalId: profile.id,
+        isActive: true
+      }
+    })
+
+    const totalListings = productCount + serviceCount;
+    
+    // Limits: Trial gets 8 listings, Subscriptions get their tier limit
+    const listingLimit = subscription?.tier?.monthlyListings || 8;
+    const isLimitReached = totalListings >= listingLimit;
 
     return NextResponse.json({
       success: true,
@@ -64,14 +89,17 @@ export async function GET() {
         isOnTrial,
         trialStartDate: trial?.startDate || null,
         trialEndDate: trial?.endDate || null,
-        daysRemaining: Math.max(0, daysRemaining),
-        productCount,
-        productLimit,
+        daysRemaining: finalDaysRemaining,
+        productCount: totalListings, // Legacy naming but returns total
+        productLimit: listingLimit,
         isLimitReached,
         subscriptionStatus: subscription?.status || (isOnTrial ? 'TRIAL' : 'EXPIRED'),
         currentSubscription: subscription,
-        trial: trial,
-        isTrialExpired: trial && now > trial.endDate,
+        trial: {
+          ...trial,
+          daysRemaining: finalDaysRemaining
+        },
+        isTrialExpired: trial && trial.daysRemaining <= 0,
         trialExpiredAt: trial?.endDate || null,
       },
     })

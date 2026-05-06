@@ -1,5 +1,7 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -38,6 +40,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -52,6 +56,7 @@ type Product = {
   isInStock: boolean;
   viewCount: number;
   soldCount: number;
+  isDeleted: boolean;
   createdAt: string;
   categories: {
     name: string;
@@ -76,45 +81,31 @@ type Product = {
 
 // Skeleton Loader Component
 const SkeletonLoader = () => (
-  <div className="space-y-6 pt-4">
+  <div className="space-y-8 pt-4">
     {/* Header Skeleton */}
-    <div className="space-y-3">
-      <div className="h-8 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-      <div className="flex gap-2">
-        <div className="h-6 bg-gray-200 rounded w-24 animate-pulse"></div>
-        <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+    <div className="flex justify-between items-center">
+      <div className="space-y-3">
+        <div className="h-10 bg-gray-100 rounded-lg w-64 animate-pulse"></div>
+        <div className="h-5 bg-gray-100 rounded-lg w-96 animate-pulse"></div>
       </div>
+      <div className="h-12 bg-gray-100 rounded-xl w-40 animate-pulse"></div>
     </div>
 
-    {/* Image Skeleton */}
-    <div className="relative w-full h-80 rounded-lg overflow-hidden bg-gray-200 animate-pulse"></div>
-
-    {/* Price Skeleton */}
-    <div className="bg-gray-100 p-4 rounded-lg">
-      <div className="h-4 bg-gray-200 rounded w-16 mb-3 animate-pulse"></div>
-      <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
-    </div>
-
-    {/* Info Grid Skeleton */}
-    <div className="grid grid-cols-2 gap-4">
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="h-3 bg-gray-200 rounded w-24 mb-3 animate-pulse"></div>
-        <div className="h-8 bg-gray-200 rounded w-12 animate-pulse"></div>
-      </div>
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="h-3 bg-gray-200 rounded w-20 mb-3 animate-pulse"></div>
-        <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-      </div>
-    </div>
-
-    {/* Metrics Skeleton */}
-    <div className="grid grid-cols-4 gap-3">
+    {/* Stats Cards Skeleton */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-gray-50 p-3 rounded-lg text-center">
-          <div className="h-5 bg-gray-200 rounded mx-auto mb-2 w-6 animate-pulse"></div>
-          <div className="h-6 bg-gray-200 rounded mb-2 animate-pulse"></div>
-          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-        </div>
+        <div key={i} className="h-24 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
+      ))}
+    </div>
+
+    {/* Toolbar Skeleton */}
+    <div className="h-20 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
+
+    {/* Table Skeleton */}
+    <div className="border border-gray-100 rounded-3xl overflow-hidden">
+      <div className="h-12 bg-gray-50/50 animate-pulse"></div>
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="h-20 border-t border-gray-50 animate-pulse"></div>
       ))}
     </div>
   </div>
@@ -146,15 +137,37 @@ export function ProductTable({ initialData }: ProductTableProps) {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      // Filter out deleted products and fetch dashboard data
       const response = await fetch('/api/products?dashboard=true&page=1&limit=50');
       if (response.ok) {
         const result = await response.json();
-        setData(result.products || []);
+        // Ensure we only show non-deleted products
+        const nonDeleted = (result.products || []).filter((p: Product) => !p.isDeleted);
+        setData(nonDeleted);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleProductActive = async (product: Product) => {
+    try {
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !product.isActive }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setData((prev) => prev.map((p) => p.id === product.id ? { ...p, isActive: updated.isActive } : p));
+        toast.success(`Product ${updated.isActive ? 'activated' : 'deactivated'}`);
+      }
+    } catch (error) {
+      console.error('Failed to toggle status:', error);
+      toast.error('Failed to update product status');
     }
   };
 
@@ -299,6 +312,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
+          className="border-gray-300"
         />
       ),
       cell: ({ row }) => (
@@ -306,26 +320,39 @@ export function ProductTable({ initialData }: ProductTableProps) {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="border-gray-300"
         />
       ),
     },
     {
       accessorKey: "name",
-      header: "Product",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent p-0 font-semibold"
+        >
+          Product
+          <ChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
-        <div className="flex items-center space-x-2 md:space-x-3">
-          <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="flex items-center space-x-4">
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0 shadow-sm">
             <Image
               src={row.original.images[0] || "/placeholder-product.jpg"}
               alt={row.getValue("name")}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium text-sm md:text-base truncate">{row.getValue("name")}</div>
-            <div className="text-xs md:text-sm text-gray-500 truncate">{row.original.categories?.[0]?.name || "Uncategorized"}</div>
+          <div className="min-w-0 flex flex-col">
+            <span className="font-semibold text-gray-900 text-sm truncate max-w-[200px]">
+              {row.getValue("name")}
+            </span>
+            <span className="text-xs text-gray-500 font-medium">
+              {row.original.categories?.[0]?.name || "Uncategorized"}
+            </span>
           </div>
         </div>
       ),
@@ -333,86 +360,115 @@ export function ProductTable({ initialData }: ProductTableProps) {
     {
       accessorKey: "price",
       header: "Price",
-      cell: ({ row }) => <div className="font-semibold text-green-600">{row.original.currency} {row.getValue("price")}</div>,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-bold text-gray-900">
+            {row.original.currency} {row.original.price.toLocaleString()}
+          </span>
+        </div>
+      ),
     },
     {
       accessorKey: "stockQuantity",
-      header: "Stock",
+      header: "Inventory",
       cell: ({ row }) => {
-        const stockQuantity = row.getValue("stockQuantity") as number;
+        const stock = row.getValue("stockQuantity") as number;
         return (
-          <Badge className={stockQuantity > 0 ? "bg-blue-100 text-blue-800 hover:bg-blue-100" : "bg-red-100 text-red-800 hover:bg-red-100"}>
-            {stockQuantity}
-          </Badge>
+          <div className="flex flex-col space-y-1.5 w-24">
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className={stock > 10 ? "text-emerald-600" : stock > 0 ? "text-amber-600" : "text-red-600"}>
+                {stock > 0 ? `${stock} in stock` : "Out of stock"}
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all ${
+                  stock > 10 ? "bg-emerald-500" : stock > 0 ? "bg-amber-500" : "bg-red-500"
+                }`}
+                style={{ width: `${Math.min((stock / 50) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
         );
       },
     },
     {
       accessorKey: "soldCount",
-      header: "Sold",
-      cell: ({ row }) => <div className="text-center hidden md:block font-medium">{row.getValue("soldCount")}</div>,
-    },
-    {
-      accessorKey: "viewCount",
-      header: "Views",
-      cell: ({ row }) => <div className="text-center hidden md:block font-medium">{row.getValue("viewCount")}</div>,
+      header: "Sales",
+      cell: ({ row }) => (
+        <div className="text-sm font-medium text-gray-700">
+          {row.getValue("soldCount")} sold
+        </div>
+      ),
     },
     {
       id: "status",
-      header: "Status",
+      header: "Visibility",
       cell: ({ row }) => (
-        <div className="flex flex-col space-y-1">
-          <Badge className={row.original.isActive ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" : "bg-gray-100 text-gray-800 hover:bg-gray-100"}>
-            {row.original.isActive ? "Active" : "Inactive"}
-          </Badge>
-          <Badge className={row.original.isInStock ? "bg-sky-100 text-sky-800 hover:bg-sky-100" : "bg-orange-100 text-orange-800 hover:bg-orange-100"}>
-            {row.original.isInStock ? "In Stock" : "Out of Stock"}
+        <div className="flex items-center space-x-3">
+          <Switch
+            checked={row.original.isActive}
+            onCheckedChange={() => toggleProductActive(row.original)}
+            className="data-[state=checked]:bg-emerald-500"
+          />
+          <Badge 
+            variant="outline"
+            className={`font-medium border-0 px-2 py-0.5 rounded-md ${
+              row.original.isActive 
+                ? "bg-emerald-50 text-emerald-700" 
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {row.original.isActive ? "Live" : "Draft"}
           </Badge>
         </div>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "",
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="text-xs font-semibold">Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleViewDetails(row.original)} className="cursor-pointer">
-              <Eye className="mr-2 h-4 w-4" />
-              <span>View Details</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddStockClick(row.original)} className="cursor-pointer">
-              <Package className="mr-2 h-4 w-4" />
-              <span>Add Stock</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href={`/dashboard/catalogue/products/edit/${row.original.id}`}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit Product</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDuplicateProduct(row.original)} className="cursor-pointer">
-              <Copy className="mr-2 h-4 w-4" />
-              <span>Duplicate Product</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600"
-              onClick={() => handleDeleteClick(row.original)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              <span>Delete</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full">
+                <MoreHorizontal className="h-4 w-4 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 p-2">
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Options
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem onClick={() => handleViewDetails(row.original)} className="rounded-md cursor-pointer">
+                <Eye className="mr-2 h-4 w-4 text-gray-500" />
+                <span>View Stats</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStockClick(row.original)} className="rounded-md cursor-pointer">
+                <Package className="mr-2 h-4 w-4 text-gray-500" />
+                <span>Add Stock</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-md cursor-pointer">
+                <Link href={`/dashboard/catalogue/products/edit/${row.original.id}`}>
+                  <Edit className="mr-2 h-4 w-4 text-gray-500" />
+                  <span>Edit Product</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDuplicateProduct(row.original)} className="rounded-md cursor-pointer">
+                <Copy className="mr-2 h-4 w-4 text-gray-500" />
+                <span>Duplicate</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                className="rounded-md text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-600"
+                onClick={() => handleDeleteClick(row.original)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Delete Product</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
     },
   ];
@@ -440,145 +496,205 @@ export function ProductTable({ initialData }: ProductTableProps) {
     return <SkeletonLoader />;
   }
 
+  const stats = {
+    total: data.length,
+    active: data.filter(p => p.isActive).length,
+    outOfStock: data.filter(p => p.stockQuantity === 0).length,
+    lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
+  };
+
   return (
-    <div className="w-full space-y-6">
-      {/* Header with Add Product Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">Products</h2>
-          <p className="text-gray-500 text-sm md:text-base mt-1">
-            Manage your product catalog and inventory
+    <div className="w-full space-y-8 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Product Catalog</h1>
+          <p className="text-gray-500 font-medium">
+            Manage your inventory, pricing and visibility across the store.
           </p>
         </div>
-        <Link href='/dashboard/catalogue/products/add-product'>
-          <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Add Product</span>
-            <span className="sm:hidden">Add</span>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="hidden sm:flex border-gray-200 text-gray-600 hover:bg-gray-50">
+            Export CSV
           </Button>
-        </Link>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
-        <Input
-          placeholder="Search products by name, category..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm bg-gray-50 border-gray-300"
-        />
-
-        {/* Status Filter and Column Visibility */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-gray-600 font-semibold">Status:</span>
-          {["All", "Active", "Inactive"].map((status) => (
-            <Button
-              key={status}
-              variant="outline"
-              size="sm"
-              onClick={() => handleStatusFilter(status)}
-              className="text-xs md:text-sm border-gray-300 hover:bg-gray-50"
-            >
-              {status}
+          <Link href='/dashboard/catalogue/products/add-product'>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100 px-6">
+              <Plus className="mr-2 h-4 w-4" />
+              Add New Product
             </Button>
-          ))}
-
-          {/* Column Visibility */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-auto border-gray-300 hover:bg-gray-50">
-                <span className="hidden sm:inline">Columns</span>
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize cursor-pointer"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </Link>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border border-gray-200 overflow-x-auto shadow-sm">
-        <Table className="w-full bg-white">
-          <TableHeader className="bg-gray-50 border-b border-gray-200">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-gray-50">
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-gray-700 font-semibold">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Products", value: stats.total, icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Active Live", value: stats.active, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Out of Stock", value: stats.outOfStock, icon: ShoppingBag, color: "text-red-600", bg: "bg-red-50" },
+          { label: "Low Inventory", value: stats.lowStock, icon: ChevronDown, color: "text-amber-600", bg: "bg-amber-50" },
+        ].map((stat, i) => (
+          <Card key={i} className="border-gray-100 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+                <stat.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-0.5">{stat.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Table Container */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 overflow-hidden">
+        {/* Table Toolbar */}
+        <div className="p-6 border-b border-gray-50 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="relative w-full lg:max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400 rotate-90" />
+              </div>
+              <Input
+                placeholder="Search by product name, SKU or category..."
+                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn("name")?.setFilterValue(event.target.value)
+                }
+                className="pl-10 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11"
+              />
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <Tabs defaultValue="All" onValueChange={handleStatusFilter} className="w-full sm:w-auto">
+                <TabsList className="bg-gray-100/80 p-1 h-11 rounded-xl">
+                  {["All", "Active", "Inactive"].map((status) => (
+                    <TabsTrigger 
+                      key={status} 
+                      value={status}
+                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                    >
+                      {status}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600">
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 p-2">
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1" />
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize rounded-md"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Content */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-gray-50/50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 sm:gap-0 sm:space-x-2 py-4">
-        <div className="flex-1 text-xs md:text-sm text-gray-600 text-center sm:text-left">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} product(s) selected.
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow 
+                    key={row.id} 
+                    className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-6 py-4">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="p-4 bg-gray-50 rounded-full">
+                        <ShoppingBag className="h-8 w-8 text-gray-300" />
+                      </div>
+                      <p className="text-gray-500 font-medium text-lg">No products found</p>
+                      <p className="text-gray-400 text-sm max-w-xs">
+                        Try adjusting your search or filters to find what you&apos;re looking for.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="flex justify-center sm:justify-end space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="text-xs md:text-sm border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="text-xs md:text-sm border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Next
-          </Button>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+          <p className="text-sm text-gray-500 font-medium">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected
+          </p>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-200 rounded-lg h-9"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1 mx-2">
+              <span className="text-sm font-semibold text-gray-900">
+                {table.getState().pagination.pageIndex + 1}
+              </span>
+              <span className="text-sm text-gray-400 font-medium">of</span>
+              <span className="text-sm font-semibold text-gray-900">
+                {table.getPageCount()}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-200 rounded-lg h-9"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
 

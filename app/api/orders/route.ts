@@ -114,8 +114,12 @@ export async function GET(request: NextRequest) {
           deliveryConfirmations: {
             where: view === "seller" ? { professionalId: user.id } : undefined,
           },
-          paymentEscrows: true,
-          shippingInvoices: true,
+          paymentEscrows: {
+            where: view === "seller" ? { professionalId: user.id } : undefined,
+          },
+          shippingInvoices: {
+            where: view === "seller" ? { professionalId: user.id } : undefined,
+          },
         },
         skip: (page - 1) * limit,
         take: limit,
@@ -124,8 +128,25 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ])
 
+    let responseOrders = orders;
+
+    // For professionals, adjust the order totals to reflect ONLY their items' revenue
+    if (user.role === "PROFESSIONAL") {
+      responseOrders = orders.map((order) => {
+        const professionalTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        return {
+          ...order,
+          subtotal: professionalTotal,
+          totalPrice: professionalTotal,
+          platformFee: 0,
+          tax: 0,
+          shippingCost: 0,
+        };
+      });
+    }
+
     return NextResponse.json({
-      orders,
+      orders: responseOrders,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {

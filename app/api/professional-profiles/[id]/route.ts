@@ -26,9 +26,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    if (!profile) {
+    if (!profile || profile.isDeleted) {
       return NextResponse.json({ error: "Professional profile not found" }, { status: 404 })
     }
+
+    // Admins can see inactive profiles, but public/others cannot (depending on context)
+    // For now, let's just return it and let the frontend handle UI for inactive
+    // But if we want to be strict:
+    // if (!profile.isActive && !isAdmin) return 404...
+    // Let's stick to isDeleted for now.
 
     return NextResponse.json(profile)
   } catch (error) {
@@ -72,6 +78,36 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     })
 
     return NextResponse.json(profile)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const user = await requireAuth()
+
+    const existingProfile = await prisma.professionalProfile.findUnique({
+      where: { id },
+    })
+
+    if (!existingProfile) {
+      return NextResponse.json({ error: "Professional profile not found" }, { status: 404 })
+    }
+
+    if (existingProfile.userId !== user.id && !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    // Perform soft delete
+    await prisma.professionalProfile.update({
+      where: { id },
+      data: { isDeleted: true }
+    })
+
+    return NextResponse.json({ message: "Professional profile deleted successfully" })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
     return NextResponse.json({ error: errorMessage }, { status: 500 })

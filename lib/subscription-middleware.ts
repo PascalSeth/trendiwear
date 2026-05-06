@@ -30,20 +30,33 @@ export async function checkDashboardAccess(request: NextRequest) {
     const now = new Date()
 
     // Check if on active trial
-    if (profile.trial && now < profile.trial.endDate) {
-      const daysRemaining = Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-      // Add headers for client-side awareness
-      const response = NextResponse.next()
-      response.headers.set('X-Trial-Status', 'ACTIVE')
-      response.headers.set('X-Trial-Days-Remaining', daysRemaining.toString())
-
-      // Show warning if less than 7 days
-      if (daysRemaining <= 7) {
-        response.headers.set('X-Trial-Expiring-Soon', 'true')
+    if (profile.trial && !profile.trial.completed) {
+      const calculatedDaysRemaining = Math.max(0, Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      
+      // Sync DB if needed
+      if (profile.trial.daysRemaining !== calculatedDaysRemaining) {
+        await prisma.professionalTrial.update({
+          where: { id: profile.trial.id },
+          data: { daysRemaining: calculatedDaysRemaining }
+        })
+        profile.trial.daysRemaining = calculatedDaysRemaining
       }
 
-      return response
+      if (profile.trial.daysRemaining > 0) {
+        const daysRemaining = profile.trial.daysRemaining
+
+        // Add headers for client-side awareness
+        const response = NextResponse.next()
+        response.headers.set('X-Trial-Status', 'ACTIVE')
+        response.headers.set('X-Trial-Days-Remaining', daysRemaining.toString())
+
+        // Show warning if less than 7 days
+        if (daysRemaining <= 7) {
+          response.headers.set('X-Trial-Expiring-Soon', 'true')
+        }
+
+        return response
+      }
     }
 
     // Check if has active subscription
@@ -80,7 +93,7 @@ export async function checkDashboardAccess(request: NextRequest) {
  */
 export async function checkSubscriptionForAction(
   request: NextRequest,
-  action: 'ADD_PRODUCT' | 'ADD_SERVICE' | 'VIEW_ANALYTICS' | 'EDIT_PROFILE'
+  action: 'ADD_PRODUCT' | 'EDIT_PRODUCT' | 'ADD_SERVICE' | 'EDIT_SERVICE' | 'VIEW_ANALYTICS' | 'EDIT_PROFILE'
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -112,9 +125,21 @@ export async function checkSubscriptionForAction(
     const now = new Date()
 
     // Check trial status
-    if (profile.trial && now < profile.trial.endDate) {
-      // All actions allowed during trial
-      return { allowed: true }
+    if (profile.trial && !profile.trial.completed) {
+      const calculatedDaysRemaining = Math.max(0, Math.ceil((profile.trial.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      
+      if (profile.trial.daysRemaining !== calculatedDaysRemaining) {
+        await prisma.professionalTrial.update({
+          where: { id: profile.trial.id },
+          data: { daysRemaining: calculatedDaysRemaining }
+        })
+        profile.trial.daysRemaining = calculatedDaysRemaining
+      }
+
+      if (profile.trial.daysRemaining > 0) {
+        // All actions allowed during trial
+        return { allowed: true }
+      }
     }
 
     // Trial expired

@@ -379,7 +379,25 @@ function OrderDetailSheet({
                    <div className="pt-6 border-t border-stone-100 space-y-3">
                       <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Subtotal</span><span className="text-stone-900">{currency} {order.subtotal.toFixed(2)}</span></div>
                       <div className="flex justify-between text-xs font-bold"><span className="text-stone-400 uppercase tracking-widest">Platform & Tax</span><span className="text-stone-900">{currency} {(order.platformFee + order.tax).toFixed(2)}</span></div>
-                      <div className="flex justify-between text-xl font-serif italic pt-4 border-t-2 border-stone-900"><span className="text-stone-900">Total Acquisition</span><span className="text-stone-900">{currency} {order.totalPrice.toFixed(2)}</span></div>
+                      <div className="flex justify-between items-end text-xl font-serif italic pt-4 border-t-2 border-stone-900">
+                         <div className="flex flex-col gap-1.5">
+                           <span className="text-stone-900 leading-none">Total Acquisition</span>
+                           {order.paymentEscrows?.[0]?.status === 'RELEASED' ? (
+                              <span className="inline-flex items-center w-max gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 not-italic">
+                                <CheckCheck className="w-2.5 h-2.5" /> Paid Out
+                              </span>
+                            ) : order.paymentEscrows?.[0]?.status === 'HELD' ? (
+                              <span className="inline-flex items-center w-max gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 not-italic">
+                                <Clock className="w-2.5 h-2.5" /> Pending Payout
+                              </span>
+                            ) : order.paymentEscrows?.[0]?.status ? (
+                              <span className="inline-flex items-center w-max gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-stone-50 text-stone-600 border border-stone-200 not-italic">
+                                {order.paymentEscrows[0].status}
+                              </span>
+                            ) : null}
+                         </div>
+                         <span className="text-stone-900">{currency} {order.totalPrice.toFixed(2)}</span>
+                      </div>
                    </div>
                 </div>
               </section>
@@ -786,11 +804,32 @@ export default function OrdersDataTable({ initialData }: OrdersDataTableProps) {
     },
     {
       accessorKey: "totalPrice",
-      header: "Total",
+      header: "Total & Payout",
       cell: ({ row }) => {
         const currency = row.original.items[0]?.product.currency || "GHS";
+        const escrowStatus = row.original.paymentEscrows?.[0]?.status;
+        
         return (
-          <div className="font-black text-xs text-stone-900">{currency}{(row.original.totalPrice ?? 0).toFixed(2)}</div>
+          <div className="flex flex-col gap-1.5">
+            <div className="font-black text-xs text-stone-900">{currency}{(row.original.totalPrice ?? 0).toFixed(2)}</div>
+            {escrowStatus && (
+              <div>
+                {escrowStatus === 'RELEASED' ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <CheckCheck className="w-2.5 h-2.5" /> Paid Out
+                  </span>
+                ) : escrowStatus === 'HELD' ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100">
+                    <Clock className="w-2.5 h-2.5" /> Pending Payout
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-stone-50 text-stone-600 border border-stone-200">
+                    {escrowStatus}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         );
       },
     },
