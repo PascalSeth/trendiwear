@@ -345,23 +345,6 @@ export default function AddProductPage() {
               {/* STEP 1: BASICS (The Soul) */}
               {currentStep === 0 && (
                 <div className="flex flex-col gap-8">
-                  {/* Taxonomy & Filters (Moved to Top) */}
-                  <div className="w-full">
-                    <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <Tag className="w-3 h-3 text-blue-600" />
-                        </div>
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Categories</Label>
-                      </div>
-                      
-                      <MultiCategoryPicker 
-                        parentCategories={parentCategories}
-                        selectedCategoryIds={selectedCategoryIds}
-                        onChange={setSelectedCategoryIds}
-                      />
-                    </div>
-                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Focused Identity */}
                     <div className="lg:col-span-8 space-y-8">
@@ -390,6 +373,22 @@ export default function AddProductPage() {
                             className="w-full rounded-2xl border border-slate-100 focus:border-blue-600 p-6 text-base font-medium leading-relaxed bg-slate-50/30 shadow-none resize-none transition-all outline-none"
                           />
                         </div>
+                      </div>
+
+                      {/* Categories Block (Moved here) */}
+                      <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <Tag className="w-3 h-3 text-blue-600" />
+                          </div>
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Categories</Label>
+                        </div>
+                        
+                        <MultiCategoryPicker 
+                          parentCategories={parentCategories}
+                          selectedCategoryIds={selectedCategoryIds}
+                          onChange={setSelectedCategoryIds}
+                        />
                       </div>
                     </div>
 
