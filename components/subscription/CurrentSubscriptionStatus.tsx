@@ -236,7 +236,8 @@ export function CurrentSubscriptionStatus() {
     const daysUsed = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
     const progress = Math.min(100, Math.max(0, (daysUsed / (totalDays || 1)) * 100))
     const daysRemaining = Math.max(0, totalDays - daysUsed)
-
+    
+    const isInactive = subscription.status === 'INACTIVE'
     const isLegend = subscription.tier?.name?.toLowerCase().includes('legend')
     const isOhene = subscription.tier?.name?.toLowerCase().includes('ohene') || 
                     subscription.tier?.name?.toLowerCase().includes('obaahemaa')
@@ -248,17 +249,26 @@ export function CurrentSubscriptionStatus() {
         className="relative w-full"
       >
         <div className={`absolute inset-x-0 inset-y-0 -m-4 blur-3xl rounded-[3rem] opacity-20 -z-10 ${
-          isLegend ? 'bg-indigo-600' : isOhene ? 'bg-amber-500' : 'bg-violet-600'
+          isInactive ? 'bg-amber-500/30' : isLegend ? 'bg-indigo-600' : isOhene ? 'bg-amber-500' : 'bg-violet-600'
         }`} />
 
         <div className={`overflow-hidden rounded-[2.5rem] border shadow-2xl ${
-          isLegend 
-            ? 'bg-slate-950 border-white/10 text-white' 
-            : isOhene 
-              ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-amber-400/50 text-white' 
-              : 'bg-white border-slate-200 text-slate-900'
+          isInactive
+            ? 'bg-white border-amber-200 text-slate-900'
+            : isLegend 
+              ? 'bg-slate-950 border-white/10 text-white' 
+              : isOhene 
+                ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-amber-400/50 text-white' 
+                : 'bg-white border-slate-200 text-slate-900'
         }`}>
           <div className="relative p-8 md:p-10">
+            {isInactive && (
+              <div className="mb-8 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3 text-amber-700">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <p className="text-sm font-medium">Payment verification pending. Complete your payment to activate this plan.</p>
+              </div>
+            )}
+            
             <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">

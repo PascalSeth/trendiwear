@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
           data: {
             tierId,
             billingCycle,
-            status: 'ACTIVE',
+            status: 'INACTIVE', // 🔒 SECURITY: Set to INACTIVE until payment is confirmed
             currentAmount: price,
             startDate: now,
             nextRenewalDate,
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
             professionalId: profile.id,
             tierId,
             billingCycle,
-            status: 'ACTIVE',
+            status: 'INACTIVE', // 🔒 SECURITY: Set to INACTIVE until payment is confirmed
             currentAmount: price,
             startDate: now,
             nextRenewalDate,
