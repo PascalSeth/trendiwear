@@ -263,7 +263,7 @@ export default function AddProductPage() {
   }, [currentStep, name, description, selectedCategoryIds, uploadedImageUrls, price, currency]);
 
   return (
-    <div className="bg-[#F8FAFC] flex flex-col relative">
+    <div className="bg-[#F8FAFC] flex flex-col relative w-full overflow-x-hidden">
       <div className="flex flex-col min-w-0">
         {/* Horizontal Progress Stepper */}
         <div className="relative bg-white border-b border-slate-200 px-6 py-4">
@@ -272,7 +272,7 @@ export default function AddProductPage() {
               <div className="p-2 bg-slate-900 rounded-lg text-white">
                 <Package className="w-4 h-4" />
               </div>
-              <span className="text-sm font-black uppercase tracking-widest text-slate-900">Product Studio</span>
+              <span className="text-sm font-black uppercase tracking-widest text-slate-900">Add New Product</span>
             </div>
             
             <div className="flex items-center gap-4">
@@ -312,7 +312,7 @@ export default function AddProductPage() {
           </div>
         </div>
         
-        <div className="max-w-5xl mx-auto w-full px-6 pt-12 pb-6 lg:pt-20 lg:pb-8">
+        <div className="max-w-5xl mx-auto w-full px-6 pt-12 pb-6 lg:pt-20 lg:pb-8 min-h-[60vh]">
           
           {/* Editorial Step Header */}
           <motion.div 
@@ -325,11 +325,11 @@ export default function AddProductPage() {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Product Creation — Step {currentStep + 1}</span>
                 <div className="h-px w-12 bg-blue-200" />
              </div>
-             <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                {currentStep === 0 && "Define the soul of your piece."}
-                {currentStep === 1 && "Capture the masterpiece."}
-                {currentStep === 2 && "The value of your craft."}
-                {currentStep === 3 && "Fine details & options."}
+             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                {currentStep === 0 && "Start with the basics."}
+                {currentStep === 1 && "Add photos and videos."}
+                {currentStep === 2 && "Set your price and stock."}
+                {currentStep === 3 && "Add more details."}
              </h1>
           </motion.div>
 
@@ -340,18 +340,35 @@ export default function AddProductPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="w-full"
+              className="w-full overflow-x-hidden"
             >
               {/* STEP 1: BASICS (The Soul) */}
               {currentStep === 0 && (
                 <div className="flex flex-col gap-8">
+                  {/* Taxonomy & Filters (Moved to Top) */}
+                  <div className="w-full">
+                    <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <Tag className="w-3 h-3 text-blue-600" />
+                        </div>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Categories</Label>
+                      </div>
+                      
+                      <MultiCategoryPicker 
+                        parentCategories={parentCategories}
+                        selectedCategoryIds={selectedCategoryIds}
+                        onChange={setSelectedCategoryIds}
+                      />
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Focused Identity */}
                     <div className="lg:col-span-8 space-y-8">
                       {/* Identity Bento Block */}
                       <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-8">
                         <div className="space-y-4">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Creation Identity</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Product Name</Label>
                           <Input 
                             placeholder="What is the name of this piece?"
                             value={name}
@@ -362,7 +379,7 @@ export default function AddProductPage() {
                         
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">The Story</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Product Description</Label>
                             <span className="text-[10px] font-bold text-slate-300 italic">{description.length}/1000</span>
                           </div>
                           <textarea 
@@ -381,7 +398,7 @@ export default function AddProductPage() {
                       {/* AI Insights Card */}
                       <div className="p-8 bg-slate-900 rounded-[2rem] text-white relative overflow-hidden">
                         <Sparkles className="absolute top-6 right-6 w-5 h-5 text-blue-400 animate-pulse" />
-                        <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 opacity-60">Discovery Preview</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 opacity-60">Search Keywords</h3>
                         
                         {(discoveryPreview.styles.length > 0 || discoveryPreview.keywords.length > 0) ? (
                           <div className="space-y-4">
@@ -398,18 +415,18 @@ export default function AddProductPage() {
                           </div>
                         ) : (
                           <div className="h-20 flex items-center justify-center text-center">
-                            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider italic">Input intelligence active...</p>
+                            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider italic">Typing...</p>
                           </div>
                         )}
                         <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl" />
                       </div>
 
                       {/* Collections Bento Block */}
-                      <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Curated Collections</Label>
-                        <div className="space-y-2">
-                          {selectedCategoryCollections.length > 0 ? (
-                            selectedCategoryCollections.map(col => (
+                      {selectedCategoryCollections.length > 0 && (
+                        <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Collections</Label>
+                          <div className="space-y-2">
+                            {selectedCategoryCollections.map(col => (
                               <button
                                 key={col.id}
                                 onClick={() => setSelectedCollections(prev => prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id])}
@@ -426,33 +443,10 @@ export default function AddProductPage() {
                                   <Plus className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 )}
                               </button>
-                            ))
-                          ) : (
-                            <div className="p-8 bg-slate-50/50 rounded-xl border border-dashed border-slate-100 text-center">
-                              <Package className="w-5 h-5 text-slate-200 mx-auto mb-2" />
-                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Select Category First</p>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BOTTOM ROW: Taxonomy & Filters (Full Width) */}
-                  <div className="w-full">
-                    <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <Tag className="w-3 h-3 text-blue-600" />
-                        </div>
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Taxonomy & Filters</Label>
-                      </div>
-                      
-                      <MultiCategoryPicker 
-                        parentCategories={parentCategories}
-                        selectedCategoryIds={selectedCategoryIds}
-                        onChange={setSelectedCategoryIds}
-                      />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -490,7 +484,7 @@ export default function AddProductPage() {
 
                   <div className="lg:col-span-5 space-y-8">
                      <div className="p-8 bg-blue-50 rounded-[3rem] border border-blue-100">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-6 block">Video Experience</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-6 block">Product Video</Label>
                         {uploadedVideoUrl ? (
                            <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative group">
                               <video src={uploadedVideoUrl} className="w-full h-full object-cover" autoPlay muted loop />
@@ -503,7 +497,7 @@ export default function AddProductPage() {
                               <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} />
                               <Video className="w-10 h-10 text-blue-300 group-hover:scale-110 transition-transform" />
                               <div className="text-center">
-                                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Add Brand Video</p>
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Add Video</p>
                                  <p className="text-[8px] text-blue-300 font-bold uppercase mt-1">Max 50MB · Vertical preferred</p>
                               </div>
                            </label>
@@ -521,7 +515,7 @@ export default function AddProductPage() {
                       <div className="md:col-span-7 bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-8">
                          <div className="flex items-center gap-2">
                            <DollarSign className="w-4 h-4 text-slate-400" />
-                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valuation</Label>
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pricing</Label>
                          </div>
                          
                          <div className="grid grid-cols-2 gap-6">
@@ -557,12 +551,12 @@ export default function AddProductPage() {
                          <div className="flex items-center justify-between">
                            <div className="flex items-center gap-2">
                              <Package className="w-4 h-4 text-slate-400" />
-                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inventory</Label>
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock</Label>
                            </div>
                            <div 
                              onClick={() => {
                                if (!isVerified) {
-                                 alert("You must be a Verified Seller to accept Pre-orders. Please submit your verification documents in your account settings.");
+                                 alert("You must be a Trusted Seller to accept Pre-orders. Please submit your verification documents in your account settings.");
                                  return;
                                }
                                setIsPreorder(!isPreorder)
@@ -578,7 +572,7 @@ export default function AddProductPage() {
 
                          <div className="space-y-6">
                            <div className="space-y-3">
-                             <Label className="text-[10px] font-bold text-slate-400">Physical Stock</Label>
+                             <Label className="text-[10px] font-bold text-slate-400">In Stock</Label>
                              <Input 
                                 type="number"
                                 value={stockQuantity}
@@ -606,13 +600,13 @@ export default function AddProductPage() {
                                           className="h-12 rounded-xl bg-slate-50 border-slate-100 focus:border-blue-600 font-bold px-4"
                                           placeholder="50"
                                         />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">Waitlist Cap</span>
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">Waitlist Limit</span>
                                      </div>
                                   </div>
                                   
                                   <div className="space-y-3">
                                      <div className="flex items-center justify-between mb-1">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Lead Time</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">Delivery Time</Label>
                                         <Clock className="w-3 h-3 text-blue-400" />
                                      </div>
                                      <div className="relative">
@@ -641,7 +635,7 @@ export default function AddProductPage() {
                                <Award className="w-5 h-5" />
                             </div>
                             <div>
-                               <h3 className="text-lg font-black text-slate-900 leading-tight">Flash Sale Campaign</h3>
+                               <h3 className="text-lg font-black text-slate-900 leading-tight">Sale Price</h3>
                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Special promotional pricing</p>
                             </div>
                          </div>
@@ -737,7 +731,7 @@ export default function AddProductPage() {
                            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
                               <div className="flex items-center gap-2">
                                 <Package className="w-4 h-4 text-slate-400" />
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Selected Matrix</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Sizes Selected</Label>
                               </div>
                               <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedSizes.length} Variants</span>
                            </div>
@@ -780,7 +774,7 @@ export default function AddProductPage() {
 
                         <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                            <div className="flex items-center gap-2">
-                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Denomination Focus</Label>
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Size System</Label>
                            </div>
                            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
                               {["US", "EU", "UK", "General"].map(t => (
@@ -816,7 +810,7 @@ export default function AddProductPage() {
                       <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
                          <div className="flex items-center gap-2">
                            <Palette className="w-4 h-4 text-slate-400" />
-                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Chromatics</Label>
+                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Colors</Label>
                          </div>
                          <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-50">
                             <ColorPicker value={colors} onChange={setColors} />
@@ -828,7 +822,7 @@ export default function AddProductPage() {
                    <div className="lg:col-span-5 space-y-8">
                       {/* Material Bento Block */}
                       <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Material Composition</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Materials</Label>
                         <div className="flex flex-wrap gap-2">
                            {["Silk", "Cotton", "Linen", "Leather", "Lace", "Organza", "Wool", "Denim"].map(m => (
                              <button
@@ -848,7 +842,7 @@ export default function AddProductPage() {
 
                       {/* Options List Block */}
                       <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-6">
-                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Creative Toggles</Label>
+                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Other Settings</Label>
                          <div className="space-y-3">
                             {[
                               { id: 'custom', label: 'Customizable Request', state: isCustomizable, set: setIsCustomizable, icon: <Save className="w-3 h-3" /> },
@@ -886,7 +880,7 @@ export default function AddProductPage() {
       </div>
 
       {/* The Navigation Dock (Static at bottom) */}
-      <div className="relative mt-4 mb-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-6">
+      <div className="mx-auto mt-4 mb-16 z-10 w-full max-w-sm px-6">
          <div className="bg-slate-900/90 backdrop-blur-2xl px-3 py-3 rounded-full flex items-center justify-between shadow-2xl shadow-slate-900/40 border border-white/10 relative overflow-hidden group">
             <Button 
                variant="ghost" 

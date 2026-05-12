@@ -95,7 +95,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
           isSidebarCollapsed ? 'lg:ml-24' : 'lg:ml-72'
         }`}
       >
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-[100dvh]">
           <header className="sticky top-0 z-50">
             <DashboardTopBar
               onMenuClick={() => setIsMobileSidebarOpen(true)}
