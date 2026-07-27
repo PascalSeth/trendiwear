@@ -139,6 +139,63 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           confirmedAt: new Date()
         }
       })
+
+      // Option 1 Escrow-to-Wallet Release: Credit sellers' account balances
+      const sellerIds = [...new Set(order.items.map((item) => item.professionalId))]
+      for (const sellerId of sellerIds) {
+        const sellerItems = order.items.filter((item) => item.professionalId === sellerId)
+        const sellerEarnings = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+
+        // Check if already released
+        const existingEscrow = await prisma.paymentEscrow.findUnique({
+          where: {
+            orderId_professionalId: {
+              orderId: id,
+              professionalId: sellerId,
+            }
+          }
+        })
+
+        if (existingEscrow?.status !== 'RELEASED') {
+          await prisma.paymentEscrow.upsert({
+            where: {
+              orderId_professionalId: {
+                orderId: id,
+                professionalId: sellerId,
+              }
+            },
+            update: {
+              status: 'RELEASED',
+              releasedAt: new Date(),
+              failureReason: null,
+            },
+            create: {
+              orderId: id,
+              professionalId: sellerId,
+              amount: sellerEarnings,
+              status: 'RELEASED',
+              releasedAt: new Date(),
+            }
+          })
+
+          await prisma.professionalProfile.updateMany({
+            where: { userId: sellerId },
+            data: {
+              accountBalance: { increment: sellerEarnings }
+            }
+          })
+
+          await prisma.notification.create({
+            data: {
+              userId: sellerId,
+              type: 'PAYMENT_RELEASED',
+              title: 'Payment Released to Wallet!',
+              message: `Order #${id.slice(-8).toUpperCase()} has been delivered! GH₵ ${sellerEarnings.toFixed(2)} has been added to your withdrawable wallet balance.`,
+              data: JSON.stringify({ orderId: id, sellerEarnings }),
+            }
+          })
+        }
+      }
     }
 
     const updatedOrder = await prisma.order.update({

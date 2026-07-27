@@ -1,28 +1,19 @@
-import { prisma } from '@/lib/prisma'
-import { sendOrderConfirmationEmail, sendStatusUpdateEmail } from '@/lib/mail'
-
-import { EscrowStatus } from '@prisma/client'
-import { refundTransaction, toPesewas } from '@/lib/paystack'
-import { getCurrencyCode } from './currency'
+import { prisma } from "@/lib/prisma"
+import { dispatchOrderCommunicationEvent } from "@/lib/notification-dispatcher"
 
 /**
- * Perform all actions required when an order is successfully paid.
- * This includes:
- * 1. Decrementing product stock
- * 2. Clearing the customer's cart
- * 3. Notifying the professional(s)
- * 4. Notifying the customer
+ * Transition an order from PENDING to PROCESSING upon payment confirmation.
+ * Handles inventory deduction, cart cleanup, and professional notifications.
+ * Can be called safely from webhooks or payment verify endpoints.
  */
 export async function fulfillOrder(orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
       items: {
-        include: {
-          product: true,
-        },
+        include: { product: true },
       },
-      customer: true,
+      customer: { select: { email: true } },
     },
   })
 
@@ -31,21 +22,21 @@ export async function fulfillOrder(orderId: string) {
     return
   }
 
-  // Skip if already fulfilled (though caller should check paymentStatus)
-  // We use a transaction to be safe
-  await prisma.$transaction(async (tx) => {
-    // 1. Update product stock and sold count
-    for (const item of order.items) {
-      const product = item.product
-      const stockToDecrement = Math.min(item.quantity, product.stockQuantity)
-      const preorderToDecrement = Math.max(0, item.quantity - product.stockQuantity)
+  // Idempotency check: if already processed/paid, skip
+  if (order.paymentStatus === 'PAID' && order.status !== 'PENDING') {
+    console.log(`fulfillOrder: Order ${orderId} is already fulfilled. Skipping.`)
+    return
+  }
 
+  await prisma.$transaction(async (tx) => {
+    // 1. Deduct stock for all items in the order
+    for (const item of order.items) {
       await tx.product.update({
         where: { id: item.productId },
         data: {
-          stockQuantity: { decrement: stockToDecrement },
-          preorderLimit: preorderToDecrement > 0 ? { decrement: preorderToDecrement } : undefined,
-          soldCount: { increment: item.quantity },
+          stockQuantity: {
+            decrement: item.quantity,
+          },
         },
       })
     }
@@ -64,25 +55,12 @@ export async function fulfillOrder(orderId: string) {
       },
     })
 
-    const currencyCode = await getCurrencyCode()
-
-    // 3. Notify the professional(s) about the new paid order
+    // 3. Update professional analytics & Escrow records
     const sellerIds = [...new Set(order.items.map((item) => item.professionalId))]
     for (const sellerId of sellerIds) {
       const sellerItems = order.items.filter((item) => item.professionalId === sellerId)
       const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
-      await tx.notification.create({
-        data: {
-          userId: sellerId,
-          type: 'ORDER_UPDATE',
-          title: 'New Order - Payment Confirmed',
-          message: `You have a new paid order worth ${currencyCode} ${sellerTotal.toFixed(2)}. Please prepare for shipping.`,
-          data: JSON.stringify({ orderId: order.id, sellerTotal }),
-        },
-      })
-
-      // Update professional analytics
       await tx.professionalAnalytics.upsert({
         where: { professionalId: sellerId },
         update: {
@@ -96,10 +74,7 @@ export async function fulfillOrder(orderId: string) {
         },
       })
 
-      const hasPreorder = sellerItems.some(item => item.product?.isPreorder || item.isPreorder);
-      const initialEscrowStatus = hasPreorder ? 'RELEASED' : 'HELD';
-
-      // 3.1 Create Escrow record for this seller
+      // Create Escrow record for this seller in HELD state
       await tx.paymentEscrow.upsert({
         where: {
           orderId_professionalId: {
@@ -109,47 +84,25 @@ export async function fulfillOrder(orderId: string) {
         },
         update: {
           amount: sellerTotal,
-          status: initialEscrowStatus,
+          status: 'HELD',
+          lastAttemptAt: new Date(),
         },
         create: {
           orderId: order.id,
           professionalId: sellerId,
           amount: sellerTotal,
-          status: initialEscrowStatus,
+          status: 'HELD',
+          lastAttemptAt: new Date(),
         }
       })
     }
-
-    // 4. Notify the customer about successful payment
-    await tx.notification.create({
-      data: {
-        userId: order.customerId,
-        type: 'ORDER_UPDATE',
-        title: 'Payment Successful',
-        message: `Your payment of ${currencyCode} ${order.totalPrice.toFixed(2)} was successful. Your order is being processed.`,
-        data: JSON.stringify({ orderId: order.id }),
-      },
-    })
   })
 
-  // 5. Send order confirmation email to customer
-  try {
-    const currencyCode2 = await getCurrencyCode()
-    await sendOrderConfirmationEmail({
-      to: order.customer.email,
-      orderId: order.id,
-      totalPrice: order.totalPrice,
-      currency: currencyCode2,
-      items: order.items.map(item => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        image: item.product.images?.[0],
-      })),
-    })
-  } catch (emailErr) {
-    console.error('Failed to send order confirmation email:', emailErr)
-  }
+  // 4. Dispatch Centralized Communication Event (Customer & Sellers DB Notifications + Emails)
+  await dispatchOrderCommunicationEvent({
+    orderId: order.id,
+    event: "ORDER_PAID"
+  })
 
   console.log(`Order ${orderId} successfully fulfilled.`)
 }
@@ -182,76 +135,58 @@ export async function cancelAndRefundOrder(orderId: string, { bypassWindow = fal
       }
     }
 
-    // Calculate refund amount (deduct 3% platform fee)
-    const refundAmount = order.totalPrice - order.platformFee
-    if (refundAmount <= 0) throw new Error("Invalid refund amount")
-
-    // Initiate Paystack Refund
+    // Call Paystack Refund API
     try {
-      await refundTransaction(order.paystackReference, toPesewas(refundAmount))
-    } catch (paystackError: unknown) {
-      console.error("Paystack refund error:", paystackError)
-      const errorMsg = paystackError instanceof Error ? paystackError.message : "Provider error"
-      throw new Error(`Refund failed: ${errorMsg}`)
-    }
-
-
-    // Update Database
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: "CANCELLED",
-          paymentStatus: "REFUNDED",
-          notes: order.notes ? `${order.notes}\n System: Refunded ${refundAmount} GHS` : `System: Refunded ${refundAmount} GHS`,
+      const refundRes = await fetch("https://api.paystack.co/refund", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ transaction: order.paystackReference }),
       })
 
-      await tx.paymentEscrow.updateMany({
-        where: { orderId: orderId },
-        data: { status: "REFUNDED" as EscrowStatus },
-      })
-
-      // Restore stock
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQuantity: { increment: item.quantity },
-            soldCount: { decrement: item.quantity },
-          },
-        })
+      const refundData = await refundRes.json()
+      if (!refundRes.ok && refundData.message !== "Transaction has already been fully refunded") {
+        throw new Error(refundData.message || "Failed to process Paystack refund")
       }
-    })
-
-    // Notify customer about refund
-    try {
-      if (order.customer.email) {
-        await sendStatusUpdateEmail({
-          to: order.customer.email,
-          orderId,
-          status: 'REFUNDED',
-          message: `Your order #${orderId.slice(-8).toUpperCase()} has been cancelled and a refund of GHS ${refundAmount.toFixed(2)} has been initiated.`,
-        })
-      }
-    } catch (err) {
-      console.error("Failed to send refund email:", err)
+    } catch (err: unknown) {
+      console.error("Paystack refund error:", err)
+      const errObj = err as { message?: string }
+      throw new Error(`Refund failed: ${errObj.message}`)
     }
-
-    return { success: true, refunded: true, amount: refundAmount }
-  } else {
-    // 2. Logic for simple cancellation if NOT paid
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: "CANCELLED",
-        },
-      })
-      // If it was PENDING/PROCESSING, items were not yet deducted (actually stock is deducted on fulfillOrder, which only happens after payment)
-      // So no stock restoration needed for unpaid orders.
-    })
-
-    return { success: true, refunded: false }
   }
+
+  // 2. Restock Inventory
+  await prisma.$transaction(async (tx) => {
+    for (const item of order.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stockQuantity: { increment: item.quantity } },
+      })
+    }
+
+    // Update Escrow status if applicable
+    await tx.paymentEscrow.updateMany({
+      where: { orderId: order.id },
+      data: { status: 'REFUNDED' }
+    })
+
+    // 3. Mark order as CANCELLED & REFUNDED
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: "CANCELLED",
+        paymentStatus: order.paymentStatus === "PAID" ? "REFUNDED" : order.paymentStatus,
+      },
+    })
+  })
+
+  // 4. Dispatch Centralized Communication Event for Cancellation
+  await dispatchOrderCommunicationEvent({
+    orderId: order.id,
+    event: "ORDER_CANCELLED"
+  })
+
+  return { success: true }
 }

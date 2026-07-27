@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Get user from database using email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true }
+      select: { id: true, role: true, firstName: true, lastName: true, profileImage: true, image: true }
     });
 
     if (!user) {
@@ -61,16 +61,22 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    if (!professionalProfile) {
-      return NextResponse.json({ error: 'Professional profile not found' }, { status: 404 });
+    const effectiveProfile = professionalProfile || {
+      id: user.id,
+      businessName: user.role === 'SUPER_ADMIN' ? 'TrendiZip Executive Intelligence' : (user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Platform Store'),
+      businessImage: user.profileImage || user.image || '/logo3d.jpg',
+      rating: 5.0,
+      specialization: { name: 'Operations & Analytics' }
+    };
+
+    // Get products owned by this professional (or all platform active products for super admin/admin)
+    const productWhere: Record<string, unknown> = { isActive: true };
+    if (professionalProfile) {
+      productWhere.professionalId = user.id;
     }
 
-    // Get products owned by this professional
     const products = await prisma.product.findMany({
-      where: {
-        professionalId: user.id,
-        isActive: true
-      },
+      where: productWhere,
       select: {
         id: true,
         name: true,
@@ -144,15 +150,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Get order analytics
-    const orders = await prisma.orderItem.findMany({
-      where: {
-        professionalId: user.id,
-        order: {
-          createdAt: {
-            gte: startDate
-          }
+    const orderWhere: Record<string, unknown> = {
+      order: {
+        createdAt: {
+          gte: startDate
         }
-      },
+      }
+    };
+    if (professionalProfile) {
+      orderWhere.professionalId = user.id;
+    }
+
+    const orders = await prisma.orderItem.findMany({
+      where: orderWhere,
       include: {
         order: {
           select: {
@@ -508,10 +518,10 @@ export async function GET(request: NextRequest) {
       peakHours,
       seasonalInsights,
       profile: {
-        businessName: professionalProfile.businessName,
-        businessImage: professionalProfile.businessImage,
-        rating: professionalProfile.rating,
-        specialization: professionalProfile.specialization.name
+        businessName: effectiveProfile.businessName,
+        businessImage: effectiveProfile.businessImage,
+        rating: effectiveProfile.rating,
+        specialization: effectiveProfile.specialization?.name || 'Operations & Analytics'
       }
     });
 

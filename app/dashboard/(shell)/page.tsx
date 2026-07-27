@@ -1,17 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import Image from "next/image";
 import Link from "next/link";
 import { Role, ProfessionalProfile } from "@prisma/client";
 import SuperAdminDashboard from "@/app/dashboard/components/SuperAdminDashboard";
 import AnalyticsInsights from "@/app/dashboard/components/AnalyticsInsights";
 import SetupGuide from "@/app/dashboard/components/SetupGuide";
 import RecentActivity, { ActivityItem } from "@/app/dashboard/components/RecentActivity";
+import { MerchantWalletOverview } from "@/app/dashboard/components/MerchantWalletOverview";
 import { 
   TrendingUp, 
-  TrendingDown, 
   ArrowRight, 
   CheckCircle2, 
-  Wallet, 
   ShoppingBag, 
   Star, 
   Activity, 
@@ -19,10 +17,7 @@ import {
   Package, 
   BarChart3, 
   Trophy, 
-  Users,
-  User,
-  Archive,
-  Calendar
+  Sparkles
 } from "lucide-react";
 
 // Professional Business Dashboard Component
@@ -56,6 +51,8 @@ interface Analytics {
 interface DashboardData {
   metrics?: {
     totalRevenue?: number;
+    escrowBalance?: number;
+    withdrawableBalance?: number;
     completedOrders?: number;
     avgRating?: number;
     totalReviews?: number;
@@ -67,7 +64,7 @@ interface DashboardData {
   analytics?: Analytics;
   topServices?: ServiceItem[];
   recentActivities?: ActivityItem[];
-  currency?: string; // Professional's primary currency
+  currency?: string;
 }
 
 function ProfessionalBusinessDashboard({
@@ -77,7 +74,6 @@ function ProfessionalBusinessDashboard({
   professionalProfile: ProfessionalProfile & { specialization: { name: string } };
   dashboardData?: DashboardData;
 }) {
-  // Format the specialization name for display
   const formatSpecialization = (name: string) => {
     return name
       .split('_')
@@ -85,311 +81,234 @@ function ProfessionalBusinessDashboard({
       .join(' ');
   };
 
-  // Get currency from professional's products (or default)
-  const currencySymbol = dashboardData?.currency || 'GHS';
+  const currencySymbol = dashboardData?.currency || 'GH₵';
 
-    // Helper to format money (supports future currency expansion)
-  const formatMoney = (amount: number | undefined) => {
-    if (amount === undefined) return `${currencySymbol}0.00`;
-    return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-  
-    // Calculate previous month comparison logic roughly if not exact
-   const getTrendColor = (change: number | undefined) => {
-    if (!change) return 'text-slate-400';
-    return change >= 0 ? 'text-emerald-500' : 'text-rose-500';
-  };
-
-  const getTrendIcon = (change: number | undefined) => {
-    if (!change) return null;
-    return change >= 0 
-      ? <TrendingUp className="w-3 h-3 mr-1" />
-      : <TrendingDown className="w-3 h-3 mr-1" />;
-  };
+  const withdrawableBalance = professionalProfile.accountBalance || 0;
+  const escrowHeldBalance = dashboardData?.metrics?.escrowBalance || 0;
 
   return (
-    <div className="min-h-screen relative font-sans">
-      <div className="relative z-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-        
-        {/* Setup Guide Component */}
-        <SetupGuide
-          isVerified={professionalProfile.isVerified}
-          paymentSetupComplete={professionalProfile.paymentSetupComplete}
-          hasProductsOrServices={dashboardData?.setupStatus?.hasProductsOrServices || false}
-        />
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6 font-sans">
+      
+      {/* Setup Guide Component */}
+      <SetupGuide
+        isVerified={professionalProfile.isVerified}
+        paymentSetupComplete={professionalProfile.paymentSetupComplete}
+        hasProductsOrServices={dashboardData?.setupStatus?.hasProductsOrServices || false}
+      />
 
-        {/* Dashboard Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-           <div className="space-y-1">
-            <div className="flex items-center gap-3">
-               <h1 className="text-4xl font-black tracking-tight text-slate-900">
-                  Overview
-               </h1>
-               {professionalProfile.isVerified && (
-                  <span className="flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Verified
-                  </span>
-               )}
-            </div>
-            <p className="text-slate-500 font-medium flex items-center gap-2">
-              Welcome back, <span className="text-slate-900 font-bold">{professionalProfile.businessName}</span>
-              <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-              <span className="text-sm font-bold bg-white px-2 py-0.5 rounded-md text-violet-600 border border-violet-100 shadow-sm">
-                {formatSpecialization(professionalProfile.specialization?.name || 'Professional')}
+      {/* EXECUTIVE HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Merchant Executive Hub</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              {professionalProfile.businessName}
+            </h1>
+            {professionalProfile.isVerified && (
+              <span className="flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" /> Verified Seller
               </span>
+            )}
+          </div>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Category: <span className="font-bold text-slate-800">{formatSpecialization(professionalProfile.specialization?.name || 'Professional')}</span> • Wallet Settlement &amp; Performance Overview
+          </p>
+        </div>
+
+        {/* Quick Header Actions */}
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/dashboard/catalogue/products/add-product"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Add New Item
+          </Link>
+          <Link
+            href="/dashboard/orders"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-slate-200/80"
+          >
+            <Package className="h-4 w-4 text-indigo-600" /> View Orders
+          </Link>
+        </div>
+      </div>
+
+      {/* MERCHANT WALLET & AUTOMATED PAYOUT OVERVIEW */}
+      <MerchantWalletOverview
+        initialWithdrawableBalance={withdrawableBalance}
+        escrowHeldBalance={escrowHeldBalance}
+        currencySymbol={currencySymbol}
+        momoNumber={professionalProfile.momoNumber || ''}
+        momoProvider={professionalProfile.momoProvider || 'MTN'}
+      />
+
+      {/* DELIVERED ORDERS & STORE RATING METRICS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Card 3: Completed Orders */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 hover:border-blue-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivered Orders</span>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">
+              {dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}
             </p>
-           </div>
-
-           <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md p-2 pr-6 rounded-2xl border border-white/50 shadow-xl shadow-slate-200/40">
-              <div className="relative group">
-                 <div className="absolute -inset-1 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-                 <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-white shadow-lg">
-                    <Image
-                      src={professionalProfile.businessImage || "/beccaProfile.jpg"}
-                      alt="Profile"
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
-                 </div>
-                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></span>
-              </div>
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Status</span>
-                 <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                    Online <span className="relative flex h-2 w-2">
-                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                     </span>
-                 </span>
-              </div>
-               <div className="h-8 w-px bg-slate-200 mx-1"></div>
-               <div className="flex -space-x-2.5">
-                 {[1,2,3].map(i => (
-                   <div key={i} className={`w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm z-${10-i} hover:-translate-y-1 transition-transform cursor-pointer`}>
-                      <User className="w-4 h-4 opacity-50" />
-                   </div>
-                 ))}
-                 <div className="w-9 h-9 rounded-full border-2 border-white bg-violet-600 text-white flex items-center justify-center text-xs font-black shadow-lg hover:-translate-y-1 transition-transform cursor-pointer">
-                   +12
-                 </div>
-               </div>
-           </div>
+            <p className="text-[11px] font-medium text-slate-500 mt-1">
+              Completed transactions
+            </p>
+          </div>
         </div>
 
-        {/* Bento Grid Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           
-           {/* Metric Card 1: Revenue */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-indigo-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-50 rounded-full blur-3xl group-hover:bg-indigo-100 transition-colors"></div>
-              <div className="relative space-y-4">
-                 <div className="flex justify-between items-start">
-                    <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 shadow-inner">
-                       <Wallet className="w-6 h-6" />
-                    </div>
-                    <div className={`flex items-center text-[10px] font-black px-2.5 py-1.5 rounded-full bg-slate-50 ${getTrendColor(dashboardData?.analytics?.periodComparison?.change)} border border-current/10 shadow-sm`}>
-                       {getTrendIcon(dashboardData?.analytics?.periodComparison?.change)}
-                       {dashboardData?.analytics?.periodComparison?.change?.toFixed(1)}%
-                    </div>
-                 </div>
-                 <div>
-                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Total Revenue</h3>
-                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
-                       {formatMoney(dashboardData?.metrics?.totalRevenue || professionalProfile.accountBalance)}
-                     </p>
-                 </div>
-              </div>
-           </div>
-
-           {/* Metric Card 2: Orders */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-blue-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-blue-50 rounded-full blur-3xl group-hover:bg-blue-100 transition-colors"></div>
-              <div className="relative space-y-4">
-                 <div className="flex justify-between items-start">
-                    <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
-                       <ShoppingBag className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full border border-blue-100">Live</span>
-                 </div>
-                 <div>
-                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Fulfillment</h3>
-                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
-                        {dashboardData?.metrics?.completedOrders || professionalProfile.completedOrders || 0}
-                     </p>
-                 </div>
-              </div>
-           </div>
-
-           {/* Metric Card 3: Rating */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-amber-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-amber-200/50 transition-all duration-500 hover:-translate-y-1">
-               <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-amber-50 rounded-full blur-3xl group-hover:bg-amber-100 transition-colors"></div>
-               <div className="relative space-y-4">
-                  <div className="flex justify-between items-start">
-                     <div className="p-3 rounded-2xl bg-amber-50 text-amber-500 shadow-inner">
-                        <Star className="w-6 h-6 fill-current" />
-                     </div>
-                     <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-full border border-amber-100">{dashboardData?.metrics?.totalReviews || 0} Reviews</span>
-                  </div>
-                  <div>
-                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Reputation</h3>
-                     <div className="flex items-baseline gap-2">
-                        <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
-                           {dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "N/A"}
-                        </p>
-                       <div className="flex text-amber-400 gap-0.5">
-                          {[1,2,3,4,5].map((star) => (
-                             <Star key={star} className={`w-3.5 h-3.5 ${star <= (Math.round(dashboardData?.metrics?.avgRating || 0)) ? 'fill-current' : 'text-slate-100'}`} />
-                          ))}
-                       </div>
-                    </div>
-                  </div>
-               </div>
-           </div>
-
-           {/* Metric Card 4: Customers */}
-           <div className="group relative bg-white border border-white shadow-xl shadow-purple-100/30 rounded-3xl p-6 sm:p-8 overflow-hidden hover:shadow-2xl hover:shadow-purple-200/50 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-purple-50 rounded-full blur-3xl group-hover:bg-purple-100 transition-colors"></div>
-              <div className="relative space-y-4">
-                 <div className="flex justify-between items-start">
-                    <div className="p-3 rounded-2xl bg-purple-50 text-purple-600 shadow-inner">
-                       <Users className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-1.5 rounded-full border border-purple-100">Global</span>
-                 </div>
-                 <div>
-                     <h3 className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-1">Trust Base</h3>
-                     <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">
-                        {dashboardData?.metrics?.activeCustomers || 0}
-                     </p>
-                 </div>
-              </div>
-           </div>
+        {/* Card 4: Reputation & Trust */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 hover:border-purple-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Store Rating</span>
+            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+              <Star className="h-5 w-5 fill-current text-purple-600" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-black text-slate-900 tracking-tight">
+                {dashboardData?.metrics?.avgRating?.toFixed(1) || professionalProfile.rating?.toFixed(1) || "5.0"}
+              </p>
+              <span className="text-xs font-bold text-slate-400">({dashboardData?.metrics?.totalReviews || 0} reviews)</span>
+            </div>
+            <p className="text-[11px] font-medium text-purple-600 mt-1">
+              Verified customer feedback
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* Real-time Insights Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           
-           {/* Section: Quick Actions */}
-           <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
-                <h3 className="text-lg font-black text-slate-900 mb-8 flex items-center justify-between">
-                   <span className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-amber-500" /> Quick Flow
-                   </span>
-                   <Archive className="w-4 h-4 text-violet-400" />
-                </h3>
-                <div className="space-y-4">
-                   <Link href="/dashboard/catalogue/products/add-product" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-violet-600 border border-slate-100 hover:border-violet-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-violet-200/40">
-                      <div className="w-12 h-12 rounded-xl bg-white text-violet-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-sm">
-                         <Plus className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Add Item</h4>
-                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Expand your library</p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                   </Link>
-                   
-                   <Link href="/dashboard/orders" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-indigo-600 border border-slate-100 hover:border-indigo-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-indigo-200/40">
-                      <div className="w-12 h-12 rounded-xl bg-white text-indigo-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:-rotate-6 transition-all shadow-sm">
-                         <Package className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Manage Orders</h4>
-                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Track fulfillment state</p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                   </Link>
+      {/* WORKSPACE & ANALYTICS LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         
+         {/* Left Column: Quick Actions & Top Products */}
+         <div className="lg:col-span-1 space-y-6">
+            
+            {/* Quick Flow Actions */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                <span>Quick Navigation</span>
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+              </h3>
 
-                   <Link href="/dashboard/analytics" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-cyan-600 border border-slate-100 hover:border-cyan-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-cyan-200/40">
-                      <div className="w-12 h-12 rounded-xl bg-white text-cyan-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-sm">
-                         <BarChart3 className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">View Intel</h4>
-                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Real-time data stream</p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                   </Link>
-
-                   <Link href="/dashboard/bookings" className="group flex items-center p-4 rounded-2xl bg-slate-50/50 hover:bg-emerald-600 border border-slate-100 hover:border-emerald-400 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-emerald-200/40">
-                      <div className="w-12 h-12 rounded-xl bg-white text-emerald-600 flex items-center justify-center mr-4 group-hover:scale-110 group-hover:-rotate-6 transition-all shadow-sm">
-                         <Calendar className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                         <h4 className="font-bold text-slate-800 group-hover:text-white transition-colors">Bookings</h4>
-                         <p className="text-[11px] text-slate-500 group-hover:text-white/80 transition-colors">Manage your schedule</p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                   </Link>
-                </div>
-              </div>
-
-              {/* Top Performing Card */}
-              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
-                 <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                       <Trophy className="w-5 h-5 text-yellow-500" /> Top Sales
-                    </h3>
-                    <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">Month</span>
-                 </div>
+              <div className="space-y-2.5">
+                 <Link href="/dashboard/catalogue/products/add-product" className="group flex items-center p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200/60 hover:border-indigo-200 transition-all">
+                    <div className="p-2 rounded-lg bg-white text-indigo-600 shrink-0 border border-slate-200/60 group-hover:scale-105 transition-transform">
+                       <Plus className="w-4 h-4" />
+                    </div>
+                    <div className="ml-3 flex-1">
+                       <h4 className="font-bold text-xs text-slate-900 group-hover:text-indigo-900">Add New Product</h4>
+                       <p className="text-[11px] font-medium text-slate-400">List items for sale</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+                 </Link>
                  
-                 <div className="space-y-4">
-                    {dashboardData?.topServices && dashboardData.topServices.length > 0 ? (
-                      dashboardData.topServices.map((service: ServiceItem, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-50 hover:border-violet-200 hover:shadow-lg transition-all">
-                           <div className="flex items-center gap-4">
-                              <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-[10px] font-black ${index === 0 ? 'bg-yellow-400 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                                 #{index + 1}
-                              </span>
-                              <div>
-                                 <p className="font-bold text-slate-800 text-xs">{service.name}</p>
-                                 <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1 mt-0.5">
-                                    <TrendingUp className="w-2.5 h-2.5" /> High Velocity
-                                 </p>
-                              </div>
-                           </div>
-                           <p className="font-black text-slate-900 text-sm">{currencySymbol}{service.revenue.toFixed(0)}</p>
-                        </div>
-                      ))
-                    ) : (
-                       <div className="h-40 flex flex-col items-center justify-center text-slate-400 p-8 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
-                          <BarChart3 className="w-10 h-10 mb-2 opacity-20" />
-                          <p className="text-xs font-medium">Intel loading...</p>
-                       </div>
-                    )}
-                 </div>
-              </div>
-           </div>
+                 <Link href="/dashboard/ai-studio" className="group flex items-center p-3 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200/60 hover:border-purple-200 transition-all">
+                    <div className="p-2 rounded-lg bg-white text-purple-600 shrink-0 border border-slate-200/60 group-hover:scale-105 transition-transform">
+                       <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="ml-3 flex-1">
+                       <h4 className="font-bold text-xs text-slate-900 group-hover:text-purple-900">AI Generative Studio</h4>
+                       <p className="text-[11px] font-medium text-slate-400">Transform colors &amp; model shots</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+                 </Link>
 
-           {/* Section: Recent Activity & Detailed Analytics */}
-           <div className="lg:col-span-2 space-y-8">
-              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
-                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                       <Activity className="w-5 h-5 text-violet-600" /> Recent Stream
-                    </h3>
-                    <Link href="/dashboard/orders" className="text-xs font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1 group">
-                      View all activity <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                 </div>
-                 <RecentActivity activities={dashboardData?.recentActivities || []} />
-              </div>
+                 <Link href="/dashboard/orders" className="group flex items-center p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200/60 hover:border-blue-200 transition-all">
+                    <div className="p-2 rounded-lg bg-white text-blue-600 shrink-0 border border-slate-200/60 group-hover:scale-105 transition-transform">
+                       <Package className="w-4 h-4" />
+                    </div>
+                    <div className="ml-3 flex-1">
+                       <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-900">Manage Orders</h4>
+                       <p className="text-[11px] font-medium text-slate-400">Track shipments &amp; delivery</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                 </Link>
 
-              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-xl shadow-slate-200/30">
-                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                       <BarChart3 className="w-5 h-5 text-indigo-600" /> Data Insights
-                    </h3>
-                 </div>
-                 <AnalyticsInsights dashboardData={dashboardData} />
+                 <Link href="/dashboard/analytics" className="group flex items-center p-3 rounded-xl bg-slate-50 hover:bg-cyan-50 border border-slate-200/60 hover:border-cyan-200 transition-all">
+                    <div className="p-2 rounded-lg bg-white text-cyan-600 shrink-0 border border-slate-200/60 group-hover:scale-105 transition-transform">
+                       <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <div className="ml-3 flex-1">
+                       <h4 className="font-bold text-xs text-slate-900 group-hover:text-cyan-900">Revenue Analytics</h4>
+                       <p className="text-[11px] font-medium text-slate-400">Deep performance stream</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-cyan-600 group-hover:translate-x-0.5 transition-all" />
+                 </Link>
               </div>
-           </div>
+            </div>
 
-        </div>
+            {/* Top Performing Sales Card */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+               <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                     <Trophy className="w-4 h-4 text-amber-500" /> Top Selling Items
+                  </h3>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">Month</span>
+               </div>
+               
+               <div className="space-y-2.5">
+                  {dashboardData?.topServices && dashboardData.topServices.length > 0 ? (
+                    dashboardData.topServices.map((service: ServiceItem, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/60">
+                         <div className="flex items-center gap-3">
+                            <span className={`flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-bold ${index === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                               #{index + 1}
+                            </span>
+                            <div>
+                               <p className="font-bold text-slate-900 text-xs truncate max-w-[140px]">{service.name}</p>
+                               <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                  <TrendingUp className="w-2.5 h-2.5" /> High Demand
+                               </p>
+                            </div>
+                         </div>
+                         <p className="font-black text-slate-900 text-xs">{currencySymbol} {service.revenue.toFixed(0)}</p>
+                      </div>
+                    ))
+                  ) : (
+                     <div className="py-8 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                        <BarChart3 className="w-8 h-8 mb-1.5 opacity-20 mx-auto" />
+                        <p className="text-xs font-medium">No sales data recorded yet</p>
+                     </div>
+                  )}
+               </div>
+            </div>
+         </div>
+
+         {/* Right Column: Activity Stream & Insights */}
+         <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+               <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                     <Activity className="w-4 h-4 text-indigo-600" /> Recent Activity Stream
+                  </h3>
+                  <Link href="/dashboard/orders" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    View Orders <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+               </div>
+               <RecentActivity activities={dashboardData?.recentActivities || []} />
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+               <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                     <BarChart3 className="w-4 h-4 text-indigo-600" /> Executive Insights
+                  </h3>
+               </div>
+               <AnalyticsInsights dashboardData={dashboardData} />
+            </div>
+         </div>
 
       </div>
+
     </div>
   );
 }
@@ -399,30 +318,25 @@ import { getAuthSession } from "@/lib/auth";
 async function Home() {
   const session = await getAuthSession();
 
-  // Check if user exists and has a valid email
   if (!session || !session.user?.email) {
-    // Return an error or redirect the user if not authenticated
-    return <div>User not authenticated.</div>;
+    return <div className="p-8 text-center font-bold text-slate-600">User not authenticated.</div>;
   }
 
-  // Fetch user from database to get role information
   const dbUser = await prisma.user.findUnique({
     where: { email: session.user.email },
     select: { role: true, id: true }
   });
 
   if (!dbUser) {
-    return <div>User not found in database.</div>;
+    return <div className="p-8 text-center font-bold text-slate-600">User not found in database.</div>;
   }
 
   const userRole = dbUser?.role;
 
-  // Check if user has admin role and render SuperDashboard
   if (userRole === Role.ADMIN || userRole === Role.SUPER_ADMIN) {
     return <SuperAdminDashboard />;
   }
 
-  // For professionals, fetch dashboard data and show business dashboard
   if (userRole === Role.PROFESSIONAL) {
     const professionalProfile = await prisma.professionalProfile.findUnique({
       where: { userId: dbUser.id },
@@ -430,10 +344,9 @@ async function Home() {
     });
 
     if (!professionalProfile) {
-      return <div>No professional profile found for this user.</div>;
+      return <div className="p-8 text-center font-bold text-slate-600">No professional profile found for this user.</div>;
     }
 
-    // Fetch dashboard data directly using Prisma
     const dashboardData = await getDashboardData(dbUser.id, professionalProfile.id);
 
     return <ProfessionalBusinessDashboard
@@ -442,7 +355,7 @@ async function Home() {
     />;
   }
 
-  return <div>Access denied. Invalid user role.</div>;
+  return <div className="p-8 text-center font-bold text-slate-600">Access denied. Invalid user role.</div>;
 }
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
@@ -498,6 +411,19 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
       }
     });
 
+    // Fetch total Escrow funds currently in HELD status for this professional
+    const escrowHeldAggregate = await prisma.paymentEscrow.aggregate({
+      where: {
+        professionalId: userId,
+        status: 'HELD'
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    const escrowBalance = escrowHeldAggregate._sum.amount || 0;
+
     // Determine if the seller has added any product or service globally
     const totalProductsCount = await prisma.product.count({
       where: { professionalId: userId }
@@ -534,7 +460,7 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
 
     const avgRating = reviews.length > 0
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
-      : 0;
+      : 5.0;
 
     const totalReviews = reviews.length;
 
@@ -611,11 +537,12 @@ async function getDashboardData(userId: string, professionalProfileId: string): 
     });
 
     const orderChange = previousOrders > 0 ? ((totalOrders - previousOrders) / previousOrders) * 100 : 0;
-    const primaryCurrency = products[0]?.currency || 'GHS';
+    const primaryCurrency = products[0]?.currency || 'GH₵';
 
     return {
       metrics: {
         totalRevenue,
+        escrowBalance,
         completedOrders,
         avgRating: Math.round(avgRating * 10) / 10,
         totalReviews,

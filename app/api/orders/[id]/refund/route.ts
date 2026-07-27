@@ -30,12 +30,11 @@ export async function POST(
     }
 
     // 2. Call shared cancellation logic
-    const result = await cancelAndRefundOrder(orderId, { bypassWindow: false })
+    await cancelAndRefundOrder(orderId, { bypassWindow: false })
 
     return NextResponse.json({ 
       success: true, 
-      message: result.refunded ? "Refund processed successfully" : "Order cancelled",
-      refundAmount: result.amount
+      message: "Order cancelled and refund processed successfully",
     })
 
   } catch (error) {

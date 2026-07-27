@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
-import { initiateTransfer, toPesewas } from "@/lib/paystack"
 import { OrderStatus } from "@prisma/client"
 
 export async function POST() {
@@ -40,17 +39,6 @@ export async function POST() {
       const professionalId = conf.professionalId
 
       try {
-        // Find professional profile for payout details
-        const profProfile = await prisma.professionalProfile.findUnique({
-          where: { userId: professionalId },
-          select: { paystackRecipientCode: true, businessName: true }
-        })
-
-        if (!profProfile?.paystackRecipientCode) {
-           results.push({ orderId, professionalId, status: "skipped", reason: "No recipient code" })
-           continue
-        }
-
         // Calculate Payout for this specific seller's items in this order
         const sellerItems = conf.order.items.filter(i => i.professionalId === professionalId)
         const sellerSubtotal = sellerItems.reduce((sum, i) => sum + (i.price * i.quantity), 0)
@@ -88,76 +76,53 @@ export async function POST() {
             })
           }
 
-          // Initiate Paystack Transfer (Idempotent reference)
-          const payoutReference = `PAY_${conf.id.replace(/-/g, '')}`
-          let transferSuccess = false
-          let failureReason = null
-          
-          try {
-            await initiateTransfer({
-              source: 'balance',
-              amount: toPesewas(sellerSubtotal),
-              recipient: profProfile.paystackRecipientCode as string,
-              reason: `Auto-Release Payout Order #${orderId.slice(-8).toUpperCase()} - ${profProfile.businessName}`,
-              reference: payoutReference,
-              currency: 'GHS'
-            })
-            transferSuccess = true
-
-            // Update Escrow status to reflect successful release
-            await tx.paymentEscrow.update({
-              where: {
-                orderId_professionalId: {
-                  orderId,
-                  professionalId
-                }
-              },
-              data: {
-                status: 'RELEASED',
-                releasedAt: new Date(),
-                failureReason: null,
-                lastAttemptAt: new Date()
+          // Option 1 Wallet Escrow Release for Lapsed Orders
+          await tx.paymentEscrow.upsert({
+            where: {
+              orderId_professionalId: {
+                orderId,
+                professionalId
               }
-            })
-          } catch (paystackError: unknown) {
-            console.error('[Auto-Payout] Paystack Transfer Error:', paystackError)
-            const errorMsg = (paystackError as Error).message || ""
-            const isBalanceError = errorMsg.toLowerCase().includes('balance') || errorMsg.toLowerCase().includes('insufficient')
-            failureReason = isBalanceError ? 'Insufficient Balance' : 'Transfer Failed'
+            },
+            update: {
+              status: 'RELEASED',
+              releasedAt: new Date(),
+              failureReason: null,
+              lastAttemptAt: new Date()
+            },
+            create: {
+              orderId,
+              professionalId,
+              amount: sellerSubtotal,
+              status: 'RELEASED',
+              releasedAt: new Date(),
+              failureReason: null,
+              lastAttemptAt: new Date()
+            }
+          })
 
-            await tx.paymentEscrow.update({
-              where: {
-                orderId_professionalId: {
-                  orderId,
-                  professionalId
-                }
-              },
-              data: {
-                failureReason,
-                lastAttemptAt: new Date()
-              }
-            })
-          }
+          // Credit seller's in-app account balance
+          await tx.professionalProfile.updateMany({
+            where: { userId: professionalId },
+            data: {
+              accountBalance: { increment: sellerSubtotal }
+            }
+          })
 
-          return { amount: sellerSubtotal, transferSuccess, failureReason }
+          return { amount: sellerSubtotal, transferSuccess: true }
         })
 
         // Notifications
-        const notificationTitle = result.transferSuccess ? 'Automated Payout Released' : 'Auto-Release Confirmed'
-        const notificationMessage = result.transferSuccess
-          ? `Order #${orderId.slice(-8).toUpperCase()} has reached the 3-day confirmation deadline. Your payout of GHS ${result.amount.toFixed(2)} has been automatically initiated.`
-          : `Order #${orderId.slice(-8).toUpperCase()} has reached the 3-day confirmation deadline. Your payout of GHS ${result.amount.toFixed(2)} is being processed and will reflect once finalized.`
-
         await prisma.notification.create({
           data: {
             userId: professionalId,
-            type: 'DELIVERY_ARRIVAL',
-            title: notificationTitle,
-            message: notificationMessage,
+            type: 'PAYMENT_RELEASED',
+            title: 'Auto-Release: Payment Credited!',
+            message: `Order #${orderId.slice(-8).toUpperCase()} reached the 3-day confirmation deadline. GH₵ ${result.amount.toFixed(2)} has been added to your withdrawable wallet balance!`,
             data: JSON.stringify({ 
               orderId, 
               amount: result.amount,
-              status: result.transferSuccess ? 'INITIATED' : 'PROCESSING'
+              status: 'RELEASED'
             }),
           },
         })
@@ -165,8 +130,7 @@ export async function POST() {
         results.push({ 
           orderId, 
           professionalId, 
-          status: result.transferSuccess ? "success" : "processing", 
-          failureReason: result.failureReason,
+          status: "success", 
           amount: sellerSubtotal 
         })
       } catch (err: unknown) {

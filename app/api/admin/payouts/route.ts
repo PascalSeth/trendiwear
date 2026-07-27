@@ -32,6 +32,12 @@ export async function GET(request: NextRequest) {
             id: true,
             status: true
           }
+        },
+        booking: {
+          select: {
+            id: true,
+            status: true
+          }
         }
       },
       orderBy: {

@@ -226,7 +226,7 @@ export default function EventsTrendsPage() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto py-8 px-4 md:px-6 lg:px-8">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">

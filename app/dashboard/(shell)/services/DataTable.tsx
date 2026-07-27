@@ -12,9 +12,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, DollarSign, Layers } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Home, Clock, Layers } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import ServiceSheet, { type Service } from "@/app/dashboard/components/sheet/Service/ServiceSheet";
 import { VariantSheet } from "@/app/components/services/VariantSheet";
@@ -33,7 +34,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 
 // Define the Service data type based on Prisma schema
@@ -94,9 +94,8 @@ const getColumns = (
     accessorKey: "price",
     header: "Price",
     cell: ({ row }) => (
-      <div className="font-medium flex items-center">
-        <DollarSign className="w-4 h-4 mr-1" />
-        GHS {row.getValue("price")}
+      <div className="font-bold text-slate-900 text-xs flex items-center">
+        GH₵ {Number(row.getValue("price")).toFixed(2)}
       </div>
     ),
   },
@@ -270,13 +269,29 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialData) {
       fetchServices();
     }
     fetchCategories();
+    fetchUserRole();
   }, [initialData]);
+
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch('/api/user/me');
+      if (res.ok) {
+        const userData = await res.json();
+        setUserRole(userData.user?.role || null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user role:', err);
+    }
+  };
+
+  const isManagementAllowed = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   const fetchServices = async () => {
     try {
@@ -369,53 +384,68 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
   return (
     <div className="w-full space-y-8 pb-10">
-      <ServiceSheet
-        categories={categories}
-        onServiceAdded={(newService) => {
-          setData(prev => [...prev, newService]);
-        }}
-        serviceToEdit={editingService || undefined}
-        onServiceUpdated={(updatedService) => {
-          setData(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
-          setEditingService(null);
-        }}
-        onClose={() => setEditingService(null)}
-      />
-
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Service Catalog</h1>
-          <p className="text-gray-500 font-medium">
-            Manage your service offerings, pricing, and availability.
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-purple-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600">Services Studio & Management</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Services &amp; Offerings
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage your bespoke fashion services, pricing tiers, and appointment availability.
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* RBAC Admin / SuperAdmin Category Link */}
+          {isManagementAllowed && (
+            <Link href="/dashboard/catalogue/category">
+              <Button variant="outline" className="border-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all">
+                Manage Categories
+              </Button>
+            </Link>
+          )}
+
+          {/* Single ServiceSheet Component & Button */}
+          <ServiceSheet
+            categories={categories}
+            onServiceAdded={(newService) => {
+              setData(prev => [...prev, newService]);
+            }}
+            serviceToEdit={editingService || undefined}
+            onServiceUpdated={(updatedService) => {
+              setData(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
+              setEditingService(null);
+            }}
+            onClose={() => setEditingService(null)}
+          />
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Services", value: data.length, icon: Layers, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Total Services", value: data.length, icon: Layers, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Active Live", value: data.filter(s => s.isActive).length, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Home Services", value: data.filter(s => s.isHomeService).length, icon: Home, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Total Bookings", value: data.reduce((t, s) => t + s._count.bookings, 0), icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Home Visits", value: data.filter(s => s.isHomeService).length, icon: Home, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total Bookings", value: data.reduce((t, s) => t + (s._count?.bookings || 0), 0), icon: Clock, color: "text-indigo-600", bg: "bg-indigo-50" },
         ].map((stat, i) => (
-          <Card key={i} className="border-gray-100 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-0.5">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-purple-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Table Toolbar */}
         <div className="p-6 border-b border-gray-50 space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -426,7 +456,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 onChange={(event) =>
                   table.getColumn("name")?.setFilterValue(event.target.value)
                 }
-                className="pl-4 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11"
+                className="pl-4 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11 text-xs"
               />
             </div>
             
@@ -437,7 +467,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                     <TabsTrigger 
                       key={status} 
                       value={status}
-                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs font-bold"
                     >
                       {status}
                     </TabsTrigger>
@@ -447,7 +477,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600">
+                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600 text-xs font-bold">
                     Columns
                   </Button>
                 </DropdownMenuTrigger>
@@ -460,7 +490,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                     .map((column) => (
                       <DropdownMenuCheckboxItem
                         key={column.id}
-                        className="capitalize rounded-md"
+                        className="capitalize rounded-md text-xs font-medium"
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
@@ -480,7 +510,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <TableHead key={header.id} className="h-12 px-6 text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -494,7 +524,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 table.getRowModel().rows.map((row) => (
                   <TableRow 
                     key={row.id} 
-                    className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
+                    className="border-b border-gray-50 hover:bg-purple-50/20 transition-colors"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="px-6 py-4">
@@ -507,7 +537,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
-                      <p className="text-gray-500 font-medium text-lg">No services found</p>
+                      <p className="text-gray-500 font-medium text-sm">No services found</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -518,7 +548,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
-          <p className="text-sm text-gray-500 font-medium">
+          <p className="text-xs text-gray-500 font-medium">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected
           </p>
@@ -528,7 +558,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-gray-200 rounded-lg h-9"
+              className="border-gray-200 rounded-lg h-9 text-xs font-bold"
             >
               Previous
             </Button>
@@ -537,7 +567,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-gray-200 rounded-lg h-9"
+              className="border-gray-200 rounded-lg h-9 text-xs font-bold"
             >
               Next
             </Button>
@@ -554,7 +584,6 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
           existingVariants={variantsService.variants || []}
           onClose={() => setVariantsService(null)}
           onSuccess={() => {
-            // Refresh the service data
             fetchServices();
           }}
         />

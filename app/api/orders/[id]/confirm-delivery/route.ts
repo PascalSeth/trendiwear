@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { mapErrorToResponse } from '@/lib/api-utils'
-import { initiateTransfer, toPesewas } from '@/lib/paystack'
 import { OrderStatus } from '@prisma/client'
 
 // POST: Customer confirms they have received the package from a specific seller
@@ -110,103 +109,96 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         select: { paystackRecipientCode: true, businessName: true }
       })
 
-      if (!profProfile?.paystackRecipientCode) {
-        throw new Error(`Seller ${profProfile?.businessName || 'unknown'} has no payment recipient setup. Payout delayed.`)
-      }
+      // 3. Option 1 Wallet Escrow Release: Add earnings to seller's withdrawable accountBalance
+      await tx.paymentEscrow.upsert({
+        where: {
+          orderId_professionalId: {
+            orderId,
+            professionalId
+          }
+        },
+        update: {
+          status: 'RELEASED',
+          releasedAt: new Date(),
+          failureReason: null,
+          lastAttemptAt: new Date()
+        },
+        create: {
+          orderId,
+          professionalId,
+          amount: sellerSubtotal,
+          status: 'RELEASED',
+          releasedAt: new Date(),
+          failureReason: null,
+          lastAttemptAt: new Date()
+        }
+      })
 
-      // 3. Initiate Paystack Transfer (Escrow Release)
-      // Use the confirmation ID as a deterministic reference for idempotency
-      const payoutReference = `PAY_${confirmation.id.replace(/-/g, '')}`
-      let transferSuccess = false
-      let failureReason = null
+      // Credit seller's in-app account balance & Record WalletTransaction audit ledger
+      const profProfileObj = await tx.professionalProfile.findFirst({
+        where: { userId: professionalId }
+      });
 
-      try {
-          await initiateTransfer({
-            source: 'balance',
-            amount: toPesewas(sellerSubtotal),
-            recipient: profProfile.paystackRecipientCode as string,
-            reason: `Payout for Order #${orderId.slice(-8).toUpperCase()} - ${profProfile.businessName}`,
-            reference: payoutReference,
-            currency: 'GHS'
-          })
-          transferSuccess = true
-          
-          // Update Escrow status to reflect successful release
-          await tx.paymentEscrow.update({
-            where: {
-              orderId_professionalId: {
-                orderId,
-                professionalId
-              }
-            },
+      if (profProfileObj) {
+        const balBefore = profProfileObj.accountBalance || 0;
+        const balAfter = balBefore + sellerSubtotal;
+
+        await tx.professionalProfile.update({
+          where: { id: profProfileObj.id },
+          data: {
+            accountBalance: { increment: sellerSubtotal }
+          }
+        });
+
+        const walletTxModel = (tx as unknown as Record<string, { create: (data: unknown) => Promise<unknown> }>).walletTransaction || (prisma as unknown as Record<string, { create: (data: unknown) => Promise<unknown> }>).walletTransaction;
+        if (walletTxModel?.create) {
+          await walletTxModel.create({
             data: {
-              status: 'RELEASED',
-              releasedAt: new Date(),
-              failureReason: null,
-              lastAttemptAt: new Date()
+              professionalId: profProfileObj.id,
+              amount: sellerSubtotal,
+              balanceBefore: balBefore,
+              balanceAfter: balAfter,
+              type: "ESCROW_RELEASE",
+              referenceId: orderId,
+              description: `Escrow Released for Delivered Order #${orderId.slice(0, 8)}`,
             }
-          })
-      } catch (paystackError: unknown) {
-          console.error('[Payout] Paystack Transfer Error:', paystackError)
-          const errorMsg = (paystackError as Error).message || ""
-          const isBalanceError = errorMsg.toLowerCase().includes('balance') || errorMsg.toLowerCase().includes('insufficient')
-          failureReason = isBalanceError ? 'Insufficient Balance' : 'Transfer Failed'
-
-          await tx.paymentEscrow.update({
-            where: {
-              orderId_professionalId: {
-                orderId,
-                professionalId
-              }
-            },
-            data: {
-              failureReason,
-              lastAttemptAt: new Date()
-            }
-          })
+          });
+        }
       }
 
       return {
         success: true,
-        transferSuccess,
-        failureReason,
+        transferSuccess: true,
         amount: sellerSubtotal,
-        businessName: profProfile.businessName
+        businessName: profProfile?.businessName || 'Seller'
       }
     })
 
     if (result.alreadyConfirmed) {
       return NextResponse.json({
         success: true,
-        message: `Receipt already confirmed. No new payout initiated.`,
+        message: `Receipt already confirmed. Funds were previously credited.`,
       })
     }
 
     // 4. Notifications
-    const notificationTitle = result.transferSuccess ? 'Payout Initiated!' : 'Receipt Confirmed'
-    const notificationMessage = result.transferSuccess 
-      ? `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} has been initiated and will reflect in your account within 24-48 hours.`
-      : `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. Your payout of GHS ${result.amount.toFixed(2)} is being processed by our system and will reflect once finalized.`
-
     await prisma.notification.create({
       data: {
         userId: professionalId,
-        type: 'DELIVERY_ARRIVAL',
-        title: notificationTitle,
-        message: notificationMessage,
+        type: 'PAYMENT_RELEASED',
+        title: 'Payment Released to Wallet!',
+        message: `Customer confirmed receipt of Order #${orderId.slice(-8).toUpperCase()}. GH₵ ${result.amount.toFixed(2)} has been added to your withdrawable wallet balance!`,
         data: JSON.stringify({ 
           orderId, 
           amount: result.amount, 
-          status: result.transferSuccess ? 'INITIATED' : 'PROCESSING' 
+          status: 'RELEASED' 
         }),
       },
     })
 
     return NextResponse.json({
       success: true,
-      message: result.transferSuccess 
-        ? `Receipt confirmed for ${result.businessName}. Payout initiated.` 
-        : `Receipt confirmed for ${result.businessName}. Payout pending (Balance Check Required).`,
+      message: `Receipt confirmed for ${result.businessName}. GH₵ ${result.amount.toFixed(2)} released to seller wallet balance.`,
       data: result
     })
 

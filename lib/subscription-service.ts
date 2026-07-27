@@ -21,6 +21,13 @@ export async function activateSubscription(params: {
   const renewalDays = billingCycle === 'WEEKLY' ? 7 : billingCycle === 'YEARLY' ? 365 : 30
 
   return await prisma.$transaction(async (tx) => {
+    // Fetch tier details to obtain credit limit
+    const tier = await tx.subscriptionTier.findUnique({
+      where: { id: tierId },
+      select: { aiCreditsLimit: true }
+    })
+    const creditsToAllocate = tier?.aiCreditsLimit || 10
+
     // 1. Find or create the subscription
     const existingSubscription = await tx.subscription.findUnique({
       where: { professionalId },
@@ -36,16 +43,18 @@ export async function activateSubscription(params: {
       nextRenewalDate = new Date(now.getTime() + renewalDays * 24 * 60 * 60 * 1000)
     }
 
-    // 2. Update the payment record
-    await tx.subscriptionPayment.update({
-      where: { paystackReference: reference },
-      data: {
-        status: 'PAID',
-        paidAt: now,
-        nextRenewal: nextRenewalDate,
-        paystackChannel: channel,
-      },
-    })
+    // 2. Update the payment record if exists
+    if (reference) {
+      await tx.subscriptionPayment.updateMany({
+        where: { paystackReference: reference },
+        data: {
+          status: 'PAID',
+          paidAt: now,
+          nextRenewal: nextRenewalDate,
+          paystackChannel: channel,
+        },
+      })
+    }
 
     let subscriptionId: string
 
@@ -76,18 +85,23 @@ export async function activateSubscription(params: {
       subscriptionId = newSub.id
     }
 
-    // 3. Update the payment record with subscriptionId
-    await tx.subscriptionPayment.update({
-      where: { paystackReference: reference },
-      data: { subscriptionId },
-    })
+    // 3. Link payment record to subscription
+    if (reference) {
+      await tx.subscriptionPayment.updateMany({
+        where: { paystackReference: reference },
+        data: { subscriptionId },
+      })
+    }
 
-    // 4. Link subscription to profile
+    // 4. Link subscription to profile & refresh AI Credits balance
     await tx.professionalProfile.update({
       where: { id: professionalId },
       data: {
         subscriptionId,
         lastSubscriptionRenew: now,
+        aiCreditsBalance: creditsToAllocate,
+        aiCreditsUsedThisMonth: 0,
+        lastCreditResetDate: now,
       },
     })
 
@@ -104,16 +118,26 @@ export async function activateSubscription(params: {
       success: true,
       subscriptionId,
       nextRenewalDate,
+      aiCreditsAllocated: creditsToAllocate,
     }
   })
 }
 
 /**
- * Initialize a 90-day trial for a professional.
+ * Initialize a 90-day trial for a professional with starter AI credits.
  */
 export async function initializeTrial(professionalId: string) {
   const now = new Date()
   const trialEndDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+
+  // Ensure professional has 10 initial AI credits
+  await prisma.professionalProfile.update({
+    where: { id: professionalId },
+    data: {
+      aiCreditsBalance: 10,
+      lastCreditResetDate: now,
+    }
+  }).catch(() => {})
 
   return await prisma.professionalTrial.upsert({
     where: { professionalId },

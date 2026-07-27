@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       account_number: formattedPhone,
       bank_code: provider,
       currency: "GHS",
-      description: `TrendiWear seller payout for ${profile.businessName}`,
+      description: `TrendiZip seller payout for ${profile.businessName}`,
       metadata: {
         professionalId: profile.id,
         userId: user.id,

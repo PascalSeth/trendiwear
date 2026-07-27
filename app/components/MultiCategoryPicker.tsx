@@ -5,14 +5,14 @@ import { X, Check, ChevronRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-interface Category {
+export interface Category {
   id: string;
   name: string;
   slug: string;
   imageUrl?: string;
 }
 
-interface ParentCategory extends Category {
+export interface ParentCategory extends Category {
   children: Category[];
 }
 

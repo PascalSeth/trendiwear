@@ -31,7 +31,7 @@ export async function sendDeliveryUpdateEmail({
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to,
-    subject: `Delivery Update: Order #${orderId.slice(-8).toUpperCase()} from ${sellerName || 'Trendiwear'}`,
+    subject: `Delivery Update: Order #${orderId.slice(-8).toUpperCase()} from ${sellerName || 'TrendiZip'}`,
     html: `
       <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.05);">
         <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 40px 20px; text-align: center;">
@@ -41,7 +41,7 @@ export async function sendDeliveryUpdateEmail({
 
         <div style="padding: 30px;">
           <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
-            Good news! Your order from <strong>${sellerName || 'Trendiwear'}</strong> is packed and ready for delivery.
+            Good news! Your order from <strong>${sellerName || 'TrendiZip'}</strong> is packed and ready for delivery.
           </p>
 
           <div style="margin: 30px 0; padding: 20px; background: #f8fafc; border-radius: 16px;">
@@ -89,7 +89,7 @@ export async function sendDeliveryUpdateEmail({
 
         <div style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #f1f5f9;">
           <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-            This is an automated notification from Trendiwear.<br/>
+            This is an automated notification from TrendiZip.<br/>
             Need help? Contact our support or <strong>${sellerName || 'the seller'}</strong> directly.
           </p>
         </div>

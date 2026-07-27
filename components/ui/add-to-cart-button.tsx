@@ -12,6 +12,7 @@ interface AddToCartButtonProps {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   variant?: 'default' | 'overlay' | 'inline' | 'primary'
+  showText?: boolean
   onCartChange?: (isInCart: boolean) => void
   quantity?: number
   selectedSize?: string
@@ -26,6 +27,7 @@ export function AddToCartButton({
   className = '',
   size = 'md',
   variant = 'default',
+  showText,
   onCartChange,
   quantity = 1,
   selectedSize,
@@ -116,6 +118,8 @@ export function AddToCartButton({
     primary: 'bg-emerald-500 hover:bg-emerald-600'
   }
 
+  const shouldShowText = showText ?? (variant === 'primary')
+
   return (
     <motion.button
       onClick={handleCartAction}
@@ -131,16 +135,10 @@ export function AddToCartButton({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.5, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className={variant === 'primary' ? 'flex items-center gap-3' : ''}
+            className={shouldShowText ? 'flex items-center justify-center gap-3' : ''}
           >
-            {variant === 'primary' ? (
-              <>
-                <Check className={sizeClasses[size]} strokeWidth={2.5} />
-                <span>In Your Bag</span>
-              </>
-            ) : (
-              <Check className={sizeClasses[size]} strokeWidth={2.5} />
-            )}
+            <Check className={sizeClasses[size]} strokeWidth={2.5} />
+            {shouldShowText && <span>In Your Bag</span>}
           </motion.span>
         ) : (
           <motion.span
@@ -149,16 +147,10 @@ export function AddToCartButton({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.5, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className={variant === 'primary' ? 'flex items-center gap-3' : ''}
+            className={shouldShowText ? 'flex items-center justify-center gap-3' : ''}
           >
-            {variant === 'primary' ? (
-              <>
-                <ShoppingBag className={sizeClasses[size]} strokeWidth={2} />
-                <span>Add to Bag</span>
-              </>
-            ) : (
-              <ShoppingBag className={sizeClasses[size]} strokeWidth={2} />
-            )}
+            <ShoppingBag className={sizeClasses[size]} strokeWidth={2} />
+            {shouldShowText && <span>{isOutOfStock ? 'Out of Stock' : 'Add to Bag'}</span>}
           </motion.span>
         )}
       </AnimatePresence>

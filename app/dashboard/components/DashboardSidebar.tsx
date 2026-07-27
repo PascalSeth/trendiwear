@@ -23,6 +23,10 @@ import {
   CreditCard,
   Truck,
   LogOut,
+  Wand2,
+  Bot,
+  DollarSign,
+  Rocket,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -57,7 +61,7 @@ interface NavGroup {
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, collapsed = false }) => {
   const pathname = usePathname();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Catalogue', 'Management', 'Trends']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Catalogue', 'Management', 'Trends', 'Trendi AI']);
 
   const { data: notificationsData } = useSWR('/api/notifications?limit=100', fetcher, { refreshInterval: 10000 });
   const unreadNotifications = notificationsData?.notifications || [];
@@ -111,6 +115,18 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           },
           { label: 'Orders', href: '/dashboard/orders', icon: ShoppingCart, badgeType: 'orders' },
           { label: 'Bookings', href: '/dashboard/bookings', icon: Calendar, badgeType: 'bookings' },
+          {
+            label: 'Trendi AI',
+            icon: Bot,
+            children: [
+              { label: 'Visual Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2 },
+              { label: 'Market & Trend Research', href: '/dashboard/ai/market-research', icon: TrendingUp },
+              { label: 'Pricing & Profit Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign },
+              { label: 'Product Copywriter', href: '/dashboard/ai/copywriter', icon: FileText },
+              { label: 'Collection Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket },
+            ],
+          },
+          { label: 'Outfit Inspirations', href: '/dashboard/trends/outfit-inspirations', icon: Compass },
           { label: 'Riders', href: '/dashboard/riders', icon: Truck },
           { label: 'Showcase', href: '/dashboard/showcase', icon: Star },
         ]
@@ -134,19 +150,28 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           { label: 'Services', href: '/dashboard/services', icon: Briefcase },
           { label: 'Customers', href: '/dashboard/customers', icon: Users },
           { label: 'Professionals', href: '/dashboard/professionals', icon: Users },
+          {
+            label: 'Trendi AI',
+            icon: Bot,
+            children: [
+              { label: 'Visual Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2 },
+              { label: 'Market & Trend Research', href: '/dashboard/ai/market-research', icon: TrendingUp },
+              { label: 'Pricing & Profit Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign },
+              { label: 'Product Copywriter', href: '/dashboard/ai/copywriter', icon: FileText },
+              { label: 'Collection Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket },
+            ],
+          },
+          { label: 'Outfit Inspirations', href: '/dashboard/trends/outfit-inspirations', icon: Compass },
         ]
       });
 
       groups.push({
-        group: 'TRENDS',
+        group: 'TRENDS & EVENTS',
         items: [
           {
-            label: 'Trends',
-            icon: TrendingUp,
-            children: [
-              { label: 'Events', href: '/dashboard/trends/events', icon: Calendar },
-              { label: 'Outfit Inspirations', href: '/dashboard/trends/outfit-inspirations', icon: Compass },
-            ],
+            label: 'Events & Categories',
+            href: '/dashboard/trends/events',
+            icon: Calendar,
           },
         ]
       });
@@ -191,32 +216,32 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
 
     const content = (
       <div className={cn(
-        'group flex items-center rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-300 relative',
+        'group flex items-center rounded-xl px-2.5 py-2 text-xs font-medium transition-all duration-300 relative',
         collapsed ? 'justify-center' : 'justify-between',
         active
-          ? 'bg-indigo-600 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)]'
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          ? 'bg-indigo-600 text-white shadow-[0_6px_16px_-4px_rgba(79,70,229,0.35)] font-semibold'
+          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'
       )}>
         {/* Active Indicator */}
         {active && !collapsed && (
           <motion.div 
             layoutId="activeNav"
-            className="absolute left-0 w-1 h-6 bg-white rounded-full"
+            className="absolute left-0 w-1 h-5 bg-white rounded-full"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}
 
-        <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
+        <div className={cn('flex items-center gap-2.5', collapsed && 'justify-center')}>
           <item.icon className={cn(
-            'h-5 w-5 transition-transform duration-300 group-hover:scale-110',
+            'h-4 w-4 transition-transform duration-300 group-hover:scale-110 shrink-0',
             active ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'
           )} />
           
           {!collapsed && (
-            <div className="flex items-center gap-2">
-              <span>{item.label}</span>
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="truncate">{item.label}</span>
               {item.badgeType && hasUnread(item.badgeType) && (
-                <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="flex h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
               )}
             </div>
           )}
@@ -227,7 +252,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className={cn("h-4 w-4 opacity-50", active ? "text-white" : "text-slate-400")} />
+            <ChevronDown className={cn("h-3.5 w-3.5 opacity-50 shrink-0", active ? "text-white" : "text-slate-400")} />
           </motion.div>
         )}
       </div>
@@ -245,7 +270,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden ml-4 border-l border-slate-100 pl-2 space-y-1"
+                className="overflow-hidden ml-3 border-l border-slate-100 pl-2 space-y-1"
               >
                 {item.children!.map((child) => renderNavItem(child, depth + 1))}
               </motion.div>
@@ -265,43 +290,43 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white/70 backdrop-blur-3xl transition-all duration-500 ease-in-out',
-        collapsed ? 'w-24' : 'w-72'
+        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-3xl transition-all duration-300 ease-in-out',
+        collapsed ? 'w-16' : 'w-56'
       )}
     >
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo Section */}
-        <div className={cn('pt-8 pb-6 flex-shrink-0 border-b border-slate-50', collapsed ? 'px-2' : 'px-8')}>
-          <Link href="/" className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-4')}>
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-2xl blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
+        <div className={cn('pt-5 pb-4 flex-shrink-0 border-b border-slate-100', collapsed ? 'px-2' : 'px-4')}>
+          <Link href="/" className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-2.5')}>
+            <div className="relative group shrink-0">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-lg blur-sm opacity-20 group-hover:opacity-40 transition-opacity" />
               <Image
                 src="/navlogo.png"
                 alt="Logo"
-                width={40}
-                height={40}
-                className="relative h-10 w-10 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110"
+                width={32}
+                height={32}
+                className="relative h-8 w-8 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-110"
               />
             </div>
             {!collapsed && (
-              <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tighter text-slate-900 leading-none">TrendiZip</span>
-                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">Seller Hub</span>
+              <div className="flex flex-col min-w-0 truncate">
+                <span className="text-base font-black tracking-tighter text-slate-900 leading-none truncate">TrendiZip</span>
+                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5 truncate">Seller Hub</span>
               </div>
             )}
           </Link>
         </div>
 
         {/* Unified Navigation List */}
-        <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 lg:px-4 py-6 space-y-8">
+        <nav className="flex-1 overflow-y-auto scrollbar-hide px-2.5 py-4 space-y-5">
           {navGroups.map((group) => (
-            <div key={group.group} className="space-y-3">
+            <div key={group.group} className="space-y-1.5">
               {!collapsed && (
-                <h3 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                <h3 className="px-2.5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
                   {group.group}
                 </h3>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {group.items.map((item) => renderNavItem(item))}
               </div>
             </div>
@@ -309,33 +334,33 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
         </nav>
 
         {/* Footer / User Anchored Section */}
-        <div className={cn('p-4 lg:p-6 border-t border-slate-100 flex-shrink-0 bg-slate-50/30', collapsed ? 'px-2' : 'px-6')}>
+        <div className={cn('p-3 border-t border-slate-100 flex-shrink-0 bg-slate-50/50', collapsed ? 'px-2' : 'px-3')}>
           {!collapsed ? (
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-200">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-xs shadow-sm shadow-indigo-200 shrink-0">
                 {role[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-900 truncate uppercase tracking-tight">{role}</p>
-                <p className="text-[10px] font-medium text-slate-400 truncate flex items-center gap-1">
+                <p className="text-[11px] font-bold text-slate-900 truncate uppercase tracking-tight">{role}</p>
+                <p className="text-[9px] font-medium text-slate-400 truncate flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   Active
                 </p>
               </div>
               <Link 
                 href="/auth/signout"
-                className="h-8 w-8 rounded-xl bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors flex items-center justify-center border border-slate-200 shadow-sm"
+                className="h-7 w-7 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors flex items-center justify-center border border-slate-200 shadow-xs shrink-0"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3.5 w-3.5" />
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-3">
               <Link 
                 href="/auth/signout"
-                className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4 w-4" />
               </Link>
             </div>
           )}

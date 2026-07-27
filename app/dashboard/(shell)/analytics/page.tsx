@@ -132,7 +132,9 @@ export default function AnalyticsPage() {
     try {
       const response = await fetch(`/api/professional-analytics?period=${selectedPeriod}&compare=true`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.warn(`Analytics API status: ${response.status}`);
+        setAnalytics(null);
+        return;
       }
       const data = await response.json();
       console.log('Analytics data:', data); // Debug log
@@ -228,7 +230,7 @@ export default function AnalyticsPage() {
   return (
     <AccessControlWrapper requiredPermission="VIEW_ANALYTICS">
       <div className="min-h-screen bg-neutral-50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
         {/* Header */}
         <div className="mb-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

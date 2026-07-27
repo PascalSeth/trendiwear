@@ -161,12 +161,14 @@ export async function POST(request: NextRequest) {
       resolvedDuration = variant.durationMinutes
     }
 
+    const bufferMinutes = professionalService.bufferTime ?? 15
     const endTime = new Date(bookingDateTime.getTime() + resolvedDuration * 60000)
+    const endTimeWithBuffer = new Date(bookingDateTime.getTime() + (resolvedDuration + bufferMinutes) * 60000)
     
     const depositAmount = isQuoteBased ? null : resolvedPrice * 0.5
     const balanceAmount = isQuoteBased ? null : resolvedPrice * 0.5
 
-    // 4. Competitive Conflict Check
+    // 4. Competitive Conflict Check (with Buffer Time)
     // A slot is ONLY blocked if someone has PAID or if it's a confirmed IN_PERSON booking.
     const conflict = await prisma.booking.findFirst({
       where: {
@@ -176,8 +178,8 @@ export async function POST(request: NextRequest) {
           { paymentMethod: 'IN_PERSON', status: 'CONFIRMED' }
         ],
         AND: [
-          { bookingDate: { lt: endTime } },
-          { endTime: { gt: bookingDateTime } },
+          { bookingDate: { lt: endTimeWithBuffer } },
+          { endTime: { gt: new Date(bookingDateTime.getTime() - bufferMinutes * 60000) } },
         ],
       },
     })

@@ -73,14 +73,13 @@ export default function TrendsClient({ initialEvents }: TrendsClientProps) {
   }, [initialEvents, activeCategory, searchQuery]);
 
   const getHeightClass = (index: number) => {
-    // Artistic vertical rhythm: varying aspect ratios for the masonry look
     const remainder = index % 5;
     switch (remainder) {
-      case 0: return 'aspect-[3/4]'; // Tall
-      case 1: return 'aspect-[1/1]'; // Square
-      case 2: return 'aspect-[4/5]'; // Standard Portrait
-      case 3: return 'aspect-[3/2]'; // Landscape
-      case 4: return 'aspect-[2/3]'; // Extra Tall
+      case 0: return 'aspect-[3/4]';
+      case 1: return 'aspect-[1/1]';
+      case 2: return 'aspect-[4/5]';
+      case 3: return 'aspect-[3/2]';
+      case 4: return 'aspect-[2/3]';
       default: return 'aspect-[3/4]';
     }
   };
@@ -267,7 +266,7 @@ export default function TrendsClient({ initialEvents }: TrendsClientProps) {
                        <span className="text-[7px] font-mono text-stone-400 tracking-[0.4em] uppercase mt-1 md:mt-2 block">
                          {event._count.outfitInspirations} Concepts
                        </span>
-                    </div>
+                     </div>
                   </motion.div>
                 ))}
               </AnimatePresence>

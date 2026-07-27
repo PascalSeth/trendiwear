@@ -1,29 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { SubscriptionTiers } from '@/components/subscription/SubscriptionTiers'
 import { CurrentSubscriptionStatus } from '@/components/subscription/CurrentSubscriptionStatus'
-import { AlertCircle, MessageSquare, ShieldCheck, Verified } from 'lucide-react'
+import { AlertCircle, HelpCircle, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(false)
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSelectTier = async (tierId: string, billingCycle: 'WEEKLY' | 'MONTHLY' | 'YEARLY') => {
     setLoading(true)
+    setSelectedTierId(tierId)
     setError(null)
 
     try {
-      const subscriptionResponse = await fetch('/api/subscriptions/manage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tierId, billingCycle }),
-      })
-
-      if (!subscriptionResponse.ok) throw new Error('Failed to create subscription')
-      await subscriptionResponse.json()
-
+      // Directly initialize Paystack payment without setting status to INACTIVE beforehand
       const paymentResponse = await fetch('/api/subscriptions/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,134 +28,115 @@ export default function SubscriptionPage() {
         }),
       })
 
-      if (!paymentResponse.ok) throw new Error('Failed to initialize payment')
+      if (!paymentResponse.ok) {
+        const errorData = await paymentResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to initialize subscription checkout')
+      }
+
       const paymentData = await paymentResponse.json()
 
       if (paymentData.data?.authorizationUrl) {
+        toast.success('Redirecting to Paystack secure checkout...')
         window.location.href = paymentData.data.authorizationUrl
+      } else {
+        throw new Error('Payment gateway did not return authorization URL')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const msg = err instanceof Error ? err.message : 'An error occurred during checkout'
+      setError(msg)
+      toast.error(msg)
       setLoading(false)
+      setSelectedTierId(null)
     }
   }
 
   return (
-    <div className="py-12 md:py-20 animate-in fade-in duration-700">
-      <main className="max-w-7xl mx-auto px-6">
-        {/* 2. Current Status Section */}
-        <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-20"
-        >
-          <div className="mb-10 max-w-2xl">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">My Identity</h2>
-            <h3 className="text-3xl font-black tracking-tighter text-slate-900">Professional Status</h3>
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6 font-sans">
+      
+      {/* EXECUTIVE HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Seller Membership &amp; Access</span>
           </div>
-          <CurrentSubscriptionStatus />
-        </motion.section>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Subscription &amp; Plans
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage your store membership tier, active trial status, feature permissions, and billing cycles.
+          </p>
+        </div>
+      </div>
 
-        {/* 3. Error Alert (If any) */}
-        {error && (
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-12 p-6 bg-rose-50 border border-rose-100 rounded-3xl flex items-start gap-4 text-rose-700"
-            >
-                <div className="w-10 h-10 bg-rose-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-5 h-5" />
-                </div>
-                <div>
-                   <h4 className="font-black text-rose-900 leading-none mb-1 uppercase text-sm">Action Forbidden</h4>
-                   <p className="text-sm text-rose-600 font-medium">{error}</p>
-                </div>
-            </motion.div>
-        )}
+      {/* Error Banner if any */}
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-medium">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-        {/* 4. Plan Selection Section */}
-        <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-24"
-        >
-          <div className="mb-12 text-center max-w-3xl mx-auto">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">The Marketplace Explorer</h2>
-            <h3 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-6 uppercase italic">Elevate your brand steeze</h3>
-            <p className="text-slate-500 text-lg font-medium leading-relaxed">
-              Unlock the full potential of your business with plans designed to scale. Choose the phase that fits your current hustle.
-            </p>
+      {/* Current Subscription & Trial Status */}
+      <CurrentSubscriptionStatus />
+
+      {/* Subscription Tiers Grid */}
+      <div className="space-y-4 pt-4">
+        <div className="text-center max-w-xl mx-auto space-y-1">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Select Membership Plan</h2>
+          <p className="text-xs font-medium text-slate-500">
+            Choose a plan that suits your business scale. Cancel or switch billing cycles anytime.
+          </p>
+        </div>
+
+        <SubscriptionTiers
+          onSelectTier={handleSelectTier}
+          loading={loading}
+          selectedTierId={selectedTierId}
+        />
+      </div>
+
+      {/* Billing FAQ Grid */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6 mt-8">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+          <HelpCircle className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-base font-bold text-slate-900">Frequently Asked Billing Questions</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            { q: "Can I switch plans anytime?", a: "Yes. You can upgrade or switch billing cycles anytime. Your new plan benefits apply immediately upon payment confirmation." },
+            { q: "What happens when my free trial ends?", a: "Your store enters View-Only mode. Activating any membership tier immediately restores product creation and order processing." },
+            { q: "What payment methods are supported?", a: "We support Mobile Money (MTN MoMo, Telecel Cash, AT Money), Cards, and Bank Transfers via Paystack." },
+            { q: "Is my payment safe?", a: "All transactions are encrypted and processed securely by Paystack. No sensitive card or pin details are stored on our servers." }
+          ].map((item, i) => (
+            <div key={i} className="space-y-1 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+              <h4 className="text-xs font-bold text-slate-900">{item.q}</h4>
+              <p className="text-xs font-medium text-slate-500 leading-relaxed">{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Protection Policy Banner */}
+      <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold">
+            <ShieldCheck className="w-4 h-4" /> Transparent Billing Policy
           </div>
-          
-          <SubscriptionTiers
-            onSelectTier={handleSelectTier}
-            loading={loading}
-          />
-        </motion.section>
+          <h3 className="text-lg font-black text-white tracking-tight">Protected &amp; Encrypted Membership</h3>
+          <p className="text-xs text-slate-400 max-w-xl">
+            No hidden setup fees. Instant activation upon Paystack verification, protected escrow, and 24/7 priority seller support.
+          </p>
+        </div>
 
-        {/* 5. Minimalist FAQ */}
-        <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="border-t border-slate-100 pt-24"
-        >
-           <div className="grid lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-4 space-y-4">
-                    <h3 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic">Common Queries</h3>
-                    <p className="text-slate-500 font-medium">Everything you need to know about our billing process and terms.</p>
-                    <div className="pt-6">
-                        <button className="flex items-center gap-3 text-violet-600 font-black uppercase tracking-widest text-xs hover:gap-5 transition-all">
-                            Talk to our team <MessageSquare className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Cancel Anytime
+          </span>
+        </div>
+      </div>
 
-                <div className="lg:col-span-8 grid md:grid-cols-2 gap-x-12 gap-y-10">
-                    {[
-                        { q: "Can I move between plans?", a: "Switch phases at any moment. Upgrades apply instantly, while mid-cycle downgrades take effect at your next renewal." },
-                        { q: "Trial to Paid transition?", a: "Once your 3-month trial ends, your shop enters 'View Only' mode. Activating a plan instantly restores full creation power." },
-                        { q: "Accepted payment tools?", a: "We support Mobile Money (MTN, Telecel, AirtelTigo), Cards, and Bank Transfers via our secure Paystack hub." },
-                        { q: "What about the 'Legend' perks?", a: "Legends get priority indexing, analytics insights, and featured placement in our brand spotlight sections." }
-                    ].map((item, i) => (
-                        <div key={i} className="group cursor-help">
-                            <h4 className="text-sm font-black text-slate-900 mb-2 group-hover:text-violet-600 transition-colors uppercase italic">{item.q}</h4>
-                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.a}</p>
-                        </div>
-                    ))}
-                </div>
-           </div>
-        </motion.section>
-
-        {/* 6. Professional Protection Banner */}
-        <motion.section 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="mt-24 p-8 md:p-12 rounded-[3rem] bg-slate-950 text-white overflow-hidden relative"
-        >
-            <div className="absolute top-0 right-0 p-12 opacity-10">
-                <ShieldCheck className="w-48 h-48" />
-            </div>
-            <div className="relative z-10 max-w-2xl space-y-6">
-                <h3 className="text-3xl font-black tracking-tighter uppercase italic">Professional Shield</h3>
-                <p className="text-slate-400 text-lg">
-                    Every subscription is protected by our transparent billing policy. No hidden fees, secure escrow for all orders, and 24/7 dedicated support for our Legends and Ohenes.
-                </p>
-                <div className="flex gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/10">
-                        <Verified className="w-3 h-3 text-amber-500" /> Secure Payments
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/10">
-                        <ShieldCheck className="w-3 h-3 text-violet-500" /> Cancel Anytime
-                    </div>
-                </div>
-            </div>
-        </motion.section>
-      </main>
     </div>
   )
 }
-

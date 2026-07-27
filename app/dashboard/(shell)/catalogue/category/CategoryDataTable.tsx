@@ -521,7 +521,52 @@ export function CategoryTable() {
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="w-full max-w-full overflow-x-hidden space-y-6">
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Product Taxonomy</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Categories &amp; Hierarchy
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Organize product categories, parent/child taxonomy structures, and store display order.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setEditingCategory({ id: '', name: '', slug: '', isActive: true, order: 0, children: [], _count: { products: 0 } } as Category)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Category
+          </Button>
+        </div>
+      </div>
+
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Categories", value: categories.length, icon: FolderOpen, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Active Listed", value: categories.filter(c => c.isActive).length, icon: Package, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Top-Level Parents", value: categories.filter(c => !c.parentId).length, icon: Settings, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Subcategories", value: categories.filter(c => c.parentId).length, icon: ArrowUpDown, color: "text-blue-600", bg: "bg-blue-50" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <ProductCategorySheet
         categories={categories}
         onCategoryAdded={(newCategory) => {
@@ -534,7 +579,7 @@ export function CategoryTable() {
         }}
         onClose={() => setEditingCategory(null)} />
 
-      <div className="flex flex-col gap-3 py-4">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
         <Input
           placeholder="Search categories..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}

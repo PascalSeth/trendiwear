@@ -11,69 +11,94 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  console.log('Seeding Ghanaian Subscription Tiers...')
+  console.log('Seeding Ghanaian Subscription Tiers with AI Credit Limits...')
 
   const tiers = [
     {
-      name: 'Chop Life',
-      description: 'For the emerging artisan starting to see success.',
-      weeklyPrice: 20,
-      monthlyPrice: 70,
-      yearlyPrice: 700,
+      name: 'Free Artisan',
+      description: 'Free starter plan for emerging tailors & small boutique sellers.',
+      weeklyPrice: 0,
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       features: [
-        'Up to 12 Product Listings',
-        'Standard Boutique Profile',
-        'WhatsApp Direct Buy Button',
-        'Standard Community Access'
+        '15 Product & Service Listings',
+        '10 Monthly AI Studio Credits',
+        'Escrow Wallet & MoMo Payout Access',
+        'Standard Merchant Storefront Profile',
+        'Direct Customer Orders & Bookings'
       ],
-      storageLimit: 1000,
-      monthlyListings: 12,
+      storageLimit: 2000,
+      monthlyListings: 15,
+      aiCreditsLimit: 10,
       analyticsAccess: false,
       prioritySupport: false,
       featuredBadge: false,
       order: 1,
     },
     {
-      name: 'Obaahemaa / Ohene',
-      description: "The 'Queen' or 'King' of their craft. For established boutiques.",
-      weeklyPrice: 50,
-      monthlyPrice: 180,
-      yearlyPrice: 1800,
+      name: 'Ohene Royal Merchant',
+      description: 'For established fashion brands & busy tailoring houses.',
+      weeklyPrice: 45,
+      monthlyPrice: 150,
+      yearlyPrice: 1500,
       features: [
-        'Unlimited Product Listings',
-        'Verified Royalty Badge',
-        'Basic Sales Analytics',
-        'Priority Search Ranking',
-        'Direct Checkout Integration'
+        'Unlimited Products & Service Listings',
+        '40 Monthly AI Studio Credits',
+        'Verified Merchant Royalty Badge',
+        'Full Revenue Analytics & Store Intel',
+        'Priority Search Ranking in Marketplace',
+        'Unlimited Outfit Inspiration Lookbooks'
       ],
-      storageLimit: 5000,
+      storageLimit: 10000,
       monthlyListings: 10000,
+      aiCreditsLimit: 40,
       analyticsAccess: true,
       prioritySupport: false,
       featuredBadge: true,
       order: 2,
     },
     {
-      name: 'Legend',
-      description: 'For the masters and iconic fashion houses in the industry.',
-      weeklyPrice: 120,
-      monthlyPrice: 450,
-      yearlyPrice: 4500,
+      name: 'Legend Empire',
+      description: 'For iconic fashion houses, master tailors & top boutiques.',
+      weeklyPrice: 95,
+      monthlyPrice: 320,
+      yearlyPrice: 3200,
       features: [
-        'Everything in Professional',
-        'Advanced Market Trends & Analytics',
-        'Top Slot Search Placement',
-        'Featured Gallery Backgrounds',
-        'Dedicated Support'
+        'Everything in Ohene Royal Merchant',
+        '120 Monthly AI Studio Credits',
+        'Homepage & Spotlight Banner Placement',
+        'Service Package Bundles & Add-ons',
+        'Priority MoMo Payout Approvals',
+        'Dedicated VIP Account Support'
       ],
       storageLimit: 50000,
       monthlyListings: 100000,
+      aiCreditsLimit: 120,
       analyticsAccess: true,
       prioritySupport: true,
       featuredBadge: true,
       order: 3,
     },
   ]
+
+  // Clear inactive subscription ties and delete legacy tiers
+  const newNames = tiers.map(t => t.name)
+  
+  const legacyTiers = await prisma.subscriptionTier.findMany({
+    where: { name: { notIn: newNames } },
+    select: { id: true }
+  })
+  const legacyIds = legacyTiers.map(t => t.id)
+
+  if (legacyIds.length > 0) {
+    await prisma.subscription.deleteMany({
+      where: { tierId: { in: legacyIds } }
+    }).catch(() => {})
+    
+    await prisma.subscriptionTier.deleteMany({
+      where: { id: { in: legacyIds } }
+    }).catch(() => {})
+  }
 
   for (const tierData of tiers) {
     await prisma.subscriptionTier.upsert({
@@ -84,7 +109,7 @@ async function main() {
     console.log(`Upserted tier: ${tierData.name}`)
   }
 
-  console.log('Subscription Tiers seeded successfully!')
+  console.log('Subscription Tiers reset & seeded successfully!')
 }
 
 main()

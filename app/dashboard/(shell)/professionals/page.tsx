@@ -37,8 +37,8 @@ interface Professional {
 const ProfessionalsPage = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [, setError] = useState('');
+  const [filter] = useState('all');
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,100 +109,41 @@ const ProfessionalsPage = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto py-8 px-4 md:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Professional Management</h1>
-          <p className="text-gray-600 mt-1">Manage and monitor all professionals on the platform</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Vendor &amp; Stylist Network</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Professionals &amp; Vendors
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage stylist profiles, vendor verifications, credit ratings, and merchant services.
+          </p>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
-          {error}
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-lg mb-6">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">Filter:</span>
-          <div className="flex space-x-2">
-            {[
-              { value: 'all', label: 'All' },
-              { value: 'verified', label: 'Verified' },
-              { value: 'unverified', label: 'Unverified' },
-              { value: 'sellers', label: 'Sellers' },
-              { value: 'service-providers', label: 'Service Providers' }
-            ].map(option => (
-              <button
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  filter === option.value
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-blue-600" />
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Professionals", value: professionals.length, icon: DollarSign, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Verified Merchants", value: professionals.filter(p => p.isVerified).length, icon: Star, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Total Services", value: professionals.reduce((sum, p) => sum + p.user._count.professionalServices, 0), icon: Calendar, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Total Products", value: professionals.reduce((sum, p) => sum + p.user._count.products, 0), icon: MapPin, color: "text-amber-600", bg: "bg-amber-50" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Professionals</p>
-              <p className="text-2xl font-bold text-gray-900">{professionals.length}</p>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Star className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Verified</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.filter(p => p.isVerified).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Services</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.reduce((sum, p) => sum + p.user._count.professionalServices, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <MapPin className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.reduce((sum, p) => sum + p.user._count.products, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Professionals Table */}

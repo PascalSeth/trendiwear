@@ -75,7 +75,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
             className="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-all duration-300"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-[280px] border-r border-slate-200 bg-white/90 shadow-2xl backdrop-blur-2xl">
+          <div className="absolute left-0 top-0 h-full w-56 border-r border-slate-200 bg-white/90 shadow-2xl backdrop-blur-2xl">
             <div className="relative h-full">
                 <button
                 onClick={() => setIsMobileSidebarOpen(false)}
@@ -92,7 +92,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
       {/* Main Content Area */}
       <div
         className={`relative min-h-screen transition-all duration-500 ease-in-out ${
-          isSidebarCollapsed ? 'lg:ml-24' : 'lg:ml-72'
+          isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-56'
         }`}
       >
         <div className="flex flex-col h-[100dvh]">
@@ -134,7 +134,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ children, role, userInf
             </div>
           )}
 
-          <main className="flex-1 p-4 pb-32 sm:p-6 lg:p-10 overflow-y-auto scrollbar-hide">
+          <main className="flex-1 overflow-y-auto scrollbar-hide">
             <div className="mx-auto w-full max-w-[1600px] animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="relative">
                   {children}

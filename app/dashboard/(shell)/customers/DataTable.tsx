@@ -11,11 +11,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Users, UserCheck, Clock, DollarSign } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -168,46 +167,44 @@ export function CustomerDataTable() {
   };
 
   return (
-    <div className="w-full">
-      {/* Card Section */}
-      <div className="mb-6 grid grid-cols-1 p-5 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Total Estimates</CardTitle>
-            <CardDescription>Estimate total value</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-green-600">$32.1k</div>
-          </CardContent>
-        </Card>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Total Customers</CardTitle>
-            <CardDescription>Number of customers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-blue-600">829</div>
-          </CardContent>
-        </Card>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Accepted</CardTitle>
-            <CardDescription>Accepted status count</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-green-600">16.23k</div>
-          </CardContent>
-        </Card>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Pending</CardTitle>
-            <CardDescription>Pending status count</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-yellow-600">2.58k</div>
-          </CardContent>
-        </Card>
+    <div className="w-full space-y-6">
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Client CRM &amp; Accounts</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Customer Directory
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage buyer profiles, purchase estimates, account statuses, and customer inquiries.
+          </p>
+        </div>
       </div>
+
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Customers", value: "829", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Active Accepted", value: "16.23k", icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Pending Verification", value: "2.58k", icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total Estimates", value: "$32.1k", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
 
       {/* Filters */}
       <div className="mb-6 flex flex-col gap-4">
@@ -334,5 +331,6 @@ export function CustomerDataTable() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

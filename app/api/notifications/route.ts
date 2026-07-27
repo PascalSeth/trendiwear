@@ -48,8 +48,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const unreadWhere: Prisma.NotificationWhereInput = { userId: user.id, isRead: false }
+    if (where.type) {
+      unreadWhere.type = where.type
+    }
+
     // OPTIMIZATION: Only count total if NOT in 'minimal' mode (typically for the bell dropdown)
-    // We already have where = { userId, isRead: false } often if unreadOnly is true
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
@@ -58,10 +62,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       }),
       !minimal ? prisma.notification.count({ where }) : Promise.resolve(0),
-      // Fix circular reference: Calculate unread count independently
-      prisma.notification.count({
-        where: { userId: user.id, isRead: false },
-      }),
+      prisma.notification.count({ where: unreadWhere }),
     ])
 
     return NextResponse.json({
@@ -113,11 +114,41 @@ export async function PUT(request: NextRequest) {
   try {
     const user = await requireAuth()
     const body = await request.json()
-    const { markAllAsRead, types } = body
+    const { markAllAsRead, types, context } = body
 
     if (markAllAsRead) {
+      const updateWhere: Prisma.NotificationWhereInput = { userId: user.id, isRead: false }
+      
+      if (context === "business") {
+        updateWhere.type = {
+          in: [
+            "ORDER_UPDATE", 
+            "BOOKING_CONFIRMATION", 
+            "PAYMENT_RECEIVED", 
+            "REVIEW_RECEIVED", 
+            "STOCK_ALERT", 
+            "DELIVERY_CONFIRMATION_REQUEST", 
+            "PAYMENT_RELEASED",
+            "MESSAGE_RECEIVED"
+          ] as NotificationType[]
+        }
+      } else if (context === "personal") {
+        updateWhere.type = {
+          in: [
+            "MESSAGE_RECEIVED",
+            "ORDER_UPDATE",
+            "SHIPPING_UPDATE", 
+            "DELIVERY_ARRIVAL", 
+            "WISHLIST_SALE", 
+            "PROMOTION",
+            "NEW_INSPIRATION",
+            "SYSTEM_UPDATE"
+          ] as NotificationType[]
+        }
+      }
+
       await prisma.notification.updateMany({
-        where: { userId: user.id, isRead: false },
+        where: updateWhere,
         data: { isRead: true },
       })
 

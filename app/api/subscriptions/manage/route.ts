@@ -99,10 +99,37 @@ export async function GET() {
     const canAccess = isTrialActive || hasActiveSubscription
     const analyticsAccess = subscription?.tier?.analyticsAccess ?? false
 
+    const rawProfile = profile as Record<string, unknown>
+    const rawTier = subscription?.tier as Record<string, unknown> | undefined
+
+    let aiCreditsLimit = (rawTier?.aiCreditsLimit as number) ?? 10
+    let aiCreditsBalance = (rawProfile?.aiCreditsBalance as number) ?? 10
+    const aiCreditsUsedThisMonth = (rawProfile?.aiCreditsUsedThisMonth as number) ?? 0
+
+    if (hasActiveSubscription && rawTier) {
+      const tierName = (rawTier.name as string || '').toLowerCase()
+      const isLegend = tierName.includes('legend')
+      const isOhene = tierName.includes('ohene') || tierName.includes('royal')
+
+      aiCreditsLimit = isLegend ? 120 : isOhene ? 40 : ((rawTier.aiCreditsLimit as number) || 10)
+      const targetBalance = Math.max(0, aiCreditsLimit - aiCreditsUsedThisMonth)
+
+      if (aiCreditsBalance !== targetBalance) {
+        aiCreditsBalance = targetBalance
+        prisma.professionalProfile.update({
+          where: { id: profile.id },
+          data: { aiCreditsBalance: targetBalance }
+        }).catch(err => console.error('Failed auto-syncing tier AI credits:', err))
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         ...profile,
+        aiCreditsBalance,
+        aiCreditsLimit,
+        aiCreditsUsedThisMonth,
         trial,
         subscription,
         canAddProducts: canAccess,

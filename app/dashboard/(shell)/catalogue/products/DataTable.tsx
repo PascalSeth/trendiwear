@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown, MoreHorizontal, Plus, Edit, Trash2, Eye,  ShoppingBag, Heart, MessageCircle, ChevronLeft, ChevronRight, Package, Copy } from "lucide-react";
+import { ChevronDown, MoreHorizontal, Plus, Edit, Trash2, Eye,  ShoppingBag, Heart, MessageCircle, ChevronLeft, ChevronRight, Package, Copy, LayoutGrid, List } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -41,7 +41,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -114,6 +113,7 @@ const SkeletonLoader = () => (
 export function ProductTable({ initialData }: ProductTableProps) {
   const [data, setData] = useState<Product[]>(initialData || []);
   const [loading, setLoading] = useState(!initialData);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -362,8 +362,8 @@ export function ProductTable({ initialData }: ProductTableProps) {
       header: "Price",
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="font-bold text-gray-900">
-            {row.original.currency} {row.original.price.toLocaleString()}
+          <span className="font-bold text-slate-900 text-sm">
+            GH₵ {row.original.price.toFixed(2)}
           </span>
         </div>
       ),
@@ -500,26 +500,29 @@ export function ProductTable({ initialData }: ProductTableProps) {
     total: data.length,
     active: data.filter(p => p.isActive).length,
     outOfStock: data.filter(p => p.stockQuantity === 0).length,
-    lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
+lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
   };
 
   return (
     <div className="w-full space-y-8 pb-10">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Product Catalog</h1>
-          <p className="text-gray-500 font-medium">
-            Manage your inventory, pricing and visibility across the store.
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Catalogue Management</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Products &amp; Inventory
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage your store products, live stock, pricing, and variants.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="hidden sm:flex border-gray-200 text-gray-600 hover:bg-gray-50">
-            Export CSV
-          </Button>
           <Link href='/dashboard/catalogue/products/add-product'>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100 px-6">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2">
+              <Plus className="h-4 w-4" />
               Add New Product
             </Button>
           </Link>
@@ -529,27 +532,25 @@ export function ProductTable({ initialData }: ProductTableProps) {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Products", value: stats.total, icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Total Products", value: stats.total, icon: Package, color: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Active Live", value: stats.active, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Out of Stock", value: stats.outOfStock, icon: ShoppingBag, color: "text-red-600", bg: "bg-red-50" },
+          { label: "Out of Stock", value: stats.outOfStock, icon: ShoppingBag, color: "text-rose-600", bg: "bg-rose-50" },
           { label: "Low Inventory", value: stats.lowStock, icon: ChevronDown, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat, i) => (
-          <Card key={i} className="border-gray-100 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-0.5">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Table Toolbar */}
         <div className="p-6 border-b border-gray-50 space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -582,6 +583,26 @@ export function ProductTable({ initialData }: ProductTableProps) {
                 </TabsList>
               </Tabs>
 
+              {/* View Mode Toggle */}
+              <div className="flex items-center bg-gray-100/80 p-1 rounded-xl h-11 border border-gray-200/50">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                  title="Table View"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                  title="Grid View"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600">
@@ -611,54 +632,135 @@ export function ProductTable({ initialData }: ProductTableProps) {
           </div>
         </div>
 
-        {/* Table Content */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-gray-50/50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow 
-                    key={row.id} 
-                    className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-6 py-4">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+        {/* View Content (Grid vs Table) */}
+        {viewMode === 'grid' ? (
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => {
+                const p = row.original;
+                return (
+                  <div key={p.id} className="group bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300 flex flex-col">
+                    {/* Card Image */}
+                    <div className="relative aspect-square bg-slate-50 overflow-hidden">
+                      <Image
+                        src={p.images[0] || "/placeholder-product.jpg"}
+                        alt={p.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* Status pill */}
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-full shadow-xs text-[10px] font-extrabold border border-slate-200">
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                        {p.isActive ? 'Live' : 'Draft'}
+                      </div>
+                      {/* Quick Actions Dropdown */}
+                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm hover:bg-white transition-colors">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-200 shadow-xl">
+                            <DropdownMenuItem onClick={() => handleViewDetails(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                              <Eye className="mr-2 h-3.5 w-3.5 text-slate-500" /> View Stats
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAddStockClick(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                              <Package className="mr-2 h-3.5 w-3.5 text-slate-500" /> Add Stock
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicateProduct(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                              <Copy className="mr-2 h-3.5 w-3.5 text-slate-500" /> Duplicate
+                            </DropdownMenuItem>
+                            <Link href={`/dashboard/catalogue/products/edit/${p.id}`}>
+                              <DropdownMenuItem className="rounded-lg text-xs font-semibold cursor-pointer">
+                                <Edit className="mr-2 h-3.5 w-3.5 text-slate-500" /> Edit Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuSeparator className="my-1" />
+                            <DropdownMenuItem onClick={() => handleDeleteClick(p)} className="rounded-lg text-xs font-semibold text-rose-600 cursor-pointer">
+                              <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Product
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="p-5 flex flex-col flex-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 mb-1">
+                        {p.categories?.[0]?.name || "Uncategorized"}
+                      </span>
+                      <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                        {p.name}
+                      </h3>
+                      <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
+                        <span className="font-black text-slate-900 text-base">
+                          GH₵ {p.price.toFixed(2)}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.stockQuantity > 10 ? 'bg-emerald-50 text-emerald-700' : p.stockQuantity > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
+                          {p.stockQuantity > 0 ? `${p.stockQuantity} in stock` : 'Out of stock'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-16 text-center">
+                <p className="text-slate-500 font-medium">No products match your filter criteria.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Table Content */
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gray-50/50">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="p-4 bg-gray-50 rounded-full">
-                        <ShoppingBag className="h-8 w-8 text-gray-300" />
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow 
+                      key={row.id} 
+                      className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="px-6 py-4">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="p-4 bg-gray-50 rounded-full">
+                          <ShoppingBag className="h-8 w-8 text-gray-300" />
+                        </div>
+                        <p className="text-gray-500 font-medium text-lg">No products found</p>
+                        <p className="text-gray-400 text-sm max-w-xs">
+                          Try adjusting your search or filters to find what you&apos;re looking for.
+                        </p>
                       </div>
-                      <p className="text-gray-500 font-medium text-lg">No products found</p>
-                      <p className="text-gray-400 text-sm max-w-xs">
-                        Try adjusting your search or filters to find what you&apos;re looking for.
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">

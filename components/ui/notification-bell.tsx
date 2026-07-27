@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import useSWR from 'swr';
+import { useRouter } from 'next/navigation';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -55,6 +56,7 @@ const notificationColors: Record<string, string> = {
 
 // Component
 export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [permissionState, setPermissionState] = useState<string>('default');
   const lastNotifiedIdRef = useRef<string | null>(null);
@@ -77,7 +79,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
   const { data, mutate, isLoading } = useSWR(
     swrKey,
     fetcher,
-    { refreshInterval: 10000 }
+    { refreshInterval: 5000, deduplicatingInterval: 2000, revalidateOnFocus: true, revalidateOnReconnect: true }
   );
 
   const notifications = useMemo(() => data?.notifications || [], [data?.notifications]);
@@ -131,7 +133,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
       const res = await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAllAsRead: true }),
+        body: JSON.stringify({ markAllAsRead: true, context }),
       });
       if (res.ok) {
         mutate({
@@ -166,12 +168,56 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
     }
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    setIsOpen(false);
+    const isBusiness = context === 'business';
+
+    switch (notification.type) {
+      case 'ORDER_UPDATE':
+      case 'SHIPPING_UPDATE':
+      case 'DELIVERY_ARRIVAL':
+      case 'DELIVERY_CONFIRMATION_REQUEST':
+      case 'PAYMENT_RECEIVED':
+      case 'PAYMENT_RELEASED':
+        router.push(isBusiness ? '/dashboard/orders' : '/orders');
+        break;
+      case 'STOCK_ALERT':
+        router.push('/dashboard/catalogue/products');
+        break;
+      case 'BOOKING_CONFIRMATION':
+        router.push(isBusiness ? '/dashboard/services' : '/bookings');
+        break;
+      case 'NEW_INSPIRATION':
+        router.push('/dashboard/trends/outfit-inspirations');
+        break;
+      case 'WISHLIST_SALE':
+      case 'PROMOTION':
+        router.push('/shopping');
+        break;
+      case 'MESSAGE_RECEIVED':
+        router.push('/messages');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="relative">
       <button
         onClick={() => {
-          setIsOpen(!isOpen);
-          if (!isOpen) mutate();
+          const nextState = !isOpen;
+          setIsOpen(nextState);
+          if (nextState) {
+            mutate();
+            if (unreadCount > 0) {
+              markAllAsRead();
+            }
+          }
         }}
         className="relative hover:text-red-900 text-stone-400 transition-colors p-2 rounded-full hover:bg-stone-50"
       >
@@ -250,13 +296,7 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
                       return (
                         <button
                           key={notification.id}
-                          onClick={() => {
-                            if (!notification.isRead) markAsRead(notification.id);
-                            if (notification.type === 'MESSAGE_RECEIVED') {
-                              window.location.href = '/messages';
-                              setIsOpen(false);
-                            }
-                          }}
+                          onClick={() => handleNotificationClick(notification)}
                           className={cn(
                             "w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-start gap-3",
                             !notification.isRead && "bg-blue-50/50"

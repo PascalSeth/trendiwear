@@ -107,9 +107,65 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // --- LOGIC: Completion settlement ---
+    // --- LOGIC: Completion settlement & Commission deduction ---
     if (status === 'COMPLETED') {
       extraData.paymentStatus = 'PAID'
+
+      const escrows = await prisma.paymentEscrow.findMany({
+        where: {
+          bookingId: id,
+          status: 'HELD'
+        }
+      })
+
+      const PLATFORM_COMMISSION_RATE = 0.10 // 10% platform service fee
+
+      for (const escrow of escrows) {
+        const netPayout = Number((escrow.amount * (1 - PLATFORM_COMMISSION_RATE)).toFixed(2))
+
+        await prisma.paymentEscrow.update({
+          where: { id: escrow.id },
+          data: {
+            status: 'RELEASED',
+            releasedAt: new Date(),
+            failureReason: null
+          }
+        })
+
+        await prisma.professionalProfile.updateMany({
+          where: { userId: escrow.professionalId },
+          data: {
+            accountBalance: { increment: netPayout }
+          }
+        })
+
+        await prisma.notification.create({
+          data: {
+            userId: escrow.professionalId,
+            type: 'PAYMENT_RELEASED',
+            title: 'Booking Payment Released to Wallet!',
+            message: `Booking for ${booking.service.name} completed! GH₵ ${netPayout.toFixed(2)} credited to your wallet (10% platform fee deducted).`,
+            data: JSON.stringify({ bookingId: id, amount: netPayout }),
+          }
+        })
+      }
+    }
+
+    // --- LOGIC: Cancellation & Escrow Refund ---
+    if (status === 'CANCELLED') {
+      const escrows = await prisma.paymentEscrow.findMany({
+        where: { bookingId: id, status: 'HELD' }
+      })
+
+      for (const escrow of escrows) {
+        await prisma.paymentEscrow.update({
+          where: { id: escrow.id },
+          data: {
+            status: 'REFUNDED',
+            failureReason: notes || 'Booking cancelled by customer or professional'
+          }
+        })
+      }
     }
 
     const updatedBooking = await prisma.booking.update({

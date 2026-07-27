@@ -154,6 +154,9 @@ model ProfessionalProfile {
   paymentSetupComplete   Boolean                @default(false)
   subscriptionId         String?                @unique
   lastSubscriptionRenew  DateTime?
+  aiCreditsBalance       Int                    @default(10)
+  aiCreditsUsedThisMonth Int                    @default(0)
+  lastCreditResetDate    DateTime?
   serviceAvailability    String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
@@ -170,6 +173,8 @@ model ProfessionalProfile {
   store                  Store?
   subscriptionHistory    SubscriptionPayment[]
   documents              VerificationDocument[]
+  payoutRequests         PayoutRequest[]
+  walletTransactions     WalletTransaction[]
 }
 
 model PortfolioCollection {
@@ -210,6 +215,7 @@ model SubscriptionTier {
   features        String[]
   storageLimit    Int            @default(1000)
   monthlyListings Int            @default(10)
+  aiCreditsLimit  Int            @default(10)
   analyticsAccess Boolean        @default(false)
   prioritySupport Boolean        @default(false)
   featuredBadge   Boolean        @default(false)
@@ -1404,6 +1410,8 @@ enum BookingStatus {
   CANCELLED
   NO_SHOW
   RESCHEDULED
+  DISPUTED
+  EXPIRED
 }
 
 enum BookingPaymentMethod {
@@ -1628,3 +1636,56 @@ enum InvoiceStatus {
   PAID
   CANCELLED
 }
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REJECTED
+}
+
+model PayoutRequest {
+  id                   String              @id @default(uuid())
+  professionalId       String
+  amount               Float
+  accountNumber        String
+  accountName          String
+  provider             String
+  paystackTransferCode String?
+  failureReason        String?
+  status               PayoutStatus        @default(PENDING)
+  processedAt          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  professional         ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([status])
+}
+
+enum WalletTransactionType {
+  ORDER_CREDIT
+  ESCROW_RELEASE
+  PAYOUT_WITHDRAWAL
+  PAYOUT_FEE
+  ADMIN_ADJUSTMENT
+  REFUND_DEDUCTION
+}
+
+model WalletTransaction {
+  id              String                @id @default(uuid())
+  professionalId  String
+  amount          Float
+  balanceBefore   Float
+  balanceAfter    Float
+  type            WalletTransactionType
+  referenceId     String?
+  description     String
+  createdAt       DateTime              @default(now())
+  professional    ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([createdAt])
+}
+

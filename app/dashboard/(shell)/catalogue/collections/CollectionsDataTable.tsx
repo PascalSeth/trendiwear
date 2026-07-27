@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2, ImageIcon } from "lucide-react";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit, Trash2, ImageIcon, Layers, Sparkles, Plus, Eye, Sun } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -330,7 +330,52 @@ export function CollectionsTable() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Seasonal Curation</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Curated Collections
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Group products into seasonal lookbooks, capsule drops, and promotional showcases.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setEditingCollection({ id: '', name: '', slug: '', isActive: true, isFeatured: false, order: 0, createdAt: '', updatedAt: '', _count: { products: 0 } } as Collection)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Collection
+          </Button>
+        </div>
+      </div>
+
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Collections", value: collections.length, icon: Layers, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Active Drops", value: collections.filter(c => c.isActive).length, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Featured Frontpage", value: collections.filter(c => c.isFeatured).length, icon: Sparkles, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Spring/Summer", value: collections.filter(c => c.season === "SPRING" || c.season === "SUMMER").length, icon: Sun, color: "text-blue-600", bg: "bg-blue-50" },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <CollectionSheet
         onCollectionAdded={handleCollectionAdded}
         collectionToEdit={editingCollection || undefined}
@@ -339,7 +384,7 @@ export function CollectionsTable() {
           setEditingCollection(null);
         }}
       />
-      <div className="flex flex-col gap-4 py-4">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
         <Input
           placeholder="Filter collections..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}

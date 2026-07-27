@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -103,12 +103,22 @@ export function ChatDrawer({
     }
   }, [isOpen, professionalId, currentUserId]);
 
+  const { mutate: globalMutate } = useSWRConfig();
+
   useEffect(() => {
     // Only run if open and not already initialized / currently loading
     if (isOpen && !conversation && !convLoading && currentUserId) {
       initConversation();
     }
-  }, [isOpen, conversation, convLoading, currentUserId, initConversation]);
+    if (isOpen && currentUserId) {
+      // Mark unread messages & message notifications as read in DB & sync Notification Bell
+      fetch('/api/conversations', { method: 'PATCH' })
+        .then(() => {
+          globalMutate((key) => typeof key === 'string' && key.startsWith('/api/notifications'), undefined, { revalidate: true });
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, conversation, convLoading, currentUserId, initConversation, globalMutate]);
 
   // 2. Fetch Messages (Poll every 5s)
   const { data: messages, error: messagesError, mutate } = useSWR<Message[]>(
@@ -234,6 +244,15 @@ export function ChatDrawer({
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAFAF9]/50 custom-scrollbar"
         >
+          {currentUserId && professionalId && currentUserId === professionalId ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                  <MessageSquare size={36} className="text-slate-300" />
+                  <p className="text-sm font-semibold text-slate-700">Your Own Account</p>
+                  <p className="text-xs text-slate-500">You cannot start a conversation with yourself.</p>
+                  <Button variant="outline" size="sm" onClick={onClose} className="mt-2 rounded-full">Close Chat</Button>
+              </div>
+          ) : (
+             <>
           {convError && (
               <div className="h-full flex flex-col items-center justify-center text-center p-8">
                   <p className="text-sm text-red-500 font-medium">Failed to load chat</p>
@@ -337,9 +356,12 @@ export function ChatDrawer({
                })}
             </div>
           ) : null}
+          </>
+          )}
         </div>
 
         {/* Footer / Input */}
+        {!(currentUserId && professionalId && currentUserId === professionalId) && (
         <div className="p-4 border-t border-stone-100 bg-white">
           <form 
             onSubmit={handleSendMessage}
@@ -370,6 +392,7 @@ export function ChatDrawer({
             Typically replies in <span className="text-stone-900 font-bold">2 hours</span>
           </p>
         </div>
+        )}
       </SheetContent>
     </Sheet>
   );

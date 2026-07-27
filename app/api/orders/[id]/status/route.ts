@@ -1,108 +1,134 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { requireAuth } from "@/lib/auth"
-import { mapErrorToResponse } from "@/lib/api-utils"
-import { sendDeliveryUpdateEmail, sendStatusUpdateEmail } from "@/lib/mail"
-import { NotificationType, OrderStatus } from "@prisma/client"
-import { cancelAndRefundOrder } from "@/lib/orders"
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
+import { mapErrorToResponse } from "@/lib/api-utils";
+import { OrderStatus } from "@prisma/client";
+import { cancelAndRefundOrder } from "@/lib/orders";
+import { dispatchOrderCommunicationEvent, OrderCommunicationEvent } from "@/lib/notification-dispatcher";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth()
-    const { id: orderId } = await params
-    const { status, deliveryMethod, trackingNumber, notes, sellerDeliveryFee } = await request.json()
+    const user = await requireAuth();
+    const { id: orderId } = await params;
+    const body = await request.json().catch(() => ({}));
+
+    const { 
+      status, 
+      deliveryMethod, 
+      trackingNumber, 
+      notes, 
+      sellerDeliveryFee,
+      riderName,
+      riderPhone,
+      cancellationReason
+    } = body;
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
         items: true,
-        customer: { select: { id: true, email: true } }
-      }
-
-    })
+        customer: { select: { id: true, email: true } },
+      },
+    });
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+
+    // Resolve Professional Profile ID for current user
+    const sellerProfile = await prisma.professionalProfile.findUnique({
+      where: { userId: user.id },
+      select: { id: true }
+    });
+    const sellerProfId = sellerProfile?.id;
 
     // Authorization & Targeting Logic
-    const isCustomer = order.customerId === user.id
-    const isProfessional = order.items.some((item) => item.professionalId === user.id)
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role)
+    const isCustomer = order.customerId === user.id;
+    const isProfessional = order.items.some(
+      (item) => item.professionalId === user.id || (sellerProfId && item.professionalId === sellerProfId)
+    );
+    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
 
     if (!isCustomer && !isProfessional && !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Status mapping for notifications
-    const statusMessages: Record<string, { title: string; message: string; type: NotificationType }> = {
-      PENDING: { title: 'Order Pending', message: 'Your order is pending confirmation.', type: 'ORDER_UPDATE' },
-      CONFIRMED: { title: 'Order Confirmed!', message: 'Great news! Your order has been confirmed and is being prepared.', type: 'ORDER_UPDATE' },
-      PROCESSING: { title: 'Order Processing', message: 'Your order is being processed and will ship soon.', type: 'ORDER_UPDATE' },
-      SHIPPED: { title: 'Order Shipped!', message: `Your package from a seller is on its way!${trackingNumber ? ` Tracking: ${trackingNumber}` : ''}`, type: 'SHIPPING_UPDATE' },
-      DELIVERED: { title: 'Order Delivered!', message: 'Your order has been delivered. Please confirm receipt to release funds.', type: 'DELIVERY_ARRIVAL' },
-      CANCELLED: { title: 'Order Cancelled', message: 'Your order has been cancelled.', type: 'ORDER_UPDATE' },
-      READY_FOR_DELIVERY: { title: 'Ready for Delivery', message: 'Your package is ready for delivery. Delivery fee may apply.', type: 'ORDER_UPDATE' },
-      READY_FOR_PICKUP: { title: 'Ready for Pickup', message: 'Your order is ready for pickup at the seller location.', type: 'ORDER_UPDATE' },
+    // ANTI-FRAUD GUARD:
+    // For in-store pickup orders, sellers cannot mark status as DELIVERED by themselves.
+    // Only the customer (or system admin) can confirm collection to release escrow.
+    const isPickup = order.deliveryMethod?.toUpperCase() === "PICKUP";
+    if (isPickup && status === "DELIVERED" && isProfessional && !isAdmin && !isCustomer) {
+      return NextResponse.json(
+        { 
+          error: "To prevent fraud, only the customer can confirm in-store collection on their device to release escrow funds." 
+        }, 
+        { status: 403 }
+      );
     }
 
+    // Atomic Transactional Update
     const updatedOrder = await prisma.$transaction(async (tx) => {
       // 1. Update individual OrderItems for the professional
-      if (isProfessional) {
+      if (isProfessional && sellerProfId) {
         await tx.orderItem.updateMany({
           where: { 
             orderId, 
-            professionalId: user.id 
+            professionalId: { in: [sellerProfId, user.id] }
           },
           data: { 
             status,
             ...(sellerDeliveryFee !== undefined && { deliveryFee: sellerDeliveryFee })
           }
-        })
+        });
 
-        // 2. Upsert DeliveryConfirmation with tracking number (if provided)
-        if (trackingNumber !== undefined) {
+        // 2. Upsert DeliveryConfirmation with tracking/rider info
+        if (trackingNumber !== undefined || riderName !== undefined) {
           await tx.deliveryConfirmation.upsert({
             where: {
               orderId_professionalId: {
                 orderId,
-                professionalId: user.id
+                professionalId: sellerProfId
               }
             },
             create: {
               orderId,
-              professionalId: user.id,
+              professionalId: sellerProfId,
               customerId: order.customerId,
-              trackingNumber,
+              trackingNumber: trackingNumber || `TRK-${Date.now().toString().slice(-6)}`,
+              riderName,
+              riderPhone,
               status: status === 'DELIVERED' ? 'CONFIRMED' : 'PENDING',
-              confirmationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 48h fallback
+              confirmationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
             },
             update: {
-              trackingNumber
+              trackingNumber: trackingNumber || undefined,
+              riderName: riderName || undefined,
+              riderPhone: riderPhone || undefined,
+              status: status === 'DELIVERED' ? 'CONFIRMED' : undefined,
             }
-          })
+          });
         }
       }
 
       // 3. Determine global Order status
-      let globalStatus = status
+      let globalStatus = status;
       if (isProfessional) {
-        const allItems = await tx.orderItem.findMany({ where: { orderId } })
-        const statuses = allItems.map(i => i.status)
-        if (statuses.every(s => s === 'DELIVERED')) globalStatus = 'DELIVERED'
-        else if (statuses.some(s => s === 'SHIPPED')) globalStatus = 'SHIPPED'
-        else if (statuses.some(s => s === 'PROCESSING')) globalStatus = 'PROCESSING'
-        else globalStatus = order.status
+        const allItems = await tx.orderItem.findMany({ where: { orderId } });
+        const statuses = allItems.map(i => i.status);
+        if (statuses.every(s => (s as string) === 'DELIVERED')) globalStatus = 'DELIVERED';
+        else if (statuses.some(s => (s as string) === 'SHIPPED' || (s as string) === 'DISPATCHED')) globalStatus = 'SHIPPED';
+        else if (statuses.some(s => (s as string) === 'READY_FOR_PICKUP' || (s as string) === 'PACKED')) globalStatus = 'READY_FOR_PICKUP';
+        else if (statuses.some(s => (s as string) === 'PROCESSING')) globalStatus = 'PROCESSING';
+        else globalStatus = order.status;
       }
 
       // 4. Handle Refund if cancelling a paid order
       if (status === 'CANCELLED' && order.paymentStatus === 'PAID') {
-        // Sellers/Admins can always trigger refund on cancellation
         if (isProfessional || isAdmin) {
-          return await cancelAndRefundOrder(orderId, { bypassWindow: true })
+          return await cancelAndRefundOrder(orderId, { bypassWindow: true });
         }
       }
 
@@ -112,62 +138,45 @@ export async function PUT(
           status: globalStatus as OrderStatus,
           ...(deliveryMethod && { deliveryMethod }),
           ...(notes !== undefined && { notes }),
+          ...(riderName && { riderName }),
+          ...(riderPhone && { riderPhone }),
+          ...(trackingNumber && { trackingNumber }),
         },
         include: {
           customer: { select: { id: true, email: true } }
         }
-      })
-    })
+      });
+    });
 
-    // Send notification to customer
-    const notificationContent = statusMessages[status]
-    if (notificationContent && order.customerId) {
-        await prisma.notification.create({
-          data: {
-            userId: order.customerId,
-            type: notificationContent.type,
-            title: notificationContent.title,
-            message: `Order #${orderId.slice(-8).toUpperCase()}: ${notificationContent.message}`,
-            data: JSON.stringify({ orderId, status, trackingNumber, professionalId: user.id }),
-          },
-        })
+    // 5. Map status to Communication Event & Trigger Dispatcher
+    let targetEvent: OrderCommunicationEvent | null = null;
+
+    if (status === "READY_FOR_PICKUP" || status === "PACKED") {
+      targetEvent = "ORDER_PACKED";
+    } else if (status === "SHIPPED" || status === "DISPATCHED" || status === "ON_THE_WAY") {
+      targetEvent = "ORDER_DISPATCHED";
+    } else if (status === "DELIVERED" || status === "COMPLETED") {
+      targetEvent = "ORDER_DELIVERED";
+    } else if (status === "CANCELLED") {
+      targetEvent = "ORDER_CANCELLED";
     }
 
-    // Send email to customer on key status changes
-    if (status && order.customer?.email) {
-      try {
-        if (status === 'SHIPPED') {
-          const fullOrder = await prisma.order.findUnique({
-            where: { id: orderId },
-            include: { items: { include: { product: { select: { name: true } } } } }
-          })
-          await sendDeliveryUpdateEmail({
-            to: order.customer.email,
-            orderId,
-            trackingNumber: trackingNumber || undefined,
-            items: fullOrder?.items.map((i) => ({ name: i.product.name, quantity: i.quantity })),
-          })
-        } else if (['DELIVERED', 'CANCELLED', 'PROCESSING', 'READY_FOR_PICKUP'].includes(status)) {
-          const notifContent = statusMessages[status]
-          if (notifContent) {
-            await sendStatusUpdateEmail({
-              to: order.customer.email,
-              orderId,
-              status,
-              message: `Order #${orderId.slice(-8).toUpperCase()}: ${notifContent.message}`,
-            })
-          }
-        }
-      } catch (emailErr) {
-        console.error('Failed to send status email:', emailErr)
-      }
+    if (targetEvent) {
+      await dispatchOrderCommunicationEvent({
+        orderId,
+        event: targetEvent,
+        actorId: user.id,
+        riderName,
+        riderPhone,
+        trackingNumber,
+        cancellationReason,
+      });
     }
 
-
-    return NextResponse.json({ success: true, order: updatedOrder })
+    return NextResponse.json({ success: true, order: updatedOrder });
 
   } catch (error) {
-    const { status, message } = mapErrorToResponse(error, { route: 'order-status' })
-    return NextResponse.json({ error: message }, { status })
+    const { status, message } = mapErrorToResponse(error, { route: 'order-status' });
+    return NextResponse.json({ error: message }, { status });
   }
 }

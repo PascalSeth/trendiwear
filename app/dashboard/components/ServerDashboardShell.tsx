@@ -52,7 +52,7 @@ const ServerDashboardShell = async ({ children }: ServerDashboardShellProps) => 
     const adminOnlyPaths = [
       '/dashboard/customers',
       '/dashboard/professionals',
-      '/dashboard/trends',
+      '/dashboard/trends/events',
       '/dashboard/catalogue/category',
       '/dashboard/catalogue/collections'
     ];

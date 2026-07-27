@@ -3,7 +3,7 @@ import OrdersDataTable from './Datatable'
 
 function OrdersPage() {
   return (
-    <div className="w-full max-w-7xl mx-auto py-8 px-4 md:px-6 lg:px-8">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
       <OrdersDataTable />
     </div>
   )

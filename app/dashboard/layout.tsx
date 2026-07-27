@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth-config';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: "TrendiWear Dashboard",
+  title: "TrendiZip Dashboard",
   description: "Manage your fashion business",
 };
 

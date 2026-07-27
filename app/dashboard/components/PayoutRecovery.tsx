@@ -4,64 +4,49 @@ import React, { useState, useEffect } from 'react'
 import {
   RefreshCw,
   CheckCircle2,
-  ExternalLink,
   ShieldCheck,
   AlertTriangle,
   Loader2,
   Banknote,
-  History
+  RotateCcw
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
-interface EscrowRecord {
+interface PayoutRequestRecord {
   id: string
   amount: number
+  accountNumber: string
+  accountName: string
+  provider: string
   status: string
   failureReason: string | null
-  lastAttemptAt: string | null
   createdAt: string
-  orderId: string | null
-  bookingId: string | null
   professional: {
-    professionalProfile: {
-      businessName: string
+    businessName: string
+    user?: {
+      email: string
+      name?: string
     }
   }
 }
 
 export default function PayoutRecovery() {
-  const [records, setRecords] = useState<EscrowRecord[]>([])
+  const [records, setRecords] = useState<PayoutRequestRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [retryingIds, setRetryingIds] = useState<string[]>([])
-  const [availableBalance, setAvailableBalance] = useState<number | null>(null)
-  const [, setError] = useState<string | null>(null)
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
   const fetchFailedPayouts = async () => {
     try {
       setLoading(true)
-      const [payoutsRes, balanceRes] = await Promise.all([
-        fetch('/api/admin/payouts?status=HELD'),
-        fetch('/api/admin/payouts/balance')
-      ])
-
-      const pData = await payoutsRes.json()
-      // Sort by failure reason then date
-      /* eslint-disable @typescript-eslint/no-explicit-any */
-      const sorted = (pData.escrows || []).sort((a: any, b: any) => {
-        if (a.failureReason && !b.failureReason) return -1
-        if (!a.failureReason && b.failureReason) return 1
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      })
-      setRecords(sorted)
-
-      if (balanceRes.ok) {
-        const bData = await balanceRes.json()
-        const ghsBalance = bData.data?.find((b: any) => b.currency === 'GHS')?.balance || 0
-        setAvailableBalance(ghsBalance / 100) // Convert from pesewas
+      const res = await fetch('/api/admin/payouts/retry')
+      const data = await res.json()
+      if (res.ok) {
+        setRecords(data.payouts || [])
       }
-    } catch (err: any) {
-      setError((err as Error).message)
+    } catch (err: unknown) {
+      console.error('Failed fetching stuck payouts:', err)
     } finally {
       setLoading(false)
     }
@@ -71,189 +56,142 @@ export default function PayoutRecovery() {
     fetchFailedPayouts()
   }, [])
 
-  const handleRetry = async (escrowId: string, manual: boolean = false) => {
-    if (retryingIds.includes(escrowId)) return
-    
-    setRetryingIds(prev => [...prev, escrowId])
+  const handleAdminAction = async (payoutId: string, action: 'MARK_PAID' | 'REFUND_WALLET') => {
+    setActionLoadingId(payoutId)
     try {
       const response = await fetch('/api/admin/payouts/retry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ escrowId, manual })
+        body: JSON.stringify({ payoutId, action })
       })
-      
+
       const result = await response.json()
-      
+
       if (response.ok) {
-        // Remove from list or update
-        setRecords(prev => prev.filter(r => r.id !== escrowId))
+        toast.success(result.message || 'Action completed successfully!')
+        setRecords(prev => prev.filter(r => r.id !== payoutId))
       } else {
-        alert(result.error || 'Retry failed')
-        // Refresh to show latest failure reason
-        await fetchFailedPayouts()
+        toast.error(result.error || 'Action failed')
       }
-    } catch {
-      alert('Network error during retry')
+    } catch (err: unknown) {
+      const errObj = err as { message?: string }
+      toast.error(errObj.message || 'Error processing request')
     } finally {
-      setRetryingIds(prev => prev.filter(id => id !== escrowId))
+      setActionLoadingId(null)
     }
   }
 
-  if (loading && records.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-4">
-        <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
-        <p className="text-slate-500 font-medium">Scanning for stuck payouts...</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Info */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10">
-          <Banknote size={120} />
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-               <div className="p-2 bg-violet-500/20 rounded-xl backdrop-blur-md">
-                  <ShieldCheck className="w-6 h-6 text-violet-400" />
-               </div>
-               <h2 className="text-2xl font-black tracking-tight">Payout Recovery Center</h2>
-            </div>
-            <p className="text-slate-300 max-w-xl font-medium">
-              Monitor and resolve payouts that failed due to insufficient Paystack balance or gateway errors.
+    <div className="space-y-6">
+      
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-200">
+            <Banknote className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Admin Payout Recovery Engine</h2>
+            <p className="text-xs font-medium text-slate-500">
+              Monitor and resolve merchant payouts that failed due to gateway delays or network glitches.
             </p>
           </div>
-
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2rem] p-6 min-w-[240px] space-y-2">
-             <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-violet-300">Available Balance</span>
-                <a 
-                  href="https://dashboard.paystack.com/#/transfers" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[10px] font-black uppercase text-violet-400 hover:text-white transition-colors flex items-center gap-1"
-                >
-                  Top Up <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-             </div>
-             <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black tabular-nums">
-                  {availableBalance !== null ? `GHS ${availableBalance.toFixed(2)}` : '---'}
-                </span>
-             </div>
-             <p className="text-[10px] text-slate-400 font-medium">
-               Settled funds available for transfers.
-             </p>
-          </div>
         </div>
+
+        <button
+          onClick={fetchFailedPayouts}
+          disabled={loading}
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-all"
+        >
+          <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} /> Refresh Queue
+        </button>
       </div>
 
-      {records.length === 0 ? (
-        <div className="bg-white rounded-[2rem] p-16 border border-slate-100 flex flex-col items-center justify-center text-center space-y-4 shadow-xl shadow-slate-200/40">
-           <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-10 h-10" />
-           </div>
-           <div>
-              <h3 className="text-xl font-black text-slate-900">All Clear!</h3>
-              <p className="text-slate-500">There are no stuck payouts requiring attention at this time.</p>
-           </div>
-           <button 
-            onClick={fetchFailedPayouts}
-            className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
-           >
-             Refresh
-           </button>
+      {/* PAYOUT QUEUE TABLE */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+          <p className="text-xs font-bold text-slate-500">Scanning for stuck payouts...</p>
+        </div>
+      ) : records.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-3">
+          <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto" />
+          <h3 className="text-base font-black text-slate-900">All Payouts Operational</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            There are no stuck or failed payout requests requiring admin intervention at this time. All automated Mobile Money transfers are running smoothly.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {records.map((record) => (
-            <div 
-              key={record.id}
-              className={cn(
-                "group bg-white border rounded-[2rem] p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-slate-200/60",
-                record.failureReason ? "border-amber-100 hover:border-amber-200" : "border-slate-100"
-              )}
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                
-                {/* Professional Info */}
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform">
-                    <History className="w-6 h-6" />
-                  </div>
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-4 bg-slate-50 border-b border-slate-200/60 flex items-center justify-between">
+            <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Pending Admin Recovery ({records.length})
+            </span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {records.map((item) => {
+              const isLoading = actionLoadingId === item.id;
+              return (
+                <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                       <h3 className="font-black text-slate-900 text-lg">
-                        {record.professional.professionalProfile.businessName}
-                       </h3>
-                       <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-                         {record.orderId ? 'Order Payout' : 'Booking Payout'}
-                       </span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {item.professional.businessName}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700">
+                        {item.provider} ({item.accountNumber})
+                      </span>
                     </div>
-                    <p className="text-slate-400 text-sm font-medium flex items-center gap-2">
-                       ID: <span className="text-slate-700 select-all">#{record.id.slice(-8).toUpperCase()}</span>
-                       <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-                       Created: {format(new Date(record.createdAt), 'MMM dd, p')}
+
+                    <p className="text-xs font-black text-indigo-600">
+                      Amount: GH₵ {item.amount.toFixed(2)}
+                    </p>
+
+                    {item.failureReason && (
+                      <p className="text-[11px] text-rose-600 font-medium bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
+                        Reason: {item.failureReason}
+                      </p>
+                    )}
+
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Requested: {format(new Date(item.createdAt), 'PPP p')}
                     </p>
                   </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleAdminAction(item.id, 'MARK_PAID')}
+                      disabled={isLoading}
+                      className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center gap-1.5"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Mark Paid Manually
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleAdminAction(item.id, 'REFUND_WALLET')}
+                      disabled={isLoading}
+                      className="py-2 px-3 bg-slate-100 hover:bg-slate-200 disabled:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-500" /> Refund to Wallet
+                    </button>
+                  </div>
+
                 </div>
-
-                {/* Amount & Failure Info */}
-                <div className="flex-1 lg:max-w-xs space-y-2">
-                   <div className="flex items-baseline gap-2">
-                      <span className="text-sm font-bold text-slate-400">Total:</span>
-                      <span className="text-2xl font-black text-slate-900">GHS {record.amount.toFixed(2)}</span>
-                   </div>
-                   {record.failureReason && (
-                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span className="text-xs font-black uppercase tracking-tight">{record.failureReason}</span>
-                     </div>
-                   )}
-                   {record.lastAttemptAt && (
-                      <p className="text-[10px] text-slate-400 font-bold uppercase italic">
-                        Last Retry: {format(new Date(record.lastAttemptAt), 'MMM dd, HH:mm')}
-                      </p>
-                   )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-3">
-                   <button
-                    onClick={() => handleRetry(record.id)}
-                    disabled={retryingIds.includes(record.id)}
-                    className="flex-1 lg:flex-none h-12 px-6 bg-slate-900 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-violet-600 transition-all hover:shadow-xl hover:shadow-violet-200/50 disabled:opacity-50"
-                   >
-                     {retryingIds.includes(record.id) ? (
-                       <Loader2 className="w-4 h-4 animate-spin" />
-                     ) : (
-                       <RefreshCw className="w-4 h-4" />
-                     )}
-                     Retry Payout
-                   </button>
-
-                   <button 
-                    onClick={() => {
-                        if(confirm('This will mark the payout as completed manually. Are you sure?')) {
-                            handleRetry(record.id, true)
-                        }
-                    }}
-                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-emerald-50 hover:text-emerald-500 border border-slate-100 transition-all group/btn shadow-sm"
-                    title="Mark as Manually Paid"
-                   >
-                      <CheckCircle2 className="w-5 h-5" />
-                   </button>
-                </div>
-
-              </div>
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
+
     </div>
   )
 }

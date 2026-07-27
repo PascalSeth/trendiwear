@@ -16,11 +16,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const displayName = `${user.firstName} ${user.lastName}`
   
   return {
-    title: `${displayName} | TrendiWear`,
-    description: `${displayName}'s profile on TrendiWear`,
+    title: `${displayName} | TrendiZip`,
+    description: `${displayName}'s profile on TrendiZip`,
     openGraph: {
       title: displayName,
-      description: `${displayName}'s profile on TrendiWear`,
+      description: `${displayName}'s profile on TrendiZip`,
       images: user.profileImage ? [user.profileImage] : [],
     },
   }

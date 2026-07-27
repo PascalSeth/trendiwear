@@ -51,7 +51,7 @@ export async function POST(
         type: 'SYSTEM_UPDATE',
         title: updatedProfile.isVerified ? '🎉 Account Verified!' : 'Verification Status Updated',
         message: updatedProfile.isVerified
-          ? 'Congratulations! Your business has been verified by TrendiWear. You now have a verified badge on your profile and products.'
+          ? 'Congratulations! Your business has been verified by TrendiZip. You now have a verified badge on your profile and products.'
           : 'Your verification status has been updated. Please contact support if you have questions.',
         data: JSON.stringify({
           profileId: id,

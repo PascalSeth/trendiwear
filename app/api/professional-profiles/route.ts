@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
         ...(limit && { take: parseInt(limit) }),
       })
-      console.log("Fetched professional profiles for admin:", profiles)
+      // console.log("Fetched professional profiles for admin:", profiles)
       return NextResponse.json(profiles)
     }
 
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
         portfolioCollections: true,
       },
     })
-    console.log("Fetched professional profile:", profile)
+//    console.log("Fetched professional profile:", profile)
     if (!profile) {
       return NextResponse.json({ error: "Professional profile not found" }, { status: 404 })
     }
@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
         account_number: formattedPhone,
         bank_code: mappedProvider,
         currency: "GHS",
-        description: `TrendiWear payout recipient for ${freshProfile.businessName}`,
+        description: `TrendiZip payout recipient for ${freshProfile.businessName}`,
         metadata: {
           professionalId: freshProfile.id,
           userId: user.id,

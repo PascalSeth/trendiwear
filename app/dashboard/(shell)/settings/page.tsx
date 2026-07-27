@@ -4,14 +4,13 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SystemSetting } from '@prisma/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Save, Settings, User, Lock, ShieldCheck } from 'lucide-react'
+import { Save, Settings, User, Lock, ShieldCheck, Wallet, Store, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSearchParams } from 'next/navigation'
 import { PaymentSetupForm } from '@/components/ui/payment-setup-form'
@@ -40,6 +39,7 @@ export default function DashboardSettingsPage() {
   const [profileSummary, setProfileSummary] = useState<UserProfileSummary | null>(null)
   const [superAdminRequireSubscription, setSuperAdminRequireSubscription] = useState(false)
   const [savingSubscription, setSavingSubscription] = useState(false)
+  const [, setLoadingProfile] = useState(true)
 
   useEffect(() => {
     fetchAll()
@@ -62,7 +62,6 @@ export default function DashboardSettingsPage() {
         const form: Record<string, string> = {};
         (sys.settings || []).forEach((s: SystemSetting) => {
           form[s.key] = s.value
-          // Load the super admin subscription requirement setting
           if (s.key === 'superAdminRequireSubscription') {
             setSuperAdminRequireSubscription(s.value === 'true')
           }
@@ -72,7 +71,7 @@ export default function DashboardSettingsPage() {
     } catch {
       toast.error('Failed to load dashboard settings')
     } finally {
-      // Loading complete
+      setLoadingProfile(false)
     }
   }
 
@@ -85,27 +84,23 @@ export default function DashboardSettingsPage() {
         body: JSON.stringify({ key, value: settingsForm[key] }),
       })
       if (!res.ok) throw new Error('failed')
-      toast.success('Updated')
+      toast.success('System setting updated successfully')
       fetchAll()
     } catch {
-      toast.error('Failed to update setting')
+      toast.error('Failed to update system setting')
     } finally {
       setSavingKey(null)
     }
   }
 
   const handleShopStatusToggle = async (value: boolean) => {
-    if (!profileSummary?.professionalProfile) return
+    if (!profileSummary?.professionalProfile?.id) return
     
     try {
-      const res = await fetch('/api/professional-profiles', {
-        method: 'POST',
+      const res = await fetch(`/api/professional-profiles/${profileSummary.professionalProfile.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          isActive: value,
-          businessName: profileSummary.professionalProfile.businessName, // Required by the API
-          specializationId: 'existing', // Hacky but needed if not careful, actually the API should handle updates better
-        }),
+        body: JSON.stringify({ isActive: value }),
       })
       
       if (res.ok) {
@@ -116,12 +111,12 @@ export default function DashboardSettingsPage() {
             isActive: value
           }
         })
-        toast.success(value ? 'Shop is now visible' : 'Shop is now hidden')
+        toast.success(value ? 'Shop is now visible to customers' : 'Shop is now hidden from public search')
       } else {
-        throw new Error('Failed')
+        throw new Error('Failed to update status')
       }
     } catch {
-      toast.error('Failed to update shop status')
+      toast.error('Failed to update shop visibility status')
     }
   }
 
@@ -140,9 +135,9 @@ export default function DashboardSettingsPage() {
       })
       if (!res.ok) throw new Error('failed')
       setSuperAdminRequireSubscription(value)
-      toast.success(value ? 'Super admins now require subscription' : 'Super admins no longer require subscription')
+      toast.success(value ? 'Super admins now require an active subscription' : 'Super admins exempt from subscription')
     } catch {
-      toast.error('Failed to update subscription requirement')
+      toast.error('Failed to update subscription policy')
     } finally {
       setSavingSubscription(false)
     }
@@ -155,165 +150,230 @@ export default function DashboardSettingsPage() {
   }, {})
 
   return (
-    <div className="space-y-6 pt-20">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-4 sm:p-6 font-sans">
+      
+      {/* EXECUTIVE HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Settings</h1>
-          <p className="text-muted-foreground">Account and platform settings for the dashboard</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Merchant Settings &amp; Configuration</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Dashboard Settings
+          </h1>
+          <p className="text-xs font-medium text-slate-500 mt-1">
+            Manage your merchant account profile, shop visibility, payouts setup, document verification, and platform parameters.
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/settings">
-            <Button variant="outline">Open Account Settings</Button>
+
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/settings"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200/80 transition-all flex items-center gap-2"
+          >
+            <User className="h-4 w-4 text-indigo-600" /> Account Profile
           </Link>
         </div>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="account" className="flex items-center gap-2"><User className="h-4 w-4"/>Account</TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2"><Settings className="h-4 w-4"/>Platform</TabsTrigger>
+      {/* NAVIGATION TABS */}
+      <Tabs defaultValue={defaultTab} className="space-y-6">
+        <TabsList className="bg-white p-1 rounded-2xl border border-slate-200/80 shadow-xs inline-flex flex-wrap gap-1">
+          <TabsTrigger value="account" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+            <User className="h-3.5 w-3.5" /> Account Profile
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+            <Wallet className="h-3.5 w-3.5" /> Payouts &amp; MoMo
+          </TabsTrigger>
+          <TabsTrigger value="verification" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+            <ShieldCheck className="h-3.5 w-3.5" /> Verification Center
+          </TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+            <Settings className="h-3.5 w-3.5" /> Platform Settings
+          </TabsTrigger>
           {profileSummary?.role === 'SUPER_ADMIN' && (
-            <TabsTrigger value="subscription" className="flex items-center gap-2"><Lock className="h-4 w-4"/>Subscriptions</TabsTrigger>
+            <TabsTrigger value="subscription" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 font-bold text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+              <Lock className="h-3.5 w-3.5" /> Subscriptions Policy
+            </TabsTrigger>
           )}
-          {/* Payments tab mirrors /settings payments (MoMo setup) */}
-          <TabsTrigger value="payments" className="flex items-center gap-2"><User className="h-4 w-4"/>Payments</TabsTrigger>
-          <TabsTrigger value="verification" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4"/>Verification</TabsTrigger>
         </TabsList>
 
+        {/* TAB 1: ACCOUNT PROFILE & SHOP VISIBILITY */}
         <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {profileSummary ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="font-medium text-lg">{profileSummary.firstName} {profileSummary.lastName}</div>
-                    <div className="text-sm text-muted-foreground">{profileSummary.email}</div>
-                    <Badge variant="outline" className="mt-1">{profileSummary.role}</Badge>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 tracking-tight">Merchant Account Summary</h2>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Overview of your registered business profile and shop state.</p>
+              </div>
+              <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs px-3 py-1">
+                {profileSummary?.role || 'PROFESSIONAL'}
+              </Badge>
+            </div>
+
+            {profileSummary ? (
+              <div className="space-y-6">
+                
+                {/* User Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Merchant Name</span>
+                    <span className="text-sm font-bold text-slate-900">{profileSummary.firstName} {profileSummary.lastName}</span>
                   </div>
-
-                  {profileSummary.professionalProfile && (
-                    <div className="pt-4 border-t space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Shop Visibility</Label>
-                          <p className="text-sm text-muted-foreground">
-                            When disabled, your products and profile will be hidden from the public shop.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={profileSummary.professionalProfile.isActive}
-                          onCheckedChange={handleShopStatusToggle}
-                        />
-                      </div>
-                      <div className={`text-sm px-3 py-2 rounded-md ${profileSummary.professionalProfile.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                        Your shop is currently <strong>{profileSummary.professionalProfile.isActive ? 'Open' : 'Closed'}</strong> to customers.
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-4 border-t">
-                    <Link href="/settings">
-                      <Button variant="outline">Manage Detailed Account Info</Button>
-                    </Link>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Account Email</span>
+                    <span className="text-sm font-bold text-slate-900 truncate block">{profileSummary.email}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Business Name</span>
+                    <span className="text-sm font-bold text-slate-900">{profileSummary.professionalProfile?.businessName || 'Independent Vendor'}</span>
                   </div>
                 </div>
-              ) : (
-                <div>No profile loaded</div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="system">
-          {Object.entries(settingsByCategory).length === 0 && (
-            <Card>
-              <CardContent className="py-8 text-center">No platform settings available</CardContent>
-            </Card>
-          )}
-
-          {Object.entries(settingsByCategory).map(([cat, items]) => (
-            <Card key={cat}>
-              <CardHeader>
-                <CardTitle className="capitalize">{cat} Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {items.map((s) => (
-                  <div key={s.key} className="space-y-2">
+                {/* Shop Visibility Switch */}
+                {profileSummary.professionalProfile && (
+                  <div className="p-5 bg-white rounded-xl border border-slate-200/80 space-y-4 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <Label className="font-medium">{s.key}</Label>
-                      <div className="text-xs text-muted-foreground">{s.updatedAt ? new Date(s.updatedAt).toLocaleString() : ''}</div>
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <Store className="w-4 h-4 text-indigo-600" /> Public Shop Visibility
+                        </Label>
+                        <p className="text-xs font-medium text-slate-500 max-w-lg">
+                          When switched off, your products, services, and profile will be hidden from customer search results and catalog drops.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profileSummary.professionalProfile.isActive}
+                        onCheckedChange={handleShopStatusToggle}
+                      />
                     </div>
-                    <div className="flex gap-2">
-                      {s.value.length > 120 ? (
-                        <Textarea value={settingsForm[s.key] || ''} onChange={(e) => setSettingsForm({ ...settingsForm, [s.key]: e.target.value })} className="flex-1" />
-                      ) : (
-                        <Input value={settingsForm[s.key] || ''} onChange={(e) => setSettingsForm({ ...settingsForm, [s.key]: e.target.value })} className="flex-1" />
-                      )}
-                      <Button size="sm" onClick={() => handleUpdate(s.key)} disabled={savingKey === s.key}>
-                        <Save className="h-4 w-4" />
-                      </Button>
+                    
+                    <div className={`text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 ${
+                      profileSummary.professionalProfile.isActive 
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    }`}>
+                      <CheckCircle2 className={`w-4 h-4 ${profileSummary.professionalProfile.isActive ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      <span>
+                        Your storefront is currently <strong>{profileSummary.professionalProfile.isActive ? 'ONLINE & VISIBLE' : 'OFFLINE / HIDDEN'}</strong> to marketplace shoppers.
+                      </span>
                     </div>
-                    {s.description && <div className="text-sm text-muted-foreground">{s.description}</div>}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
+                )}
+
+                <div className="pt-2 flex items-center justify-end">
+                  <Link href="/settings">
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2">
+                      Manage Detailed Profile Settings <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-400 font-medium text-xs">Loading profile summary...</div>
+            )}
+          </div>
         </TabsContent>
 
-        {/* Payments tab in dashboard - uses same PaymentSetupForm as main settings */}
+        {/* TAB 2: PAYMENTS & MOMO SETUP */}
         <TabsContent value="payments">
           <PaymentSetupForm />
         </TabsContent>
 
-        {/* Subscription settings - only for super admin */}
-        {profileSummary?.role === 'SUPER_ADMIN' && (
-          <TabsContent value="subscription">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription Requirements</CardTitle>
-                <CardDescription>Configure subscription settings for your platform</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="border rounded-lg p-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label className="text-base font-medium">Require Subscription for Super Admins</Label>
-                        <p className="text-sm text-muted-foreground">
-                          When disabled, super admins will have full access without subscription requirements
-                        </p>
-                      </div>
-                      <Switch
-                        checked={superAdminRequireSubscription}
-                        onCheckedChange={handleSuperAdminSubscriptionToggle}
-                        disabled={savingSubscription}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-1">Current Status:</p>
-                    <p>
-                      Super admins are currently <strong>{superAdminRequireSubscription ? 'required' : 'not required'}</strong> to have an active subscription to access dashboard features.
-                    </p>
-                  </div>
-
-                  {savingSubscription && (
-                    <div className="text-sm text-muted-foreground">Saving...</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
+        {/* TAB 3: VERIFICATION CENTER */}
         <TabsContent value="verification">
           <VerificationCenter />
         </TabsContent>
+
+        {/* TAB 4: PLATFORM SYSTEM SETTINGS */}
+        <TabsContent value="system" className="space-y-6">
+          {Object.entries(settingsByCategory).length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center text-slate-400 text-xs font-bold">
+              No custom platform parameters registered.
+            </div>
+          ) : (
+            Object.entries(settingsByCategory).map(([cat, items]) => (
+              <div key={cat} className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider capitalize">{cat} System Parameters</h3>
+                </div>
+                <div className="space-y-4">
+                  {items.map((s) => (
+                    <div key={s.key} className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-slate-900">{s.key}</Label>
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {s.updatedAt ? new Date(s.updatedAt).toLocaleDateString('en-GB') : ''}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {s.value.length > 120 ? (
+                          <Textarea 
+                            value={settingsForm[s.key] || ''} 
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [s.key]: e.target.value })} 
+                            className="flex-1 text-xs bg-white rounded-xl border-slate-200" 
+                          />
+                        ) : (
+                          <Input 
+                            value={settingsForm[s.key] || ''} 
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [s.key]: e.target.value })} 
+                            className="flex-1 text-xs bg-white rounded-xl border-slate-200" 
+                          />
+                        )}
+                        <Button 
+                          onClick={() => handleUpdate(s.key)} 
+                          disabled={savingKey === s.key}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 rounded-xl shadow-xs"
+                        >
+                          {savingKey === s.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {s.description && <p className="text-[11px] font-medium text-slate-500">{s.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </TabsContent>
+
+        {/* TAB 5: SUBSCRIPTIONS POLICY (SUPER ADMIN ONLY) */}
+        {profileSummary?.role === 'SUPER_ADMIN' && (
+          <TabsContent value="subscription">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Super Admin Membership Policy</h3>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Enforce or exempt super admins from active subscription checks.</p>
+              </div>
+
+              <div className="p-5 bg-slate-50 rounded-xl border border-slate-200/60 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-bold text-slate-900">Require Active Subscription for Super Admins</Label>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      When disabled, super admin accounts have full unrestricted access without subscription checks.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={superAdminRequireSubscription}
+                    onCheckedChange={handleSuperAdminSubscriptionToggle}
+                    disabled={savingSubscription}
+                  />
+                </div>
+
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-medium text-indigo-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>
+                    Super admins are currently <strong>{superAdminRequireSubscription ? 'REQUIRED' : 'EXEMPT'}</strong> from active plan checks.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        )}
+
       </Tabs>
     </div>
   )

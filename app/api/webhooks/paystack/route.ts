@@ -79,13 +79,16 @@ export async function POST(req: NextRequest) {
             }
           })
           
+          const depositAmount = booking.depositAmount ?? booking.totalPrice ?? toCedis(data.amount)
+
+          // Option 1 Wallet Escrow: Hold deposit in Escrow until booking completed
           await prisma.paymentEscrow.create({
             data: {
               bookingId: bookingId,
               professionalId: booking.professionalId,
-              amount: booking.depositAmount ?? booking.totalPrice ?? toCedis(data.amount),
-              status: booking.isQuoteBased ? 'RELEASED' : 'RELEASED', // Deposits go directly to tailor to buy fabric
-              releasedAt: new Date(),
+              amount: depositAmount,
+              status: 'HELD',
+              lastAttemptAt: new Date(),
             }
           })
         }
@@ -151,9 +154,15 @@ export async function POST(req: NextRequest) {
             data: { status: 'CONFIRMED' } // Allows seller to trigger local Delivery later
           })
           
+          const prof = await prisma.professionalProfile.findFirst({
+            where: { OR: [{ id: invoice.professionalId }, { userId: invoice.professionalId }] },
+            select: { userId: true }
+          })
+          const targetUserId = prof?.userId || invoice.professionalId
+
           await prisma.notification.create({
             data: {
-              userId: invoice.professionalId,
+              userId: targetUserId,
               type: 'ORDER_UPDATE',
               title: 'Shipping Invoice Paid',
               message: `The shipping invoice for Order #${orderId.slice(0, 8)} has been paid. You can now dispatch the item!`,

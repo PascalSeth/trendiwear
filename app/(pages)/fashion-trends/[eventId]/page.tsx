@@ -102,6 +102,14 @@ export default function EventDetailPage() {
   const openOutfitModal = (outfit: OutfitInspiration) => {
     setSelectedOutfit(outfit);
     setIsDialogOpen(true);
+    const rawOutfit = outfit as unknown as Record<string, unknown>;
+    if (rawOutfit.downloadLocation) {
+      fetch('/api/unsplash/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ downloadLocation: rawOutfit.downloadLocation }),
+      }).catch((err) => console.warn('Failed to track download:', err));
+    }
   };
 
   const closeOutfitModal = () => {
@@ -312,7 +320,9 @@ export default function EventDetailPage() {
                         <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all duration-1000 delay-200 transform translate-y-4 group-hover:translate-y-0">
                            <div className="h-px w-8 bg-white/30" />
                            <span className="text-[8px] font-mono text-white/70 uppercase tracking-[0.3em]">
-                             By {outfit.stylist.professionalProfile?.businessName || outfit.stylist.firstName}
+                             {outfit.stylist?.firstName?.startsWith('Photo by')
+                               ? `${outfit.stylist.firstName} ${outfit.stylist.lastName}`
+                               : `By ${outfit.stylist?.professionalProfile?.businessName || outfit.stylist?.firstName}`}
                            </span>
                         </div>
                       </div>
@@ -416,7 +426,11 @@ export default function EventDetailPage() {
                       <p className="text-xl font-serif text-stone-600 leading-relaxed italic">
                         &quot;{selectedOutfit.description || 'A highly curated silhouette designed for prestige and presence.'}&quot;
                       </p>
-                      <p className="text-[10px] font-mono text-stone-900 uppercase tracking-[0.3em]">Presented by: {selectedOutfit.stylist.professionalProfile?.businessName || 'Elite Stylist'}</p>
+                      <p className="text-[10px] font-mono text-stone-900 uppercase tracking-[0.3em]">
+                        {selectedOutfit.stylist?.firstName?.startsWith('Photo by')
+                          ? `${selectedOutfit.stylist.firstName} ${selectedOutfit.stylist.lastName}`
+                          : `Presented by: ${selectedOutfit.stylist?.professionalProfile?.businessName || selectedOutfit.stylist?.firstName || 'Elite Stylist'}`}
+                      </p>
                    </div>
 
                    {selectedOutfit.tags && selectedOutfit.tags.length > 0 && (
