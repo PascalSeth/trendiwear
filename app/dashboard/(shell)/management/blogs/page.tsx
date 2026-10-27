@@ -373,177 +373,171 @@ export default function BlogsManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 p-3 sm:p-5 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Official Blog</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Official Blog</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Create and manage TrendiZip official blog posts
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
+        <Button onClick={openCreateDialog} className="h-8 sm:h-9 text-xs font-semibold px-3 sm:px-3.5 rounded-lg flex items-center gap-1.5 self-start sm:self-auto">
+          <Plus className="h-3.5 w-3.5" />
           New Blog Post
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{blogs.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Published</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {blogs.filter(b => b.isPublished).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Drafts</CardTitle>
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {blogs.filter(b => !b.isPublished).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Featured</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">
-              {blogs.filter(b => b.isFeatured).length}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Total Posts</span>
+            <FileText className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-slate-900">{blogs.length}</div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Published</span>
+            <Eye className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-emerald-600">
+            {blogs.filter(b => b.isPublished).length}
+          </div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Drafts</span>
+            <EyeOff className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-amber-600">
+            {blogs.filter(b => !b.isPublished).length}
+          </div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Featured</span>
+            <Star className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-indigo-600">
+            {blogs.filter(b => b.isFeatured).length}
+          </div>
+        </div>
       </div>
 
       {/* Search and Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-3 sm:p-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <Input
                 placeholder="Search blogs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="h-8 sm:h-9 pl-8 text-xs rounded-lg border-slate-200"
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        </div>
+        <div>
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[300px]">Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="h-9 text-[10px] font-mono uppercase bg-slate-50/70 border-b border-slate-200">
+                  <TableHead className="w-[300px] text-[10px] py-2 px-3 sm:px-4">Title</TableHead>
+                  <TableHead className="text-[10px] py-2 px-3 sm:px-4">Category</TableHead>
+                  <TableHead className="text-[10px] py-2 px-3 sm:px-4">Status</TableHead>
+                  <TableHead className="text-[10px] py-2 px-3 sm:px-4">Views</TableHead>
+                  <TableHead className="text-[10px] py-2 px-3 sm:px-4">Created</TableHead>
+                  <TableHead className="text-right text-[10px] py-2 px-3 sm:px-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredBlogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-xs text-slate-400">
                       No blog posts found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredBlogs.map((blog) => (
-                    <TableRow key={blog.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
+                    <TableRow key={blog.id} className="text-xs hover:bg-slate-50/50">
+                      <TableCell className="py-2 sm:py-2.5 px-3 sm:px-4">
+                        <div className="flex items-center gap-2.5">
                           {blog.imageUrl ? (
                             <Image
                               src={blog.imageUrl}
                               alt={blog.title}
-                              width={40}
-                              height={40}
-                              className="w-10 h-10 rounded object-cover"
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 rounded-md object-cover border border-slate-200 shrink-0"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                              <ImageIcon className="h-4 w-4 text-gray-400" />
+                            <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0">
+                              <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
                             </div>
                           )}
-                          <div>
-                            <p className="font-medium line-clamp-1">{blog.title}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-1">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 line-clamp-1">{blog.title}</p>
+                            <p className="text-[10px] text-slate-400 line-clamp-1">
                               {blog.excerpt || 'No excerpt'}
                             </p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2 sm:py-2.5 px-3 sm:px-4">
                         {blog.category ? (
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
                             {BLOG_CATEGORIES.find(c => c.value === blog.category)?.label || blog.category}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                      <TableCell className="py-2 sm:py-2.5 px-3 sm:px-4">
+                        <div className="flex items-center gap-1.5">
                           {blog.isPublished ? (
-                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                            <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border border-emerald-200 text-[10px] px-1.5 py-0">
                               Published
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Draft</Badge>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Draft</Badge>
                           )}
                           {blog.isFeatured && (
-                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{blog.viewCount.toLocaleString()}</TableCell>
-                      <TableCell>{formatDate(blog.createdAt)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-2 sm:py-2.5 px-3 sm:px-4 font-mono text-[11px]">{blog.viewCount.toLocaleString()}</TableCell>
+                      <TableCell className="py-2 sm:py-2.5 px-3 sm:px-4 text-[11px] text-slate-500">{formatDate(blog.createdAt)}</TableCell>
+                      <TableCell className="text-right py-2 sm:py-2.5 px-3 sm:px-4">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-7 w-7"
                             onClick={() => togglePublish(blog)}
                             title={blog.isPublished ? 'Unpublish' : 'Publish'}
                           >
                             {blog.isPublished ? (
-                              <EyeOff className="h-4 w-4" />
+                              <EyeOff className="h-3.5 w-3.5" />
                             ) : (
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3.5 w-3.5" />
                             )}
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-7 w-7"
                             onClick={() => toggleFeatured(blog)}
                             title={blog.isFeatured ? 'Unfeature' : 'Feature'}
                           >
                             {blog.isFeatured ? (
-                              <StarOff className="h-4 w-4" />
+                              <StarOff className="h-3.5 w-3.5" />
                             ) : (
-                              <Star className="h-4 w-4" />
+                              <Star className="h-3.5 w-3.5" />
                             )}
                           </Button>
                           <Button
@@ -569,8 +563,8 @@ export default function BlogsManagement() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

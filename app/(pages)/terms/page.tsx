@@ -47,14 +47,14 @@ export default function TermsPage() {
       <section>
         <h2>5. Smart Discovery & Content</h2>
         <p>
-          Users may not use automated tools to scrape our curated &quot;Fashion Discovery&quot; data. This unique mapping of styles and trends is the proprietary intellectual technology of Trendizip. Replicating our discovery algorithms for external use is strictly prohibited.
+          Users may not use automated tools to scrape our &quot;Fashion Discovery&quot; style data. This unique mapping of styles and trends is the proprietary intellectual technology of Trendizip. Replicating our discovery algorithms for external use is strictly prohibited.
         </p>
       </section>
 
       <section>
         <h2>6. Limitation of Liability</h2>
         <p>
-          Trendizip provides the digital infrastructure for connection. While we verify our professionals, we are not directly liable for the physical quality of garments or specific stylistic choices made between a client and an artisan. Use of the platform is at your own creative risk.
+          Trendizip provides the digital marketplace platform. While we verify our tailors and designers, we are not directly liable for the physical quality of garments or specific design choices agreed between a customer and a seller. Use of the platform is subject to standard consumer protections.
         </p>
       </section>
 

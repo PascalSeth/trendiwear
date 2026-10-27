@@ -12,6 +12,7 @@ import ShowcaseDataTable from './ShowcaseDataTable'
 import AddToShowcaseDialog from './AddToShowcaseDialog'
 import { useSession } from "next-auth/react"
 import ShowCase from '@/app/components/ShowCase'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ShowcaseProduct {
   id: string
@@ -67,6 +68,32 @@ interface CurrentShowcaseProduct {
     reviews: number
   }
   averageRating: number
+}
+
+function ShowcaseItemSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-4">
+            <Skeleton className="w-20 h-20 rounded-lg shrink-0" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <div className="flex items-center space-x-4 pt-1">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Skeleton className="h-9 w-24 rounded-md" />
+            <Skeleton className="h-9 w-24 rounded-md" />
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+  )
 }
 
 export default function ShowcaseManagementPage() {
@@ -160,227 +187,223 @@ export default function ShowcaseManagementPage() {
   }
 
   return (
-    <div className="relative space-y-8 overflow-hidden">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 p-3 sm:p-5 relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="absolute top-20 right-0 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-3xl" />
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
+        <div className="absolute top-20 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
       </div>
 
-      <section className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-8 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_at_85%_30%,rgba(139,92,246,0.28),transparent_35%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl space-y-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-zinc-300">Editorial Dashboard</p>
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight lg:text-5xl">
-              Showcase
-              <span className="block bg-gradient-to-r from-violet-300 to-sky-300 bg-clip-text text-transparent">
-                Management Studio
-              </span>
+      <section className="relative overflow-hidden rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 p-4 sm:p-5 text-white shadow-xs">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="flex h-2 w-2 rounded-full bg-violet-400 animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-violet-300">Showcase Hub</span>
+            </div>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+              Featured Showcase Management
             </h1>
-            <p className="max-w-xl text-sm text-zinc-300 lg:text-base">
-              Curate featured products, review submissions, and preview the live storefront experience in one cinematic control room.
+            <p className="text-xs text-slate-300">
+              Feature popular products, review merchant submissions, and preview the live storefront showcase.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5">
             {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
-              <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-300">Pending</p>
-                <p className="mt-1 text-2xl font-semibold">{pendingProducts.length}</p>
+              <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 backdrop-blur text-center min-w-[70px]">
+                <p className="text-[9px] uppercase tracking-wider text-slate-300 font-semibold">Pending</p>
+                <p className="text-base sm:text-lg font-bold">{pendingProducts.length}</p>
               </div>
             )}
-            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-300">Showcased</p>
-              <p className="mt-1 text-2xl font-semibold">{showcaseProducts.length}</p>
+            <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 backdrop-blur text-center min-w-[70px]">
+              <p className="text-[9px] uppercase tracking-wider text-slate-300 font-semibold">Live</p>
+              <p className="text-base sm:text-lg font-bold">{showcaseProducts.length}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <Tabs defaultValue="current" className="space-y-6">
-        <div className="rounded-2xl border border-zinc-200/70 bg-white/80 p-2 shadow-sm backdrop-blur">
-          <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+      <Tabs defaultValue="current" className="space-y-4">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-1 shadow-xs">
+          <TabsList className="h-auto w-full flex-wrap justify-start gap-1.5 bg-transparent p-0">
             <TabsTrigger
               value="current"
-              className="rounded-xl border border-transparent bg-zinc-100/80 px-4 py-2.5 text-xs uppercase tracking-wide data-[state=active]:border-zinc-300 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="rounded-lg border border-transparent px-3 py-1.5 text-xs font-semibold data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900"
             >
-              <Package className="mr-2 h-4 w-4" />
+              <Package className="mr-1.5 h-3.5 w-3.5" />
               Current Showcase
             </TabsTrigger>
             {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
               <TabsTrigger
                 value="pending"
-                className="rounded-xl border border-transparent bg-zinc-100/80 px-4 py-2.5 text-xs uppercase tracking-wide data-[state=active]:border-zinc-300 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                className="rounded-lg border border-transparent px-3 py-1.5 text-xs font-semibold data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900"
               >
-                <Clock className="mr-2 h-4 w-4" />
+                <Clock className="mr-1.5 h-3.5 w-3.5" />
                 Pending Requests
+                {pendingProducts.length > 0 && (
+                  <span className="ml-1.5 bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                    {pendingProducts.length}
+                  </span>
+                )}
               </TabsTrigger>
             )}
             <TabsTrigger
               value="live-preview"
-              className="rounded-xl border border-transparent bg-zinc-100/80 px-4 py-2.5 text-xs uppercase tracking-wide data-[state=active]:border-zinc-300 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="rounded-lg border border-transparent px-3 py-1.5 text-xs font-semibold data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900"
             >
-              <Monitor className="mr-2 h-4 w-4" />
+              <Monitor className="mr-1.5 h-3.5 w-3.5" />
               Live Preview
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="current" className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200/70 bg-white/90 p-6 shadow-sm backdrop-blur">
-            <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Current Showcase Products</h2>
-              <p className="text-muted-foreground">
-                Manage products currently displayed in the showcase
-              </p>
-            </div>
-            {['SUPER_ADMIN', 'ADMIN', 'PROFESSIONAL'].includes(userRole) && (
-              <AddToShowcaseDialog onAdd={handleAddToShowcase} userRole={userRole} />
-            )}
+        <TabsContent value="current" className="space-y-4">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">Current Showcase Products</h2>
+                <p className="text-xs text-slate-500">
+                  Manage products currently featured on the main showcase
+                </p>
+              </div>
+              {['SUPER_ADMIN', 'ADMIN', 'PROFESSIONAL'].includes(userRole) && (
+                <AddToShowcaseDialog onAdd={handleAddToShowcase} userRole={userRole} />
+              )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200/70 bg-white/95 p-2 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-1 shadow-xs">
             <ShowcaseDataTable
-            products={showcaseProducts}
-            onRemove={handleRemoveFromShowcase}
-            loading={showcaseLoading}
-            userRole={userRole}
-            currentUserId={session?.user?.id}
-          />
+              products={showcaseProducts}
+              onRemove={handleRemoveFromShowcase}
+              loading={showcaseLoading}
+              userRole={userRole}
+              currentUserId={session?.user?.id}
+            />
           </div>
         </TabsContent>
 
         {(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') && (
-          <TabsContent value="pending" className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200/70 bg-white/90 p-6 shadow-sm backdrop-blur">
-            <h2 className="text-xl font-semibold">Pending Showcase Requests</h2>
-            <p className="text-muted-foreground">
-              Review and approve professional product submissions for the showcase
-            </p>
-            {userRole !== 'SUPER_ADMIN' && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-800 text-sm">
-                  <strong>Note:</strong> Only super administrators can approve showcase requests.
-                  Submit your products for showcase approval through the product management section.
-                </p>
-              </div>
-            )}
-            {(['CUSTOMER', 'PROFESSIONAL'].includes(userRole as string)) && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 text-sm">
-                  <strong>Professional:</strong> Submit your products for showcase approval by setting
-                  Submit for Showcase when creating or editing products in the catalogue section.
-                </p>
-              </div>
-            )}
-          </div>
+          <TabsContent value="pending" className="space-y-4">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">Pending Showcase Requests</h2>
+              <p className="text-xs text-slate-500">
+                Review and approve seller product submissions for the showcase
+              </p>
+              {userRole !== 'SUPER_ADMIN' && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 text-xs">
+                    <strong>Note:</strong> Only super administrators can approve showcase requests.
+                  </p>
+                </div>
+              )}
+            </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center min-h-96">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          ) : pendingProducts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No pending submissions</h3>
-                <p className="text-muted-foreground text-center">
-                  All showcase submissions have been reviewed
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6">
-              {pendingProducts.map((product) => (
-                <Card key={product.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
-                        <Image
-                          src={product.images[0] || '/placeholder-product.jpg'}
-                          alt={product.name}
-                          className="w-20 h-20 object-cover rounded-lg"
-                          width={80}
-                          height={80}
-                        />
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <CardTitle className="text-xl">{product.name}</CardTitle>
-                            {product.isPreorder && (
-                               <Badge variant="outline" className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border-blue-200">Pre-order</Badge>
-                            )}
-                          </div>
-                          <p className="text-muted-foreground mt-1">
-                            by {product.professional.professionalProfile?.businessName ||
-                                `${product.professional.firstName} ${product.professional.lastName}`}
-                          </p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <Badge variant="outline">{product.categories?.[0]?.name || "Uncategorized"}</Badge>
-                            <span className="text-lg font-semibold">{product.currency} {product.price}</span>
-                            <span className="text-sm text-muted-foreground">
-                              Submitted {new Date(product.submittedAt).toLocaleDateString()}
-                            </span>
+            {loading ? (
+              <div className="grid gap-3">
+                {[...Array(3)].map((_, i) => (
+                  <ShowcaseItemSkeleton key={i} />
+                ))}
+              </div>
+            ) : pendingProducts.length === 0 ? (
+              <Card className="rounded-xl border-slate-200/80">
+                <CardContent className="flex flex-col items-center justify-center py-10">
+                  <Clock className="h-8 w-8 text-slate-300 mb-2" />
+                  <h3 className="text-sm font-bold text-slate-800">No pending submissions</h3>
+                  <p className="text-xs text-slate-500 text-center mt-0.5">
+                    All showcase submissions have been reviewed
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-3">
+                {pendingProducts.map((product) => (
+                  <Card key={product.id} className="rounded-xl border-slate-200/80 shadow-xs">
+                    <CardHeader className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start space-x-3">
+                          <Image
+                            src={product.images[0] || '/placeholder-product.jpg'}
+                            alt={product.name}
+                            className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0"
+                            width={56}
+                            height={56}
+                          />
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-sm font-bold text-slate-900">{product.name}</CardTitle>
+                              {product.isPreorder && (
+                                <Badge variant="outline" className="text-[9px] font-bold uppercase bg-blue-50 text-blue-600 border-blue-200 px-1.5 py-0">Pre-order</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              by {product.professional.professionalProfile?.businessName ||
+                                  `${product.professional.firstName} ${product.professional.lastName}`}
+                            </p>
+                            <div className="flex items-center space-x-2 pt-1 text-xs">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{product.categories?.[0]?.name || "Uncategorized"}</Badge>
+                              <span className="font-bold text-slate-900">{product.currency} {product.price}</span>
+                              <span className="text-[11px] text-slate-400">
+                                {new Date(product.submittedAt).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        {userRole === 'SUPER_ADMIN' && (
+                          <div className="flex items-center space-x-1.5 self-end sm:self-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/product/${product.id}`, '_blank')}
+                              className="h-8 text-xs px-2.5 rounded-lg border-slate-200"
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApproval(product.id, false)}
+                              disabled={processing === product.id}
+                              className="h-8 text-xs px-2.5 rounded-lg text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                            >
+                              <X className="h-3.5 w-3.5 mr-1" />
+                              Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproval(product.id, true)}
+                              disabled={processing === product.id}
+                              className="h-8 text-xs px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                              <Check className="h-3.5 w-3.5 mr-1" />
+                              Approve
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      {userRole === 'SUPER_ADMIN' && (
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`/product/${product.id}`, '_blank')}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproval(product.id, false)}
-                            disabled={processing === product.id}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproval(product.id, true)}
-                            disabled={processing === product.id}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="h-4 w-4 mr-2" />
-                            Approve
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-                  {product.description && (
-                    <CardContent>
-                      <p className="text-muted-foreground">{product.description}</p>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+                    </CardHeader>
+                    {product.description && (
+                      <CardContent className="px-3 sm:px-4 pb-3 pt-0">
+                        <p className="text-xs text-slate-500 line-clamp-2">{product.description}</p>
+                      </CardContent>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         )}
 
-        <TabsContent value="live-preview" className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200/70 bg-white/90 p-6 shadow-sm backdrop-blur">
-            <h2 className="text-xl font-semibold tracking-tight">Live Showcase Preview</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Editorial display mode — this mirrors the public showcase with all interactions disabled.
+        <TabsContent value="live-preview" className="space-y-4">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900">Live Showcase Preview</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Live storefront display mode — mirrors the public showcase.
             </p>
           </div>
-          <div className="relative overflow-hidden rounded-3xl border border-zinc-300/70 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-3 shadow-2xl">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.16),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(59,130,246,0.20),transparent_40%)]" />
-            <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-background/95">
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-slate-950 p-2 shadow-sm">
+            <div className="relative overflow-hidden rounded-lg border border-white/10 bg-background/95">
               <div className="pointer-events-none">
                 <ShowCase />
               </div>

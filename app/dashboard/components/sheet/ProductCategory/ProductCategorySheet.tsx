@@ -33,6 +33,7 @@ interface ProductCategorySheetProps {
   categoryToEdit?: Category;
   onCategoryUpdated?: (category: Category) => void;
   onClose?: () => void;
+  hideTrigger?: boolean;
 }
 
 const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
@@ -41,6 +42,7 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
   categoryToEdit,
   onCategoryUpdated,
   onClose,
+  hideTrigger = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -237,12 +239,14 @@ const ProductCategorySheet: React.FC<ProductCategorySheetProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product Category
-        </Button>
-      </SheetTrigger>
+      {!hideTrigger && (
+        <SheetTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Product Category
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{categoryToEdit?.id ? 'Edit Product Category' : 'Add Product Category'}</SheetTitle>

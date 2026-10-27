@@ -1,5 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { ProductCard } from '@/components/common/ProductCard';
 
 type ClothingItem = {
@@ -143,26 +145,26 @@ function NewArrivals() {
 
   if (loading) {
     return (
-      <div className="bg-white py-16 px-4 lg:px-8">
-        <div className="relative z-10 max-w-7xl mx-auto">
+      <div className="bg-[#FAFAF9] py-10 sm:py-12 lg:py-14 border-t border-stone-200/70 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 animate-fade-in-up">
+          <div className="mb-6 sm:mb-8 border-b border-stone-200/80 pb-4">
+            <h2 className="text-2xl sm:text-3xl font-serif font-medium text-stone-900 tracking-tight">
               New Arrivals
             </h2>
           </div>
 
           {/* Loading Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5">
             {[...Array(4)].map((_, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
-                <div className="aspect-square bg-gray-200"></div>
-                <div className="p-4 sm:p-6">
-                  <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2 w-1/3"></div>
-                  <div className="h-4 sm:h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-                  <div className="flex justify-between items-center">
-                    <div className="h-4 sm:h-5 bg-gray-200 rounded w-16"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8"></div>
+              <div key={index} className="bg-white rounded-2xl overflow-hidden border border-stone-200/80 shadow-2xs animate-pulse">
+                <div className="aspect-[4/5] bg-stone-200"></div>
+                <div className="p-3 sm:p-3.5 space-y-2">
+                  <div className="h-2.5 bg-stone-200 rounded w-1/3"></div>
+                  <div className="h-3.5 bg-stone-200 rounded w-3/4"></div>
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="h-3.5 bg-stone-200 rounded w-16"></div>
+                    <div className="h-2.5 bg-stone-200 rounded w-8"></div>
                   </div>
                 </div>
               </div>
@@ -174,74 +176,36 @@ function NewArrivals() {
   }
 
   return (
-    <div className="bg-white py-16 px-4 lg:px-8">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-gradient-to-r from-pink-400/10 to-purple-500/10 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-24 h-24 rounded-full bg-gradient-to-r from-blue-400/10 to-cyan-500/10 animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-40 left-1/4 w-20 h-20 rounded-full bg-gradient-to-r from-emerald-400/10 to-teal-500/10 animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="relative bg-[#FAFAF9] py-10 sm:py-12 lg:py-14 border-t border-stone-200/70 px-4 sm:px-6 lg:px-8 text-stone-900 font-sans">
+      {/* Background Subtle Radial Accent */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" 
+        style={{ backgroundImage: 'radial-gradient(#d6d3d1 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 animate-fade-in-up">
-            New Arrivals
-          </h2>
-        </div>
+        <header className="mb-6 sm:mb-8 flex justify-between items-end border-b border-stone-200/80 pb-4 gap-3">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-medium text-stone-900 tracking-tight">
+              New Arrivals
+            </h2>
+          </div>
+          <Link 
+            href="/shopping?tab=new" 
+            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <span>View all</span>
+            <ArrowUpRight size={13} />
+          </Link>
+        </header>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3.5 lg:gap-4">
           {newArrivals.map((item, index) => (
             <ProductCard key={item.id} item={item} index={index} />
           ))}
         </div>
-
-        {/* Bottom Section */}
-        <div className="text-center mt-12">
-          <div className="flex items-center justify-center gap-6 text-sm text-slate-600 animate-fade-in-up" style={{ animationDelay: '800ms' }}>
-            <div className="text-center">
-              <div className="text-xl font-bold text-slate-900 mb-1">{newArrivals.length}+</div>
-              <div>New Items</div>
-            </div>
-            <div className="w-px h-10 bg-slate-300"></div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-slate-900 mb-1">5★</div>
-              <div>Top Rated</div>
-            </div>
-            <div className="w-px h-10 bg-slate-300"></div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-slate-900 mb-1">100%</div>
-              <div>Authentic</div>
-            </div>
-          </div>
-        </div>
       </div>
-
-      <style>{`
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out forwards;
-          opacity: 0;
-        }
-
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      `}</style>
     </div>
   );
 }

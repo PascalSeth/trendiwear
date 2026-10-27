@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2, Crown, Diamond, Package, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
+import { Loader2, Crown, Diamond, Package, CheckCircle2, ArrowRight } from 'lucide-react'
 
 interface SubscriptionTier {
   id: string
@@ -120,7 +120,7 @@ export function SubscriptionTiers({
             >
               {isFeatured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Recommended Choice
+                  <Crown className="w-3 h-3" /> Recommended Choice
                 </div>
               )}
 

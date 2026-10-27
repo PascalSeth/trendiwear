@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, Search, Loader2, Check, Navigation, Globe, X, Map as MapIcon, ChevronRight } from 'lucide-react'
+import { MapPin, Search, Loader2, Check, Navigation, Globe, X, Map as MapIcon, ChevronRight, Edit3 } from 'lucide-react'
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
 
 interface LocationSuggestion {
@@ -27,6 +27,8 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
     const [showSuggestions, setShowSuggestions] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [manualMode, setManualMode] = useState(false)
+    const [manualAddressInput, setManualAddressInput] = useState(location || '')
     
     const inputRef = useRef<HTMLInputElement>(null)
     const suggestionsRef = useRef<HTMLDivElement>(null)
@@ -53,8 +55,9 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 initMap(latitude, longitude);
             }
         }).catch(err => {
-            console.error("Google Maps failed to load", err as Error);
-            setError("Map engine failed to initialize.");
+            console.warn("Google Maps failed to load", err as Error);
+            // Don't hard-error, allow manual fallback
+            setError("Live map unavailable. You can still type and confirm your address manually.");
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -101,7 +104,7 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 setSuggestions([])
                 setShowSuggestions(false)
             }
-        }, 400)
+        }, 350)
 
         return () => clearTimeout(timeoutId)
     }, [searchQuery, location])
@@ -156,7 +159,7 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 setSearchQuery(address);
                 initMap(lat(), lng());
             } else {
-                setError("Failed to resolve location details.");
+                setError("Failed to resolve location coordinates.");
             }
             setIsSearching(false);
             setShowSuggestions(false);
@@ -178,7 +181,7 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
 
     const handleDetectLocation = () => {
         if (!navigator.geolocation) {
-            setError('Geolocation not supported.');
+            setError('Geolocation not supported on this browser.');
             return;
         }
 
@@ -191,7 +194,6 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                     const geocoder = new googleRef.current.maps.Geocoder();
                     geocoder.geocode({ location: { lat, lng } }, (results: google.maps.GeocoderResult[] | null, status: string) => {
                         if (googleRef.current && status === googleRef.current.maps.GeocoderStatus.OK && results && results[0]) {
-                            // Security check: Verify if in Ghana (though restricted in query before, we check result here too)
                             const isGhana = results[0].address_components.some((comp) => 
                                 comp.short_name === 'GH' || comp.long_name === 'Ghana'
                             );
@@ -207,17 +209,38 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                             setSearchQuery(address);
                             initMap(lat, lng);
                         } else {
-                            setError('Failed to resolve detected coordinates.');
+                            // Geocoder failed but we have coordinates
+                            const fallbackAddress = `Accra Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                            onLocationChange(lat, lng, fallbackAddress);
+                            setSearchQuery(fallbackAddress);
                         }
                         setIsSearching(false);
                     });
+                } else {
+                    // Google maps not loaded, use coordinates directly with fallback
+                    const fallbackAddress = `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                    onLocationChange(lat, lng, fallbackAddress);
+                    setSearchQuery(fallbackAddress);
+                    setIsSearching(false);
                 }
             },
             () => {
                 setIsSearching(false);
-                setError('Access to location coordinates denied.');
-            }
+                setError('Location access denied. Please type your area name above.');
+            },
+            { timeout: 8000 }
         );
+    };
+
+    const handleManualAddressConfirm = () => {
+        if (!manualAddressInput.trim()) return;
+        // Default Ghana center / Accra coordinates if user types manually without map engine
+        const fallbackLat = latitude || 5.6037;
+        const fallbackLng = longitude || -0.1870;
+        onLocationChange(fallbackLat, fallbackLng, manualAddressInput.trim());
+        setSearchQuery(manualAddressInput.trim());
+        setManualMode(false);
+        setError(null);
     };
 
     // Close suggestions on click outside
@@ -232,52 +255,78 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
     }, []);
 
     return (
-        <div className="space-y-6 relative">
-            <div className="space-y-3">
-                <div className="flex items-center justify-between pb-1">
-                    <Label htmlFor="location-search" className="text-stone-500 text-[10px] font-semibold uppercase tracking-[0.25em] flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-stone-900" />
-                        Business Workshop Address
+        <div className="space-y-4 relative">
+            <div className="space-y-2">
+                <div className="flex items-center justify-between pb-0.5 flex-wrap gap-2">
+                    <Label htmlFor="location-search" className="text-stone-700 text-xs font-medium flex items-center gap-1.5">
+                        <MapPin size={13} className="text-stone-500" />
+                        <span>Workshop / Shop Address</span>
                     </Label>
-                    <motion.button
-                        whileHover={{ y: -1, backgroundColor: '#f5f5f4' }}
-                        whileTap={{ y: 0 }}
-                        type="button"
-                        onClick={handleDetectLocation}
-                        className="text-[10px] font-bold uppercase tracking-widest text-stone-900 flex items-center gap-2 bg-stone-100 px-4 py-2 rounded-full border border-stone-200 transition-all"
-                    >
-                        <Navigation size={10} className={isSearching ? 'animate-pulse' : ''} />
-                        Detect Me
-                    </motion.button>
-                </div>
-
-                <div className="relative">
-                    <Input
-                        ref={inputRef}
-                        id="location-search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                        placeholder="e.g. Osu, Accra or Kumasi Central..."
-                        className="bg-white border-stone-200 text-stone-900 placeholder-stone-400 focus:ring-0 focus:border-stone-900 h-14 rounded-2xl pl-12 pr-12 transition-shadow hover:shadow-sm"
-                        required
-                    />
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                        {isSearching ? <Loader2 size={18} className="animate-spin text-stone-400" /> : <Search size={18} className="text-stone-300" />}
-                    </div>
-                    {searchQuery && (
+                    <div className="flex items-center gap-1.5">
                         <button
                             type="button"
-                            onClick={() => { setSearchQuery(''); setSuggestions([]); }}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-900 transition-colors"
+                            onClick={() => setManualMode(!manualMode)}
+                            className="text-[11px] font-medium text-stone-500 hover:text-stone-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-md cursor-pointer"
                         >
-                            <X size={16} />
+                            <Edit3 size={11} />
+                            {manualMode ? "Use Search" : "Manual Entry"}
                         </button>
-                    )}
+                        <button
+                            type="button"
+                            onClick={handleDetectLocation}
+                            className="text-[11px] font-medium text-stone-700 hover:text-stone-900 flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200/70 px-2.5 py-1 rounded-md border border-stone-200 transition-colors shadow-2xs cursor-pointer"
+                        >
+                            <Navigation size={11} className={isSearching ? 'animate-spin text-stone-900' : 'text-stone-500'} />
+                            Detect
+                        </button>
+                    </div>
                 </div>
 
+                {manualMode ? (
+                    <div className="flex gap-2">
+                        <Input
+                            value={manualAddressInput}
+                            onChange={(e) => setManualAddressInput(e.target.value)}
+                            placeholder="e.g. Near Oxford Street, Osu, Accra"
+                            className="bg-white border-stone-300 text-stone-900 placeholder-stone-400 focus-visible:ring-1 focus-visible:ring-stone-900 h-11 rounded-lg text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleManualAddressConfirm}
+                            className="h-11 px-4 bg-stone-900 text-white rounded-lg text-xs font-medium hover:bg-stone-800 transition-colors shrink-0 shadow-2xs cursor-pointer"
+                        >
+                            Save
+                        </button>
+                    </div>
+                ) : (
+                    <div className="relative">
+                        <Input
+                            ref={inputRef}
+                            id="location-search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                            placeholder="Search area in Ghana (e.g. Osu, Kumasi, East Legon)..."
+                            className="bg-white border-stone-300 text-stone-900 placeholder-stone-400 focus-visible:ring-1 focus-visible:ring-stone-900 h-11 rounded-lg pl-10 pr-9 text-sm transition-colors shadow-2xs"
+                            required
+                        />
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                            {isSearching ? <Loader2 size={16} className="animate-spin text-stone-500" /> : <Search size={15} className="text-stone-400" />}
+                        </div>
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => { setSearchQuery(''); setSuggestions([]); }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900 p-1 cursor-pointer"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {error && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] font-bold uppercase tracking-widest text-red-500 px-2">
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-1.5 leading-relaxed">
                         {error}
                     </motion.p>
                 )}
@@ -288,32 +337,30 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
                 {showSuggestions && (
                     <motion.div
                         ref={suggestionsRef}
-                        initial={{ opacity: 0, y: 5 }}
+                        initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        className="absolute z-[100] w-full mt-2 bg-white/95 backdrop-blur-xl border border-stone-200 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden"
+                        exit={{ opacity: 0, y: 4 }}
+                        className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden"
                     >
-                        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Search Results — Ghana</span>
-                            <Globe size={11} className="text-stone-400" />
+                        <div className="px-4 py-2 border-b border-stone-100 flex items-center justify-between bg-stone-50 text-[10px] uppercase font-semibold tracking-wider text-stone-500">
+                            <span>Locations in Ghana</span>
+                            <Globe size={11} />
                         </div>
-                        <div className="max-h-80 overflow-y-auto">
+                        <div className="max-h-60 overflow-y-auto divide-y divide-stone-50">
                             {suggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.place_id}
                                     onClick={() => handleSuggestionSelect(suggestion)}
-                                    className="w-full text-left px-6 py-4 hover:bg-stone-50 border-b border-stone-50 last:border-b-0 group transition-colors"
+                                    className="w-full text-left px-4 py-2.5 hover:bg-stone-50 flex items-start gap-3 transition-colors group cursor-pointer"
                                 >
-                                    <div className="flex items-start gap-4">
-                                        <div className="mt-1 w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center group-hover:bg-stone-900 transition-colors">
-                                            <MapPin size={14} className="text-stone-400 group-hover:text-white" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-semibold text-sm text-stone-900 truncate tracking-tight">{suggestion.mainText}</div>
-                                            <div className="text-[11px] text-stone-400 truncate mt-0.5">{suggestion.secondaryText}</div>
-                                        </div>
-                                        <ChevronRight size={14} className="mt-2 text-stone-300" />
+                                    <div className="mt-0.5 w-6 h-6 rounded-md bg-stone-100 flex items-center justify-center shrink-0 group-hover:bg-stone-900 transition-colors">
+                                        <MapPin size={12} className="text-stone-500 group-hover:text-white" />
                                     </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-xs sm:text-sm text-stone-900 truncate">{suggestion.mainText}</div>
+                                        <div className="text-[11px] text-stone-400 truncate mt-0.5">{suggestion.secondaryText}</div>
+                                    </div>
+                                    <ChevronRight size={14} className="mt-1 text-stone-300 shrink-0" />
                                 </button>
                             ))}
                         </div>
@@ -322,39 +369,40 @@ export default function LocationPicker({ latitude, longitude, location, onLocati
             </AnimatePresence>
 
             {/* Visual Map Area */}
-            <div className={latitude && longitude ? "block" : "hidden"}>
+            <div className={latitude && longitude ? "block space-y-3" : "hidden"}>
                 <div 
                     ref={mapRef} 
-                    className="w-full h-44 lg:h-56 rounded-3xl bg-stone-100 border-2 border-stone-100 overflow-hidden shadow-inner grayscale-[0.2]"
+                    className="w-full h-36 sm:h-48 rounded-xl bg-stone-100 border border-stone-200 overflow-hidden shadow-inner grayscale-[0.1]"
                 />
                 
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 lg:p-5 bg-white border border-stone-100 rounded-3xl flex items-start gap-3 lg:gap-4 shadow-sm"
+                    className="p-3 bg-stone-50 border border-stone-200 rounded-lg flex items-start gap-3 shadow-2xs"
                 >
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <Check size={18} className="text-emerald-600" />
+                    <div className="w-7 h-7 rounded-md bg-stone-200 flex items-center justify-center shrink-0 text-stone-700">
+                        <Check size={14} />
                     </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pin Location Verified</p>
-                        <p className="text-sm text-stone-700 leading-relaxed max-w-[280px]">{location}</p>
-                        <div className="pt-2 flex items-center gap-3">
-                            <span className="text-[10px] font-mono text-stone-400">{latitude?.toFixed(6)}</span>
-                            <span className="text-stone-200">|</span>
-                            <span className="text-[10px] font-mono text-stone-400">{longitude?.toFixed(6)}</span>
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                        <p className="text-[10px] font-semibold text-stone-700 uppercase tracking-wider">Location Pinned</p>
+                        <p className="text-xs text-stone-800 leading-snug break-words">{location}</p>
+                        <div className="pt-0.5 flex items-center gap-2 text-[10px] font-mono text-stone-400">
+                            <span>GPS: {latitude?.toFixed(4)}, {longitude?.toFixed(4)}</span>
                         </div>
                     </div>
                 </motion.div>
             </div>
 
             {!latitude && (
-                <div className="p-10 border-2 border-dashed border-stone-100 rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="w-12 h-12 bg-stone-50 rounded-full flex items-center justify-center">
-                        <MapIcon className="text-stone-200" size={24} />
+                <div className="p-6 border border-dashed border-stone-200 rounded-xl flex flex-col items-center justify-center gap-2 text-center bg-stone-50/40">
+                    <div className="w-9 h-9 bg-white rounded-lg border border-stone-200 flex items-center justify-center shadow-2xs">
+                        <MapIcon className="text-stone-400" size={16} />
                     </div>
-                    <p className="text-xs text-stone-400 max-w-[200px] leading-relaxed">
-                        Search or detect your location to pin it on the map. Drag the marker if needed.
+                    <p className="text-xs text-stone-700 font-medium">
+                        Search your area or click Detect to pin your workshop
+                    </p>
+                    <p className="text-[11px] text-stone-400 max-w-[280px] leading-relaxed">
+                        Clients will be matched with you based on proximity for custom fittings and faster delivery.
                     </p>
                 </div>
             )}

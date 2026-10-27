@@ -225,7 +225,7 @@ export default function MeasurementsPage() {
                </div>
                <div>
                   <h1 className="text-2xl font-black text-stone-900 tracking-tight">Measurement Studio</h1>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Bespoke Specifications</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Custom Fitting Measurements</p>
                </div>
             </div>
 

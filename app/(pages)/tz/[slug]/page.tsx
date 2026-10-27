@@ -18,12 +18,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   return {
     title: `${displayName} | Expert ${profile.specialization.name}`,
-    description: profile.bio || `${displayName} - Award-winning ${profile.specialization.name} on TrendiZip. Discover custom fashion and bespoke tailoring.`,
+    description: profile.bio || `${displayName} - ${profile.specialization.name} on TrendiZip. Discover custom fashion and tailored clothing.`,
     alternates: {
       canonical: `https://trendizip.com/tz/${slug}`,
     },
     openGraph: {
-      title: `${displayName} | TrendiZip Atelier`,
+      title: `${displayName} | TrendiZip Studio`,
       description: profile.bio || `${displayName} - ${profile.specialization.name}`,
       url: `https://trendizip.com/tz/${slug}`,
       siteName: 'TrendiZip',

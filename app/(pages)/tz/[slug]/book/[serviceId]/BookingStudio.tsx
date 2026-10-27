@@ -339,7 +339,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
              <div className="space-y-12">
                 <div className="prose prose-stone">
                    <p className="text-2xl font-serif text-stone-500 leading-relaxed max-w-2xl italic">
-                      {service.description || "Every professional session is meticulously crafted to ensure a bespoke experience that reflects your unique style and vision."}
+                      {service.description || "Every session is carefully tailored to ensure you get a custom fit that matches your style and preferences."}
                    </p>
                 </div>
 
@@ -707,7 +707,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
         
         {/* Measurement Intercept Modal: The Bespoke Standard */}
         <AnimatePresence>
-          {showMeasurementModal && (
+                          {showMeasurementModal && (
             <TooltipProvider>
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
@@ -716,7 +716,7 @@ export const BookingStudio: React.FC<BookingStudioProps> = ({
                     {/* Header with Unit Toggle */}
                     <div className="p-10 pb-6 border-b border-stone-50 flex justify-between items-center">
                        <div>
-                          <h3 className="text-3xl font-black text-stone-900 tracking-tighter">Bespoke Blueprint</h3>
+                          <h3 className="text-3xl font-black text-stone-900 tracking-tighter">Fitting Measurements</h3>
                           <div className="flex items-center gap-4 mt-2">
                              <div className="flex bg-stone-100 p-1 rounded-full border border-stone-200 shadow-inner">
                                 {['in', 'cm'].map((u) => (

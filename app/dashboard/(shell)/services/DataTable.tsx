@@ -79,13 +79,13 @@ const getColumns = (
     accessorKey: "name",
     header: "Service",
     cell: ({ row }) => (
-      <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
+      <div className="flex items-center space-x-2.5">
+        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
           {row.original.name[0].toUpperCase()}
         </div>
         <div>
-          <div className="font-medium">{row.getValue("name")}</div>
-          <div className="text-sm text-gray-500">{row.original.category.name}</div>
+          <div className="font-semibold text-slate-900 text-xs">{row.getValue("name")}</div>
+          <div className="text-[11px] text-slate-500">{row.original.category.name}</div>
         </div>
       </div>
     ),
@@ -103,8 +103,8 @@ const getColumns = (
     accessorKey: "duration",
     header: "Duration",
     cell: ({ row }) => (
-      <div className="flex items-center text-sm">
-        <Clock className="w-4 h-4 mr-1" />
+      <div className="flex items-center text-xs text-slate-600">
+        <Clock className="w-3.5 h-3.5 mr-1" />
         {row.getValue("duration")} min
       </div>
     ),
@@ -115,7 +115,7 @@ const getColumns = (
     cell: ({ row }) => {
       const variants = row.original.variants || [];
       return (
-        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+        <Badge variant="outline" className="flex items-center gap-1 w-fit text-[10px] px-1.5 py-0.5">
           <Layers className="w-3 h-3" />
           {variants.length} tier{variants.length !== 1 ? 's' : ''}
         </Badge>
@@ -126,14 +126,14 @@ const getColumns = (
     id: "serviceType",
     header: "Type",
     cell: ({ row }) => (
-      <div className="flex items-center">
+      <div className="flex items-center text-xs">
         {row.original.isHomeService ? (
-          <Badge variant="outline" className="flex items-center">
+          <Badge variant="outline" className="flex items-center text-[10px] px-1.5 py-0.5">
             <Home className="w-3 h-3 mr-1" />
-            Home Service
+            Home
           </Badge>
         ) : (
-          <Badge variant="secondary">In-Store</Badge>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">In-Store</Badge>
         )}
       </div>
     ),
@@ -142,7 +142,7 @@ const getColumns = (
     accessorKey: "_count.bookings",
     header: "Bookings",
     cell: ({ row }) => (
-      <Badge variant="outline">
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
         {row.original._count.bookings}
       </Badge>
     ),
@@ -343,23 +343,23 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
   if (loading) {
     return (
-      <div className="space-y-8 pt-4">
+      <div className="space-y-4 sm:space-y-5 pt-2">
         <div className="flex justify-between items-center">
-          <div className="space-y-3">
-            <div className="h-10 bg-gray-50 rounded-lg w-64 animate-pulse"></div>
-            <div className="h-5 bg-gray-50 rounded-lg w-96 animate-pulse"></div>
+          <div className="space-y-2">
+            <div className="h-7 bg-slate-100 rounded-lg w-52 animate-pulse" />
+            <div className="h-4 bg-slate-100 rounded-lg w-72 animate-pulse" />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
+            <div key={i} className="h-18 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
           ))}
         </div>
-        <div className="h-20 bg-gray-50 border border-gray-100 rounded-3xl animate-pulse"></div>
-        <div className="border border-gray-100 rounded-3xl overflow-hidden">
-          <div className="h-12 bg-gray-50/50 animate-pulse"></div>
+        <div className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+        <div className="border border-slate-100 rounded-xl overflow-hidden">
+          <div className="h-10 bg-slate-50/50 animate-pulse" />
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-20 border-t border-gray-50 animate-pulse"></div>
+            <div key={i} className="h-14 border-t border-slate-50 animate-pulse" />
           ))}
         </div>
       </div>
@@ -383,26 +383,26 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
   };
 
   return (
-    <div className="w-full space-y-8 pb-10">
+    <div className="w-full space-y-4 sm:space-y-5">
       {/* HEADER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="flex h-2 w-2 rounded-full bg-purple-600 animate-pulse" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600">Services Studio & Management</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
             Services &amp; Offerings
           </h1>
-          <p className="text-xs font-medium text-slate-500 mt-1">
-            Manage your bespoke fashion services, pricing tiers, and appointment availability.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manage your custom tailoring services, pricing, and appointment availability.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* RBAC Admin / SuperAdmin Category Link */}
           {isManagementAllowed && (
             <Link href="/dashboard/catalogue/category">
-              <Button variant="outline" className="border-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all">
+              <Button variant="outline" className="h-8 sm:h-9 border-slate-200 text-slate-700 font-semibold text-xs px-3 sm:px-3.5 rounded-lg transition-all hover:bg-slate-50">
                 Manage Categories
               </Button>
             </Link>
@@ -424,50 +424,50 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - 2x2 on mobile, 4 cols on lg */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {[
           { label: "Total Services", value: data.length, icon: Layers, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Active Live", value: data.filter(s => s.isActive).length, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Home Visits", value: data.filter(s => s.isHomeService).length, icon: Home, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Total Bookings", value: data.reduce((t, s) => t + (s._count?.bookings || 0), 0), icon: Clock, color: "text-indigo-600", bg: "bg-indigo-50" },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-purple-300 transition-all">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-              <stat.icon className="h-5 w-5" />
+          <div key={i} className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3 hover:border-purple-300 transition-all">
+            <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-4 w-4" />
             </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 mt-0.5">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Table Toolbar */}
-        <div className="p-6 border-b border-gray-50 space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="relative w-full lg:max-w-md">
+        <div className="p-3 sm:p-4 border-b border-gray-100 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="relative w-full sm:max-w-xs">
               <Input
                 placeholder="Search services by name, category..."
                 value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                 onChange={(event) =>
                   table.getColumn("name")?.setFilterValue(event.target.value)
                 }
-                className="pl-4 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11 text-xs"
+                className="pl-3 bg-slate-50/50 border-slate-200 focus:bg-white transition-all rounded-lg h-9 text-xs"
               />
             </div>
             
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Tabs defaultValue="All" onValueChange={handleStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="bg-gray-100/80 p-1 h-11 rounded-xl">
+                <TabsList className="bg-slate-100 p-0.5 h-9 rounded-lg">
                   {["All", "Active", "Inactive"].map((status) => (
                     <TabsTrigger 
                       key={status} 
                       value={status}
-                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs font-bold"
+                      className="rounded-md px-2.5 py-1 data-[state=active]:bg-white data-[state=active]:shadow-xs text-xs font-semibold"
                     >
                       {status}
                     </TabsTrigger>
@@ -477,12 +477,12 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600 text-xs font-bold">
+                  <Button variant="outline" className="h-9 border-slate-200 rounded-lg px-3 text-slate-600 text-xs font-semibold hover:bg-slate-50">
                     Columns
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 p-2">
-                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48 p-1.5">
+                  <DropdownMenuLabel className="px-2 py-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
                   <DropdownMenuSeparator className="my-1" />
                   {table
                     .getAllColumns()
@@ -490,7 +490,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                     .map((column) => (
                       <DropdownMenuCheckboxItem
                         key={column.id}
-                        className="capitalize rounded-md text-xs font-medium"
+                        className="capitalize rounded-md text-xs font-medium py-1.5"
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
@@ -506,11 +506,11 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
         {/* Table Content */}
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-gray-50/50">
+            <TableHeader className="bg-slate-50/70 border-b border-slate-100">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="h-12 px-6 text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                    <TableHead key={header.id} className="h-9 px-3 sm:px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -524,10 +524,10 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 table.getRowModel().rows.map((row) => (
                   <TableRow 
                     key={row.id} 
-                    className="border-b border-gray-50 hover:bg-purple-50/20 transition-colors"
+                    className="border-b border-slate-100 hover:bg-purple-50/20 transition-colors"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-6 py-4">
+                      <TableCell key={cell.id} className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
@@ -535,9 +535,9 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <p className="text-gray-500 font-medium text-sm">No services found</p>
+                  <TableCell colSpan={columns.length} className="h-40 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <p className="text-slate-500 font-medium text-xs">No services found</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -547,8 +547,8 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
-          <p className="text-xs text-gray-500 font-medium">
+        <div className="px-3 sm:px-4 py-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+          <p className="text-slate-500">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected
           </p>
@@ -558,7 +558,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-gray-200 rounded-lg h-9 text-xs font-bold"
+              className="border-slate-200 rounded-lg h-8 text-xs font-semibold"
             >
               Previous
             </Button>
@@ -567,7 +567,7 @@ function ServicesDataTable({ initialData }: ServicesDataTableProps) {
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-gray-200 rounded-lg h-9 text-xs font-bold"
+              className="border-slate-200 rounded-lg h-8 text-xs font-semibold"
             >
               Next
             </Button>

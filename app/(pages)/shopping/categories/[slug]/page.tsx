@@ -96,6 +96,21 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     orderBy: { createdAt: "desc" }
   });
 
+  // Fetch other top-level categories for navigation
+  const allCategories = await prisma.category.findMany({
+    where: { parentId: null, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      imageUrl: true,
+      _count: {
+        select: { products: true }
+      }
+    },
+    orderBy: { order: 'asc' }
+  });
+
   // Extract available filters for the client
   const colors = new Set<string>();
   const sizes = new Set<string>();
@@ -107,6 +122,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // Prepare data for the client (serialization)
   const initialCategory = JSON.parse(JSON.stringify(category));
   const initialProducts = JSON.parse(JSON.stringify(products));
+  const initialAllCategories = JSON.parse(JSON.stringify(allCategories));
 
   return (
     <CategoryDetailClient 
@@ -114,6 +130,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       initialProducts={initialProducts}
       availableColors={Array.from(colors).sort()}
       availableSizes={Array.from(sizes).sort()}
+      otherCategories={initialAllCategories}
     />
   );
 }

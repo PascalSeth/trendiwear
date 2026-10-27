@@ -239,7 +239,7 @@ const ProfileMap = ({ lat, lng }: { lat: number, lng: number }) => {
         new google.maps.Marker({
           position: center,
           map,
-          title: "Atelier Location",
+          title: "Shop & Studio Location",
           animation: google.maps.Animation.DROP
         });
       }
@@ -329,12 +329,12 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
         <AtelierBackground />
       </div>
 
-      {/* 1. CINEMATIC HERO */}
-      <div className="relative w-full h-[70vh] lg:h-[80vh] overflow-hidden snap-start z-10">
+      {/* 1. CINEMATIC COVER BANNER (Full view, not cut in half) */}
+      <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[420px] bg-stone-900 overflow-hidden z-0">
         <motion.div
-          initial={{ scale: 1.1 }}
+          initial={{ scale: 1.02 }}
           animate={{ scale: 1 }}
-          transition={{ duration: 10, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
           className="absolute inset-0"
         >
           <Image
@@ -342,158 +342,143 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             alt="Cover"
             fill
             priority
-            className="object-cover"
-            quality={100}
+            className="object-cover object-center"
+            quality={95}
             sizes="100vw"
             unoptimized={coverImage.startsWith('/uploads')}
           />
         </motion.div>
+        {/* Subtle vignette protection */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
+      </div>
 
-        {/* Soft, localized protection for legibility */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent z-0" />
-
-        {/* Hero Content Overlay - Mobile Optimized Editorial */}
-        <div className="absolute inset-x-0 bottom-0 z-10 p-6 lg:p-16 pb-8">
-          <div className="max-w-7xl mx-auto flex flex-col gap-10">
-
-            {/* 1. Identity Level - Compact Mobile Row / Desktop Stack */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8">
-              <div className="flex flex-col gap-6 md:flex-row md:items-end flex-1 w-full">
-
-                <div className="flex flex-row md:flex-col lg:flex-row items-end md:items-start lg:items-end gap-5 md:gap-6 w-full">
-                  {/* Floating Signature Avatar */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative shrink-0 pb-1"
-                  >
-                    <div className="w-20 h-20 md:w-36 md:h-36 rounded-2xl overflow-hidden bg-stone-100/10 backdrop-blur-md border border-white/30 shadow-2xl relative z-10 p-1">
-                      <div className="w-full h-full rounded-xl overflow-hidden">
-                        <Image
-                          src={profileImage}
-                          alt={displayName}
-                          width={144}
-                          height={144}
-                          className="object-cover w-full h-full grayscale-[20%] group-hover:grayscale-0 transition-all duration-700"
-                        />
-                      </div>
-                    </div>
-                    {profile.isVerified && (
-                      <div className="absolute -top-1 -right-1 bg-emerald-500 p-1 rounded-full shadow-xl border-2 border-stone-900 z-20">
-                        <BadgeCheck className="w-3.5 h-3.5 text-white" />
-                      </div>
-                    )}
-                  </motion.div>
-
-                  {/* Identity Text - Responsive Scaling */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-2 md:space-y-4 flex-1"
-                  >
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 font-mono text-[9px] md:text-[10px] uppercase tracking-[0.3em]">
-                      {profile.specialization.name}
-                    </div>
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif text-white leading-[0.9] tracking-tighter drop-shadow-2xl">
-                      {displayName}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-4 md:gap-6 text-stone-200/90 font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em]">
-                      {profile.location && (
-                        <span className="flex items-center gap-1.5 md:gap-2">
-                          <MapPin size={10} className="text-amber-500" /> {profile.location.city}
-                        </span>
-                      )}
-                      {profile.rating && (
-                        <span className="flex items-center gap-1.5 md:gap-2 text-amber-400">
-                          <Star size={10} className="fill-current" />
-                          {profile.rating.toFixed(1)} <span className="opacity-60 text-stone-300">({profile.totalReviews})</span>
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
+      {/* 2. PROFILE IDENTITY HEADER (Gracefully overlapping cover) */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-16 md:-mt-20 mb-6 pb-6 border-b border-stone-200/80">
+          
+          {/* Avatar & Main Info */}
+          <div className="flex flex-row items-end gap-3.5 sm:gap-5 min-w-0">
+            {/* Signature Floating Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-white p-1.5 shadow-xl border border-stone-200/70">
+                <div className="w-full h-full rounded-xl overflow-hidden bg-stone-100 relative">
+                  <Image
+                    src={profileImage}
+                    alt={displayName}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                  />
                 </div>
               </div>
-
-              {/* 2. Action Level - Balanced Horizontal Layout */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex flex-row items-center gap-3 md:gap-4 w-full lg:w-auto"
-              >
-                <Link
-                  href={`/tz/${slug}/shop`}
-                  className="flex-1 lg:flex-none bg-white text-stone-900 px-6 md:px-10 py-4 md:py-5 rounded-full font-mono text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-amber-50 hover:scale-[1.03] active:scale-95 transition-all shadow-[0_10px_40px_rgba(255,255,255,0.15)] flex items-center justify-center gap-2 group whitespace-nowrap"
-                >
-                  <ShoppingBag size={14} className="md:size-[16px] group-hover:rotate-6 transition-transform" /> Enter Shop
-                </Link>
-
-                <div className="flex items-center gap-2 md:gap-3">
-                  {isOwner && (
-                    <div className="flex items-center gap-2 md:gap-3">
-                      <button
-                        onClick={handleCopyLink}
-                        className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 md:px-6 h-12 md:h-14 rounded-full flex items-center justify-center gap-2 hover:bg-white/20 transition-all hover:scale-105 active:scale-95 group"
-                        title="Copy Profile Link"
-                      >
-                        {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                        <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-widest hidden sm:inline">Copy Link</span>
-                      </button>
-
-                      <Link
-                        href="/settings"
-                        className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 md:px-6 h-12 md:h-14 rounded-full flex items-center justify-center gap-2 hover:bg-white/20 transition-all hover:scale-105 active:scale-95 group"
-                        title="Edit Profile"
-                      >
-                        <Settings size={16} />
-                        <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-widest hidden sm:inline">Edit Profile</span>
-                      </Link>
-                    </div>
-                  )}
-                  {(!session || !isOwner) && (
-                    <button
-                      onClick={() => {
-                        if (!session) {
-                          toast.error("Please sign in to message this professional");
-                          return;
-                        }
-                        setIsChatOpen(true);
-                      }}
-                      className="bg-emerald-500/90 backdrop-blur-md text-white w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center hover:bg-emerald-500 transition-all hover:scale-110 active:scale-90 shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
-                      title="Send Message"
-                    >
-                      <MessageSquare size={20} className="w-4 h-4 md:w-5 md:h-5" />
-                    </button>
-                  )}
+              {profile.isVerified && (
+                <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1 rounded-full border-2 border-white shadow-sm" title="Verified Professional">
+                  <BadgeCheck className="w-3.5 h-3.5 text-white" />
                 </div>
-              </motion.div>
+              )}
             </div>
+
+            {/* Name & Metadata */}
+            <div className="space-y-1 pb-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 font-medium text-[10px] tracking-wide border border-stone-200/60">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  {profile.specialization.name}
+                </span>
+                {profile.rating && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
+                    <Star size={11} className="fill-amber-400 text-amber-400" />
+                    <span>{profile.rating.toFixed(1)}</span>
+                    <span className="text-[10px] text-amber-700/70 font-normal">({profile.totalReviews})</span>
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif text-stone-900 leading-tight truncate">
+                {displayName}
+              </h1>
+
+              {profile.location && (
+                <p className="flex items-center gap-1 text-xs text-stone-500">
+                  <MapPin size={12} className="text-amber-600 shrink-0" />
+                  <span className="truncate">{profile.location.address || profile.location.city}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 self-start sm:self-end pt-2 sm:pt-0">
+            <Link
+              href={`/tz/${slug}/shop`}
+              className="bg-stone-900 hover:bg-stone-800 text-white px-5 py-2.5 rounded-full text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap"
+            >
+              <ShoppingBag size={13} />
+              <span>Enter Shop</span>
+            </Link>
+
+            {isOwner && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleCopyLink}
+                  className="bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 px-3 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all text-xs shadow-sm"
+                  title="Copy Profile Link"
+                >
+                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  <span className="hidden sm:inline">Copy Link</span>
+                </button>
+
+                <Link
+                  href="/settings"
+                  className="bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 px-3 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all text-xs shadow-sm"
+                  title="Edit Profile"
+                >
+                  <Settings size={13} />
+                  <span className="hidden sm:inline">Edit Profile</span>
+                </Link>
+              </div>
+            )}
+
+            {(!session || !isOwner) && (
+              <button
+                onClick={() => {
+                  if (!session) {
+                    toast.error("Please sign in to message this professional");
+                    return;
+                  }
+                  setIsChatOpen(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0"
+                title="Send Message"
+              >
+                <MessageSquare size={14} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* 2. THE ATELIER FOUNDATION (Bio & Concept) */}
-      <section className="pt-16 pb-12 px-6 relative z-10">
-        <div className="max-w-5xl mx-auto text-center space-y-8">
+      <section className="pt-8 pb-6 px-4 sm:px-6 relative z-10">
+        <div className="max-w-3xl mx-auto text-center space-y-4">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="space-y-4"
+            className="space-y-2"
           >
             {isOwner && (
-              <div className="flex flex-col items-center gap-2 mb-8">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-stone-400">Your Public Profile Link /</span>
-                <code className="bg-stone-100 px-4 py-2 rounded-lg text-[10px] md:text-sm font-mono text-stone-600 border border-stone-200">
+              <div className="flex flex-col items-center gap-1 mb-4">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400">Your Public Profile Link /</span>
+                <code className="bg-stone-100 px-3 py-1 rounded text-xs font-mono text-stone-600 border border-stone-200">
                   {fullProfileUrl}
                 </code>
               </div>
             )}
-            <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400">The Philosophy</h3>
-            <p className="font-serif text-3xl md:text-5xl text-stone-900 leading-[1.1] italic">
+            <h3 className="text-[9px] font-mono font-bold uppercase tracking-widest text-stone-400">The Philosophy</h3>
+            <p className="font-serif text-base sm:text-lg md:text-xl text-stone-800 leading-relaxed italic">
               &quot;{profile.bio 
-                  ? (profile.bio.split(/\s+/).length > 50 ? profile.bio.split(/\s+/).slice(0, 50).join(' ') + '...' : profile.bio) 
+                  ? (profile.bio.split(/\s+/).length > 35 ? profile.bio.split(/\s+/).slice(0, 35).join(' ') + '...' : profile.bio) 
                   : `Mastering the art of ${profile.specialization.name} through timeless craftsmanship and contemporary vision.`}&quot;
             </p>
           </motion.div>
@@ -503,18 +488,18 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 pt-8 border-t border-stone-200/60"
+            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 pt-4 border-t border-stone-200/60 text-xs"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className={cn("w-2 h-2 rounded-full animate-pulse", openStatus.isOpen ? "bg-emerald-500" : "bg-stone-300")} />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-900">
-                {openStatus.isOpen ? "Atelier Open" : "Atelier Closed"}
+              <span className="text-xs font-semibold text-stone-900">
+                {openStatus.isOpen ? "Shop Open" : "Shop Closed"}
               </span>
-              <span className="text-[9px] font-mono text-stone-400 uppercase tracking-tight">— {openStatus.nextChange}</span>
+              <span className="text-[10px] text-stone-400">— {openStatus.nextChange}</span>
             </div>
 
             {profile.socials && Object.keys(profile.socials).length > 0 && (
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-5">
                 {Object.entries(profile.socials).map(([platform, url]) => {
                   const icons: Record<string, React.ElementType> = {
                     'INSTAGRAM': FaInstagram,
@@ -529,7 +514,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                   const Icon = icons[platform] || Globe;
                   return (
                     <Link key={platform} href={url} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-900 transition-colors transform hover:scale-110">
-                      <Icon size={18} />
+                      <Icon size={15} />
                     </Link>
                   );
                 })}
@@ -541,41 +526,41 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
 
       {/* 3. THE ARRIVAL PANORAMA (Map) */}
       {profile.location && (
-        <section className="px-6 pb-24 relative z-10">
+        <section className="px-4 sm:px-6 pb-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="max-w-7xl mx-auto rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative group bg-stone-100"
+            className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-stone-200/80 shadow-md relative group bg-stone-100"
           >
             {(profile.location.latitude && profile.location.longitude) ? (
-              <div className="aspect-[21/6] w-full">
+              <div className="aspect-[21/6] max-h-48 w-full">
                 <ProfileMap
                   lat={profile.location.latitude}
                   lng={profile.location.longitude}
                 />
               </div>
             ) : (
-              <div className="aspect-[21/6] flex items-center justify-center bg-stone-50">
+              <div className="aspect-[21/6] max-h-48 flex items-center justify-center bg-stone-50">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-stone-300">Location Imagery Pending</p>
               </div>
             )}
 
             {/* Location Detail Overlay */}
-            <div className="absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-white shadow-2xl max-w-sm hidden md:block group-hover:translate-x-2 transition-transform duration-700">
-              <h4 className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-stone-400 mb-3 text-right">The Address /</h4>
-              <p className="font-serif text-lg text-stone-900 mb-1">{profile.location.address}</p>
-              <p className="text-[10px] font-mono text-stone-500 uppercase tracking-[0.2em]">{profile.location.city}, {profile.location.country}</p>
+            <div className="absolute bottom-3 left-3 z-20 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-stone-100 shadow-md max-w-xs hidden md:block">
+              <h4 className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5">Address</h4>
+              <p className="font-serif text-sm text-stone-900 leading-tight mb-0.5">{profile.location.address}</p>
+              <p className="text-[10px] text-stone-500">{profile.location.city}, {profile.location.country}</p>
             </div>
           </motion.div>
         </section>
       )}
 
       {/* 4. THE EXHIBITION WORKSPACE (Tabs) */}
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Navigation Horizon (Moved out of sticky for better flow) */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white/80 backdrop-blur-xl border border-stone-200/60 p-1.5 rounded-full shadow-2xl flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        {/* Navigation Horizon */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-white border border-stone-200/80 p-1 rounded-full shadow-sm flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
             {(isModel
               ? ['gallery', 'products', 'services', 'reviews'] as const
               : ['products', 'services', 'gallery', 'reviews'] as const
@@ -584,16 +569,16 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  'px-6 py-3 rounded-full text-xs font-mono font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2',
+                  'px-4 py-1.5 rounded-full text-xs font-semibold capitalize tracking-wide transition-all duration-200 flex items-center gap-1.5',
                   activeTab === tab
-                    ? 'bg-stone-900 text-white shadow-lg'
-                    : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100/50'
+                    ? 'bg-stone-900 text-white shadow-sm'
+                    : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'
                 )}
               >
-                {tab === 'products' && <ShoppingBag size={14} />}
-                {tab === 'services' && <Scissors size={14} />}
-                {tab === 'gallery' && <Archive size={14} />}
-                {tab === 'reviews' && <Star size={14} />}
+                {tab === 'products' && <ShoppingBag size={13} />}
+                {tab === 'services' && <Scissors size={13} />}
+                {tab === 'gallery' && <Archive size={13} />}
+                {tab === 'reviews' && <Star size={13} />}
                 {tab}
               </button>
             ))}
@@ -603,36 +588,36 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
         {/* Full-Width Content Layer */}
         <motion.div
           layout
-          className="transition-all duration-700 ease-[0.22, 1, 0.36, 1] snap-start scroll-mt-32 pb-32"
+          className="transition-all duration-500 ease-out snap-start scroll-mt-24 pb-16"
         >
           <AnimatePresence mode="wait">
 
             {activeTab === 'gallery' && (
               <motion.section
                 key="gallery"
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.3 }}
                 className="relative z-10"
               >
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between mb-6 pb-2 border-b border-stone-200">
+                  <div className="flex items-center gap-3">
                     {selectedCollection && (
                       <button
                         onClick={() => setSelectedCollection(null)}
-                        className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center text-stone-500 hover:bg-stone-50 transition-colors"
+                        className="w-8 h-8 rounded-full border border-stone-200 flex items-center justify-center text-stone-500 hover:bg-stone-50 transition-colors"
                       >
-                        <ChevronLeft size={18} />
+                        <ChevronLeft size={16} />
                       </button>
                     )}
-                    <h2 className="text-4xl lg:text-6xl font-serif text-stone-900 leading-none">
+                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">
                       {selectedCollection ? selectedCollection.name : "Portfolio Showcase"}
                     </h2>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-stone-400 border border-stone-200 rounded-full px-5 py-2 hidden sm:block">
-                      {selectedCollection ? "Fine Collection" : "Selected Works"}
+                    <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400 border border-stone-200 rounded-full px-3 py-1 hidden sm:block">
+                      {selectedCollection ? "Collection" : "Works"}
                     </span>
                   </div>
                 </div>
@@ -699,7 +684,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className={cn(
-                        "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-12 transition-all duration-700"
+                        "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 transition-all duration-700"
                       )}
                     >
                       {profile.portfolioCollections && profile.portfolioCollections.length > 0 ? (
@@ -778,28 +763,28 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             {activeTab === 'products' && (
               <motion.section
                 key="products"
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-12 relative z-10"
+                exit={{ opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6 relative z-10"
               >
-                <div className="flex items-end justify-between border-b border-stone-200 pb-4">
+                <div className="flex items-end justify-between border-b border-stone-200 pb-2">
                   <div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Collection</span>
-                    <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Ready to Wear</h2>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Collection</span>
+                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Ready to Wear</h2>
                   </div>
-                  <Link href={`/tz/${slug}/shop`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-900 hover:text-amber-600 transition-colors flex items-center gap-2 pb-2 group">
-                    View Full <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <Link href={`/tz/${slug}/shop`} className="font-mono text-[10px] uppercase tracking-wider text-stone-900 hover:text-amber-600 transition-colors flex items-center gap-1.5 pb-1 group">
+                    View Full <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-12 transition-all duration-700">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 transition-all duration-500">
                   {profile.featuredProducts?.map((product, index) => (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: index * 0.05 }}
                       key={product.id}
                     >
                       <ProductCard
@@ -812,8 +797,8 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                     </motion.div>
                   ))}
                   {(!profile.featuredProducts || profile.featuredProducts.length === 0) && (
-                    <div className="col-span-2 py-32 text-center border border-dashed border-stone-200 rounded-3xl bg-white">
-                      <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-400">No products available</p>
+                    <div className="col-span-2 py-16 text-center border border-dashed border-stone-200 rounded-2xl bg-white">
+                      <p className="font-mono text-xs uppercase tracking-wider text-stone-400">No products available</p>
                     </div>
                   )}
                 </div>
@@ -823,57 +808,56 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             {activeTab === 'services' && (
               <motion.section
                 key="services"
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.3 }}
                 className="relative z-10"
               >
-                <div className="mb-10 border-b border-stone-200 pb-4">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Consultation & Bespoke</span>
-                  <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Services</h2>
+                <div className="mb-6 border-b border-stone-200 pb-2">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Custom Tailoring & Orders</span>
+                  <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Services</h2>
                 </div>
 
                 {servicesLoading ? (
-                  <div className="py-32 flex flex-col items-center justify-center gap-6">
-                    <div className="w-12 h-12 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-                    <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400">Loading Services</p>
+                  <div className="py-16 flex flex-col items-center justify-center gap-4">
+                    <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-stone-400">Loading Services</p>
                   </div>
                 ) : services.length === 0 ? (
-                  <div className="py-32 border border-dashed border-stone-200 rounded-3xl text-center bg-white">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400">No services offered presently</p>
+                  <div className="py-16 border border-dashed border-stone-200 rounded-2xl text-center bg-white">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-stone-400">No services offered presently</p>
                   </div>
                 ) : (
-                  <div className="space-y-16">
+                  <div className="space-y-8">
                     {Object.entries(
                       services.reduce((acc, s) => {
-                        const cat = s.category?.name || "Curated Offering";
+                        const cat = s.category?.name || "Custom Service";
                         if (!acc[cat]) acc[cat] = [];
                         acc[cat].push(s);
                         return acc;
                       }, {} as Record<string, ServiceWithVariants[]>)
                     ).map(([category, catServices], gIdx) => (
-                      <div key={category} className="space-y-12">
+                      <div key={category} className="space-y-6">
                         <motion.h3
-                          initial={{ opacity: 0, x: -20 }}
+                          initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: gIdx * 0.1 }}
-                          className="text-3xl font-serif text-stone-900 border-l-4 border-amber-500 pl-6 flex flex-col"
+                          transition={{ delay: gIdx * 0.05 }}
+                          className="text-lg sm:text-xl font-serif text-stone-900 border-l-2 border-amber-500 pl-3 flex flex-col"
                         >
-                          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400 mb-2 font-normal">Category</span>
+                          <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mb-0.5 font-normal">Category</span>
                           {category}
                         </motion.h3>
-                        <div className="flex flex-col space-y-6">
+                        <div className="flex flex-col space-y-3">
                           {catServices.map((service, idx) => (
                             <motion.div
-                              initial={{ opacity: 0, y: 20 }}
+                              initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: (gIdx * 0.1) + (idx * 0.1) }}
+                              transition={{ delay: (gIdx * 0.05) + (idx * 0.05) }}
                               key={service.id}
                               className="group relative"
                             >
-                              {/* Simple aesthetic line between items */}
-                              {idx !== 0 && <div className="absolute -top-3 left-0 w-full h-[1px] bg-stone-100" />}
+                              {idx !== 0 && <div className="absolute -top-1.5 left-0 w-full h-[1px] bg-stone-100" />}
                               <ServiceListItem service={service} onBook={handleBookService} index={idx} />
                             </motion.div>
                           ))}
@@ -888,74 +872,74 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
             {activeTab === 'reviews' && (
               <motion.section
                 key="reviews"
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.3 }}
                 className="relative z-10"
               >
-                <div className="flex items-end justify-between border-b border-stone-200 pb-8 mb-16">
+                <div className="flex items-end justify-between border-b border-stone-200 pb-2 mb-6">
                   <div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400 mb-4 block">Client Feedback</span>
-                    <h2 className="text-5xl lg:text-7xl font-serif text-stone-900 leading-none">Reviews</h2>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Client Feedback</span>
+                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Reviews</h2>
                   </div>
-                  <Link href={`/tz/${slug}/reviews`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-900 hover:text-amber-600 transition-colors pb-2 group flex items-center gap-2">
-                    Read All <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <Link href={`/tz/${slug}/reviews`} className="font-mono text-[10px] uppercase tracking-wider text-stone-900 hover:text-amber-600 transition-colors pb-1 group flex items-center gap-1.5">
+                    Read All <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
 
-                <div className="grid gap-8">
+                <div className="grid gap-4">
                   {profile.reviews?.slice(0, 5).map((review, rIdx) => (
                     <motion.div
                       key={review.id}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: rIdx * 0.1 }}
-                      className="bg-white rounded-3xl p-8 lg:p-12 border border-stone-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                      transition={{ delay: rIdx * 0.05 }}
+                      className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 shadow-sm"
                     >
-                      <div className="flex items-start gap-6 mb-8">
-                        <div className="w-16 h-16 rounded-full bg-stone-100 overflow-hidden flex-shrink-0 ring-4 ring-stone-50">
+                      <div className="flex items-start gap-3.5 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-stone-100 overflow-hidden flex-shrink-0 ring-2 ring-stone-50">
                           {review.userAvatar ? (
-                            <Image src={review.userAvatar} alt={review.userName} width={64} height={64} className="object-cover" />
+                            <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-stone-400 font-serif text-2xl">
+                            <div className="w-full h-full flex items-center justify-center text-stone-400 font-serif text-base font-bold">
                               {review.userName.charAt(0)}
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 mt-1">
-                          <p className="font-serif text-2xl text-stone-900 mb-1">{review.userName}</p>
-                          <div className="flex text-amber-500 gap-1">
+                        <div className="flex-1 mt-0.5">
+                          <p className="font-serif text-sm font-semibold text-stone-900 mb-0.5">{review.userName}</p>
+                          <div className="flex text-amber-500 gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={14} />
+                              <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={11} />
                             ))}
                           </div>
                         </div>
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400 bg-stone-50 px-3 py-1.5 rounded-full">{review.date}</span>
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400 bg-stone-50 px-2.5 py-1 rounded-full">{review.date}</span>
                       </div>
 
-                      <p className="font-serif text-xl md:text-2xl text-stone-700 leading-relaxed italic border-l-4 border-stone-200 pl-6 lg:pl-8">
+                      <p className="font-serif text-sm text-stone-700 leading-relaxed italic border-l-2 border-stone-200 pl-3">
                         &quot;{review.comment}&quot;
                       </p>
 
                       {review.productName && (
-                        <div className="mt-10 pt-6 border-t border-stone-100 flex items-center gap-4">
+                        <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-3">
                           {review.productImage && (
-                            <div className="w-12 h-16 rounded-lg bg-stone-100 overflow-hidden shrink-0">
-                              <Image src={review.productImage} alt={review.productName} width={48} height={64} className="object-cover w-full h-full" />
+                            <div className="w-9 h-12 rounded bg-stone-100 overflow-hidden shrink-0">
+                              <Image src={review.productImage} alt={review.productName} width={36} height={48} className="object-cover w-full h-full" />
                             </div>
                           )}
                           <div className="flex flex-col">
-                            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 mb-1">Reviewed On</span>
-                            <span className="text-sm font-medium text-stone-900 font-serif">{review.productName}</span>
+                            <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400">Reviewed On</span>
+                            <span className="text-xs font-medium text-stone-900 font-serif">{review.productName}</span>
                           </div>
                         </div>
                       )}
                     </motion.div>
                   ))}
                   {(!profile.reviews || profile.reviews.length === 0) && (
-                    <div className="py-24 text-center border border-dashed border-stone-200 rounded-3xl bg-white">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">No reviews yet.</p>
+                    <div className="py-16 text-center border border-dashed border-stone-200 rounded-2xl bg-white">
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-stone-400">No reviews yet.</p>
                     </div>
                   )}
                 </div>
@@ -1046,7 +1030,7 @@ const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) 
                     <span className="text-[9px] font-mono text-stone-600 uppercase tracking-[0.3em]">Creative Note</span>
                   </div>
                   <p className="text-sm text-stone-300 font-serif italic leading-relaxed">
-                    A curated study in {profile.specialization.name}, exploring the intersection of tradition and refined silhouette.
+                    Handcrafted {profile.specialization.name} styles, blending traditional African fashion with clean, modern tailoring.
                   </p>
                 </div>
               </motion.div>

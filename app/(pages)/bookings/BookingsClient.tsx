@@ -300,12 +300,12 @@ export function BookingsClient() {
                                 )}
                                 {booking.status === 'IN_PROGRESS' && (
                                   <p className="text-xs text-stone-600 font-serif italic leading-relaxed text-violet-600 font-bold">
-                                     The session is currently in progress. Your professional is curating your bespoke experience.
+                                     The appointment is currently in progress. Your tailor or designer is working on your custom order.
                                   </p>
                                 )}
                                 {booking.status === 'COMPLETED' && (
                                   <p className="text-xs text-stone-600 font-serif italic leading-relaxed">
-                                     Session Finished. We hope you enjoyed your bespoke experience. Don&apos;t forget to leave a review!
+                                     Session completed. We hope you loved your custom service. Don&apos;t forget to leave a review!
                                   </p>
                                 )}
                              </div>

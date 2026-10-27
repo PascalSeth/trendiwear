@@ -61,6 +61,15 @@ export default async function Page() {
           name: true,
         },
       },
+      portfolioCollections: {
+        select: {
+          id: true,
+          name: true,
+          coverImage: true,
+          images: true,
+        },
+        take: 3,
+      },
     },
     orderBy: {
       completedOrders: 'desc', // Sort by experience/success

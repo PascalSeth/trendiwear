@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     url: "https://trendizip.com",
     siteName: "TrendiZip",
     title: "TrendiZip | Buy Ankara, Kente & African Fashion in Ghana",
-    description: "Ghana's leading fashion marketplace. Discover curated Ankara, Kente & African print collections. Connect with expert designers and tailors in Accra, Kumasi & nationwide.",
+    description: "Ghana's leading fashion marketplace. Discover popular Ankara, Kente & African print collections. Connect with expert designers and tailors in Accra, Kumasi & nationwide.",
     images: [
       {
         url: "/navlogo.png",

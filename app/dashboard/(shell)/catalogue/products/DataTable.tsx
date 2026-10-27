@@ -337,8 +337,8 @@ export function ProductTable({ initialData }: ProductTableProps) {
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="flex items-center space-x-4">
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
             <Image
               src={row.original.images[0] || "/placeholder-product.jpg"}
               alt={row.getValue("name")}
@@ -347,10 +347,10 @@ export function ProductTable({ initialData }: ProductTableProps) {
             />
           </div>
           <div className="min-w-0 flex flex-col">
-            <span className="font-semibold text-gray-900 text-sm truncate max-w-[200px]">
+            <span className="font-semibold text-slate-900 text-xs sm:text-[13px] truncate max-w-[160px] sm:max-w-[240px]">
               {row.getValue("name")}
             </span>
-            <span className="text-xs text-gray-500 font-medium">
+            <span className="text-[10px] text-slate-400 font-normal truncate">
               {row.original.categories?.[0]?.name || "Uncategorized"}
             </span>
           </div>
@@ -362,7 +362,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
       header: "Price",
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="font-bold text-slate-900 text-sm">
+          <span className="font-bold text-slate-900 text-xs sm:text-[13px]">
             GH₵ {row.original.price.toFixed(2)}
           </span>
         </div>
@@ -374,16 +374,16 @@ export function ProductTable({ initialData }: ProductTableProps) {
       cell: ({ row }) => {
         const stock = row.getValue("stockQuantity") as number;
         return (
-          <div className="flex flex-col space-y-1.5 w-24">
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className={stock > 10 ? "text-emerald-600" : stock > 0 ? "text-amber-600" : "text-red-600"}>
-                {stock > 0 ? `${stock} in stock` : "Out of stock"}
+          <div className="flex flex-col space-y-1 w-20 sm:w-24">
+            <div className="flex items-center justify-between text-[11px] font-medium">
+              <span className={stock > 10 ? "text-emerald-600" : stock > 0 ? "text-amber-600" : "text-rose-600"}>
+                {stock > 0 ? `${stock} left` : "Out"}
               </span>
             </div>
-            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all ${
-                  stock > 10 ? "bg-emerald-500" : stock > 0 ? "bg-amber-500" : "bg-red-500"
+                  stock > 10 ? "bg-emerald-500" : stock > 0 ? "bg-amber-500" : "bg-rose-500"
                 }`}
                 style={{ width: `${Math.min((stock / 50) * 100, 100)}%` }}
               />
@@ -396,7 +396,7 @@ export function ProductTable({ initialData }: ProductTableProps) {
       accessorKey: "soldCount",
       header: "Sales",
       cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-700">
+        <div className="text-xs font-medium text-slate-700">
           {row.getValue("soldCount")} sold
         </div>
       ),
@@ -405,18 +405,18 @@ export function ProductTable({ initialData }: ProductTableProps) {
       id: "status",
       header: "Visibility",
       cell: ({ row }) => (
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <Switch
             checked={row.original.isActive}
             onCheckedChange={() => toggleProductActive(row.original)}
-            className="data-[state=checked]:bg-emerald-500"
+            className="scale-90 data-[state=checked]:bg-emerald-500"
           />
           <Badge 
             variant="outline"
-            className={`font-medium border-0 px-2 py-0.5 rounded-md ${
+            className={`font-semibold border-0 text-[10px] px-1.5 py-0.5 rounded ${
               row.original.isActive 
                 ? "bg-emerald-50 text-emerald-700" 
-                : "bg-gray-100 text-gray-600"
+                : "bg-slate-100 text-slate-600"
             }`}
           >
             {row.original.isActive ? "Live" : "Draft"}
@@ -504,25 +504,25 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
   };
 
   return (
-    <div className="w-full space-y-8 pb-10">
+    <div className="w-full space-y-4 sm:space-y-5 pb-6">
       {/* HEADER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Catalogue Management</span>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-600">Catalogue Management</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
             Products &amp; Inventory
           </h1>
-          <p className="text-xs font-medium text-slate-500 mt-1">
+          <p className="text-[11px] sm:text-xs font-normal text-slate-500 mt-0.5">
             Manage your store products, live stock, pricing, and variants.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link href='/dashboard/catalogue/products/add-product'>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-8 sm:h-9 px-3 sm:px-3.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
               Add New Product
             </Button>
           </Link>
@@ -530,52 +530,52 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {[
           { label: "Total Products", value: stats.total, icon: Package, color: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Active Live", value: stats.active, icon: Eye, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Out of Stock", value: stats.outOfStock, icon: ShoppingBag, color: "text-rose-600", bg: "bg-rose-50" },
           { label: "Low Inventory", value: stats.lowStock, icon: ChevronDown, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-300 transition-all">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-              <stat.icon className="h-5 w-5" />
+          <div key={i} className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-2.5 sm:gap-3 hover:border-indigo-200 transition-all">
+            <div className={`p-2 sm:p-2.5 rounded-lg shrink-0 ${stat.bg} ${stat.color}`}>
+              <stat.icon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+            <div className="min-w-0">
+              <p className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 mt-0.5 leading-tight">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
         {/* Table Toolbar */}
-        <div className="p-6 border-b border-gray-50 space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-3 sm:p-4 border-b border-slate-100 space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
             <div className="relative w-full lg:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-400 rotate-90" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 rotate-90" />
               </div>
               <Input
-                placeholder="Search by product name, SKU or category..."
+                placeholder="Search products, SKU or category..."
                 value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                 onChange={(event) =>
                   table.getColumn("name")?.setFilterValue(event.target.value)
                 }
-                className="pl-10 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl h-11"
+                className="pl-9 bg-slate-50/60 border-slate-200 focus:bg-white text-xs sm:text-[13px] transition-all rounded-lg h-9"
               />
             </div>
             
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <Tabs defaultValue="All" onValueChange={handleStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="bg-gray-100/80 p-1 h-11 rounded-xl">
+                <TabsList className="bg-slate-100 p-0.5 h-9 rounded-lg">
                   {["All", "Active", "Inactive"].map((status) => (
                     <TabsTrigger 
                       key={status} 
                       value={status}
-                      className="rounded-lg px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                      className="rounded-md px-3 h-8 data-[state=active]:bg-white data-[state=active]:shadow-xs text-xs font-medium"
                     >
                       {status}
                     </TabsTrigger>
@@ -584,34 +584,34 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
               </Tabs>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center bg-gray-100/80 p-1 rounded-xl h-11 border border-gray-200/50">
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg h-9 border border-slate-200/60">
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
                   title="Table View"
                 >
-                  <List className="h-4 w-4" />
+                  <List className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
                   title="Grid View"
                 >
-                  <LayoutGrid className="h-4 w-4" />
+                  <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-11 border-gray-200 rounded-xl px-4 text-gray-600">
-                    <ChevronDown className="h-4 w-4 mr-2" />
+                  <Button variant="outline" className="h-9 border-slate-200 rounded-lg px-3 text-xs text-slate-600">
+                    <ChevronDown className="h-3.5 w-3.5 mr-1.5" />
                     Columns
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 p-2">
-                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl text-xs">
+                  <DropdownMenuLabel className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Show/Hide Columns</DropdownMenuLabel>
                   <DropdownMenuSeparator className="my-1" />
                   {table
                     .getAllColumns()
@@ -619,7 +619,7 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                     .map((column) => (
                       <DropdownMenuCheckboxItem
                         key={column.id}
-                        className="capitalize rounded-md"
+                        className="capitalize rounded-md text-xs py-1.5"
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
@@ -634,12 +634,12 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
 
         {/* View Content (Grid vs Table) */}
         {viewMode === 'grid' ? (
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3.5">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => {
                 const p = row.original;
                 return (
-                  <div key={p.id} className="group bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300 flex flex-col">
+                  <div key={p.id} className="group bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden hover:shadow-md hover:border-indigo-200 transition-all duration-300 flex flex-col">
                     {/* Card Image */}
                     <div className="relative aspect-square bg-slate-50 overflow-hidden">
                       <Image
@@ -649,35 +649,35 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       {/* Status pill */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-full shadow-xs text-[10px] font-extrabold border border-slate-200">
+                      <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-white/95 backdrop-blur-md rounded-full shadow-2xs text-[9px] font-bold border border-slate-200">
                         <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                         {p.isActive ? 'Live' : 'Draft'}
                       </div>
                       {/* Quick Actions Dropdown */}
-                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm hover:bg-white transition-colors">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs hover:bg-white transition-colors">
+                              <MoreHorizontal className="h-3.5 w-3.5" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-slate-200 shadow-xl">
-                            <DropdownMenuItem onClick={() => handleViewDetails(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                          <DropdownMenuContent align="end" className="w-44 p-1 rounded-lg border-slate-200 shadow-lg text-xs">
+                            <DropdownMenuItem onClick={() => handleViewDetails(p)} className="rounded-md text-xs cursor-pointer py-1.5">
                               <Eye className="mr-2 h-3.5 w-3.5 text-slate-500" /> View Stats
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleAddStockClick(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                            <DropdownMenuItem onClick={() => handleAddStockClick(p)} className="rounded-md text-xs cursor-pointer py-1.5">
                               <Package className="mr-2 h-3.5 w-3.5 text-slate-500" /> Add Stock
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDuplicateProduct(p)} className="rounded-lg text-xs font-semibold cursor-pointer">
+                            <DropdownMenuItem onClick={() => handleDuplicateProduct(p)} className="rounded-md text-xs cursor-pointer py-1.5">
                               <Copy className="mr-2 h-3.5 w-3.5 text-slate-500" /> Duplicate
                             </DropdownMenuItem>
                             <Link href={`/dashboard/catalogue/products/edit/${p.id}`}>
-                              <DropdownMenuItem className="rounded-lg text-xs font-semibold cursor-pointer">
+                              <DropdownMenuItem className="rounded-md text-xs cursor-pointer py-1.5">
                                 <Edit className="mr-2 h-3.5 w-3.5 text-slate-500" /> Edit Details
                               </DropdownMenuItem>
                             </Link>
                             <DropdownMenuSeparator className="my-1" />
-                            <DropdownMenuItem onClick={() => handleDeleteClick(p)} className="rounded-lg text-xs font-semibold text-rose-600 cursor-pointer">
+                            <DropdownMenuItem onClick={() => handleDeleteClick(p)} className="rounded-md text-xs font-semibold text-rose-600 cursor-pointer py-1.5">
                               <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Product
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -686,19 +686,19 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                     </div>
 
                     {/* Card Body */}
-                    <div className="p-5 flex flex-col flex-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 mb-1">
+                    <div className="p-2.5 sm:p-3 flex flex-col flex-1">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-600 mb-0.5 truncate">
                         {p.categories?.[0]?.name || "Uncategorized"}
                       </span>
-                      <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                      <h3 className="font-semibold text-slate-900 text-xs sm:text-[13px] line-clamp-1 group-hover:text-indigo-600 transition-colors">
                         {p.name}
                       </h3>
-                      <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                        <span className="font-black text-slate-900 text-base">
+                      <div className="mt-auto pt-2.5 flex items-center justify-between border-t border-slate-100">
+                        <span className="font-bold text-slate-900 text-xs sm:text-sm">
                           GH₵ {p.price.toFixed(2)}
                         </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.stockQuantity > 10 ? 'bg-emerald-50 text-emerald-700' : p.stockQuantity > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
-                          {p.stockQuantity > 0 ? `${p.stockQuantity} in stock` : 'Out of stock'}
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${p.stockQuantity > 10 ? 'bg-emerald-50 text-emerald-700' : p.stockQuantity > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
+                          {p.stockQuantity > 0 ? `${p.stockQuantity} in stock` : 'Out'}
                         </span>
                       </div>
                     </div>
@@ -706,8 +706,8 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                 );
               })
             ) : (
-              <div className="col-span-full py-16 text-center">
-                <p className="text-slate-500 font-medium">No products match your filter criteria.</p>
+              <div className="col-span-full py-12 text-center">
+                <p className="text-slate-500 text-xs font-medium">No products match your filter criteria.</p>
               </div>
             )}
           </div>
@@ -715,11 +715,11 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
           /* Table Content */
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-gray-50/50">
+              <TableHeader className="bg-slate-50/70">
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-slate-100">
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="h-12 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      <TableHead key={header.id} className="h-9 px-3 sm:px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                         {header.isPlaceholder
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
@@ -733,10 +733,10 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                   table.getRowModel().rows.map((row) => (
                     <TableRow 
                       key={row.id} 
-                      className="border-b border-gray-50 hover:bg-indigo-50/20 transition-colors"
+                      className="border-b border-slate-100/70 hover:bg-slate-50/70 transition-colors"
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="px-6 py-4">
+                        <TableCell key={cell.id} className="px-3 sm:px-4 py-2 sm:py-2.5">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
@@ -744,13 +744,13 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-64 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="p-4 bg-gray-50 rounded-full">
-                          <ShoppingBag className="h-8 w-8 text-gray-300" />
+                    <TableCell colSpan={columns.length} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <div className="p-3 bg-slate-50 rounded-full">
+                          <ShoppingBag className="h-6 w-6 text-slate-300" />
                         </div>
-                        <p className="text-gray-500 font-medium text-lg">No products found</p>
-                        <p className="text-gray-400 text-sm max-w-xs">
+                        <p className="text-slate-700 font-semibold text-sm">No products found</p>
+                        <p className="text-slate-400 text-xs max-w-xs">
                           Try adjusting your search or filters to find what you&apos;re looking for.
                         </p>
                       </div>
@@ -763,27 +763,27 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
         )}
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
-          <p className="text-sm text-gray-500 font-medium">
+        <div className="px-3 sm:px-4 py-2.5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p className="text-xs text-slate-500 font-normal">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected
           </p>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-gray-200 rounded-lg h-9"
+              className="border-slate-200 rounded-md h-8 text-xs px-2.5"
             >
               Previous
             </Button>
             <div className="flex items-center gap-1 mx-2">
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-xs font-bold text-slate-900">
                 {table.getState().pagination.pageIndex + 1}
               </span>
-              <span className="text-sm text-gray-400 font-medium">of</span>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-xs text-slate-400">/</span>
+              <span className="text-xs font-bold text-slate-900">
                 {table.getPageCount()}
               </span>
             </div>
@@ -792,7 +792,7 @@ lowStock: data.filter(p => p.stockQuantity > 0 && p.stockQuantity < 10).length,
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-gray-200 rounded-lg h-9"
+              className="border-slate-200 rounded-md h-8 text-xs px-2.5"
             >
               Next
             </Button>

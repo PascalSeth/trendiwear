@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, X, TrendingUp, ArrowRight, History, ShoppingBag, Sparkles, Command } from "lucide-react";
+import { Search, X, TrendingUp, ArrowRight, History, ShoppingBag, Command } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -163,7 +163,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                   <div className="md:col-span-8">
                     <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-stone-400 mb-6 flex items-center gap-2">
-                      <Sparkles size={14} /> Featured Collections
+                      <ShoppingBag size={14} /> Featured Collections
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       {searchResults.collections.map((item: SearchCollection) => (
@@ -184,7 +184,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors z-10" />
                           <div className="absolute bottom-4 left-4 z-20">
                             <p className="text-white font-medium text-lg">{item.name}</p>
-                            <p className="text-white/80 text-xs">Explore Curated Pieces</p>
+                            <p className="text-white/80 text-xs">Explore Popular Styles</p>
                           </div>
                         </Link>
                       ))}
@@ -273,7 +273,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-stone-900">Search for &quot;{query}&quot; in Shop</p>
-                          <p className="text-xs text-stone-400">Look across all curated categories</p>
+                          <p className="text-xs text-stone-400">Look across all store categories</p>
                         </div>
                       </button>
                     </div>

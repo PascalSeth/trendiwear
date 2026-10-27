@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { MultiCategoryPicker } from "@/app/components/MultiCategoryPicker";
 
@@ -9,14 +10,13 @@ import {
   Upload, X, Video, ChevronRight, ChevronLeft, 
   Check, Tag, Package, Palette, Image as ImageIcon, 
   Loader2, DollarSign, Award, Clock,
-  Save, Plus
+  Save, Plus, Wand2, Compass, Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { suggestTags } from "@/lib/fashion-engine";
-import { Sparkles } from "lucide-react";
 
 type SizeOption =
   | "US 2" | "US 4" | "US 6" | "US 8" | "US 10" | "US 12" | "US 14" | "US 16"
@@ -85,6 +85,44 @@ export default function EditProductPage() {
   const [submittedForShowcase, setSubmittedForShowcase] = useState(false);
   const [estimatedDelivery, setEstimatedDelivery] = useState("0");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  const handleGenerateWithAI = async () => {
+    if (!name.trim()) {
+      toast.error("Please enter a product name first");
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const activeCatName = parentCategories.find(c => selectedCategoryIds.includes(c.id))?.name || "";
+      const res = await fetch("/api/ai/product-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productName: name,
+          category: activeCatName,
+          fabric: material,
+          targetAudience: isUnisex ? "Unisex" : "Men / Women",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.listing?.description) {
+          setDescription(data.listing.description);
+        }
+        if (data.listing?.careInstructions && !careInstructions) {
+          setCareInstructions(data.listing.careInstructions);
+        }
+        toast.success("AI generated product description and care tips!");
+      } else {
+        toast.error("Could not generate AI listing");
+      }
+    } catch {
+      toast.error("Failed to connect to AI listing assistant");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   // --- Discovery Preview ---
   const discoveryPreview = useMemo(() => {
@@ -376,7 +414,18 @@ export default function EditProductPage() {
                         
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">The Story</Label>
+                            <div className="flex items-center gap-3">
+                              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">The Story</Label>
+                              <button
+                                type="button"
+                                onClick={handleGenerateWithAI}
+                                disabled={aiGenerating || !name.trim()}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 text-[10px] font-bold transition-all disabled:opacity-50"
+                              >
+                                {aiGenerating ? <Loader2 size={11} className="animate-spin text-amber-600" /> : <Wand2 size={11} className="text-amber-600" />}
+                                <span>{aiGenerating ? "Generating..." : "Generate with AI"}</span>
+                              </button>
+                            </div>
                             <span className="text-[10px] font-bold text-slate-300 italic">{description.length}/1000</span>
                           </div>
                           <textarea 
@@ -394,7 +443,7 @@ export default function EditProductPage() {
                     <div className="lg:col-span-4 space-y-8">
                       {/* AI Insights Card */}
                       <div className="p-8 bg-slate-900 rounded-[2rem] text-white relative overflow-hidden">
-                        <Sparkles className="absolute top-6 right-6 w-5 h-5 text-blue-400 animate-pulse" />
+                        <Compass className="absolute top-6 right-6 w-5 h-5 text-blue-400" />
                         <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 opacity-60">Discovery Preview</h3>
                         
                         {(discoveryPreview.styles.length > 0 || discoveryPreview.keywords.length > 0) ? (
@@ -420,7 +469,7 @@ export default function EditProductPage() {
 
                       {/* Collections Bento Block */}
                       <div className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm space-y-6">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Curated Collections</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Featured Collections</Label>
                         <div className="space-y-2">
                           {selectedCategoryCollections.length > 0 ? (
                             selectedCategoryCollections.map(col => (
@@ -906,7 +955,7 @@ export default function EditProductPage() {
                             {[
                               { id: 'custom', label: 'Customizable Request', state: isCustomizable, set: setIsCustomizable, icon: <Save className="w-3 h-3" /> },
                               { id: 'unisex', label: 'Gender Neutral', state: isUnisex, set: setIsUnisex, icon: <Check className="w-3 h-3" /> },
-                              { id: 'showcase', label: 'Marketplace Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Sparkles className="w-3 h-3" /> },
+                              { id: 'showcase', label: 'Marketplace Showcase', state: submittedForShowcase, set: setSubmittedForShowcase, icon: <Star className="w-3 h-3" /> },
                              ].map(opt => (
                                <button
                                  key={opt.id}

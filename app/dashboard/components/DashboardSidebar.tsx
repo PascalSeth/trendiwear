@@ -27,11 +27,12 @@ import {
   Bot,
   DollarSign,
   Rocket,
+  Eye,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { Role } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -52,6 +53,8 @@ interface NavItem {
   children?: NavItem[];
   roles?: Role[];
   badgeType?: 'orders' | 'bookings' | 'messages';
+  badgeText?: string;
+  category?: string;
 }
 
 interface NavGroup {
@@ -118,12 +121,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           {
             label: 'Trendi AI',
             icon: Bot,
+            badgeText: 'AI Suite',
             children: [
-              { label: 'Visual Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2 },
-              { label: 'Market & Trend Research', href: '/dashboard/ai/market-research', icon: TrendingUp },
-              { label: 'Pricing & Profit Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign },
-              { label: 'Product Copywriter', href: '/dashboard/ai/copywriter', icon: FileText },
-              { label: 'Collection Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket },
+              { label: 'Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2, category: 'Creative Suite' },
+              { label: 'Market Research', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
+              { label: 'Pricing Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign, category: 'Strategy & Growth' },
+              { label: 'Customer Intent', href: '/dashboard/ai/customer-intent', icon: Eye, category: 'Strategy & Growth' },
+              { label: 'Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket, category: 'Strategy & Growth' },
             ],
           },
           { label: 'Outfit Inspirations', href: '/dashboard/trends/outfit-inspirations', icon: Compass },
@@ -153,12 +157,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           {
             label: 'Trendi AI',
             icon: Bot,
+            badgeText: 'AI Suite',
             children: [
-              { label: 'Visual Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2 },
-              { label: 'Market & Trend Research', href: '/dashboard/ai/market-research', icon: TrendingUp },
-              { label: 'Pricing & Profit Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign },
-              { label: 'Product Copywriter', href: '/dashboard/ai/copywriter', icon: FileText },
-              { label: 'Collection Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket },
+              { label: 'Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2, category: 'Creative Suite' },
+              { label: 'Market Research', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
+              { label: 'Pricing Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign, category: 'Strategy & Growth' },
+              { label: 'Customer Intent', href: '/dashboard/ai/customer-intent', icon: Eye, category: 'Strategy & Growth' },
+              { label: 'Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket, category: 'Strategy & Growth' },
             ],
           },
           { label: 'Outfit Inspirations', href: '/dashboard/trends/outfit-inspirations', icon: Compass },
@@ -212,18 +217,36 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
   const renderNavItem = (item: NavItem, depth = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedMenus.includes(item.label);
-    const active = item.href ? isActive(item.href) : hasChildren && isParentActive(item.children!);
+    const isLeafActive = item.href ? isActive(item.href) : false;
+    const isBranchActive = hasChildren && isParentActive(item.children!);
+    const isSubmenuItem = depth > 0;
+
+    let itemStyles = '';
+    if (isSubmenuItem) {
+      // Nested sub-item styling
+      itemStyles = isLeafActive
+        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-[0_4px_12px_-2px_rgba(79,70,229,0.35)] px-2.5 py-1.5 text-[11.5px]'
+        : 'text-slate-600 hover:bg-indigo-50/60 hover:text-indigo-700 px-2.5 py-1.5 text-[11.5px] font-medium';
+    } else if (hasChildren) {
+      // Top-level expandable menu (e.g. Trendi AI, Catalogue)
+      itemStyles = isBranchActive
+        ? 'bg-indigo-50/90 text-indigo-900 font-bold border border-indigo-100/90 px-2.5 py-2 text-xs shadow-xs'
+        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 px-2.5 py-2 text-xs font-medium';
+    } else {
+      // Top-level leaf item (e.g. Overview, Analytics, Orders)
+      itemStyles = isLeafActive
+        ? 'bg-indigo-600 text-white shadow-[0_6px_16px_-4px_rgba(79,70,229,0.35)] font-semibold px-2.5 py-2 text-xs'
+        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 px-2.5 py-2 text-xs font-medium';
+    }
 
     const content = (
       <div className={cn(
-        'group flex items-center rounded-xl px-2.5 py-2 text-xs font-medium transition-all duration-300 relative',
+        'group flex items-center rounded-xl transition-all duration-200 relative',
         collapsed ? 'justify-center' : 'justify-between',
-        active
-          ? 'bg-indigo-600 text-white shadow-[0_6px_16px_-4px_rgba(79,70,229,0.35)] font-semibold'
-          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'
+        itemStyles
       )}>
-        {/* Active Indicator */}
-        {active && !collapsed && (
+        {/* Active Indicator Pill (only for top-level leaf nav items) */}
+        {!isSubmenuItem && !hasChildren && isLeafActive && !collapsed && (
           <motion.div 
             layoutId="activeNav"
             className="absolute left-0 w-1 h-5 bg-white rounded-full"
@@ -231,10 +254,15 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           />
         )}
 
-        <div className={cn('flex items-center gap-2.5', collapsed && 'justify-center')}>
+        <div className={cn('flex items-center gap-2.5 min-w-0', collapsed && 'justify-center')}>
           <item.icon className={cn(
-            'h-4 w-4 transition-transform duration-300 group-hover:scale-110 shrink-0',
-            active ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'
+            isSubmenuItem ? 'h-3.5 w-3.5' : 'h-4 w-4',
+            'transition-transform duration-200 group-hover:scale-110 shrink-0',
+            isSubmenuItem
+              ? isLeafActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'
+              : hasChildren
+              ? isBranchActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-600'
+              : isLeafActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'
           )} />
           
           {!collapsed && (
@@ -247,21 +275,36 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
           )}
         </div>
 
-        {!collapsed && hasChildren && (
-          <motion.div
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown className={cn("h-3.5 w-3.5 opacity-50 shrink-0", active ? "text-white" : "text-slate-400")} />
-          </motion.div>
+        {!collapsed && (
+          <div className="flex items-center gap-1 shrink-0 ml-1">
+            {item.badgeText && (
+              <span className={cn(
+                "text-[8.5px] px-1.5 py-0.5 rounded font-bold tracking-tight uppercase",
+                isSubmenuItem
+                  ? isLeafActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-indigo-100/70 group-hover:text-indigo-700"
+                  : isBranchActive ? "bg-indigo-600 text-white shadow-xs" : "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border border-indigo-200/60"
+              )}>
+                {item.badgeText}
+              </span>
+            )}
+            {hasChildren && (
+              <motion.div
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className={cn("h-3.5 w-3.5 opacity-60 shrink-0", isBranchActive ? "text-indigo-600" : "text-slate-400")} />
+              </motion.div>
+            )}
+          </div>
         )}
       </div>
     );
 
     if (hasChildren) {
+      let lastCategory: string | undefined = undefined;
       return (
         <div key={item.label} className="space-y-1">
-          <button onClick={() => toggleMenu(item.label)} className="w-full">
+          <button onClick={() => toggleMenu(item.label)} className="w-full text-left cursor-pointer">
             {content}
           </button>
           <AnimatePresence>
@@ -270,9 +313,23 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden ml-3 border-l border-slate-100 pl-2 space-y-1"
+                className="overflow-hidden ml-4 border-l-2 border-indigo-100/80 pl-2 space-y-1 my-1"
               >
-                {item.children!.map((child) => renderNavItem(child, depth + 1))}
+                {item.children!.map((child) => {
+                  const isNewCategory = child.category && child.category !== lastCategory;
+                  if (child.category) lastCategory = child.category;
+                  return (
+                    <Fragment key={child.label}>
+                      {isNewCategory && (
+                        <div className="pt-2 pb-0.5 px-2 flex items-center gap-1.5 text-[8.5px] font-black text-indigo-400 uppercase tracking-widest select-none">
+                          <span className="w-1 h-1 rounded-full bg-indigo-300" />
+                          <span>{child.category}</span>
+                        </div>
+                      )}
+                      {renderNavItem(child, depth + 1)}
+                    </Fragment>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>

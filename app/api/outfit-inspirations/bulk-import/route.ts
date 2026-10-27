@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       if (!item.outfitImageUrl) continue;
 
       const title = item.title?.trim() || `${event.name} Lookbook #${index + 1}`;
-      const description = item.description?.trim() || `Curated lookbook concept for ${event.name}`;
+      const description = item.description?.trim() || `Outfit idea for ${event.name}`;
       const tags = item.tags && Array.isArray(item.tags) ? item.tags : [event.name];
 
       // Check if image URL already exists in DB

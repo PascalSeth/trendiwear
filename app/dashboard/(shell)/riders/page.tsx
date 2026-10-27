@@ -121,52 +121,58 @@ export default function RidersPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 p-3 sm:p-5">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Rider Management</h1>
-          <p className="text-slate-500">Manage your delivery fleet and assign them to orders.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-2 w-2 rounded-full bg-violet-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">Fleet &amp; Dispatch</span>
+          </div>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">Rider Management</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Manage delivery personnel and assign dispatch to customer orders.</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl shadow-lg shadow-violet-200 transition-all active:scale-95">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Professional Rider
+            <Button className="h-8 sm:h-9 text-xs font-semibold px-3 sm:px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all gap-1.5 self-start sm:self-auto">
+              <Plus className="w-3.5 h-3.5" />
+              Add Delivery Rider
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleAddRider}>
               <DialogHeader>
-                <DialogTitle>Add New Rider</DialogTitle>
-                <DialogDescription>
-                  Enter the rider&apos;s professional details. They will appear in your fulfillment list.
+                <DialogTitle className="text-base font-bold">Add Delivery Rider</DialogTitle>
+                <DialogDescription className="text-xs">
+                  Enter rider contact and vehicle details for order dispatch.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Full Name</label>
+              <div className="grid gap-3 py-3 text-xs">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Full Name</label>
                   <Input 
                     placeholder="e.g. Samuel Amponsah" 
                     value={newRider.name}
                     onChange={e => setNewRider({...newRider, name: e.target.value})}
                     required
+                    className="h-9 text-xs rounded-lg"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Phone Number</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Phone Number</label>
                   <Input 
                     placeholder="024 XXX XXXX" 
                     value={newRider.phone}
                     onChange={e => setNewRider({...newRider, phone: e.target.value})}
                     required
+                    className="h-9 text-xs rounded-lg"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Vehicle</label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Vehicle</label>
                     <select 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-9 w-full rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs"
                       value={newRider.vehicleType || "bike"}
                       onChange={e => setNewRider({...newRider, vehicleType: e.target.value})}
                     >
@@ -176,20 +182,21 @@ export default function RidersPage() {
                       <option value="truck">Truck</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">License ID</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">License ID</label>
                     <Input 
                       placeholder="Optional" 
                       value={newRider.licenseNumber || ""}
                       onChange={e => setNewRider({...newRider, licenseNumber: e.target.value})}
+                      className="h-9 text-xs rounded-lg"
                     />
                   </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={submitting} className="bg-violet-600 hover:bg-violet-700 text-white">
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Truck className="w-4 h-4 mr-2" />}
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddDialogOpen(false)} className="h-8 text-xs rounded-lg">Cancel</Button>
+                <Button type="submit" size="sm" disabled={submitting} className="h-8 text-xs rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Truck className="w-3.5 h-3.5 mr-1.5" />}
                   Register Rider
                 </Button>
               </DialogFooter>
@@ -199,31 +206,31 @@ export default function RidersPage() {
       </div>
 
       {/* Stats & Search */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Total Riders</p>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-              <Users className="w-5 h-5" />
-            </div>
-            <p className="text-2xl font-black">{riders.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
+          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Riders</p>
+            <p className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 mt-0.5">{riders.length}</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Active Fleet</p>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="p-2 bg-teal-50 text-teal-600 rounded-lg">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <p className="text-2xl font-black">{riders.filter(r => r.isActive).length}</p>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
+          <div className="p-2 bg-teal-50 text-teal-600 rounded-lg shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Fleet</p>
+            <p className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 mt-0.5">{riders.filter(r => r.isActive).length}</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <Input 
               placeholder="Search by name or phone..." 
-              className="pl-10 h-11 bg-slate-50/50 border-none rounded-xl"
+              className="pl-8 h-9 bg-slate-50/50 border-slate-200 rounded-lg text-xs"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
@@ -233,58 +240,58 @@ export default function RidersPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-10 h-10 animate-spin text-violet-600" />
+        <div className="flex items-center justify-center py-20 bg-white rounded-xl border border-slate-200/80">
+          <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
         </div>
       ) : filteredRiders.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
           {filteredRiders.map((rider) => (
-            <div key={rider.id} className="group relative bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-violet-100 transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-violet-50 transition-colors">
-                  <Truck className="w-6 h-6 text-slate-400 group-hover:text-violet-600 transition-colors" />
+            <div key={rider.id} className="group relative bg-white border border-slate-200/80 rounded-xl p-3.5 sm:p-4 shadow-xs hover:border-violet-200 transition-all">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-violet-50 transition-colors">
+                  <Truck className="w-4 h-4 text-slate-400 group-hover:text-violet-600 transition-colors" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={rider.isActive ? "bg-teal-50 text-teal-700 border-teal-100" : "bg-slate-50 text-slate-600"}>
+                <div className="flex items-center gap-1.5">
+                  <Badge className={rider.isActive ? "bg-teal-50 text-teal-700 border-teal-200 text-[10px] px-1.5 py-0" : "bg-slate-50 text-slate-600 text-[10px] px-1.5 py-0"}>
                     {rider.isActive ? "Active" : "Inactive"}
                   </Badge>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-600"
+                    className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600"
                     onClick={() => deleteRider(rider.id)}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">{rider.name}</h3>
-                <div className="space-y-2 mt-4">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Phone className="w-4 h-4 text-slate-400" />
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900">{rider.name}</h3>
+                <div className="space-y-1.5 mt-2.5">
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     {rider.phone}
                   </div>
                   {rider.vehicleType && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Car className="w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Car className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="capitalize">{rider.vehicleType}</span>
                     </div>
                   )}
                   {rider.licenseNumber && (
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Hash className="w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Hash className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       ID: {rider.licenseNumber}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-2">
+              <div className="mt-3.5">
                 <Button 
                   variant="outline" 
-                  className="w-full rounded-xl text-xs font-bold uppercase tracking-widest h-9"
+                  className="w-full rounded-lg text-xs font-semibold h-8 border-slate-200 hover:bg-slate-50"
                   onClick={() => toggleRiderStatus(rider.id, rider.isActive)}
                 >
                   {rider.isActive ? "Deactivate" : "Activate"}
@@ -294,20 +301,20 @@ export default function RidersPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-20 text-center">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Truck className="w-10 h-10 text-slate-300" />
+        <div className="bg-white border border-dashed border-slate-200 rounded-xl p-12 text-center">
+          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-100">
+            <Truck className="w-6 h-6 text-slate-400" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">No Professional Riders Yet</h2>
-          <p className="text-slate-500 max-w-sm mx-auto mb-8">
-            Register your delivery fleet to start assigning them to customer orders professionally.
+          <h2 className="text-sm font-bold text-slate-900 mb-1">No Delivery Riders Yet</h2>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+            Register your delivery fleet to start assigning them to customer orders.
           </p>
           <Button 
-            className="bg-violet-600 hover:bg-violet-700 text-white px-8 h-12 rounded-2xl shadow-xl shadow-violet-200"
+            className="bg-slate-900 hover:bg-slate-800 text-white px-4 h-8 text-xs rounded-lg shadow-xs"
             onClick={() => setIsAddDialogOpen(true)}
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Your First Rider
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            Add First Rider
           </Button>
         </div>
       )}

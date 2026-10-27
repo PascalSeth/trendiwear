@@ -5,7 +5,7 @@ import { JsonLd } from '@/components/seo';
 
 export const metadata: Metadata = {
   title: "Buy Ankara, Kente & African Dresses Online in Ghana",
-  description: "Shop Ghana's largest curated fashion marketplace. Discover Ankara, Kente, African print dresses, church wear, wedding guest & graduation styles. Fast delivery to Accra, Kumasi & nationwide.",
+  description: "Shop Ghana's largest fashion marketplace. Discover Ankara, Kente, African print dresses, church wear, wedding guest & graduation styles. Fast delivery to Accra, Kumasi & nationwide.",
   keywords: [
     "buy dresses online Ghana", "Ankara dresses Ghana", "Kente dresses Ghana",
     "African print dresses Ghana", "church dresses Ghana", "church dresses Accra",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Buy Ankara, Kente & African Dresses | TrendiZip Ghana",
-    description: "Discover curated Ankara, Kente & African print collections. Shop church wear, wedding dresses & more. Fast delivery across Ghana.",
+    description: "Discover popular Ankara, Kente & African print collections. Shop church wear, wedding dresses & more. Fast delivery across Ghana.",
     url: 'https://trendizip.com/shopping',
     siteName: 'TrendiZip',
     locale: 'en_GH',
@@ -73,7 +73,7 @@ export default async function Page() {
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 8 // Show more on the shop page
+      take: 24 // Show a rich selection on the shopping catalog
     }),
 
     // Trending (Most Viewed)
@@ -101,7 +101,7 @@ export default async function Page() {
         }
       },
       orderBy: { viewCount: 'desc' },
-      take: 8
+      take: 24
     }),
 
     // Collections
@@ -113,7 +113,7 @@ export default async function Page() {
         }
       },
       orderBy: { order: 'asc' },
-      take: 5
+      take: 8
     })
   ]);
 
@@ -152,7 +152,7 @@ export default async function Page() {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": "Buy Ankara, Kente & African Dresses Online in Ghana",
-    "description": "Ghana's largest curated fashion marketplace featuring Ankara, Kente, African print dresses and more.",
+    "description": "Ghana's largest fashion marketplace featuring popular Ankara, Kente, African print dresses and more.",
     "url": "https://trendizip.com/shopping",
     "inLanguage": "en-GH",
     "provider": {

@@ -201,6 +201,18 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
                               Pre-Order
                             </span>
                           )}
+
+                          {(() => {
+                            const ageHours = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+                            if ((order.status === 'PROCESSING' || order.status === 'PENDING' || order.status === 'PAID') && ageHours > 48) {
+                              return (
+                                <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[9px] font-black uppercase rounded animate-pulse" title="Pending fulfillment > 48 hours">
+                                  ⚠️ Risk &gt;48h
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
 
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${

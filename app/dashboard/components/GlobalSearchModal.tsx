@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, X, Package, ShoppingBag, Sparkles, 
+  Search, X, Package, ShoppingBag, TrendingUp, 
   Loader2, ChevronRight
 } from 'lucide-react';
 
@@ -25,7 +25,7 @@ interface SearchItem {
 
 const QUICK_NAV_ITEMS: SearchItem[] = [
   { id: 'ai-studio', title: 'AI Generative Studio', subtitle: 'Garment color transformer & multi-engine generator', type: 'tool', url: '/dashboard/ai-studio', badge: 'AI Studio' },
-  { id: 'outfits', title: 'Outfit Inspirations', subtitle: 'Curated editorial lookbooks & event trends', type: 'tool', url: '/dashboard/trends/outfit-inspirations', badge: 'Trends' },
+  { id: 'outfits', title: 'Outfit Inspirations', subtitle: 'Popular style lookbooks & event trends', type: 'tool', url: '/dashboard/trends/outfit-inspirations', badge: 'Trends' },
   { id: 'analytics', title: 'Analytics & Insights', subtitle: 'Platform sales revenue and conversion rates', type: 'tool', url: '/dashboard/analytics', badge: 'Metrics' },
   { id: 'products', title: 'Product Inventory', subtitle: 'View and manage all active products', type: 'tool', url: '/dashboard/catalogue/products', badge: 'Catalogue' },
   { id: 'orders', title: 'Order Fulfillment', subtitle: 'Manage active customer orders & shipments', type: 'tool', url: '/dashboard/orders', badge: 'Orders' },
@@ -222,7 +222,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     }`}>
                       {item.type === 'product' ? <Package className="h-4 w-4" /> :
                        item.type === 'order' ? <ShoppingBag className="h-4 w-4" /> :
-                       <Sparkles className="h-4 w-4" />}
+                       <TrendingUp className="h-4 w-4" />}
                     </div>
                   )}
 

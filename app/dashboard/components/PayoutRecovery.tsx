@@ -110,7 +110,7 @@ export default function PayoutRecovery() {
       {/* PAYOUT QUEUE TABLE */}
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 p-12 flex flex-col items-center justify-center min-h-[300px]">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+          <Loader2 className="w-8 h-8 text-amber-600 animate-spin mb-3" />
           <p className="text-xs font-bold text-slate-500">Scanning for stuck payouts...</p>
         </div>
       ) : records.length === 0 ? (
@@ -145,7 +145,7 @@ export default function PayoutRecovery() {
                       </span>
                     </div>
 
-                    <p className="text-xs font-black text-indigo-600">
+                    <p className="text-xs font-black text-slate-900">
                       Amount: GH₵ {item.amount.toFixed(2)}
                     </p>
 

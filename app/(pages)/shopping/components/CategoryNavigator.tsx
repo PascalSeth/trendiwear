@@ -1,8 +1,10 @@
-'use client'
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -16,64 +18,140 @@ interface Category {
 
 interface CategoryNavigatorProps {
   categories: Category[];
+  activeCategory?: string | null;
+  onSelectCategory?: (slug: string | null) => void;
 }
 
-export const CategoryNavigator = ({ categories }: CategoryNavigatorProps) => {
-  const [isFixed, setIsFixed] = useState(false);
+export const CategoryNavigator: React.FC<CategoryNavigatorProps> = ({
+  categories,
+  activeCategory = null,
+  onSelectCategory,
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Monitor scroll for sticking the navigator
+  const checkScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 600) {
-        setIsFixed(true);
-      } else {
-        setIsFixed(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [categories]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = direction === 'left' ? -320 : 320;
+    scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    setTimeout(checkScroll, 350);
+  };
 
   return (
-    <div className="relative h-32 lg:h-40 my-12">
-      <motion.div
-        className={`w-full z-40 py-6 transition-all duration-500 ${isFixed
-            ? 'fixed top-20 left-0 bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm'
-            : 'relative'
-          }`}
+    <div className="relative w-full py-2">
+      {/* Scroll controls (desktop only) */}
+      {canScrollLeft && (
+        <button
+          onClick={() => handleScroll('left')}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-md border border-stone-200/80 flex items-center justify-center text-stone-700 hover:bg-stone-900 hover:text-white transition-all hidden md:flex"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      )}
+
+      {canScrollRight && (
+        <button
+          onClick={() => handleScroll('right')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 shadow-md border border-stone-200/80 flex items-center justify-center text-stone-700 hover:bg-stone-900 hover:text-white transition-all hidden md:flex"
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={18} />
+        </button>
+      )}
+
+      {/* Categories track */}
+      <div
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className="flex items-center gap-3 overflow-x-auto no-scrollbar px-4 sm:px-8 py-1 scroll-smooth"
       >
-        <div className="max-w-[1600px] mx-auto px-6 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-8 min-w-max pb-4">
-            {categories.map((cat, i) => (
-              <Link
-                key={cat.id}
-                href={`/shopping/categories/${cat.slug}`}
-                className="group flex items-center gap-4 hover:opacity-100 transition-opacity"
-              >
-                <div className="relative w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden border border-stone-100 group-hover:border-stone-900 transition-colors duration-500">
-                  <Image
-                    src={cat.imageUrl || "/placeholder-category.jpg"}
-                    alt={cat.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 group-hover:text-amber-700 transition-colors">
-                    {cat._count.products} Items
-                  </span>
-                  <span className="text-sm lg:text-base font-serif font-medium text-stone-900 group-hover:italic">
-                    {cat.name}
-                  </span>
-                </div>
-                {i < categories.length - 1 && (
-                  <div className="h-4 w-[1px] bg-stone-100 ml-4 hidden lg:block" />
+        {/* All Categories Pill */}
+        <button
+          type="button"
+          onClick={() => onSelectCategory ? onSelectCategory(null) : null}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium tracking-wide whitespace-nowrap transition-all duration-200 shrink-0 shadow-sm",
+            activeCategory === null
+              ? "bg-stone-900 text-white shadow-stone-900/20"
+              : "bg-white text-stone-700 hover:bg-stone-100 border border-stone-200/70"
+          )}
+        >
+          <span>All Categories</span>
+        </button>
+
+        {categories.map((cat) => {
+          const isSelected = activeCategory === cat.slug;
+
+          const innerBadge = (
+            <div
+              className={cn(
+                "group flex items-center gap-3 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 shrink-0 shadow-sm border",
+                isSelected
+                  ? "bg-stone-900 text-white border-stone-900 shadow-stone-900/15"
+                  : "bg-white text-stone-800 hover:bg-stone-50 border-stone-200/80 hover:border-stone-300"
+              )}
+            >
+              <div className="relative w-7 h-7 rounded-full overflow-hidden border border-stone-200/80 shrink-0 bg-stone-100">
+                <Image
+                  src={cat.imageUrl || "/placeholder-category.jpg"}
+                  alt={cat.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              </div>
+              <span className="font-medium tracking-tight">{cat.name}</span>
+              <span
+                className={cn(
+                  "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                  isSelected
+                    ? "bg-stone-800 text-amber-300"
+                    : "bg-stone-100 text-stone-500 group-hover:bg-stone-200"
                 )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </motion.div>
+              >
+                {cat._count.products}
+              </span>
+            </div>
+          );
+
+          if (onSelectCategory) {
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => onSelectCategory(isSelected ? null : cat.slug)}
+                className="shrink-0 text-left"
+              >
+                {innerBadge}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={cat.id}
+              href={`/shopping/categories/${cat.slug}`}
+              className="shrink-0"
+            >
+              {innerBadge}
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 };

@@ -324,7 +324,7 @@ export default function CollectionDetailClient({
               >
                 <div className="space-y-6">
                    <nav className="flex items-center gap-4 text-[10px] font-mono font-bold uppercase tracking-[0.5em] text-amber-700/60 mb-8">
-                    <Link href="/shopping" className="hover:text-amber-700 transition-colors">Atelier</Link>
+                    <Link href="/shopping" className="hover:text-amber-700 transition-colors">Shop</Link>
                     <div className="w-8 h-px bg-amber-200/50" />
                     <span className="text-stone-400">Collections</span>
                   </nav>
@@ -340,7 +340,7 @@ export default function CollectionDetailClient({
 
                 <div className="flex flex-col md:flex-row items-start gap-12 border-l border-stone-200 pl-8 lg:pl-12">
                   <p className="max-w-md text-lg lg:text-xl font-serif italic text-stone-500 leading-relaxed">
-                    {collection.description || "A curated exploration of artisanal form and seasonal texture, celebrating the unique dialogue between cloth and body."}
+                    {collection.description || "A popular collection of stylish outfits made with quality fabrics and tailored for everyday comfort and elegance."}
                   </p>
                   
                   <div className="flex flex-col items-start gap-2 pt-2">
@@ -382,7 +382,7 @@ export default function CollectionDetailClient({
                 
                 {/* Visual Accent: Signature */}
                 <div className="absolute top-12 right-12 flex flex-col items-end gap-2 text-white/40 font-serif italic text-2xl group-hover:text-white/80 transition-colors duration-1000">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.5em] mb-2 leading-none">Status / Curated</span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.5em] mb-2 leading-none">Status / In Stock</span>
                   Edition.S
                 </div>
 
@@ -482,7 +482,7 @@ export default function CollectionDetailClient({
               <LayoutGroup>
                 <motion.div 
                   layout 
-                  className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 lg:gap-x-12 gap-y-16 lg:gap-y-24"
+                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 lg:gap-y-7"
                 >
                   <AnimatePresence>
                     {filteredProducts.map((product, index) => (
@@ -537,11 +537,11 @@ export default function CollectionDetailClient({
                     <div className="w-12 h-12 rounded-full border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white transition-all">
                        <ArrowLeft size={16} />
                     </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Atelier Frontispiece</span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Back to Shop</span>
                  </Link>
                  <div className="w-12 h-px bg-stone-200" />
                  <Link href="/shopping/collections" className="group flex items-center gap-4">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-right">Other Curated Files</span>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-right">More Collections</span>
                     <div className="w-12 h-12 rounded-full border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white transition-all">
                        <ArrowRight size={16} />
                     </div>

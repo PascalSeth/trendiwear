@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, Users, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -121,65 +120,72 @@ export default function ProfessionalTypesManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
       </div>
     )
   }
 
+  const totalPros = types.reduce((acc, t) => acc + (t._count?.professionals || 0), 0)
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 p-3 sm:p-5 font-sans">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Professional Types Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Professional Types</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Manage professional categories and specializations
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={openCreateDialog} className="h-8 sm:h-9 text-xs font-semibold px-3 sm:px-3.5 rounded-lg flex items-center gap-1.5 self-start sm:self-auto">
+              <Plus className="h-3.5 w-3.5" />
               Add Professional Type
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md p-4 sm:p-5 rounded-xl">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-base font-bold text-slate-900">
                 {editingType ? 'Edit Professional Type' : 'Create Professional Type'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
+            <form onSubmit={handleSubmit} className="space-y-3.5 mt-2">
+              <div className="space-y-1">
+                <Label htmlFor="name" className="text-xs font-medium text-slate-700">Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Bespoke Tailor"
+                  className="h-8 sm:h-9 text-xs rounded-lg"
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-1">
+                <Label htmlFor="description" className="text-xs font-medium text-slate-700">Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe specialization details..."
+                  className="text-xs rounded-lg min-h-[70px] resize-none"
                   rows={3}
                 />
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between py-1 border-t border-slate-100">
+                <Label htmlFor="isActive" className="text-xs font-medium text-slate-700">Active Status</Label>
                 <Switch
                   id="isActive"
                   checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label htmlFor="isActive">Active</Label>
               </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="h-8 px-3 text-xs rounded-lg">
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" size="sm" className="h-8 px-3.5 text-xs rounded-lg">
                   {editingType ? 'Update' : 'Create'}
                 </Button>
               </div>
@@ -188,62 +194,108 @@ export default function ProfessionalTypesManagement() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Specializations</span>
+            <Users className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-slate-900">{types.length}</div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Active</span>
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-emerald-600">
+            {types.filter(t => t.isActive).length}
+          </div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Inactive</span>
+            <XCircle className="h-3.5 w-3.5 text-amber-500" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-amber-600">
+            {types.filter(t => !t.isActive).length}
+          </div>
+        </div>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-500">
+            <span>Assigned Pros</span>
+            <Users className="h-3.5 w-3.5 text-blue-500" />
+          </div>
+          <div className="text-base sm:text-lg lg:text-xl font-bold font-mono text-blue-600">
+            {totalPros}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of types */}
+      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {types.map((type) => (
-          <Card key={type.id}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{type.name}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={type.isActive ? "default" : "secondary"}>
+          <div
+            key={type.id}
+            className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all space-y-3"
+          >
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{type.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={type.isActive ? "default" : "secondary"}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    >
                       {type.isActive ? "Active" : "Inactive"}
                     </Badge>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="h-4 w-4 mr-1" />
-                      {type._count.professionals} professionals
-                    </div>
+                    <span className="flex items-center text-xs text-slate-500 font-mono">
+                      <Users className="h-3.5 w-3.5 mr-1 text-slate-400" />
+                      {type._count?.professionals || 0} pros
+                    </span>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(type)}>
-                    <Edit className="h-4 w-4" />
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(type)}
+                    className="h-7 w-7 p-0 rounded-lg text-slate-500 hover:text-slate-900"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(type.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="h-7 w-7 p-0 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            {type.description && (
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{type.description}</p>
-              </CardContent>
-            )}
-          </Card>
+              {type.description && (
+                <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">{type.description}</p>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
       {types.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Users className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No professional types</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Get started by creating your first professional type
-            </p>
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Professional Type
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-slate-200/80 shadow-xs text-center p-6">
+          <Users className="h-10 w-10 text-slate-300 mb-3" />
+          <h3 className="text-sm font-semibold text-slate-800 mb-1">No professional types</h3>
+          <p className="text-xs text-slate-500 mb-4 max-w-sm">
+            Get started by creating your first professional category or specialization.
+          </p>
+          <Button onClick={openCreateDialog} size="sm" className="h-8 px-3 text-xs rounded-lg">
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Add Professional Type
+          </Button>
+        </div>
       )}
     </div>
   )
-}
+}

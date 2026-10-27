@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
+import { analyzeGarmentVision } from "@/lib/ai/provider";
 
 function generateSmartGarmentFallback(productName: string, material: string, categoryName: string) {
   const lower = (productName + " " + categoryName + " " + material).toLowerCase().replace(/[\s\-_]+/g, " ");
@@ -29,7 +30,7 @@ function generateSmartGarmentFallback(productName: string, material: string, cat
     lower.includes("jumper")
   ) {
     defaultMaterial = material || "Heavyweight Cotton Fleece Blend (350 GSM)";
-    desc = `Cut from plush heavyweight fleece for supreme warmth and a relaxed, street-ready silhouette. Features a double-lined hood, ribbed cuffs, and reinforced seams for durable cold-weather comfort.`;
+    desc = `Cut from plush heavyweight fleece for supreme warmth and a relaxed, comfortable everyday fit. Features a double-lined hood, ribbed cuffs, and reinforced seams for durable cold-weather comfort.`;
     defaultCare = "Machine wash cold inside-out. Tumble dry low. Do not iron print directly.";
     defaultTags = [productName.trim(), "Heavyweight Hoodie", "Streetwear", "Cozy Fleece", "Layering Essential"];
   } else if (
@@ -39,7 +40,7 @@ function generateSmartGarmentFallback(productName: string, material: string, cat
     lower.includes("frock")
   ) {
     defaultMaterial = material || "Fluid Satin Silk & Lightweight Crepe";
-    desc = `Designed with a flattering feminine silhouette and graceful drapery. Perfect for dates, parties, and weekend outings, offering an effortlessly polished look with comfortable movement.`;
+    desc = `Designed with a flattering feminine fit and graceful style. Perfect for dates, parties, and weekend outings, offering an effortlessly polished look with comfortable movement.`;
     defaultCare = "Hand wash cold or dry clean. Line dry in shade. Cool iron.";
     defaultTags = [productName.trim(), "Chic Dress", "Flattering Fit", "Party Outfit", "Modern Style"];
   } else if (
@@ -87,10 +88,72 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { productName = "", description = "", categoryName = "", material = "", colors = [] } = body;
+    const { 
+      productName = "", 
+      description = "", 
+      categoryName = "", 
+      material = "", 
+      colors = [],
+      images = [],
+      customApiKey = ""
+    } = body;
 
-    if (!productName.trim()) {
-      return NextResponse.json({ error: "Product name is required for AI enhancement" }, { status: 400 });
+    const validImages = Array.isArray(images) 
+      ? images.filter((img: unknown): img is string => typeof img === "string" && (img.startsWith("http") || img.startsWith("data:image/"))) 
+      : [];
+
+    if (!productName.trim() && validImages.length === 0) {
+      return NextResponse.json({ error: "Please enter a product name or upload at least one garment image for AI analysis." }, { status: 400 });
+    }
+
+    // 1. If images are provided, prioritize DeepSeek Flash Multimodal Garment Vision
+    if (validImages.length > 0) {
+      try {
+        const visionResult = await analyzeGarmentVision({
+          images: validImages,
+          productName,
+          categoryName,
+          notes: description,
+          customApiKey,
+        });
+
+        if (visionResult && (visionResult.suggestedTitle || visionResult.enhancedDescription)) {
+          const colorSet = new Set<string>();
+          if (visionResult.topColor) colorSet.add(visionResult.topColor);
+          if (visionResult.bottomColor) colorSet.add(visionResult.bottomColor);
+          if (Array.isArray(visionResult.suggestedColors)) {
+            visionResult.suggestedColors.forEach(c => { if (c) colorSet.add(c); });
+          }
+
+          return NextResponse.json({
+            success: true,
+            productName: visionResult.suggestedTitle,
+            enhancedDescription: visionResult.enhancedDescription,
+            suggestedMaterial: visionResult.suggestedMaterial,
+            suggestedColors: Array.from(colorSet),
+            suggestedTags: visionResult.suggestedTags,
+            suggestedCare: visionResult.suggestedCare,
+            suggestedCategory: visionResult.suggestedCategory,
+            headline: visionResult.headline,
+            engineUsed: visionResult.engineUsed,
+            silhouette: visionResult.silhouette,
+            neckline: visionResult.neckline,
+            sleeves: visionResult.sleeves,
+            fabricTexture: visionResult.fabricTexture,
+            keyAccents: visionResult.keyAccents,
+            topColor: visionResult.topColor,
+            bottomColor: visionResult.bottomColor,
+            isTwoTone: visionResult.isTwoTone,
+            topShape: visionResult.topShape,
+            bottomShape: visionResult.bottomShape,
+            overallLook: visionResult.overallLook,
+            garmentType: visionResult.garmentType,
+            hasSeparateTopAndBottom: visionResult.hasSeparateTopAndBottom,
+          });
+        }
+      } catch (vErr) {
+        console.warn("Garment vision analysis error, attempting text fallback:", vErr);
+      }
     }
 
     const deepseekKey = process.env.DEEPSEEK_API_KEY || "";

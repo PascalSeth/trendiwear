@@ -1,13 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ShoppingBag, X, SlidersHorizontal, ArrowRight, ArrowLeft } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { 
+  ShoppingBag, 
+  X, 
+  SlidersHorizontal, 
+  ArrowRight, 
+  Search, 
+  Check, 
+  LayoutGrid, 
+  Grid3X3, 
+  RefreshCw, 
+  ChevronRight, 
+  ChevronLeft 
+} from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ProductCard } from '@/components/common/ProductCard';
-import { AtelierBackground } from '@/app/components/creative/AtelierBackground';
 
 interface Category {
   id: string;
@@ -34,6 +45,16 @@ interface Category {
   };
 }
 
+interface OtherCategory {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl?: string | null;
+  _count: {
+    products: number;
+  };
+}
+
 interface Product {
   id: string;
   name: string;
@@ -45,10 +66,16 @@ interface Product {
   sizes: string[];
   colors: string[];
   material?: string | null;
-  viewCount: number;
-  soldCount: number;
+  viewCount?: number;
   stockQuantity: number;
   createdAt: string | Date;
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number | null;
+  discountEndDate?: string | null;
+  isPreorder?: boolean;
+  estimatedDelivery?: number;
   categories: Array<{
     id: string;
     name: string;
@@ -60,7 +87,7 @@ interface Product {
     slug: string;
   }>;
   professional: {
-    id: string;
+    id?: string;
     firstName: string;
     lastName: string;
     professionalProfile?: {
@@ -70,6 +97,9 @@ interface Product {
       rating?: number | null;
     } | null;
   };
+  _count?: {
+    wishlistItems?: number;
+  };
 }
 
 interface Filters {
@@ -77,9 +107,8 @@ interface Filters {
   maxPrice?: string;
   colors: string[];
   sizes: string[];
-  tags: string[];
-  sortBy: string;
-  sortOrder: string;
+  quickFilter: 'all' | 'under300' | 'inStock' | 'custom';
+  sortBy: 'recommended' | 'price-asc' | 'price-desc' | 'newest';
 }
 
 function FilterSidebar({
@@ -88,7 +117,8 @@ function FilterSidebar({
   availableColors,
   availableSizes,
   isOpen,
-  onClose
+  onClose,
+  totalResults
 }: {
   filters: Filters;
   setFilters: (filters: Filters) => void;
@@ -96,12 +126,13 @@ function FilterSidebar({
   availableSizes: string[];
   isOpen: boolean;
   onClose: () => void;
+  totalResults: number;
 }) {
   const updateFilters = (key: keyof Filters, value: string | string[]) => {
     setFilters({ ...filters, [key]: value });
   };
 
-  const toggleArrayFilter = (key: 'colors' | 'sizes' | 'tags', value: string) => {
+  const toggleArrayFilter = (key: 'colors' | 'sizes', value: string) => {
     const current = filters[key] as string[];
     const updated = current.includes(value)
       ? current.filter(item => item !== value)
@@ -113,11 +144,11 @@ function FilterSidebar({
     hidden: { x: '100%' },
     visible: { 
       x: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 }
+      transition: { type: 'spring', stiffness: 320, damping: 32 }
     },
     exit: { 
       x: '100%',
-      transition: { ease: 'easeInOut', duration: 0.4 }
+      transition: { ease: 'easeInOut', duration: 0.3 }
     }
   };
 
@@ -129,7 +160,7 @@ function FilterSidebar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[9998]" 
+            className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-[9998]" 
             onClick={onClose} 
           />
           <motion.div
@@ -137,134 +168,143 @@ function FilterSidebar({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed top-0 right-0 h-screen w-full md:w-[450px] bg-white z-[9999] shadow-2xl overflow-hidden border-l border-stone-100"
+            className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-white z-[9999] shadow-2xl overflow-hidden border-l border-stone-200"
           >
             <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="flex items-center justify-between p-8 border-b border-stone-100">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-serif text-stone-900">Selection Gallery</h2>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400">Refine your artisanal search</p>
+              
+              <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 bg-stone-50/50">
+                <div>
+                  <h2 className="text-lg font-serif font-bold text-stone-900">Filters &amp; Refinements</h2>
+                  <p className="text-xs text-stone-500 font-sans">Showing {totalResults} matching pieces</p>
                 </div>
                 <button 
                   onClick={onClose}
-                  className="p-3 hover:bg-stone-50 rounded-full transition-colors border border-stone-100 shadow-sm"
+                  className="p-2 hover:bg-stone-200/60 rounded-full transition-colors text-stone-700"
+                  aria-label="Close filters"
                 >
-                  <X size={20} className="text-stone-900" />
+                  <X size={18} />
                 </button>
               </div>
 
-              {/* Simple Scrollable Body */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-                {/* Price Section */}
-                <div className="space-y-6">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-stone-900 flex items-center gap-3">
-                    <span className="w-8 h-px bg-stone-200" /> Price Horizon
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 custom-scrollbar">
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                    Price Range (GH₵)
                   </h3>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                       <label className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Starting At</label>
-                       <div className="relative group">
-                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">$</span>
-                         <input
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-stone-400 uppercase">Min Price</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">GH₵</span>
+                        <input
                           type="number"
                           value={filters.minPrice || ''}
                           onChange={(e) => updateFilters('minPrice', e.target.value)}
                           placeholder="0"
-                          className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-8 pr-4 py-4 text-sm outline-none focus:border-stone-900 focus:bg-white transition-all shadow-inner"
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-11 pr-3 py-2.5 text-xs outline-none focus:border-stone-900 focus:bg-white transition-all"
                         />
-                       </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                       <label className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Ending At</label>
-                       <div className="relative group">
-                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">$</span>
-                         <input
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-stone-400 uppercase">Max Price</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">GH₵</span>
+                        <input
                           type="number"
                           value={filters.maxPrice || ''}
                           onChange={(e) => updateFilters('maxPrice', e.target.value)}
-                          placeholder="∞"
-                          className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-8 pr-4 py-4 text-sm outline-none focus:border-stone-900 focus:bg-white transition-all shadow-inner"
+                          placeholder="Max"
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-11 pr-3 py-2.5 text-xs outline-none focus:border-stone-900 focus:bg-white transition-all"
                         />
-                       </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Colors Section */}
                 {availableColors.length > 0 && (
-                  <div className="space-y-6">
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-stone-900 flex items-center gap-3">
-                      <span className="w-8 h-px bg-stone-200" /> Color Signature
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                      Colors ({filters.colors.length} selected)
                     </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {availableColors.map(color => (
-                        <button
-                          key={color}
-                          onClick={() => toggleArrayFilter('colors', color)}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-2.5 rounded-full border transition-all duration-300",
-                            filters.colors.includes(color)
-                              ? "border-stone-900 bg-stone-900 text-white shadow-xl scale-105"
-                              : "border-stone-200 bg-white text-stone-600 hover:border-stone-900 hover:text-stone-900"
-                          )}
-                        >
-                          <div 
-                            className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-inner" 
-                            style={{ backgroundColor: color.toLowerCase() }} 
-                          />
-                          <span className="text-[10px] font-mono tracking-tight font-bold uppercase">{color}</span>
-                        </button>
-                      ))}
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map(color => {
+                        const isSelected = filters.colors.includes(color);
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => toggleArrayFilter('colors', color)}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition-all",
+                              isSelected
+                                ? "border-stone-900 bg-stone-900 text-white shadow-sm"
+                                : "border-stone-200 bg-white text-stone-700 hover:border-stone-400"
+                            )}
+                          >
+                            <span 
+                              className="w-3 h-3 rounded-full border border-black/10 shrink-0" 
+                              style={{ backgroundColor: color.toLowerCase() }} 
+                            />
+                            <span className="capitalize">{color}</span>
+                            {isSelected && <Check size={12} className="ml-0.5" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* Sizes Section */}
                 {availableSizes.length > 0 && (
-                  <div className="space-y-6">
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-stone-900 flex items-center gap-3">
-                      <span className="w-8 h-px bg-stone-200" /> Size Spectrum
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                      Sizes ({filters.sizes.length} selected)
                     </h3>
-                    <div className="grid grid-cols-4 gap-3">
-                      {availableSizes.map(size => (
-                        <button
-                          key={size}
-                          onClick={() => toggleArrayFilter('sizes', size)}
-                          className={cn(
-                            "h-12 flex items-center justify-center text-[10px] font-mono font-bold rounded-xl border transition-all duration-300",
-                            filters.sizes.includes(size)
-                              ? "bg-stone-900 text-white border-stone-900 shadow-xl scale-105"
-                              : "bg-white text-stone-500 border-stone-200 hover:border-stone-900 hover:text-stone-900"
-                          )}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-4 gap-2">
+                      {availableSizes.map(size => {
+                        const isSelected = filters.sizes.includes(size);
+                        return (
+                          <button
+                            key={size}
+                            onClick={() => toggleArrayFilter('sizes', size)}
+                            className={cn(
+                              "h-10 flex items-center justify-center text-xs font-semibold rounded-xl border transition-all",
+                              isSelected
+                                ? "bg-stone-900 text-white border-stone-900 shadow-sm"
+                                : "bg-white text-stone-700 border-stone-200 hover:border-stone-400"
+                            )}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
+
               </div>
 
-              {/* Simple Footer */}
-              <div className="p-8 border-t border-stone-100 bg-stone-50/50 backdrop-blur-md">
-                <div className="flex flex-col gap-4">
-                  <button
-                    onClick={onClose}
-                    className="w-full py-5 bg-stone-900 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] hover:bg-stone-800 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3"
-                  >
-                    Apply Refinements <ArrowRight size={14} />
-                  </button>
-                  <button
-                    onClick={() => setFilters({
-                      minPrice: '', maxPrice: '', colors: [], sizes: [], tags: [], sortBy: 'createdAt', sortOrder: 'desc'
-                    })}
-                    className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-stone-900 transition-colors"
-                  >
-                    Clear All Filters
-                  </button>
-                </div>
+              <div className="p-5 border-t border-stone-200 bg-stone-50/50 space-y-2">
+                <button
+                  onClick={onClose}
+                  className="w-full py-3.5 bg-stone-900 text-white rounded-xl font-semibold text-xs tracking-wide hover:bg-black transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Show {totalResults} items</span>
+                  <ArrowRight size={14} />
+                </button>
+                <button
+                  onClick={() => setFilters({
+                    minPrice: '',
+                    maxPrice: '',
+                    colors: [],
+                    sizes: [],
+                    quickFilter: 'all',
+                    sortBy: 'recommended'
+                  })}
+                  className="w-full py-2 text-xs font-medium text-stone-500 hover:text-stone-900 transition-colors"
+                >
+                  Reset All Filters
+                </button>
               </div>
+
             </div>
           </motion.div>
         </>
@@ -278,43 +318,122 @@ interface CategoryDetailClientProps {
   initialProducts: Product[];
   availableColors: string[];
   availableSizes: string[];
+  otherCategories?: OtherCategory[];
 }
 
 export default function CategoryDetailClient({ 
   category, 
   initialProducts,
   availableColors,
-  availableSizes
+  availableSizes,
+  otherCategories = []
 }: CategoryDetailClientProps) {
   const [filters, setFilters] = useState<Filters>({
-    minPrice: '', maxPrice: '', colors: [], sizes: [], tags: [], sortBy: 'createdAt', sortOrder: 'desc'
+    minPrice: '',
+    maxPrice: '',
+    colors: [],
+    sizes: [],
+    quickFilter: 'all',
+    sortBy: 'recommended'
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
-  const [products] = useState(initialProducts);
+  const [gridCols, setGridCols] = useState<4 | 5>(5);
 
-  // Filter products by subcategory
-  const filteredProducts = products.filter(product => {
-    if (selectedSubcategoryId && !product.categories?.some(c => c.id === selectedSubcategoryId)) return false;
-    if (filters.minPrice && product.price < parseFloat(filters.minPrice)) return false;
-    if (filters.maxPrice && product.price > parseFloat(filters.maxPrice)) return false;
-    if (filters.colors.length > 0 && !filters.colors.some(color => product.colors?.includes(color))) return false;
-    if (filters.sizes.length > 0 && !filters.sizes.some(size => product.sizes?.includes(size))) return false;
-    return true;
-  }).sort((a, b) => {
-    const { sortBy, sortOrder } = filters;
-    let comparison = 0;
-    if (sortBy === 'price') comparison = a.price - b.price;
-    else comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-    return sortOrder === 'desc' ? -comparison : comparison;
-  });
+  const subcategoryScrollRef = useRef<HTMLDivElement>(null);
+  const catalogGridRef = useRef<HTMLElement>(null);
 
-  const activeCategory = selectedSubcategoryId 
-    ? category.children.find(c => c.id === selectedSubcategoryId) 
-    : category;
+  const scrollToCatalog = () => {
+    if (catalogGridRef.current) {
+      catalogGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleScrollSubcategories = (direction: 'left' | 'right') => {
+    if (!subcategoryScrollRef.current) return;
+    const offset = direction === 'left' ? -260 : 260;
+    subcategoryScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
+  const filteredProducts = useMemo(() => {
+    let list = [...initialProducts];
+
+    if (selectedSubcategoryId) {
+      list = list.filter(p => p.categories?.some(c => c.id === selectedSubcategoryId));
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(p => {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q);
+        const sellerMatch = 
+          p.professional?.firstName.toLowerCase().includes(q) ||
+          p.professional?.lastName.toLowerCase().includes(q) ||
+          p.professional?.professionalProfile?.businessName?.toLowerCase().includes(q);
+
+        return nameMatch || descMatch || sellerMatch;
+      });
+    }
+
+    if (filters.quickFilter === 'under300') {
+      list = list.filter(p => (p.effectivePrice ?? p.price) <= 300);
+    } else if (filters.quickFilter === 'inStock') {
+      list = list.filter(p => p.stockQuantity > 0);
+    } else if (filters.quickFilter === 'custom') {
+      list = list.filter(p => p.isPreorder || (p.sizes && p.sizes.length > 0));
+    }
+
+    if (filters.minPrice) {
+      const min = parseFloat(filters.minPrice);
+      if (!isNaN(min)) {
+        list = list.filter(p => (p.effectivePrice ?? p.price) >= min);
+      }
+    }
+    if (filters.maxPrice) {
+      const max = parseFloat(filters.maxPrice);
+      if (!isNaN(max)) {
+        list = list.filter(p => (p.effectivePrice ?? p.price) <= max);
+      }
+    }
+
+    if (filters.colors.length > 0) {
+      list = list.filter(p => filters.colors.some(color => p.colors?.includes(color)));
+    }
+
+    if (filters.sizes.length > 0) {
+      list = list.filter(p => filters.sizes.some(size => p.sizes?.includes(size)));
+    }
+
+    if (filters.sortBy === 'price-asc') {
+      list.sort((a, b) => (a.effectivePrice ?? a.price) - (b.effectivePrice ?? b.price));
+    } else if (filters.sortBy === 'price-desc') {
+      list.sort((a, b) => (b.effectivePrice ?? b.price) - (a.effectivePrice ?? a.price));
+    } else if (filters.sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    return list;
+  }, [initialProducts, selectedSubcategoryId, searchQuery, filters]);
+
+  const activeSubcategory = useMemo(() => {
+    if (!selectedSubcategoryId) return null;
+    return category.children.find(c => c.id === selectedSubcategoryId);
+  }, [category, selectedSubcategoryId]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.minPrice || filters.maxPrice) count += 1;
+    if (filters.colors.length > 0) count += filters.colors.length;
+    if (filters.sizes.length > 0) count += filters.sizes.length;
+    if (filters.quickFilter !== 'all') count += 1;
+    return count;
+  }, [filters]);
 
   return (
-    <div className="relative min-h-screen bg-[#FAFAF9] selection:bg-stone-900 selection:text-stone-50 overflow-x-hidden font-sans">
+    <div className="relative min-h-screen bg-[#FAF9F5] selection:bg-stone-900 selection:text-amber-100 overflow-x-hidden font-sans text-stone-900">
+      
       <FilterSidebar
         filters={filters} 
         setFilters={setFilters} 
@@ -322,340 +441,252 @@ export default function CategoryDetailClient({
         availableSizes={availableSizes}
         isOpen={showFilters} 
         onClose={() => setShowFilters(false)}
+        totalResults={filteredProducts.length}
       />
 
-      {/* ── BACKGROUND ORCHESTRATION ── */}
-      <div className="fixed inset-0 z-0">
-        <AtelierBackground />
-      </div>
+      <section className="relative pt-28 md:pt-36 lg:pt-40 pb-12 lg:pb-16 border-b border-stone-200/80">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none overflow-hidden -z-10">
+          <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-amber-200/20 blur-[110px]" />
+          <div className="absolute top-[10%] right-[10%] w-[400px] h-[400px] rounded-full bg-stone-200/40 blur-[120px]" />
+        </div>
 
-      <div className="relative z-10">
-        
-        {/* ── CINEMATIC CATEGORY HERO ── */}
-        <section className="relative min-h-[90vh] lg:h-screen flex items-center justify-center p-6 lg:p-12 pt-32 lg:pt-40 overflow-hidden">
-          <div className="max-w-[1800px] mx-auto w-full grid lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
-            {/* Left Column: Typography & Story */}
-            <div className="lg:col-span-7 h-full flex flex-col justify-center order-2 lg:order-1">
-              <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-12"
-              >
-                <div className="space-y-6">
-                   <nav className="flex items-center gap-4 text-[10px] font-mono font-bold uppercase tracking-[0.5em] text-amber-700/60 mb-8">
-                    <Link href="/shopping" className="hover:text-amber-700 transition-colors">Chapters</Link>
-                    <div className="w-8 h-px bg-amber-200/50" />
-                    {category.parent && (
-                      <>
-                        <Link href={`/shopping/categories/${category.parent.slug}`} className="hover:text-amber-700 transition-colors">{category.parent.name}</Link>
-                        <div className="w-4 h-px bg-amber-200/30" />
-                      </>
-                    )}
-                    <span className="text-stone-400">{category.name}</span>
-                  </nav>
+            <div className="lg:col-span-7 space-y-6">
+              <nav className="flex items-center gap-2 text-xs text-stone-500 font-sans" aria-label="Breadcrumb">
+                <Link href="/shopping" className="hover:text-stone-900 transition-colors">Shop</Link>
+                <span>/</span>
+                <Link href="/shopping" className="hover:text-stone-900 transition-colors">Categories</Link>
+                {category.parent && (
+                  <>
+                    <span>/</span>
+                    <Link href={`/shopping/categories/${category.parent.slug}`} className="hover:text-stone-900 transition-colors">{category.parent.name}</Link>
+                  </>
+                )}
+                <span>/</span>
+                <span className="text-stone-900 font-medium">{category.name}</span>
+              </nav>
 
-                  <h1 className="text-[11vw] lg:text-[9rem] font-serif font-medium leading-[0.8] tracking-tighter text-stone-900 -ml-1 lg:-ml-3 select-none">
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={activeCategory?.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.6 }}
-                        className="block"
-                      >
-                         {activeCategory?.name.split(' ').map((word, i) => (
-                          <span key={i} className="block last:italic last:font-light last:text-stone-400">
-                            {word}
-                          </span>
-                        ))}
-                      </motion.span>
-                    </AnimatePresence>
-                  </h1>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-start gap-12 border-l border-stone-200 pl-8 lg:pl-12">
-                  <p className="max-w-md text-lg lg:text-xl font-serif italic text-stone-500 leading-relaxed">
-                    {category.description || `Discover a meticulously curated selection of editorial pieces within the ${category.name} category.`}
-                  </p>
-                  
-                  <div className="flex flex-col items-start gap-2 pt-2">
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-[0.4em] text-stone-400">Manifest /</span>
-                    <span className="text-2xl font-serif text-stone-900 italic">
-                      {String(filteredProducts.length).padStart(2, '0')} Pieces
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-8">
-                   <Link href="#category-grid">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-stone-900 text-white px-12 py-6 rounded-full text-[10px] font-mono font-bold uppercase tracking-[0.3em] flex items-center gap-4 shadow-2xl shadow-stone-900/20 hover:bg-black transition-all"
-                      >
-                        Browse Gallery <ArrowRight size={14} className="animate-pulse" />
-                      </motion.button>
-                   </Link>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Right Column: Dynamic Visual Overlay */}
-            <div className="lg:col-span-5 order-1 lg:order-2">
-              <div className="relative">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeCategory?.id}
-                    initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 1.1, x: -20 }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative aspect-[3/4] rounded-[3rem] lg:rounded-[4rem] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.1)] group bg-stone-100 border-8 border-white"
-                  >
-                    <Image 
-                      src={activeCategory?.imageUrl || "/placeholder-category.jpg"} 
-                      alt={activeCategory?.name || 'Category'}
-                      fill
-                      priority
-                      className="object-cover transition-transform duration-3000 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-stone-900/5 mix-blend-multiply group-hover:opacity-0 transition-opacity duration-1000" />
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Floating Navigation Indicator */}
-                <div className="absolute -bottom-10 -left-10 bg-white/90 backdrop-blur-xl p-8 rounded-3xl border border-white shadow-2xl max-w-[200px] hidden md:block">
-                   <p className="text-[9px] font-mono font-bold uppercase tracking-[0.3em] text-stone-400 mb-4">Focus Chapter /</p>
-                   <p className="font-serif text-2xl text-stone-900 italic leading-tight">{activeCategory?.name}</p>
-                </div>
+              <div className="space-y-2">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight text-stone-900 leading-[1.1]">
+                  {activeSubcategory ? activeSubcategory.name : category.name}
+                </h1>
+                <p className="text-xs text-stone-500 font-sans">
+                  {filteredProducts.length} items
+                </p>
               </div>
-            </div>
-          </div>
 
-          {/* Background Text Decor */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.015 }}
-            transition={{ duration: 2, delay: 1 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center overflow-hidden pointer-events-none select-none z-[-1]"
-          >
-            <h2 className="text-[40vw] font-serif font-black leading-none uppercase">
-              {category.name}
-            </h2>
-          </motion.div>
-        </section>
+              {category.description && (
+                <p className="text-stone-600 font-sans text-sm sm:text-base leading-relaxed max-w-lg">
+                  {category.description}
+                </p>
+              )}
 
-        {/* ── THE SUBCATEGORY VOYAGE ── */}
-        {category.children.length > 0 && (
-          <section className="px-6 lg:px-12 py-24 relative">
-             <div className="max-w-[1800px] mx-auto">
-                <div className="flex flex-col lg:flex-row items-end justify-between gap-12 mb-16 border-b border-stone-200/50 pb-12">
-                   <div className="space-y-4">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-[0.5em] text-amber-700/60">The Spectrum</span>
-                      <h3 className="text-4xl lg:text-7xl font-serif text-stone-900 leading-none">Archival Chapters</h3>
-                   </div>
-                   <p className="max-w-xs text-sm font-serif italic text-stone-500 leading-relaxed text-right">
-                      Refine your search by exploring specific Chapters. Each represents a unique facet of this category&apos;s aesthetic soul.
-                   </p>
-                </div>
-
-                <div className="flex gap-12 lg:gap-20 overflow-x-auto no-scrollbar pb-12 items-end px-4">
-                   {category.children.map((child, idx) => (
-                    <motion.button
-                      key={child.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.1, duration: 0.8 }}
-                      onClick={() => setSelectedSubcategoryId(selectedSubcategoryId === child.id ? null : child.id)}
-                      className="group shrink-0 flex flex-col items-center gap-8"
-                    >
-                      <div className={cn(
-                        "relative w-32 h-32 lg:w-48 lg:h-48 rounded-full overflow-hidden transition-all duration-1000 p-1.5",
-                        selectedSubcategoryId === child.id 
-                          ? "bg-stone-900 scale-110 shadow-2xl" 
-                          : "bg-white border border-stone-200 group-hover:border-stone-400 group-hover:scale-105"
-                      )}>
-                        <div className="relative w-full h-full rounded-full overflow-hidden">
-                          <Image 
-                            src={child.imageUrl || "/placeholder-category.jpg"} 
-                            alt={child.name} 
-                            fill 
-                            className={cn(
-                              "object-cover transition-all duration-3000",
-                              selectedSubcategoryId === child.id ? "scale-110" : "grayscale group-hover:grayscale-0 group-hover:scale-110"
-                            )} 
-                          />
-                        </div>
-                      </div>
-                      <div className="text-center space-y-2">
-                        <span className={cn(
-                          "block text-[10px] font-mono font-bold uppercase tracking-[0.3em] transition-colors",
-                          selectedSubcategoryId === child.id ? "text-stone-900" : "text-stone-400 group-hover:text-stone-900"
-                        )}>
-                          {child.name}
-                        </span>
-                        <div className={cn(
-                          "h-[1px] mx-auto transition-all duration-700 bg-stone-900",
-                          selectedSubcategoryId === child.id ? "w-12" : "w-0 group-hover:w-8"
-                        )} />
-                        <span className="block text-[8px] font-mono text-stone-300 uppercase tracking-widest">{child._count.products} Files</span>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-             </div>
-          </section>
-        )}
-
-        {/* ── THE MAIN GALLERY ── */}
-        <section id="category-grid" className="px-6 lg:px-12 pb-48 pt-12 max-w-[1800px] mx-auto">
-          
-          {/* Floating Performance Bar */}
-          <div className="sticky top-6 z-40 mb-20 scroll-mt-40">
-             <div className="bg-white/40 backdrop-blur-2xl border border-white/20 rounded-[3rem] px-8 py-6 shadow-[0_30px_60px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-white/60 transition-all">
-                <div className="flex items-center gap-12">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-[0.5em] text-amber-700/60 leading-none mb-2">Displaying Gallery /</span>
-                    <span className="text-xl font-serif text-stone-900 flex items-center gap-3">
-                      {filteredProducts.length} <span className="text-sm italic text-stone-400">Total Selections</span>
-                    </span>
-                  </div>
-                  
-                  {selectedSubcategoryId && (
-                    <button 
-                      onClick={() => setSelectedSubcategoryId(null)}
-                      className="hidden lg:flex items-center gap-3 px-4 py-2 bg-stone-900 text-white rounded-full text-[9px] font-mono font-bold uppercase tracking-[0.2em] shadow-lg hover:bg-stone-800 transition-all"
-                    >
-                      {activeCategory?.name} <X size={12} />
+              <div className="pt-1 max-w-lg">
+                <div className="relative flex items-center bg-white rounded-2xl shadow-sm border border-stone-200 p-1.5 focus-within:border-stone-900 focus-within:ring-1 focus-within:ring-stone-900 transition-all">
+                  <div className="pl-3 text-stone-400"><Search size={18} /></div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={`Search in ${activeSubcategory?.name || category.name}...`}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-transparent outline-none text-stone-800 placeholder:text-stone-400 font-sans"
+                  />
+                  {searchQuery && (
+                    <button type="button" onClick={() => setSearchQuery('')} className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition-colors mr-1">
+                      <X size={15} />
                     </button>
                   )}
+                  <button type="button" onClick={scrollToCatalog} className="bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-black transition-all shrink-0">Search</button>
                 </div>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-6 w-full md:w-auto">
-                   <div className="flex items-center gap-4 group cursor-pointer bg-stone-900/5 px-6 py-3 rounded-full hover:bg-stone-900/10 transition-colors">
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-stone-500">Chronology /</span>
-                    <select
-                      value={`${filters.sortBy}_${filters.sortOrder}`}
-                      onChange={(e) => {
-                        const [sortBy, sortOrder] = e.target.value.split('_');
-                        setFilters({ ...filters, sortBy, sortOrder });
-                      }}
-                      className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer text-stone-900 py-0 pr-8"
-                    >
-                      <option value="createdAt_desc">The Descending</option>
-                      <option value="price_asc">Value Ascending</option>
-                      <option value="price_desc">Value Descending</option>
-                    </select>
-                  </div>
-
-                  <button 
-                    onClick={() => setShowFilters(true)} 
-                    className="flex items-center gap-4 text-stone-900 group shrink-0"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-stone-900 text-white flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl active:scale-95 shadow-stone-900/20">
-                      <SlidersHorizontal size={14} />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] hidden lg:block border-b border-stone-900/10 group-hover:border-stone-900 transition-colors pb-1">Refine Catalog</span>
-                  </button>
+            <div className="lg:col-span-5 relative">
+              <div className="relative mx-auto max-w-xs sm:max-w-sm">
+                <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-md border border-stone-200 bg-stone-100">
+                  <Image
+                    src={activeSubcategory?.imageUrl || category.imageUrl || "/placeholder-category.jpg"}
+                    alt={activeSubcategory?.name || category.name}
+                    fill
+                    priority
+                    className="object-cover"
+                  />
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
 
-          {/* Catalog Reveal */}
-          <div className="relative">
-            {filteredProducts.length > 0 ? (
-              <LayoutGroup>
-                <motion.div 
-                  layout 
-                  className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 lg:gap-x-12 gap-y-16 lg:gap-y-24"
-                >
-                  <AnimatePresence>
-                    {filteredProducts.map((product, index) => (
-                      <motion.div
-                        layout
-                        key={product.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.8, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        <ProductCard item={product as unknown as Parameters<typeof ProductCard>[0]['item']} index={index} />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-              </LayoutGroup>
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-48 text-center"
-              >
-                <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center text-stone-200 mb-12 border border-stone-100 shadow-xl overflow-hidden relative">
-                   <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 border border-dashed border-stone-200 rounded-full"
-                   />
-                   <ShoppingBag size={48} strokeWidth={1} />
-                </div>
-                <h3 className="text-4xl font-serif italic text-stone-900 mb-4">No results for this selection.</h3>
-                <p className="text-stone-400 text-sm max-w-sm mx-auto mb-12 leading-relaxed font-serif italic">Consider resetting your parameters or exploring a different chapter in this archive.</p>
-                <button 
-                  onClick={() => {
-                    setFilters({...filters, colors: [], sizes: [], minPrice: '', maxPrice: ''});
-                    setSelectedSubcategoryId(null);
-                  }} 
-                  className="px-12 py-5 bg-stone-900 text-white text-[10px] font-black uppercase tracking-[0.4em] rounded-full hover:scale-105 transition-all shadow-xl active:scale-95 shadow-stone-900/20"
-                >
-                  Clear Selection
+      {category.children.length > 0 && (
+        <section className="bg-white border-b border-stone-200 py-3 sticky top-16 md:top-20 z-20 shadow-xs backdrop-blur-md bg-white/95">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-stone-500 font-medium">Subcategories:</span>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => handleScrollSubcategories('left')} className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors" aria-label="Scroll left"><ChevronLeft size={14} /></button>
+                <button type="button" onClick={() => handleScrollSubcategories('right')} className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors" aria-label="Scroll right"><ChevronRight size={14} /></button>
+              </div>
+            </div>
+            <div ref={subcategoryScrollRef} className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
+              <button type="button" onClick={() => setSelectedSubcategoryId(null)} className={cn("px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide whitespace-nowrap transition-all shrink-0 border", selectedSubcategoryId === null ? "bg-stone-900 text-white border-stone-900 shadow-sm" : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100")}>
+                All {category.name} ({initialProducts.length})
+              </button>
+              {category.children.map((child) => {
+                const isSelected = selectedSubcategoryId === child.id;
+                return (
+                  <button key={child.id} type="button" onClick={() => setSelectedSubcategoryId(isSelected ? null : child.id)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 border", isSelected ? "bg-stone-900 text-white border-stone-900 shadow-sm" : "bg-white text-stone-700 border-stone-200 hover:border-stone-400")}>
+                    {child.imageUrl && (
+                      <div className="relative w-4 h-4 rounded-full overflow-hidden shrink-0 border border-stone-200 bg-stone-100">
+                        <Image src={child.imageUrl} alt={child.name} fill className="object-cover" />
+                      </div>
+                    )}
+                    <span>{child.name}</span>
+                    <span className={cn("text-[10px] font-mono px-1.5 py-0.2 rounded-full", isSelected ? "bg-stone-800 text-stone-200" : "bg-stone-100 text-stone-500")}>
+                      {child._count.products}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section ref={catalogGridRef} id="category-grid" className="py-10 md:py-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-4 pb-6 border-b border-stone-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'under300', label: 'Under GH₵300' },
+                { id: 'inStock', label: 'In Stock' },
+                { id: 'custom', label: 'Custom Fit' }
+              ].map((tab) => (
+                <button key={tab.id} type="button" onClick={() => setFilters({ ...filters, quickFilter: tab.id as typeof filters.quickFilter })} className={cn("px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all", filters.quickFilter === tab.id ? "bg-stone-900 text-white shadow-sm" : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200")}>
+                  {tab.label}
                 </button>
-              </motion.div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 self-end md:self-auto">
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-sm text-xs">
+                <span className="text-stone-400 font-medium">Sort:</span>
+                <select value={filters.sortBy} onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as typeof filters.sortBy })} aria-label="Sort products by" className="bg-transparent font-medium text-stone-800 outline-none cursor-pointer">
+                  <option value="recommended">Recommended</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="newest">Newest Arrivals</option>
+                </select>
+              </div>
+              <button type="button" onClick={() => setShowFilters(true)} className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-stone-200 shadow-sm text-xs font-medium hover:border-stone-900 transition-colors">
+                <SlidersHorizontal size={14} />
+                <span>Filters</span>
+                {activeFilterCount > 0 && <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-[10px] flex items-center justify-center font-bold">{activeFilterCount}</span>}
+              </button>
+              <div className="hidden lg:flex items-center gap-1 bg-white p-1 rounded-xl border border-stone-200 shadow-sm">
+                <button type="button" onClick={() => setGridCols(5)} className={cn("p-1.5 rounded-lg transition-colors", gridCols === 5 ? "bg-stone-900 text-white" : "text-stone-400 hover:text-stone-700")} aria-label="5 columns compact cute grid" title="Cute Compact (5 columns)"><Grid3X3 size={15} /></button>
+                <button type="button" onClick={() => setGridCols(4)} className={cn("p-1.5 rounded-lg transition-colors", gridCols === 4 ? "bg-stone-900 text-white" : "text-stone-400 hover:text-stone-700")} aria-label="4 columns" title="Standard (4 columns)"><LayoutGrid size={15} /></button>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-stone-600 pt-1">
+            <span>Showing <strong className="text-stone-900">{filteredProducts.length}</strong> items</span>
+            {selectedSubcategoryId && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-medium">
+                Subcategory: {activeSubcategory?.name}
+                <button type="button" onClick={() => setSelectedSubcategoryId(null)} className="hover:text-black ml-1"><X size={12} /></button>
+              </span>
+            )}
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-200 text-stone-900 font-medium">
+                &ldquo;{searchQuery}&rdquo;
+                <button type="button" onClick={() => setSearchQuery('')} className="hover:text-black ml-1"><X size={12} /></button>
+              </span>
+            )}
+            {(selectedSubcategoryId || searchQuery || activeFilterCount > 0) && (
+              <button type="button" onClick={() => { setSelectedSubcategoryId(null); setSearchQuery(''); setFilters({ minPrice: '', maxPrice: '', colors: [], sizes: [], quickFilter: 'all', sortBy: 'recommended' }); }} className="text-stone-500 hover:text-stone-900 underline font-medium ml-1">Reset all</button>
             )}
           </div>
-        </section>
-
-        {/* ── BEYOND SECTION: NAVIGATION ── */}
-        <section className="py-24 border-t border-stone-200/50 bg-white/30 backdrop-blur-sm">
-           <div className="max-w-4xl mx-auto px-6 text-center space-y-8">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.5em] text-stone-400">The Catalog Guide /</span>
-              <h4 className="text-4xl lg:text-6xl font-serif italic text-stone-900">Journey to other discovery files.</h4>
-              <div className="pt-8 flex justify-center items-center gap-12">
-                 <Link href="/shopping" className="group flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white transition-all">
-                       <ArrowLeft size={16} />
-                    </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Main Archive</span>
-                 </Link>
-                 <div className="w-12 h-px bg-stone-200" />
-                 <Link href="/shopping/collections" className="group flex items-center gap-4">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-right">Curated Sections</span>
-                    <div className="w-12 h-12 rounded-full border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white transition-all">
-                       <ArrowRight size={16} />
-                    </div>
-                 </Link>
+        </div>
+        <div className="pt-6">
+          {filteredProducts.length > 0 ? (
+            <LayoutGroup>
+              <motion.div layout className={cn("grid grid-cols-2 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 lg:gap-y-7", gridCols === 5 ? "sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5")}>
+                <AnimatePresence mode="popLayout">
+                  {filteredProducts.map((product, index) => (
+                    <motion.div layout key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.4, delay: index * 0.03 }}>
+                      <ProductCard item={product as unknown as Parameters<typeof ProductCard>[0]['item']} index={index} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </LayoutGroup>
+          ) : (
+            <div className="py-16 text-center space-y-4 bg-white rounded-2xl border border-stone-200 p-8 max-w-md mx-auto my-8">
+              <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center mx-auto"><ShoppingBag size={22} /></div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-medium text-stone-900">No products found</h3>
+                <p className="text-xs text-stone-500 font-sans">Try adjusting your filters or search query.</p>
               </div>
-           </div>
+              <button type="button" onClick={() => { setSelectedSubcategoryId(null); setSearchQuery(''); setFilters({ minPrice: '', maxPrice: '', colors: [], sizes: [], quickFilter: 'all', sortBy: 'recommended' }); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 text-white text-xs font-medium hover:bg-black transition-all">
+                <RefreshCw size={12} />
+                <span>Reset filters</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-2xl bg-stone-900 text-white p-8 sm:p-10 border border-stone-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-xl space-y-2 text-left">
+            <h3 className="text-xl sm:text-2xl font-serif font-normal tracking-tight">Need custom tailoring?</h3>
+            <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">Connect directly with verified tailors in Ghana for custom orders, measurements, and fittings.</p>
+          </div>
+          <div className="shrink-0">
+            <Link href="/tailors-designers"><button type="button" className="bg-amber-500 text-stone-950 px-5 py-2.5 rounded-full text-xs font-semibold hover:bg-amber-400 transition-all flex items-center justify-center gap-1.5"><span>Find a Tailor</span><ArrowRight size={13} /></button></Link>
+          </div>
+        </div>
+      </section>
+
+      {otherCategories.length > 0 && (
+        <section className="py-14 border-t border-stone-200 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-2xl font-serif text-stone-900">Other Categories</h4>
+              <Link href="/shopping" className="text-xs font-medium text-stone-600 hover:text-black flex items-center gap-1"><span>View All</span><ArrowRight size={13} /></Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
+              {otherCategories.filter(c => c.slug !== category.slug).slice(0, 6).map((other) => (
+                <Link key={other.id} href={`/shopping/categories/${other.slug}`} className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all bg-stone-100 block">
+                  <Image src={other.imageUrl || "/placeholder-category.jpg"} alt={other.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent opacity-70 group-hover:opacity-85 transition-opacity" />
+                  <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                    <span className="text-[10px] font-mono text-stone-300 block">{other._count.products} items</span>
+                    <h5 className="text-sm font-medium leading-snug">{other.name}</h5>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         </section>
-      </div>
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
+          width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: #f5f5f4;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e5e7eb;
-          border-radius: 10px;
+          background: #d6d3d1;
+          border-radius: 9999px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #d1d5db;
+          background: #a8a29e;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

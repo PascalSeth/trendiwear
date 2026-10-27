@@ -64,7 +64,6 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
     if (path.includes('/ai/visual-studio') || path.includes('/ai-studio')) return 'Visual Fashion Studio';
     if (path.includes('/ai/market-research')) return 'Market & Trend Research';
     if (path.includes('/ai/pricing-strategist')) return 'Pricing & Profit Strategist';
-    if (path.includes('/ai/copywriter')) return 'Product Copywriter';
     if (path.includes('/ai/launch-planner')) return 'Collection Launch Planner';
     if (path.includes('/outfit-inspirations')) return 'Outfit Inspirations';
     if (path.includes('/events')) return 'Events & Categories';

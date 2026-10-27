@@ -10,7 +10,7 @@ import {
   ShieldCheck, 
   Diamond, 
   Package, 
-  Sparkles,
+  ArrowUpRight,
   Zap
 } from 'lucide-react'
 
@@ -153,7 +153,7 @@ export function CurrentSubscriptionStatus() {
           <div className="flex items-center gap-3 shrink-0">
             <a href="#plan-selection">
               <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Upgrade Plan
+                <ArrowUpRight className="w-4 h-4" /> Upgrade Plan
               </button>
             </a>
           </div>
@@ -173,7 +173,7 @@ export function CurrentSubscriptionStatus() {
 
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-1">
             <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" /> AI Studio Credits
+              <Zap className="w-3.5 h-3.5 text-purple-600" /> AI Studio Credits
             </div>
             <p className="text-sm font-black text-slate-900">
               ⚡ {availableCredits} / {creditsLimit} Left
@@ -275,7 +275,7 @@ export function CurrentSubscriptionStatus() {
           <div className="flex items-center gap-3 shrink-0">
             <a href="#plan-selection">
               <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Change / Upgrade Plan
+                <ArrowUpRight className="w-4 h-4" /> Change / Upgrade Plan
               </button>
             </a>
           </div>
@@ -304,7 +304,7 @@ export function CurrentSubscriptionStatus() {
 
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-1">
             <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" /> AI Studio Credits
+              <Zap className="w-3.5 h-3.5 text-purple-600" /> AI Studio Credits
             </div>
             <p className="text-sm font-black text-slate-900">
               ⚡ {availableCredits} / {creditsLimit} Left

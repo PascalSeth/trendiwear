@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { generateImageWithOpenAI } from "@/lib/ai/provider";
 
 // --- Authentic Afrocentric High-Fashion & Editorial Image Bank ---
 const AFROCENTRIC_EDITORIAL_BANK: Record<string, Array<{ url: string; title: string; author: string }>> = {
@@ -10,7 +11,7 @@ const AFROCENTRIC_EDITORIAL_BANK: Record<string, Array<{ url: string; title: str
     { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80', title: 'Traditional Agbada & Coral Beads', author: 'Prince Akachi' },
     { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80', title: 'Ancestral Silk Wedding Gown', author: 'Oladimeji Odunsi' },
     { url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80', title: 'Golden Hour Kente Ceremonial Look', author: 'Godz1' },
-    { url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80', title: 'Lagos Couture Ceremonial Silhouette', author: 'Efe Kurnaz' },
+    { url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80', title: 'Lagos Ceremonial Wedding Outfit', author: 'Efe Kurnaz' },
   ],
   streetwear: [
     { url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80', title: 'Lagos Hypebeast Y2K Denim Fit', author: 'Linoleum Collective' },
@@ -26,9 +27,9 @@ const AFROCENTRIC_EDITORIAL_BANK: Record<string, Array<{ url: string; title: str
     { url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80', title: 'Afro-Executive Wool Blazer', author: 'Jurica Koletić' },
   ],
   gala: [
-    { url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80', title: 'Met Gala Style Velvet Afro-Couture', author: 'Katsiaryna Endruszkiewicz' },
+    { url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80', title: 'Red Carpet Velvet Evening Dress', author: 'Katsiaryna Endruszkiewicz' },
     { url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80', title: 'High-Fashion Red Carpet Evening Gown', author: 'Michael Dam' },
-    { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80', title: 'Embroidered Satin Luxury Silhouette', author: 'Alvin Mahmudov' },
+    { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80', title: 'Embroidered Satin Luxury Evening Dress', author: 'Alvin Mahmudov' },
   ],
   casual: [
     { url: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80', title: 'Coastal African Print Resort Kaftan', author: 'Clarisse Meyer' },
@@ -106,7 +107,7 @@ function buildAIPromptForEvent(eventName: string, keywords: string, index: numbe
   if (nameLower.includes('gala') || nameLower.includes('nightlife') || nameLower.includes('party') || nameLower.includes('cocktail') || nameLower.includes('brunch') || nameLower.includes('festival')) {
     const prompts = [
       `Photorealistic 8k red carpet fashion photo of a Black female model in a floor length satin gold embroidered gala gown`,
-      `Photorealistic 8k portrait of a Black model in luxury evening haute couture dress with cape, paparazzi flash lighting`,
+      `Photorealistic 8k portrait of a Black model in luxury evening dress with cape, paparazzi flash lighting`,
     ];
     const prompt = prompts[index % prompts.length];
     return { prompt, title: `AI ${eventName} Gala Gown` };
@@ -207,7 +208,62 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // --- ENGINE CHOICE 2: UNSPLASH SEARCH ---
+      // --- ENGINE CHOICE 2: OPENAI GPT-IMAGE STUDIO ---
+      else if ((engine === 'dalle3' || engine === 'openai') && process.env.OPENAI_API_KEY) {
+        usedSource = 'OpenAI GPT-Image Studio';
+        for (let i = 0; i < imagesPerEvent; i++) {
+          const { prompt, title } = buildAIPromptForEvent(event.name, query, i);
+          const genResult = await generateImageWithOpenAI(prompt, {
+            size: "1024x1024",
+            quality: "high",
+            userId: stylistId,
+          });
+
+          if (genResult.url) {
+            const outfitImageUrl = genResult.url;
+            const fullTitle = `${title} #${i + 1}`;
+            const description = `AI-generated high-fashion African model lookbook for ${event.name} via ${genResult.engine} • Prompt: ${prompt}`;
+
+            const existing = await prisma.outfitInspiration.findFirst({
+              where: {
+                OR: [
+                  { outfitImageUrl },
+                  { title: fullTitle },
+                ],
+              },
+            });
+
+            if (!existing) {
+              const record = await prisma.outfitInspiration.create({
+                data: {
+                  eventId: event.id,
+                  stylistId: stylistId,
+                  title: fullTitle.slice(0, 150),
+                  description,
+                  outfitImageUrl,
+                  likes: Math.floor(Math.random() * 80) + 30,
+                  tags: [event.name, "AI-Generated", "OpenAI", ...event.searchKeywords.slice(0, 2)],
+                  isActive: true,
+                  isFeatured: eventCreatedCount < 3,
+                },
+              });
+              eventCreatedCount++;
+              totalCreated++;
+              createdOutfits.push({
+                id: record.id,
+                eventName: event.name,
+                title: record.title,
+                outfitImageUrl: record.outfitImageUrl,
+                description: record.description || "",
+                likes: record.likes,
+              });
+            }
+          }
+          if (eventCreatedCount >= imagesPerEvent) break;
+        }
+      }
+
+      // --- ENGINE CHOICE 3: UNSPLASH SEARCH ---
       else if (engine === 'unsplash' && accessKey && !rateLimitedEncountered) {
         usedSource = 'Unsplash API';
         const perPage = 30;

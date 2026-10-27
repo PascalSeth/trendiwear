@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
 import { ChatDrawer } from '@/app/components/chat/ChatDrawer'
 import ProductReviewForm from '@/components/reviews/ProductReviewForm'
+import { useFashionTelemetry } from '@/hooks/useFashionTelemetry'
+import { ProductCard } from '@/components/common/ProductCard'
 
 // --- TYPES ---
 interface Product {
@@ -132,6 +134,7 @@ interface ProductClientProps {
    isLoggedIn: boolean;
    hasPurchased: boolean;
    hasReviewed: boolean;
+   relatedProducts?: any[];
 }
 
 export default function ProductClient({
@@ -139,7 +142,8 @@ export default function ProductClient({
    initialReviews,
    isLoggedIn,
    hasPurchased,
-   hasReviewed
+   hasReviewed,
+   relatedProducts = []
 }: ProductClientProps) {
    const [product] = useState<Product>(initialProduct)
    const [reviews, setReviews] = useState<Review[]>(initialReviews)
@@ -153,6 +157,12 @@ export default function ProductClient({
    const [activeTab, setActiveTab] = useState<'description' | 'details' | 'shipping'>('description')
    const sellerUserId = product.professional.userId || product.professional.id
    const isOwner = Boolean(session?.user?.id && session.user.id === sellerUserId)
+
+   const { trackImpression, trackGallerySwiped, trackSizeGuideOpened } = useFashionTelemetry(product.id)
+
+   useEffect(() => {
+      trackImpression(product.id, { name: product.name, price: product.price })
+   }, [product.id, product.name, product.price, trackImpression])
 
    const handleReplySubmit = async (reviewId: string) => {
       if (!replyContent.trim()) return
@@ -232,9 +242,9 @@ export default function ProductClient({
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 space-y-6">
 
             {/* PRODUCT CARD */}
-            <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 lg:p-10">
+            <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] border border-slate-200/80 p-4 sm:p-6 lg:p-8">
                {/* Breadcrumbs */}
-               <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8">
+               <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
                   <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
                   <span className="text-slate-300">/</span>
                   {product.categories[0] && (
@@ -248,22 +258,22 @@ export default function ProductClient({
                   <span className="text-slate-900 font-medium truncate max-w-[200px]">{product.name}</span>
                </nav>
 
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
-                  {/* GALLERY: Left Side - Much more compact */}
-                  <div className="flex flex-col-reverse md:flex-row gap-4 h-[450px] lg:h-[550px]"
+                  {/* GALLERY: Left Side - Much more compact & cute */}
+                  <div className="flex flex-col-reverse md:flex-row gap-3.5 h-[360px] sm:h-[400px] lg:h-[460px]"
                      onMouseEnter={() => setIsAutoPlaying(false)}
                      onMouseLeave={() => setIsAutoPlaying(true)}>
 
                      {/* Thumbnails */}
                      {product.images.length > 1 && (
-                        <div className="flex md:flex-col gap-3 overflow-auto pr-1 pb-1 md:pb-0 md:w-20 shrink-0 hide-scrollbar">
+                        <div className="flex md:flex-col gap-2.5 overflow-auto pr-1 pb-1 md:pb-0 md:w-18 shrink-0 hide-scrollbar">
                            {product.images.map((img, i) => (
                               <button
                                  key={i}
-                                 onClick={() => { setActiveImage(i); setIsAutoPlaying(true); }}
+                                 onClick={() => { setActiveImage(i); setIsAutoPlaying(true); trackGallerySwiped(i, product.id); }}
                                  className={cn(
-                                    "relative flex-shrink-0 w-16 h-16 md:w-full md:h-20 rounded-xl overflow-hidden transition-all duration-200",
+                                    "relative flex-shrink-0 w-14 h-14 md:w-full md:h-16 rounded-xl overflow-hidden transition-all duration-200",
                                     activeImage === i ? "ring-2 ring-slate-900 ring-offset-2" : "opacity-70 hover:opacity-100"
                                  )}
                               >
@@ -274,7 +284,7 @@ export default function ProductClient({
                      )}
 
                      {/* Main Image */}
-                     <div className="relative flex-1 rounded-[1.5rem] overflow-hidden bg-slate-100 group">
+                     <div className="relative flex-1 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-100 group">
                         <AnimatePresence mode="wait">
                            <motion.div
                               key={activeImage}
@@ -339,8 +349,8 @@ export default function ProductClient({
 
                   {/* DETAILS: Right Side */}
                   <div className="flex flex-col h-full">
-                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
+                     <div className="mb-5">
+                        <h1 className="text-2xl sm:text-3xl font-serif font-medium tracking-tight text-slate-900 mb-2">
                            {product.name}
                         </h1>
                         <button onClick={scrollToReviews} className="flex items-center gap-2 mb-4 group">
@@ -487,7 +497,10 @@ export default function ProductClient({
                            {(['description', 'details', 'shipping'] as const).map((tab) => (
                               <button
                                  key={tab}
-                                 onClick={() => setActiveTab(tab)}
+                                 onClick={() => {
+                                    setActiveTab(tab);
+                                    if (tab === 'details') trackSizeGuideOpened(product.id);
+                                 }}
                                  className={cn(
                                     "pb-3 text-sm font-semibold capitalize transition-all border-b-2",
                                     activeTab === tab
@@ -743,6 +756,34 @@ export default function ProductClient({
                   </div>
                </div>
             </div>
+
+            {/* Related Products Section */}
+            {relatedProducts && relatedProducts.length > 0 && (
+               <section className="pt-8 sm:pt-10 border-t border-slate-200/80">
+                  <div className="flex items-center justify-between mb-5">
+                     <div>
+                        <h2 className="text-xl sm:text-2xl font-serif font-medium text-stone-900 tracking-tight">
+                           You May Also Like
+                        </h2>
+                        <p className="text-xs text-stone-500 font-sans mt-0.5">
+                           Handcrafted pieces from our designers
+                        </p>
+                     </div>
+                     <Link
+                        href="/shopping"
+                        className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-stone-500 hover:text-stone-900 transition-colors"
+                     >
+                        <span>Explore More</span>
+                        <ChevronRight size={14} />
+                     </Link>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3.5 lg:gap-4">
+                     {relatedProducts.map((item, index) => (
+                        <ProductCard key={item.id} item={item} index={index} />
+                     ))}
+                  </div>
+               </section>
+            )}
          </div>
 
          <ChatDrawer

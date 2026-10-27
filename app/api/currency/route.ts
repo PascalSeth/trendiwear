@@ -16,7 +16,7 @@ export async function GET() {
     console.error('Failed to fetch currency settings:', error)
     return NextResponse.json(
       {
-        symbol: '$',
+        symbol: 'GH₵',
         code: 'GHS',
       },
       { status: 200 } // Return default even on error

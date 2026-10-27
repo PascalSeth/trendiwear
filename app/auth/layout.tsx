@@ -2,7 +2,7 @@ import '../globals.css'
 import { Providers } from '../providers'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Home } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export const metadata = {
   title: 'Login - TrendiZip',
@@ -11,27 +11,24 @@ export const metadata = {
 
 function AuthNavbar() {
   return (
-    <div className="fixed w-full top-0 z-50 transition-all duration-500 ease-out py-6">
-      <div className="max-w-[1600px] mx-auto px-6 flex items-center justify-between">
-
-        {/* Left: Logo — same as main Navbar */}
+    <div className="fixed w-full top-0 z-50 py-4 px-6 md:px-8 pointer-events-none">
+      <div className="w-full flex items-center justify-between pointer-events-auto">
         <Link href="/" className="flex-shrink-0 group">
           <Image 
             src="/navlogo.png" 
             alt="TrendiZip" 
-            width={40} 
-            height={40} 
-            className="transition-transform duration-300 group-hover:scale-105" 
+            width={34} 
+            height={34} 
+            className="transition-opacity duration-200 group-hover:opacity-80 h-7 md:h-8 w-auto object-contain drop-shadow-sm" 
           />
         </Link>
 
-        {/* Right: Home link */}
         <Link
           href="/"
-          className="flex items-center gap-2 px-6 py-2.5 bg-stone-900 text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 transition-all bg-white/90 hover:bg-white backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-200/80 shadow-xs hover:shadow-sm"
         >
-          <Home size={14} strokeWidth={1.5} />
-          Home
+          <ArrowLeft size={13} strokeWidth={1.75} />
+          Back to home
         </Link>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TrendiZip | Fashion Atelier & Marketplace',
+    name: 'TrendiZip | Fashion Tailors, Designers & Marketplace',
     short_name: 'TrendiZip',
     description: 'Wear the Trend, Set the Trend with TrendiZip - Your Ultimate Fashion Destination!',
     start_url: '/',

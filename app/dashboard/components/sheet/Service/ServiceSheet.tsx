@@ -82,6 +82,7 @@ interface ServiceSheetProps {
   serviceToEdit?: Service;
   onServiceUpdated?: (service: Service) => void;
   onClose?: () => void;
+  hideTrigger?: boolean;
 }
 
 const ServiceSheet: React.FC<ServiceSheetProps> = ({
@@ -90,6 +91,7 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
   serviceToEdit,
   onServiceUpdated,
   onClose,
+  hideTrigger = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -263,12 +265,14 @@ const ServiceSheet: React.FC<ServiceSheetProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30">
-          <Plus className="h-4 w-4" />
-          Add Service
-        </Button>
-      </SheetTrigger>
+      {!hideTrigger && (
+        <SheetTrigger asChild>
+          <Button className="h-8 sm:h-9 text-xs px-3 sm:px-3.5 rounded-lg font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs gap-1.5 transition-all">
+            <Plus className="h-3.5 w-3.5" />
+            Add Service
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent className="sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-6 border-b border-slate-100">
           <div className="flex items-center gap-3">

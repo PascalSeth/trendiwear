@@ -117,24 +117,23 @@ export default async function TopSellersPage() {
         <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px]" />
       </div>
 
-      <main className="relative z-10 pt-32 md:pt-44 px-4 md:px-8 max-w-7xl mx-auto">
+      <main className="relative z-10 pt-28 md:pt-36 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-16 md:mb-32">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-stone-200 bg-white/50 backdrop-blur-sm text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 mb-6 shadow-sm">
-            <Trophy className="w-3 h-3 text-amber-500" />
-            Seasonal Hall of Fame
+        <div className="text-center mb-10 md:mb-14">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-stone-200 bg-white/70 backdrop-blur-sm text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-4 shadow-2xs">
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            <span>Leaderboard</span>
           </div>
-          <h1 className="text-5xl md:text-8xl font-serif font-black tracking-tighter text-stone-950 mb-6 md:mb-8 leading-[0.9]">
-            THE <span className="text-stone-400 italic">ELITE</span> <br /> 
-            TOP SELLERS
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal tracking-tight text-stone-950 mb-3 leading-tight">
+            Top Sellers
           </h1>
-          <p className="max-w-2xl mx-auto text-sm md:text-lg text-stone-500 font-serif leading-relaxed italic">
-            Celebrating the master craftsmen, visionaries, and trendsetters who have redefined African fashion this season with unprecedented artistry and impact.
+          <p className="max-w-lg mx-auto text-xs sm:text-sm text-stone-600 font-sans leading-relaxed">
+            Leading fashion designers and tailors ranked by verified sales volume and client ratings on TrendiZip.
           </p>
         </div>
 
         {/* The Podium Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-0 md:gap-4 mb-24 md:mb-40 min-h-[500px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-4 sm:gap-6 mb-16 md:mb-20">
           {visualPodium.map((seller) => {
             const isFirst = seller.id === podiumSellers[0].id;
             const isSecond = seller.id === podiumSellers[1]?.id;
@@ -150,150 +149,147 @@ export default async function TopSellersPage() {
               rankColor = "text-amber-500";
               Icon = Crown;
               bgColor = "from-amber-50 to-white";
-              borderColor = "border-amber-200 shadow-amber-100/50";
-              awardLabel = "Sovereign Master";
+              borderColor = "border-amber-300 shadow-amber-100/50";
+              awardLabel = "#1 Top Seller";
             } else if (isSecond) {
               rankColor = "text-slate-400";
               Icon = Medal;
               bgColor = "from-slate-50 to-white";
-              borderColor = "border-slate-200 shadow-slate-100/50";
-              awardLabel = "Elite Artisan";
+              borderColor = "border-slate-300 shadow-slate-100/50";
+              awardLabel = "#2 Top Seller";
             } else if (isThird) {
               rankColor = "text-amber-700";
               Icon = Award;
               bgColor = "from-orange-50/30 to-white";
               borderColor = "border-orange-200/50";
-              awardLabel = "Distinguished Voice";
+              awardLabel = "#3 Top Seller";
             }
 
             return (
               <div 
                 key={seller.id} 
-                className={`flex flex-col items-center ${isFirst ? 'z-20 md:-translate-y-12' : 'z-10'} relative mb-12 md:mb-0 transform transition-all duration-700`}
+                className={`flex flex-col items-center ${isFirst ? 'z-20 md:-translate-y-6' : 'z-10'} relative mb-6 md:mb-0 transition-all duration-500`}
               >
                 {/* Ranking Emblem */}
-                <div className={`mb-6 p-3 rounded-full bg-white border ${borderColor} shadow-xl relative overflow-hidden group`}>
-                   <div className={`absolute inset-0 bg-gradient-to-br ${bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                   <Icon className={`w-8 h-8 md:w-10 md:h-10 ${rankColor} relative z-10`} />
+                <div className={`mb-3 p-2.5 rounded-full bg-white border ${borderColor} shadow-sm relative overflow-hidden group`}>
+                   <div className={`absolute inset-0 bg-gradient-to-br ${bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                   <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${rankColor} relative z-10`} />
                 </div>
 
                 {/* Profile Card */}
                 <Link 
                   href={`/tz/${seller.slug}`}
-                  className={`w-full max-w-[320px] bg-white border ${borderColor} rounded-[2rem] p-6 md:p-8 shadow-2xl overflow-hidden group hover:-translate-y-2 transition-all duration-500`}
+                  className={`w-full max-w-[270px] bg-white border ${borderColor} rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300`}
                 >
-                  <div className="relative aspect-square rounded-[1.5rem] overflow-hidden mb-6 border border-stone-100">
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-3 border border-stone-100 bg-stone-100">
                     <Image 
                       src={seller.businessImage || seller.user?.profileImage || ""} 
                       alt={seller.businessName} 
                       fill 
-                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <div className="absolute bottom-4 left-4">
-                       <span className={`px-2 py-1 bg-white/90 backdrop-blur-md rounded-md text-[8px] font-mono uppercase tracking-widest text-stone-900 ${rankColor}`}>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                    <div className="absolute bottom-2.5 left-2.5">
+                       <span className={`px-2 py-0.5 bg-white/95 backdrop-blur-xs rounded-md text-[10px] font-mono font-bold uppercase tracking-wider text-stone-900 ${rankColor}`}>
                          #{isFirst ? 1 : isSecond ? 2 : 3}
                        </span>
                     </div>
                   </div>
 
                   <div className="text-center">
-                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400 mb-2 block">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 mb-1 block">
                       {awardLabel}
                     </span>
-                    <h3 className="text-2xl font-serif font-bold text-stone-950 mb-2 truncate group-hover:italic transition-all">
+                    <h3 className="text-base sm:text-lg font-serif font-bold text-stone-950 mb-1 truncate">
                       {seller.businessName}
                     </h3>
-                    <p className="text-xs text-stone-500 font-mono tracking-wide uppercase mb-6">
-                      {seller.specialization?.name || "Professional"}
+                    <p className="text-[11px] text-stone-500 font-sans tracking-wide truncate mb-3">
+                      {seller.specialization?.name || "Designer & Tailor"}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-4 py-4 border-t border-stone-50">
+                    <div className="grid grid-cols-2 gap-2 py-2.5 border-t border-stone-100">
                       <div className="text-center">
-                        <p className="text-lg font-serif font-bold text-stone-900">{seller.actualSales.toLocaleString()}</p>
-                        <p className="text-[8px] font-mono text-stone-400 uppercase tracking-widest leading-none mt-1">Sales Volume</p>
+                        <p className="text-sm sm:text-base font-mono font-bold text-stone-900">{seller.actualSales.toLocaleString()}</p>
+                        <p className="text-[9px] text-stone-400 font-sans uppercase tracking-wider mt-0.5">Sales</p>
                       </div>
-                      <div className="text-center border-l border-stone-50">
-                        <p className="text-lg font-serif font-bold text-stone-900">{seller.rating.toFixed(1)}</p>
-                        <p className="text-[8px] font-mono text-stone-400 uppercase tracking-widest leading-none mt-1">Global Rating</p>
+                      <div className="text-center border-l border-stone-100">
+                        <p className="text-sm sm:text-base font-mono font-bold text-stone-900">{seller.rating.toFixed(1)}</p>
+                        <p className="text-[9px] text-stone-400 font-sans uppercase tracking-wider mt-0.5">Rating</p>
                       </div>
                     </div>
                   </div>
                 </Link>
-
-                {/* Base shadow effect for 1st place */}
-                {isFirst && (
-                  <div className="hidden md:block absolute -bottom-10 left-12 right-12 h-6 bg-stone-900/5 blur-2xl rounded-full" />
-                )}
               </div>
             );
           })}
         </div>
 
         {/* Detailed Leaderboard Section */}
-        <section className="mb-24">
-          <div className="flex items-center justify-between mb-12 border-b border-stone-200 pb-6">
-            <h2 className="text-2xl md:text-4xl font-serif font-medium text-stone-900">
-              The Rankings <span className="text-stone-400 italic">4-50</span>
+        <section className="mb-16 md:mb-20">
+          <div className="flex items-center justify-between mb-6 border-b border-stone-200/80 pb-4">
+            <h2 className="text-xl sm:text-2xl font-serif font-normal text-stone-900">
+              The Rankings
             </h2>
-            <div className="flex items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-stone-400">
-              <span className="hidden md:inline">Sort by Peak Performance</span>
-              <div className="w-10 h-px bg-stone-200" />
+            <div className="text-xs text-stone-500 font-sans">
+              Ranked by verified orders
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-px bg-stone-200 border border-stone-200 rounded-3xl overflow-hidden shadow-xl">
+          <div className="bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-xs divide-y divide-stone-100">
             {listSellers.map((seller, idx) => (
               <Link 
                 key={seller.id}
                 href={`/tz/${seller.slug}`}
-                className="group flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-8 px-6 md:px-12 py-6 md:py-8 bg-white hover:bg-stone-50 transition-colors"
+                className="group flex items-center gap-3 sm:gap-6 px-4 sm:px-6 py-3.5 sm:py-4 hover:bg-stone-50/70 transition-colors"
               >
                 {/* Ranking */}
-                <div className="w-12 text-center">
-                  <span className="text-lg md:text-2xl font-serif text-stone-300 group-hover:text-stone-950 transition-colors italic">
-                    {idx + 4}
+                <div className="w-8 text-center shrink-0">
+                  <span className="text-sm sm:text-base font-mono font-bold text-stone-400 group-hover:text-stone-900 transition-colors">
+                    #{idx + 4}
                   </span>
                 </div>
 
                 {/* Info */}
-                <div className="flex items-center gap-4 flex-1 min-w-[200px]">
-                  <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden border border-stone-100 flex-shrink-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border border-stone-200 flex-shrink-0 bg-stone-100">
                     <Image 
                       src={seller.businessImage || seller.user?.profileImage || ""} 
-                      alt="" 
+                      alt={seller.businessName} 
                       fill 
-                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
-                  <div>
-                    <h4 className="text-base md:text-xl font-serif font-medium text-stone-900 group-hover:italic transition-all">
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm font-semibold text-stone-900 truncate">
                       {seller.businessName}
-                    </h4>
-                    <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest mt-1">
-                      {seller.specialization?.name}
+                    </h3>
+                    <p className="text-[11px] text-stone-500 font-sans truncate">
+                      {seller.specialization?.name || "Professional"}
                     </p>
                   </div>
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-12 ml-auto">
-                  <div className="hidden lg:block text-right">
-                    <div className="flex items-center justify-end gap-1 text-amber-500 mb-1">
+                <div className="flex items-center gap-6 sm:gap-8 ml-auto shrink-0">
+                  <div className="hidden sm:block text-right">
+                    <div className="flex items-center justify-end gap-1 text-amber-500 text-xs">
                       <Star className="w-3 h-3 fill-current" />
-                      <span className="text-sm font-serif font-bold text-stone-900">{seller.rating.toFixed(1)}</span>
+                      <span className="font-semibold text-stone-900">{seller.rating.toFixed(1)}</span>
                     </div>
-                    <p className="text-[8px] font-mono text-stone-400 uppercase tracking-widest">{seller.totalReviews} Reviews</p>
+                    <p className="text-[10px] text-stone-400 font-sans">{seller.totalReviews} reviews</p>
                   </div>
 
-                  <div className="text-right min-w-[100px]">
-                    <div className="text-xl md:text-3xl font-serif font-medium text-stone-950 group-hover:-translate-x-2 transition-transform duration-500">
+                  <div className="text-right min-w-[70px]">
+                    <div className="text-sm sm:text-base font-mono font-bold text-stone-950">
                       {seller.actualSales.toLocaleString()}
                     </div>
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">Global Sales</span>
-                      <ArrowUpRight className="w-3 h-3 text-stone-900" />
-                    </div>
+                    <span className="text-[10px] text-stone-400 font-sans block leading-none">
+                      {seller.actualSales === 1 ? 'sale' : 'sales'}
+                    </span>
+                  </div>
+
+                  <div className="text-stone-300 group-hover:text-stone-900 transition-colors">
+                    <ArrowUpRight size={14} />
                   </div>
                 </div>
               </Link>
@@ -301,20 +297,22 @@ export default async function TopSellersPage() {
           </div>
         </section>
 
-        {/* Footer Inspiration */}
-        <section className="text-center py-20 md:py-32 border-t border-stone-200">
-          <div className="max-w-3xl mx-auto">
-            <h3 className="text-3xl md:text-5xl font-serif italic text-stone-400 mb-8 leading-tight">
-              &ldquo;True fashion is not just what we wear, but the stories told by the hands that created it.&rdquo;
+        {/* Footer CTA */}
+        <section className="text-center py-10 md:py-14 border-t border-stone-200">
+          <div className="max-w-xl mx-auto space-y-3">
+            <h3 className="text-xl sm:text-2xl font-serif text-stone-900">
+              Looking for custom tailoring?
             </h3>
-            <div className="flex flex-col items-center gap-6">
-              <span className="w-12 h-px bg-stone-900" />
+            <p className="text-xs sm:text-sm text-stone-600 font-sans leading-relaxed">
+              Explore profiles, view past creations, and place made-to-measure orders directly with verified designers.
+            </p>
+            <div className="pt-2">
               <Link 
                 href="/tailors-designers"
-                className="group flex items-center gap-4 text-xs font-mono uppercase tracking-[0.3em] text-stone-900 hover:tracking-[0.4em] transition-all"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 hover:bg-black text-white text-xs font-semibold transition-all shadow-xs"
               >
-                Explore More Creators
-                <TrendingUp className="w-4 h-4" />
+                <span>Find a Tailor</span>
+                <TrendingUp className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>

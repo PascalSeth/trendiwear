@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, Clock, ArrowUpRight } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Types (Preserved) ---
 interface BlogPost {
@@ -119,183 +120,191 @@ function BlogIntro() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 font-sans selection:bg-black selection:text-white pb-24">
-      
-      {/* Marquee Strip */}
-      <div className="w-full overflow-hidden border-b border-stone-200 bg-white py-3">
-        <div className="whitespace-nowrap animate-marquee font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400">
-          Editor&apos;s Pick • Fashion Week • Style Guide • New Collection • Editor&apos;s Pick • Fashion Week • Style Guide • New Collection •
-        </div>
-      </div>
-
-      <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-16">
+    <div className="bg-[#FAFAF9] py-10 sm:py-12 lg:py-14 border-t border-stone-200/70 text-stone-900 font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Editorial Header */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 border-b border-stone-200 pb-8">
+        {/* Header */}
+        <header className="mb-6 sm:mb-8 flex justify-between items-end border-b border-stone-200/80 pb-4 gap-3">
           <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-stone-500 mb-4">
-              The Journal
-            </p>
-            <h1 className="text-5xl md:text-7xl font-serif font-medium text-stone-900 leading-[0.9]">
-              Editor&apos;s <br/> Selection
-            </h1>
+            <h2 className="text-2xl sm:text-3xl font-serif font-medium text-stone-900 tracking-tight">
+              Articles
+            </h2>
           </div>
-          <Link href="/blog" className="hidden md:flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors">
-            View All <ArrowUpRight size={14} />
+          <Link 
+            href="/blog" 
+            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <span>View all</span>
+            <ArrowUpRight size={13} />
           </Link>
         </header>
 
-        {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
-          {/* Left: Featured Hero Post (Takes 8 cols) - Only when a featured blog exists */}
-          {featuredPost && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="lg:col-span-8 group cursor-pointer"
-            >
-              <div className="relative w-full aspect-[16/9] overflow-hidden border border-stone-200">
-                {/* Main Image */}
-                <Image
-                  src={featuredPost.imageUrl}
-                  alt={featuredPost.title}
-                  fill
-                  className="object-cover transition-transform duration-1000 ease-out grayscale group-hover:grayscale-0 group-hover:scale-105"
-                />
-
-                {/* Gradient Overlay for Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-70 transition-opacity duration-500" />
-
-                {/* Content Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
-                  <div className="flex items-center gap-4 mb-4 font-mono text-xs uppercase tracking-widest text-stone-300">
-                    <span className="flex items-center gap-2">
-                      <Calendar size={12} /> {featuredPost.date}
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-2">
-                      <Clock size={12} /> {featuredPost.readTime}
-                    </span>
-                    <span>•</span>
-                    <span className="bg-white/20 px-2 py-0.5 rounded-sm backdrop-blur-sm">{featuredPost.category}</span>
-                  </div>
-
-                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-[0.95] mb-4 group-hover:italic transition-all duration-300">
-                    {featuredPost.title}
-                  </h2>
-                  
-                  <p className="text-stone-200 text-lg md:text-xl font-light max-w-2xl leading-relaxed mb-6 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                    {featuredPost.description}
-                  </p>
-
-                  <div className="flex items-center gap-3 text-sm font-medium">
-                    <span>Read Story</span>
-                    <div className="w-8 h-[1px] bg-white transition-all duration-300 group-hover:w-12" />
-                  </div>
+        {/* Main Content */}
+        {loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            {/* Left: Featured Hero Post Skeleton */}
+            <div className="lg:col-span-7">
+              <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] lg:aspect-[16/10] max-h-[380px] rounded-2xl overflow-hidden border border-stone-200/90 shadow-2xs bg-stone-100">
+                <Skeleton className="w-full h-full rounded-none bg-stone-200/70" />
+                <div className="absolute top-3.5 left-3.5">
+                  <Skeleton className="h-5 w-24 rounded-full bg-stone-900/40" />
                 </div>
               </div>
-            </motion.div>
-          )}
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-3 w-20 bg-stone-200/70" />
+                  <Skeleton className="h-3 w-16 bg-stone-200/70" />
+                </div>
+                <Skeleton className="h-6 w-4/5 bg-stone-200/80" />
+                <Skeleton className="h-4 w-full bg-stone-200/50" />
+              </div>
+            </div>
 
-          {/* Right: Side List (Takes 4 cols when featured exists, full width otherwise) */}
-          <div className={`${featuredPost ? 'lg:col-span-4' : 'lg:col-span-12'} flex flex-col justify-between`}>
-            <div className="space-y-8">
-              <h3 className="font-mono text-xs uppercase tracking-widest text-stone-400 border-b border-stone-200 pb-4 flex items-center justify-between">
-                <span>Quick Reads</span>
-                {!loading && quickReads.length > 0 && (
+            {/* Right: Quick Reads Skeletons */}
+            <div className="lg:col-span-5 space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="p-3 rounded-xl border border-stone-200/80 bg-white/60 flex gap-3.5 items-center">
+                  <Skeleton className="w-20 h-20 rounded-lg shrink-0 bg-stone-200/70" />
+                  <div className="flex-1 space-y-1.5 min-w-0">
+                    <Skeleton className="h-3 w-16 bg-stone-200/60" />
+                    <Skeleton className="h-4 w-full bg-stone-200/80" />
+                    <Skeleton className="h-2.5 w-1/2 bg-stone-200/50" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : !featuredPost && quickReads.length === 0 ? (
+          <div className="py-14 text-center">
+            <p className="text-sm text-stone-500 font-light">
+              No articles yet. New stories will appear here as they are published.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            
+            {/* Left: Featured Hero Post */}
+            {featuredPost && (
+              <motion.div 
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className={`${quickReads.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'} group cursor-pointer`}
+              >
+                <Link href={`/blog/${featuredPost.slug}`} className="block">
+                  <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] lg:aspect-[16/10] max-h-[380px] rounded-2xl overflow-hidden border border-stone-200/90 shadow-2xs bg-stone-100">
+                    {/* Main Image */}
+                    <Image
+                      src={featuredPost.imageUrl}
+                      alt={featuredPost.title}
+                      fill
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      sizes="(max-width: 1024px) 100vw, 60vw"
+                    />
+
+                    {/* Permanent Gradient Overlay for Legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent transition-opacity duration-300 group-hover:from-black/95" />
+
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between text-white z-10">
+                      {/* Top Badges */}
+                      <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-wider text-stone-300">
+                        <span className="bg-stone-900/60 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/15 text-white/95">
+                          {featuredPost.category}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar size={11} /> {featuredPost.date}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={11} /> {featuredPost.readTime}
+                        </span>
+                      </div>
+
+                      {/* Bottom Title & Excerpt */}
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-serif font-medium leading-snug tracking-tight mb-2 group-hover:text-stone-100 transition-colors">
+                          {featuredPost.title}
+                        </h3>
+                        
+                        {featuredPost.description && (
+                          <p className="text-xs sm:text-sm text-stone-200/90 font-light line-clamp-2 leading-relaxed max-w-xl">
+                            {featuredPost.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-1.5 pt-2.5 text-xs font-medium text-white/90">
+                          <span>Read Story</span>
+                          <ArrowUpRight size={13} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            )}
+
+            {/* Right: Quick Reads List */}
+            {quickReads.length > 0 && (
+              <div className={`${featuredPost ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-stone-400 border-b border-stone-200/80 pb-2.5 mb-3 flex items-center justify-between">
+                  <span>Quick Reads</span>
                   <span className="text-[10px] text-stone-400">{quickReads.length} articles</span>
-                )}
-              </h3>
+                </div>
 
-              {loading && (
-                <p className="text-xs font-mono text-stone-400 uppercase tracking-widest">
-                  Loading articles...
-                </p>
-              )}
-
-              {!loading && quickReads.length === 0 && (
-                <p className="text-sm text-stone-500 font-light">
-                  No articles yet. New stories will appear here as they are published.
-                </p>
-              )}
-
-              {!loading && quickReads.map((card, index) => (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group cursor-pointer"
-                >
-                  <Link href={`/blog/${card.slug}`} className="block">
-                    {card.imageUrl ? (
-                      <div className="flex gap-4">
-                        {/* Small Thumbnail */}
-                        <div className="w-24 h-24 flex-shrink-0 overflow-hidden border border-stone-200 relative">
-                           <Image
+                <div className={`${featuredPost ? 'space-y-3' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}`}>
+                  {quickReads.map((card, index) => (
+                    <motion.div
+                      key={card.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.06 }}
+                    >
+                      <Link 
+                        href={`/blog/${card.slug}`} 
+                        className="p-3 rounded-xl border border-stone-200/80 hover:border-stone-400 bg-white/70 hover:bg-white shadow-2xs hover:shadow-xs transition-all flex gap-3.5 items-center group block"
+                      >
+                        {card.imageUrl ? (
+                          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg overflow-hidden border border-stone-200 relative shrink-0 bg-stone-100">
+                            <Image
                               src={card.imageUrl}
                               alt={card.title}
                               fill
-                              className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              sizes="72px"
                             />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                          <span className="font-mono text-[10px] uppercase tracking-widest text-stone-400 mb-2 block">
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg border border-stone-200 bg-stone-100 flex items-center justify-center shrink-0">
+                            <span className="font-serif text-lg text-stone-400">{card.title.charAt(0)}</span>
+                          </div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400 block mb-1">
                             {card.category}
                           </span>
-                          <h4 className="text-lg font-serif text-stone-900 leading-tight group-hover:italic transition-colors">
+                          <h4 className="text-xs sm:text-sm font-serif font-medium text-stone-900 group-hover:text-stone-700 line-clamp-2 leading-snug">
                             {card.title}
                           </h4>
-                          <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className="text-xs font-medium text-stone-600">Read more</span>
-                            <ArrowUpRight size={12} />
-                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      // Text-Only Side Card (Minimalist)
-                      <div className="border border-stone-200 p-6 hover:border-stone-900 transition-colors bg-stone-50">
-                        <div className="flex justify-between items-start mb-3">
-                           <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500">
-                             {card.category}
-                           </span>
-                           <div className="w-2 h-2 bg-stone-900 rounded-full"></div>
-                        </div>
-                        <h4 className="text-xl font-serif text-stone-900 mb-2 leading-tight">
-                          {card.title}
-                        </h4>
-                        <p className="text-sm text-stone-600 font-light leading-relaxed line-clamp-2">
-                          {card.description}
-                        </p>
-                      </div>
-                    )}
-                  </Link>
-                </motion.div>
-                ))}
-            </div>
 
-            {/* Decorative Footer in Sidebar */}
-            <div className="mt-12 pt-8 border-t border-stone-200">
-              <p className="font-serif text-stone-400 italic text-sm">
-                &apos;Fashion is the armor to survive the reality of everyday life&apos;
-              </p>
-              <div className="h-px w-full bg-stone-200 mt-4"></div>
-            </div>
+                        <div className="w-6 h-6 rounded-full bg-stone-100 group-hover:bg-stone-900 group-hover:text-white flex items-center justify-center shrink-0 transition-colors text-stone-500">
+                          <ArrowUpRight size={12} />
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
-        </div>
-      </div>
+        )}
 
-      <style jsx global>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
-        }
-      `}</style>
+      </div>
     </div>
   );
 }

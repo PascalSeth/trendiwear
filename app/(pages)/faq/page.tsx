@@ -7,7 +7,8 @@ import {
   Store, 
   Wallet, 
   Clock, 
-  Sparkles, 
+  Gift, 
+  Palette, 
   Tag, 
   Truck, 
   ShieldCheck, 
@@ -47,7 +48,7 @@ const SELLER_FAQS = [
     id: 'trial-period',
     question: 'Is there a trial period for new users?',
     answer: 'Yes. Every new user is eligible for a 3-month Trial Business Account. You will have access to every premium feature for free for the first 90 days before you need to consider a subscription.',
-    icon: <Sparkles className="w-5 h-5 text-indigo-500" />
+    icon: <Gift className="w-5 h-5 text-indigo-500" />
   },
   {
     id: 'subscription-cost',
@@ -89,7 +90,7 @@ const SELLER_FAQS = [
     id: 'customization',
     question: 'Can I customize the look of my storefront?',
     answer: 'Customization features are currently in development and will be released in a future update. For now, the focus is on a clean, high-performance layout that highlights your products.',
-    icon: <Sparkles className="w-5 h-5 text-pink-500" />
+    icon: <Palette className="w-5 h-5 text-pink-500" />
   },
   {
     id: 'security',

@@ -1,26 +1,36 @@
-'use client'
-import React, { useState, useMemo, useEffect } from 'react';
+'use client';
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Star, Heart, BadgeCheck, Search, MapPin, 
-  ChevronRight, RefreshCcw, SlidersHorizontal, X,
-  Clock, Scissors, ArrowRight, Briefcase
+import {
+  Heart, Search, X, SlidersHorizontal,
+  ArrowRight, Check, ChevronDown, RefreshCw, MapPin, Star
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 // --- Types ---
 interface Professional {
   id: string;
   businessName: string;
   businessImage?: string | null;
+  coverImage?: string | null;
   experience: number;
   bio?: string | null;
   location?: string | null;
   rating?: number | null;
   totalReviews?: number | null;
+  completedOrders?: number;
   slug?: string | null;
   isVerified?: boolean;
+  galleryImages?: string[];
+  portfolioCollections?: {
+    id: string;
+    name: string;
+    coverImage?: string | null;
+    images: string[];
+  }[];
   user: {
     firstName: string;
     lastName: string;
@@ -41,115 +51,189 @@ interface TailorsClientProps {
   initialProfessionals: Professional[];
 }
 
-// --- Seller Card ---
-function SellerCard({ professional, index }: { professional: Professional; index: number }) {
+type SortOption = 'default' | 'rating-desc' | 'experience-desc' | 'orders-desc' | 'price-asc' | 'price-desc';
+
+const POPULAR_QUICK_LINKS = [
+  'Tailors', 'Fashion Designers', 'Bridal', 'Menswear', 'Womenswear', 'Alterations'
+];
+
+const ARTISAN_GRADIENTS = [
+  'from-stone-900 via-amber-950 to-stone-900',
+  'from-neutral-900 via-rose-950 to-zinc-900',
+  'from-slate-900 via-emerald-950 to-neutral-950',
+  'from-zinc-900 via-indigo-950 to-stone-900',
+  'from-stone-900 via-amber-900/60 to-zinc-900',
+  'from-neutral-900 via-teal-950 to-slate-900',
+];
+
+function getArtisanGradient(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return ARTISAN_GRADIENTS[Math.abs(hash) % ARTISAN_GRADIENTS.length];
+}
+
+// --- 1. Tailor & Designer Card ---
+function CreativeDesignerCard({ professional, index }: { professional: Professional; index: number }) {
   const [liked, setLiked] = useState(false);
 
-  const minPrice = professional.user.professionalServices?.length 
-    ? Math.min(...professional.user.professionalServices.map(s => s.price)) 
+  const minPrice = professional.user.professionalServices?.length
+    ? Math.min(...professional.user.professionalServices.map(s => s.price))
     : null;
 
   const profileUrl = `/tz/${professional.slug || encodeURIComponent(professional.businessName.toLowerCase().replace(/\s+/g, '-'))}`;
 
+  // Priority for cover image: professional.coverImage -> portfolio collection cover -> portfolio image -> gallery image
+  const coverImage = professional.coverImage ||
+    professional.portfolioCollections?.[0]?.coverImage ||
+    professional.portfolioCollections?.[0]?.images?.[0] ||
+    professional.galleryImages?.[0] || null;
+
+  // Priority for avatar: user.profileImage -> professional.businessImage
+  const avatarImage = professional.user.profileImage || professional.businessImage || null;
+
+  const rawSpec = professional.specialization?.name?.trim();
+  const specializationName = (!rawSpec || rawSpec.toLowerCase() === 'seller' || rawSpec.toLowerCase() === 'general')
+    ? 'Fashion Designer'
+    : rawSpec;
+
+  const locationCity = professional.location?.split(',')?.[0]?.trim() || 'Ghana';
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.03, 0.3) }}
-      className="group relative"
+    <motion.article
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.15) }}
+      className="group flex flex-col bg-white rounded-2xl border border-gray-200/80 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:border-gray-300 transition-all duration-300"
     >
-      <Link href={profileUrl} className="block">
-        {/* Image Container — fixed aspect ratio, same for everyone */}
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-stone-100">
-          {professional.businessImage ? (
+      {/* 1. Compact Cover Banner */}
+      <div className="relative h-28 sm:h-32 w-full overflow-hidden bg-gray-100">
+        <Link href={profileUrl} className="block relative w-full h-full">
+          {coverImage ? (
             <Image
-              src={professional.businessImage}
+              src={coverImage}
               alt={professional.businessName}
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover transition-all duration-700 ease-out group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center">
-              <span className="text-7xl font-serif text-stone-300/60 italic select-none">
-                {professional.businessName.charAt(0)}
+            <div className={cn("w-full h-full bg-gradient-to-br flex items-center justify-center relative overflow-hidden", getArtisanGradient(professional.id))}>
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:12px_12px]" />
+              <span className="text-white/30 text-2xl font-serif tracking-widest uppercase">
+                {professional.businessName.substring(0, 2)}
               </span>
             </div>
           )}
+          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+        </Link>
 
-          {/* Top row: badges */}
-          <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10">
-            <div className="flex items-center gap-1.5">
-              {professional.isVerified && (
-                <span className="inline-flex items-center gap-1 bg-white/85 backdrop-blur-lg text-stone-900 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide shadow-sm">
-                  <BadgeCheck size={11} className="text-blue-600" />
-                  Verified
-                </span>
-              )}
-            </div>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLiked(!liked); }}
-              className={`p-2 rounded-full backdrop-blur-lg shadow-sm transition-all duration-200 ${
-                liked 
-                  ? 'bg-rose-500 text-white' 
-                  : 'bg-white/70 text-stone-500 hover:bg-white hover:text-rose-500'
-              }`}
-            >
-              <Heart size={14} className={liked ? 'fill-white' : ''} />
-            </button>
-          </div>
+        {/* Floating Specialization Pill & Like button */}
+        <div className="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none z-10">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 pointer-events-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="truncate max-w-[95px]">{specializationName}</span>
+          </span>
 
-          {/* Bottom gradient for text readability */}
-          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
-
-          {/* Bottom overlay info (always visible) */}
-          <div className="absolute inset-x-0 bottom-0 p-4 z-10">
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium text-white/70 uppercase tracking-widest mb-0.5 truncate">
-                  {professional.specialization?.name || 'Seller'}
-                </p>
-                <h3 className="text-white font-semibold text-[15px] leading-snug truncate">
-                  {professional.businessName}
-                </h3>
-              </div>
-              <div className="shrink-0 flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
-                <Star size={10} className="fill-amber-400 text-amber-400" />
-                <span className="text-white text-[11px] font-semibold">{professional.rating || '4.8'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Link>
-
-      {/* Below-image info — clean, compact, always visible */}
-      <div className="mt-3 px-1 space-y-1.5">
-        <div className="flex items-center gap-1.5 text-stone-400">
-          <MapPin size={11} className="shrink-0" />
-          <span className="text-[11px] font-medium truncate">{professional.location || 'Online'}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-[11px] text-stone-400">
-            <span className="flex items-center gap-1">
-              <Clock size={10} />
-              {professional.experience}y exp
-            </span>
-            {minPrice && (
-              <>
-                <span className="text-stone-200">•</span>
-                <span className="font-semibold text-stone-600">From GHS {minPrice}</span>
-              </>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setLiked(!liked);
+            }}
+            className="p-1.5 rounded-full bg-black/40 backdrop-blur-md hover:bg-white text-white hover:text-rose-500 transition-all border border-white/15 pointer-events-auto"
+            aria-label="Save designer"
+          >
+            <Heart size={13} className={cn(liked && "fill-rose-500 text-rose-500")} />
+          </button>
         </div>
       </div>
-    </motion.div>
+
+      {/* 2. Compact Body with Overlapping Avatar */}
+      <Link href={profileUrl} className="flex flex-col flex-1 p-3.5 pt-0">
+        
+        {/* Avatar & Rating Row */}
+        <div className="flex items-end justify-between -mt-7 mb-2 relative z-10">
+          <div className="relative block shrink-0">
+            <div className="w-14 h-14 rounded-xl overflow-hidden bg-white p-1 shadow-md border border-gray-100 group-hover:scale-105 transition-transform duration-300">
+              <div className="w-full h-full rounded-lg overflow-hidden bg-gray-100 relative">
+                {avatarImage ? (
+                  <Image
+                    src={avatarImage}
+                    alt={professional.businessName}
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-amber-50 flex items-center justify-center text-amber-800 font-bold text-sm font-serif">
+                    {professional.businessName.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Verified Badge */}
+            {professional.isVerified && (
+              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-0.5 rounded-full border-2 border-white shadow-sm" title="Verified">
+                <Check size={9} className="stroke-[3]" />
+              </div>
+            )}
+          </div>
+
+          {/* Rating Pill */}
+          {professional.rating ? (
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full text-[11px] font-semibold text-amber-900">
+              <Star size={11} className="fill-amber-400 text-amber-400" />
+              <span>{Number(professional.rating).toFixed(1)}</span>
+            </div>
+          ) : professional.completedOrders ? (
+            <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              {professional.completedOrders} orders
+            </span>
+          ) : null}
+        </div>
+
+        {/* Business Name */}
+        <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-amber-700 transition-colors mb-0.5">
+          {professional.businessName}
+        </h3>
+
+        {/* Location & Specialty */}
+        <p className="text-[11px] text-gray-500 truncate flex items-center gap-1 mb-3">
+          <MapPin size={11} className="text-gray-400 shrink-0" />
+          <span className="truncate">{locationCity}</span>
+          {professional.experience > 0 && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="shrink-0">{professional.experience}y exp</span>
+            </>
+          )}
+        </p>
+
+        {/* Footer: Starting Price & Quick View */}
+        <div className="mt-auto pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs">
+          <span className="font-semibold text-gray-900">
+            {minPrice ? `From GHS ${minPrice}` : 'Custom fit'}
+          </span>
+          <span className="text-[11px] font-medium text-gray-400 group-hover:text-gray-900 flex items-center gap-0.5 transition-colors">
+            <span>Explore</span>
+            <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        </div>
+
+      </Link>
+    </motion.article>
   );
 }
 
-// --- Main Component ---
+// --- 2. Main Component ---
 export default function TailorsClient({ initialProfessionals }: TailorsClientProps) {
+  // Logic & State (Unchanged)
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSpecialization, setActiveSpecialization] = useState('All');
@@ -157,43 +241,70 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
   const [minRating, setMinRating] = useState(0);
   const [minExperience, setMinExperience] = useState(0);
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [isShuffling, setIsShuffling] = useState(false);
 
-  // Fair shuffle on mount
+  const discoverySectionRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setProfessionals([...initialProfessionals].sort(() => Math.random() - 0.5));
   }, [initialProfessionals]);
 
-  const shuffleGallery = () => {
+  const handleShuffle = () => {
+    setIsShuffling(true);
     setProfessionals(prev => [...prev].sort(() => Math.random() - 0.5));
+    setTimeout(() => setIsShuffling(false), 500);
   };
 
   const specializations = useMemo(() => {
-    return ['All', ...Array.from(new Set(
-      initialProfessionals.map(p => p.specialization?.name || 'General').filter(Boolean)
-    ))];
+    const raw = initialProfessionals.map(p => p.specialization?.name?.trim()).filter(Boolean) as string[];
+    return ['All', ...Array.from(new Set(raw))];
   }, [initialProfessionals]);
 
   const filtered = useMemo(() => {
-    return professionals.filter(p => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q || 
+    const list = professionals.filter(p => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q ||
         p.businessName.toLowerCase().includes(q) ||
         p.user.firstName.toLowerCase().includes(q) ||
         p.user.lastName.toLowerCase().includes(q) ||
-        (p.location || '').toLowerCase().includes(q);
-      const matchesSpec = activeSpecialization === 'All' || (p.specialization?.name ?? 'General') === activeSpecialization;
+        (p.location || '').toLowerCase().includes(q) ||
+        (p.specialization?.name || '').toLowerCase().includes(q);
+
+      const matchesSpec = activeSpecialization === 'All' ||
+        (p.specialization?.name ?? 'General').toLowerCase() === activeSpecialization.toLowerCase();
+
       const matchesRating = (p.rating || 0) >= minRating;
       const matchesExp = p.experience >= minExperience;
       const matchesVerified = !isVerifiedOnly || p.isVerified;
-      return matchesSearch && matchesSpec && matchesRating && matchesExp && matchesVerified;
-    });
-  }, [professionals, searchQuery, activeSpecialization, minRating, minExperience, isVerifiedOnly]);
 
-  const activeFilterCount = [
-    minRating > 0,
-    minExperience > 0,
-    isVerifiedOnly,
-  ].filter(Boolean).length;
+      const minServicePrice = p.user.professionalServices?.length
+        ? Math.min(...p.user.professionalServices.map(s => s.price))
+        : null;
+      const matchesPrice = !maxPrice || (minServicePrice !== null && minServicePrice <= maxPrice);
+
+      return matchesSearch && matchesSpec && matchesRating && matchesExp && matchesVerified && matchesPrice;
+    });
+
+    if (sortBy === 'rating-desc') return [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (sortBy === 'experience-desc') return [...list].sort((a, b) => b.experience - a.experience);
+    if (sortBy === 'orders-desc') return [...list].sort((a, b) => (b.completedOrders || 0) - (a.completedOrders || 0));
+    if (sortBy === 'price-asc') return [...list].sort((a, b) => {
+      const minA = a.user.professionalServices?.length ? Math.min(...a.user.professionalServices.map(s => s.price)) : Infinity;
+      const minB = b.user.professionalServices?.length ? Math.min(...b.user.professionalServices.map(s => s.price)) : Infinity;
+      return minA - minB;
+    });
+    if (sortBy === 'price-desc') return [...list].sort((a, b) => {
+      const minA = a.user.professionalServices?.length ? Math.min(...a.user.professionalServices.map(s => s.price)) : 0;
+      const minB = b.user.professionalServices?.length ? Math.min(...b.user.professionalServices.map(s => s.price)) : 0;
+      return minB - minA;
+    });
+
+    return list;
+  }, [professionals, searchQuery, activeSpecialization, minRating, minExperience, isVerifiedOnly, maxPrice, sortBy]);
+
+  const activeFilterCount = [minRating > 0, minExperience > 0, isVerifiedOnly, maxPrice !== null].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -201,398 +312,352 @@ export default function TailorsClient({ initialProfessionals }: TailorsClientPro
     setMinRating(0);
     setMinExperience(0);
     setIsVerifiedOnly(false);
+    setMaxPrice(null);
+    setSortBy('default');
+  };
+
+  const handleHeroQuickLink = (linkText: string) => {
+    const foundSpec = specializations.find(s => s.toLowerCase() === linkText.toLowerCase());
+    if (foundSpec) {
+      setActiveSpecialization(foundSpec);
+      setSearchQuery('');
+    } else {
+      setSearchQuery(linkText);
+      setActiveSpecialization('All');
+    }
+    discoverySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
 
-      {/* ── Full-Page Animated Background ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Large floating circle — top right */}
-        <motion.div
-          animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-20 -right-20 w-[400px] h-[400px] rounded-full border border-amber-100/40"
-        />
-        {/* Small floating circle — mid-left */}
-        <motion.div
-          animate={{ y: [0, 20, 0], x: [0, -10, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute top-[40%] -left-10 w-[200px] h-[200px] rounded-full border border-stone-200/30"
-        />
-        {/* Floating dot — center left */}
-        <motion.div
-          animate={{ y: [0, -40, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute top-[25%] left-[15%] w-2 h-2 rounded-full bg-amber-200/40"
-        />
-        {/* Floating dot — right of grid */}
-        <motion.div
-          animate={{ y: [0, 30, 0] }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-          className="absolute top-[55%] right-[10%] w-3 h-3 rounded-full bg-stone-200/50"
-        />
-        {/* Floating dot — bottom area */}
-        <motion.div
-          animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute top-[70%] left-[30%] w-1.5 h-1.5 rounded-full bg-amber-300/30"
-        />
-        {/* Floating cross/plus — top left */}
-        <motion.div
-          animate={{ rotate: [0, 90, 0], scale: [1, 1.1, 1] }}
-          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
-          className="absolute top-[18%] right-[25%] text-stone-200/30 text-2xl font-light select-none"
-        >
-          +
-        </motion.div>
-        {/* Flowing wave SVG across the whole page */}
-        <svg className="absolute top-[30%] left-0 w-full h-[300px] pointer-events-none" viewBox="0 0 1400 300" fill="none" preserveAspectRatio="none">
-          <motion.path
-            d="M0 150 Q350 80, 700 150 T1400 150"
-            stroke="rgb(245 232 210)"
-            strokeWidth="1"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.5 }}
-            transition={{ duration: 3, ease: 'easeOut' }}
-          />
-          <motion.path
-            d="M0 200 Q350 130, 700 200 T1400 200"
-            stroke="rgb(231 222 210)"
-            strokeWidth="0.8"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.35 }}
-            transition={{ duration: 3.5, ease: 'easeOut', delay: 0.5 }}
-          />
-        </svg>
-        {/* Another wave — lower */}
-        <svg className="absolute top-[65%] left-0 w-full h-[200px] pointer-events-none" viewBox="0 0 1400 200" fill="none" preserveAspectRatio="none">
-          <motion.path
-            d="M0 100 Q250 40, 500 100 T1000 80 T1400 100"
-            stroke="rgb(245 232 210)"
-            strokeWidth="0.8"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.3 }}
-            transition={{ duration: 4, ease: 'easeOut', delay: 1 }}
-          />
-        </svg>
-      </div>
+      {/* ── 1. MODERN COMPACT HERO ── */}
+      <section className="bg-white border-b border-gray-200 pt-24 pb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3">
+            Find the perfect creative for your style.
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 mb-8 max-w-xl">
+            Browse verified tailors, designers, and creative studios. Book directly and elevate your wardrobe.
+          </p>
 
-      {/* All content sits above the background */}
-      <div className="relative z-10">
-
-      {/* ── Hero Section ── */}
-      <section className="relative bg-gradient-to-b from-amber-50/40 via-stone-50 to-white overflow-hidden">
-        {/* Decorative squiggle lines */}
-        <svg className="absolute top-0 right-0 w-[600px] h-[500px] text-amber-200/30 pointer-events-none" viewBox="0 0 600 500" fill="none">
-          <path d="M200 0 C200 100, 400 100, 400 200 S200 300, 200 400 S400 500, 400 500" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M300 0 C300 80, 500 120, 500 200 S300 280, 300 400 S500 480, 500 500" stroke="currentColor" strokeWidth="1" />
-          <path d="M100 0 C100 120, 350 80, 350 200 S100 320, 100 400" stroke="currentColor" strokeWidth="0.8" />
-        </svg>
-        <svg className="absolute bottom-0 left-0 w-[400px] h-[300px] text-stone-200/40 pointer-events-none" viewBox="0 0 400 300" fill="none">
-          <path d="M0 150 Q100 50, 200 150 T400 150" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M0 200 Q100 100, 200 200 T400 200" stroke="currentColor" strokeWidth="1" />
-          <circle cx="350" cy="80" r="60" stroke="currentColor" strokeWidth="0.8" />
-        </svg>
-
-        <div className="relative max-w-[1600px] mx-auto px-6 py-20 md:py-28">
-          <div className="max-w-2xl space-y-6">
-            <div className="flex items-center gap-3">
-              <Scissors size={16} className="text-stone-400" />
-              <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-[0.3em]">Tailors & Designers</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-semibold text-stone-900 leading-[1.1] tracking-tight">
-              Find your perfect <br />
-              <span className="text-amber-700/70 italic font-serif">seller</span>
-            </h1>
-            <p className="text-stone-500 text-base md:text-lg leading-relaxed max-w-lg">
-              Browse our curated directory of verified tailors, designers, and fashion professionals. Every visit shows a fresh mix — everyone gets a fair spotlight.
-            </p>
-
-            {/* Stats strip */}
-            <div className="flex items-center gap-8 pt-4">
-              <div>
-                <p className="text-2xl font-semibold text-stone-900">{initialProfessionals.length}</p>
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">Professionals</p>
+          <div className="w-full max-w-2xl relative">
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-full focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all shadow-sm overflow-hidden p-1.5">
+              <div className="pl-4 pr-2 text-gray-400">
+                <Search size={18} />
               </div>
-              <div className="h-8 w-px bg-stone-200" />
-              <div>
-                <p className="text-2xl font-semibold text-stone-900">{specializations.length - 1}</p>
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">Specializations</p>
-              </div>
-              <div className="h-8 w-px bg-stone-200" />
-              <div>
-                <p className="text-2xl font-semibold text-stone-900">24/7</p>
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">Availability</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Search & Filter Bar (Normal flow, not sticky) ── */}
-      <section className="border-b border-stone-100 bg-white">
-        <div className="max-w-[1600px] mx-auto px-6">
-          
-          {/* Row 1: Search + Actions */}
-          <div className="flex items-center gap-4 py-5">
-            <div className="relative flex-1 max-w-lg">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300" size={16} />
               <input
                 type="text"
-                placeholder="Search name, craft, or city..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-stone-50 rounded-xl border border-stone-100 py-3 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-transparent placeholder:text-stone-300"
+                placeholder="Search by name, style, or location..."
+                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-900 placeholder-gray-400 py-2"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-600 transition-colors">
-                  <X size={14} />
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <X size={16} />
                 </button>
               )}
             </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+              <span className="text-xs text-gray-400 font-medium mr-1">Trending:</span>
+              {POPULAR_QUICK_LINKS.map((link) => (
+                <button
+                  key={link}
+                  type="button"
+                  onClick={() => handleHeroQuickLink(link)}
+                  className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors font-medium"
+                >
+                  {link}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2. DENSE MARKETPLACE DISCOVERY ── */}
+      <section ref={discoverySectionRef} className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Nav & Controls Row */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+
+          {/* Category Tabs (Pill Style) */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
+            {specializations.map((spec) => {
+              const isActive = activeSpecialization.toLowerCase() === spec.toLowerCase();
+              return (
+                <button
+                  key={spec}
+                  type="button"
+                  onClick={() => setActiveSpecialization(spec)}
+                  className={cn(
+                    "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border",
+                    isActive
+                      ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                  )}
+                >
+                  {spec}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Controls */}
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
+            <span className="text-xs text-gray-500 font-medium md:mr-2">
+              {filtered.length} Results
+            </span>
+
             <div className="flex items-center gap-2">
+              {/* Filter Button */}
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-semibold transition-all ${
+                type="button"
+                onClick={() => setShowFilters(true)}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
                   showFilters || activeFilterCount > 0
-                    ? 'bg-stone-900 text-white'
-                    : 'bg-stone-50 text-stone-600 border border-stone-100 hover:bg-stone-100'
-                }`}
+                    ? "bg-gray-100 text-gray-900 border-gray-300"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                )}
               >
                 <SlidersHorizontal size={14} />
-                Filters
+                <span className="hidden sm:inline">Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="bg-white text-stone-900 text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>
+                  <span className="w-5 h-5 rounded-md bg-gray-900 text-white text-[10px] flex items-center justify-center ml-1">
+                    {activeFilterCount}
+                  </span>
                 )}
               </button>
-              <button
-                onClick={shuffleGallery}
-                className="flex items-center gap-2 px-5 py-3 bg-stone-50 rounded-xl text-xs font-semibold text-stone-600 border border-stone-100 hover:bg-stone-100 transition-all"
-                title="Shuffle order for fair discovery"
-              >
-                <RefreshCcw size={14} />
-                <span className="hidden sm:inline">Shuffle</span>
-              </button>
-            </div>
-          </div>
 
-          {/* Row 2: Category pills */}
-          <div className="flex items-center gap-2 pb-4 overflow-x-auto no-scrollbar">
-            {specializations.map(spec => (
-              <button
-                key={spec}
-                onClick={() => setActiveSpecialization(spec)}
-                className={`text-[11px] font-semibold px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                  activeSpecialization === spec
-                    ? 'bg-stone-900 text-white shadow-md'
-                    : 'bg-stone-50 text-stone-500 hover:bg-stone-100 border border-stone-100'
-                }`}
-              >
-                {spec}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filter Drawer */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden border-t border-stone-100 bg-stone-50/50"
-            >
-              <div className="max-w-[1600px] mx-auto px-6 py-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-                  
-                  {/* Rating */}
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Min Rating</label>
-                    <div className="flex gap-2">
-                      {[0, 3, 4, 4.5].map(r => (
-                        <button
-                          key={r}
-                          onClick={() => setMinRating(r)}
-                          className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                            minRating === r ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-500 border-stone-200 hover:border-stone-300'
-                          }`}
-                        >
-                          {r === 0 ? 'Any' : `${r}+`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Experience */}
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Min Experience</label>
-                    <div className="flex gap-2">
-                      {[0, 2, 5, 10].map(e => (
-                        <button
-                          key={e}
-                          onClick={() => setMinExperience(e)}
-                          className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                            minExperience === e ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-500 border-stone-200 hover:border-stone-300'
-                          }`}
-                        >
-                          {e === 0 ? 'Any' : `${e}y+`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Verified */}
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Status</label>
-                    <button
-                      onClick={() => setIsVerifiedOnly(!isVerifiedOnly)}
-                      className={`w-full py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-                        isVerifiedOnly ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-stone-500 border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <BadgeCheck size={14} />
-                      Verified Only
-                    </button>
-                  </div>
-                </div>
-
-                {activeFilterCount > 0 && (
-                  <button onClick={clearFilters} className="mt-4 text-[11px] font-semibold text-stone-400 underline underline-offset-4 hover:text-stone-700 transition-colors">
-                    Clear all filters
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
-      {/* ── Results Count ── */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 flex items-center justify-between">
-        <p className="text-sm text-stone-400">
-          Showing <span className="font-semibold text-stone-900">{filtered.length}</span> sellers
-        </p>
-      </div>
-
-      {/* ── Grid ── */}
-      <main className="max-w-[1600px] mx-auto px-6 pb-24">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-5 gap-y-10">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((p, i) => (
-              <SellerCard key={p.id} professional={p} index={i} />
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Empty State */}
-        {filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-32 flex flex-col items-center text-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-stone-50 flex items-center justify-center">
-              <Search size={28} className="text-stone-200" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-stone-900 mb-1">No sellers found</h3>
-              <p className="text-stone-400 text-sm max-w-xs mx-auto">Try adjusting your filters or search to discover more talent.</p>
-            </div>
-            <button onClick={clearFilters} className="px-6 py-3 bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-stone-700 transition-colors">
-              Reset All
-            </button>
-          </motion.div>
-        )}
-      </main>
-
-      {/* ── Join as Professional CTA ── */}
-      <section className="relative bg-gradient-to-b from-white via-amber-50/30 to-stone-50 overflow-hidden mt-12">
-        {/* Decorative squiggle lines */}
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" viewBox="0 0 1200 600" fill="none" preserveAspectRatio="none">
-          <path d="M0 100 Q300 20, 600 100 T1200 100" stroke="rgb(214 204 189)" strokeWidth="1" opacity="0.4" />
-          <path d="M0 200 Q300 120, 600 200 T1200 200" stroke="rgb(214 204 189)" strokeWidth="0.8" opacity="0.3" />
-          <path d="M0 400 Q250 320, 500 400 T1000 350" stroke="rgb(214 204 189)" strokeWidth="1" opacity="0.35" />
-          <circle cx="1050" cy="120" r="80" stroke="rgb(214 204 189)" strokeWidth="0.8" opacity="0.2" />
-          <circle cx="100" cy="450" r="50" stroke="rgb(214 204 189)" strokeWidth="0.8" opacity="0.2" />
-          <path d="M800 0 C820 150, 900 200, 880 350 S820 500, 850 600" stroke="rgb(214 204 189)" strokeWidth="0.8" opacity="0.25" />
-        </svg>
-        
-        <div className="relative max-w-[1600px] mx-auto px-6">
-          <div className="py-24 md:py-32 flex flex-col lg:flex-row items-center justify-between gap-16">
-            
-            {/* Left Content */}
-            <div className="max-w-xl space-y-8 text-center lg:text-left">
-              <div className="space-y-5">
-                <div className="inline-flex items-center gap-2 bg-amber-100/50 border border-amber-200/50 px-4 py-2 rounded-full">
-                  <Briefcase size={14} className="text-amber-600" />
-                  <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-[0.2em]">For Professionals</span>
-                </div>
-                <h2 className="text-4xl md:text-5xl font-semibold text-stone-900 leading-[1.1] tracking-tight">
-                  Showcase your craft <br />
-                  <span className="text-amber-700/70 italic font-serif">to the world</span>
-                </h2>
-                <p className="text-stone-500 text-base md:text-lg leading-relaxed">
-                  Join our growing community of verified tailors and designers. Get discovered by clients who value quality craftsmanship and unique style.
-                </p>
-              </div>
-
-              {/* Benefits */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                {[
-                  { title: 'Free profile listing', desc: 'Create your professional portfolio at no cost' },
-                  { title: 'Client inquiries', desc: 'Receive direct messages from interested clients' },
-                  { title: 'Verified badge', desc: 'Build trust with a verified professional status' },
-                  { title: 'Fair exposure', desc: 'Our shuffle system gives everyone equal visibility' },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-3 p-4 rounded-2xl bg-white/80 border border-stone-100 shadow-sm">
-                    <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <ChevronRight size={12} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-stone-900 text-sm font-semibold">{item.title}</p>
-                      <p className="text-stone-400 text-xs mt-0.5 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                <Link 
-                  href="/register-as-professional"
-                  className="inline-flex items-center gap-3 bg-stone-900 text-white px-8 py-4 rounded-xl font-semibold text-sm hover:bg-stone-800 transition-all group shadow-lg"
+              {/* Sort Dropdown */}
+              <div className="relative inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer pr-4 appearance-none z-10 w-full"
                 >
-                  Join as a Professional 
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-                <span className="text-stone-400 text-xs">Free to join • No hidden fees</span>
+                  <option value="default">Recommended</option>
+                  <option value="rating-desc">Top Rated</option>
+                  <option value="experience-desc">Most Experience</option>
+                  <option value="orders-desc">Most Orders</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 text-gray-400 pointer-events-none" />
               </div>
-            </div>
 
-            {/* Right Visual — Stacked Cards */}
-            <div className="hidden lg:block relative w-[400px] h-[500px]">
-              {/* Decorative stacked cards */}
-              <div className="absolute top-8 left-8 w-72 h-96 rounded-3xl bg-stone-100/60 border border-stone-200/50 -rotate-6" />
-              <div className="absolute top-4 left-4 w-72 h-96 rounded-3xl bg-amber-50/60 border border-amber-200/40 -rotate-3" />
-              <div className="absolute top-0 left-0 w-72 h-96 rounded-3xl bg-white border border-stone-200/60 shadow-xl overflow-hidden flex flex-col items-center justify-center p-8 text-center space-y-6">
-                <div className="w-20 h-20 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
-                  <Scissors size={28} className="text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-stone-900 font-semibold text-lg">Your Profile</p>
-                  <p className="text-stone-400 text-xs mt-1">Could be featured here</p>
-                </div>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} size={14} className="fill-amber-300 text-amber-300" />
-                  ))}
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleShuffle}
+                className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors"
+                title="Shuffle results"
+              >
+                <RefreshCw size={14} className={cn("transition-transform duration-500", isShuffling && "rotate-180")} />
+              </button>
             </div>
-
           </div>
         </div>
+
+        {/* ── 3. FEATURED TAILORS & DESIGNERS ── */}
+        <main>
+          {filtered.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+              <AnimatePresence mode="popLayout">
+                {filtered.map((professional, index) => (
+                  <CreativeDesignerCard
+                    key={professional.id}
+                    professional={professional}
+                    index={index}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-gray-200 rounded-2xl border-dashed mt-8">
+              <div className="bg-gray-100 p-4 rounded-full text-gray-400 mb-4">
+                <Search size={24} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">No professionals found</h3>
+              <p className="text-sm text-gray-500 max-w-sm mb-6">
+                We couldn't find any designers matching your current filters. Try tweaking your search or resetting filters.
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+        </main>
+
+        {/* ── 4. SLIM REGISTRATION BANNER ── */}
+        <section className="mt-16 mb-8">
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-gray-900/10">
+            <div className="text-left text-white max-w-2xl">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">Are you a fashion professional?</h2>
+              <p className="text-sm text-gray-300">
+                Join our marketplace, manage bookings, showcase your portfolio, and reach new clients looking for your exact style.
+              </p>
+            </div>
+            <Link
+              href="/register-as-professional"
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl text-sm font-semibold hover:bg-gray-100 hover:scale-105 transition-all duration-200"
+            >
+              List your studio
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </section>
+
       </section>
 
-      </div>{/* end z-10 content wrapper */}
+      {/* ── 5. CLEAN MARKETPLACE FILTER DRAWER ── */}
+      <AnimatePresence>
+        {showFilters && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilters(false)}
+              className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50"
+            />
+
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white z-50 shadow-2xl flex flex-col"
+            >
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white">
+                <h3 className="font-semibold text-lg text-gray-900">Filters</h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 rounded-full transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+
+                {/* Rating */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Minimum Rating</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[0, 3, 4, 4.5].map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => setMinRating(r)}
+                        className={cn(
+                          "px-4 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center gap-1",
+                          minRating === r
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        {r === 0 ? 'Any' : <>{r} <Star size={12} className={minRating === r ? "fill-white text-white" : "fill-amber-400 text-amber-400"} /></>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Experience */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Years of Experience</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[0, 2, 5, 10].map((e) => (
+                      <button
+                        key={e}
+                        onClick={() => setMinExperience(e)}
+                        className={cn(
+                          "px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
+                          minExperience === e
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        {e === 0 ? 'Any' : `${e}+ Years`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Starting Price Limit</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Any', val: null },
+                      { label: '< GHS 300', val: 300 },
+                      { label: '< GHS 500', val: 500 },
+                      { label: '< GHS 1000', val: 1000 },
+                    ].map((p) => (
+                      <button
+                        key={p.label}
+                        onClick={() => setMaxPrice(p.val)}
+                        className={cn(
+                          "px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-center",
+                          maxPrice === p.val
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Verification */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">Verified Only</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Show ID-verified creators</p>
+                  </div>
+                  <button
+                    onClick={() => setIsVerifiedOnly(!isVerifiedOnly)}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-colors relative p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900",
+                      isVerifiedOnly ? "bg-green-500" : "bg-gray-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 rounded-full bg-white transition-transform shadow-sm",
+                      isVerifiedOnly ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 transition-colors shadow-sm"
+                >
+                  Show Results
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }

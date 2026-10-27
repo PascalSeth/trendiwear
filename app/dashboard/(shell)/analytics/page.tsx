@@ -200,17 +200,15 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-neutral-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-neutral-200 rounded-lg"></div>
-              ))}
-            </div>
-            <div className="h-96 bg-neutral-200 rounded-lg"></div>
+      <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 space-y-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-7 bg-slate-100 rounded-lg w-1/4" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-20 bg-slate-100 rounded-xl" />
+            ))}
           </div>
+          <div className="h-64 bg-slate-100 rounded-xl" />
         </div>
       </div>
     );
@@ -218,10 +216,10 @@ export default function AnalyticsPage() {
 
   if (!analytics || !analytics.overview) {
     return (
-      <div className="min-h-screen bg-neutral-50 p-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-neutral-500">Unable to load analytics data.</p>
-          <p className="text-sm text-neutral-400 mt-2">Please try refreshing the page.</p>
+      <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 text-center">
+        <div className="bg-white p-8 rounded-xl border border-slate-200/80">
+          <p className="text-slate-500 text-xs">Unable to load analytics data.</p>
+          <p className="text-xs text-slate-400 mt-1">Please try refreshing the page.</p>
         </div>
       </div>
     );
@@ -229,148 +227,147 @@ export default function AnalyticsPage() {
 
   return (
     <AccessControlWrapper requiredPermission="VIEW_ANALYTICS">
-      <div className="min-h-screen bg-neutral-50">
-        <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
+      <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 p-3 sm:p-5">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="flex items-center gap-5">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
                {analytics.profile?.businessImage ? (
                   <Image 
                     src={analytics.profile.businessImage} 
                     alt={analytics.profile.businessName}
-                    width={80}
-                    height={80}
-                    className="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
                   />
                ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-lg font-bold shrink-0">
                     {analytics.profile?.businessName?.charAt(0)}
                   </div>
                )}
                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className="bg-white/50 backdrop-blur-sm border-indigo-100 text-indigo-700 px-3 py-0.5 rounded-full font-serif italic">
-                      {analytics.profile?.specialization || 'Professional'}
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-700 px-2 py-0 text-[10px] font-semibold rounded-md">
+                      {analytics.profile?.specialization || 'Merchant'}
                     </Badge>
-                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
                        <TrendingUp className="w-3 h-3" />
-                       {analytics.profile?.rating?.toFixed(1) || '5.0'} Rating
+                       {analytics.profile?.rating?.toFixed(1) || '5.0'}
                     </span>
                   </div>
-                  <h1 className="text-4xl font-semibold text-neutral-900 tracking-tight font-serif italic">
+                  <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
                     {getGreeting()}, {analytics.profile?.businessName.split(' ')[0]}
                   </h1>
-                  <p className="text-neutral-500 mt-1 max-w-md">
-                    Here&apos;s how your {analytics.profile?.specialization.toLowerCase()} business is performing this period.
+                  <p className="text-xs text-slate-500">
+                    Performance summary for {analytics.profile?.specialization.toLowerCase()} store.
                   </p>
                </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden md:block text-right mr-2">
-                 <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">Selected Period</p>
-                 <p className="text-xs text-neutral-500">
+            <div className="flex items-center gap-2.5 self-start sm:self-center">
+              <div className="hidden sm:block text-right mr-1">
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Date Window</p>
+                 <p className="text-[11px] text-slate-600 font-medium">
                     {new Date(analytics.dateRange.start).toLocaleDateString()} - {new Date(analytics.dateRange.end).toLocaleDateString()}
                  </p>
               </div>
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-48 bg-white/50 backdrop-blur-sm border-neutral-200">
+                <SelectTrigger className="w-32 sm:w-36 h-9 text-xs bg-slate-50 border-slate-200 rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7d">Last 7 days</SelectItem>
-                  <SelectItem value="30d">Last 30 days</SelectItem>
-                  <SelectItem value="90d">Last 90 days</SelectItem>
-                  <SelectItem value="1y">Last year</SelectItem>
+                  <SelectItem value="7d" className="text-xs">Last 7 days</SelectItem>
+                  <SelectItem value="30d" className="text-xs">Last 30 days</SelectItem>
+                  <SelectItem value="90d" className="text-xs">Last 90 days</SelectItem>
+                  <SelectItem value="1y" className="text-xs">Last year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 border-none text-white shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90 text-white">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 opacity-70" />
+        {/* Overview Cards - 2x2 on mobile, 4 cols on lg */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+          <Card className="bg-gradient-to-br from-indigo-600 to-indigo-700 border-none text-white shadow-xs rounded-xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+              <CardTitle className="text-xs font-semibold opacity-90 text-white">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 opacity-75" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{formatCurrency(analytics.overview?.totalRevenue || 0)}</div>
-              <p className="text-xs opacity-70 mt-1">
-                From {analytics.overview?.totalOrders || 0} transactions
+            <CardContent className="p-3 pt-0">
+              <div className="text-base sm:text-lg lg:text-xl font-bold">{formatCurrency(analytics.overview?.totalRevenue || 0)}</div>
+              <p className="text-[10px] opacity-75 mt-0.5">
+                {analytics.overview?.totalOrders || 0} transactions
               </p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neutral-600">
-                {analytics.profile?.specialization === 'Model' ? 'Profile Visibility' : 'Customer Loyalty'}
+          <Card className="rounded-xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+              <CardTitle className="text-xs font-semibold text-slate-600">
+                {analytics.profile?.specialization === 'Model' ? 'Profile Views' : 'Repeat Customers'}
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-emerald-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-neutral-900">
+            <CardContent className="p-3 pt-0">
+              <div className="text-base sm:text-lg font-bold text-slate-900">
                 {analytics.profile?.specialization === 'Model' 
-                  ? `${analytics.overview?.totalProducts * 12} views` 
+                  ? `${analytics.overview?.totalProducts * 12}` 
                   : formatPercentage(analytics.loyalty?.repeatCustomerRate || 0)}
               </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                {analytics.profile?.specialization === 'Model' ? 'Profile & Portfolio hits' : 'Repeat purchaser rate'}
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {analytics.profile?.specialization === 'Model' ? 'Portfolio hits' : 'Retention rate'}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neutral-600">Discovery Score</CardTitle>
+          <Card className="rounded-xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+              <CardTitle className="text-xs font-semibold text-slate-600">Discovery Score</CardTitle>
               <Activity className="h-4 w-4 text-indigo-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-neutral-900">{Math.round(analytics.attribution.internalPercentage)}%</div>
-              <p className="text-xs text-neutral-500 mt-1">Trendizip internal discovery</p>
+            <CardContent className="p-3 pt-0">
+              <div className="text-base sm:text-lg font-bold text-slate-900">{Math.round(analytics.attribution.internalPercentage)}%</div>
+              <p className="text-[10px] text-slate-400 mt-0.5">Platform search score</p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neutral-600">Active Listings</CardTitle>
-              <Package className="h-4 w-4 text-orange-500" />
+          <Card className="rounded-xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+              <CardTitle className="text-xs font-semibold text-slate-600">Active Listings</CardTitle>
+              <Package className="h-4 w-4 text-amber-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-neutral-900">{analytics.overview?.totalProducts || 0}</div>
-              <p className="text-xs text-neutral-500 mt-1">Live in store</p>
+            <CardContent className="p-3 pt-0">
+              <div className="text-base sm:text-lg font-bold text-slate-900">{analytics.overview?.totalProducts || 0}</div>
+              <p className="text-[10px] text-slate-400 mt-0.5">Live items in store</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Period Comparison */}
         {analytics.comparison && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-lg">Period Comparison</CardTitle>
-              <CardDescription>Compare current period with previous period</CardDescription>
+          <Card className="rounded-xl border border-slate-200/80 shadow-xs">
+            <CardHeader className="p-3 sm:p-4 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-bold text-slate-900">Period Comparison</CardTitle>
+              <CardDescription className="text-[11px] text-slate-500">Compare current vs previous timeframe</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Previous Period</p>
-                  <p className="text-2xl font-bold">{analytics.comparison.previousPeriod.orders}</p>
-                  <p className="text-xs text-muted-foreground">orders</p>
+            <CardContent className="p-3 sm:p-4 pt-0">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold">Previous</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-800">{analytics.comparison.previousPeriod.orders}</p>
+                  <p className="text-[10px] text-slate-400">orders</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Current Period</p>
-                  <p className="text-2xl font-bold">{analytics.comparison.currentPeriod.orders}</p>
-                  <p className="text-xs text-muted-foreground">orders</p>
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold">Current</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-800">{analytics.comparison.currentPeriod.orders}</p>
+                  <p className="text-[10px] text-slate-400">orders</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Change</p>
-                  <p className={`text-2xl font-bold ${analytics.comparison.changes.orders >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold">Change</p>
+                  <p className={`text-sm sm:text-base font-bold ${analytics.comparison.changes.orders >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {analytics.comparison.changes.orders >= 0 ? '+' : ''}{formatPercentage(analytics.comparison.changes.orders)}
                   </p>
-                  <p className="text-xs text-muted-foreground">vs previous period</p>
+                  <p className="text-[10px] text-slate-400">variance</p>
                 </div>
               </div>
             </CardContent>
@@ -378,17 +375,17 @@ export default function AnalyticsPage() {
         )}
 
         {/* Main Analytics Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
-            <TabsTrigger value="attribution">Traffic</TabsTrigger>
-            <TabsTrigger value="efficiency">Service Efficiency</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-9 p-0.5 rounded-xl bg-slate-100 text-xs">
+            <TabsTrigger value="overview" className="rounded-lg text-xs font-semibold py-1">Overview</TabsTrigger>
+            <TabsTrigger value="performance" className="rounded-lg text-xs font-semibold py-1">Performance</TabsTrigger>
+            <TabsTrigger value="loyalty" className="rounded-lg text-xs font-semibold py-1">Loyalty</TabsTrigger>
+            <TabsTrigger value="attribution" className="rounded-lg text-xs font-semibold py-1">Traffic</TabsTrigger>
+            <TabsTrigger value="efficiency" className="rounded-lg text-xs font-semibold py-1">Efficiency</TabsTrigger>
+            <TabsTrigger value="insights" className="rounded-lg text-xs font-semibold py-1">Insights</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Revenue Trend Chart */}
               <Card>
@@ -893,7 +890,7 @@ export default function AnalyticsPage() {
                 </Card>
                 <Card className="md:col-span-2">
                    <CardHeader>
-                     <CardTitle>Service Funnel (Bespoke)</CardTitle>
+                     <CardTitle>Service Funnel (Custom Orders)</CardTitle>
                      <CardDescription>From Quote Provided to Accepted Booking</CardDescription>
                    </CardHeader>
                    <CardContent>
@@ -939,7 +936,6 @@ export default function AnalyticsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
     </AccessControlWrapper>
   );
 }

@@ -77,7 +77,7 @@ export default async function BoutiqueProductPage({ params }: Props) {
   const productId = productInfo.id;
 
   // Fetch product detail and reviews
-  const [product, reviews, purchase, hasReviewed] = await Promise.all([
+  const [product, reviews, purchase, hasReviewed, relatedProducts] = await Promise.all([
     prisma.product.findUnique({
       where: { id: productId },
       include: {
@@ -127,7 +127,34 @@ export default async function BoutiqueProductPage({ params }: Props) {
     }) : null,
     session?.user?.id ? prisma.review.findUnique({
       where: { userId_targetId_targetType: { userId: session.user.id, targetId: productId, targetType: 'PRODUCT' } }
-    }) : null
+    }) : null,
+    prisma.product.findMany({
+      where: {
+        professionalId: profile.userId,
+        isActive: true,
+        isDeleted: false,
+        id: { not: productId },
+      },
+      include: {
+        categories: { select: { name: true, slug: true } },
+        professional: {
+          select: {
+            firstName: true,
+            lastName: true,
+            professionalProfile: {
+              select: {
+                businessName: true,
+                businessImage: true,
+                rating: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   if (!product) notFound();
@@ -172,6 +199,7 @@ export default async function BoutiqueProductPage({ params }: Props) {
             isLoggedIn={!!session?.user}
             hasPurchased={!!purchase}
             hasReviewed={!!hasReviewed}
+            relatedProducts={JSON.parse(JSON.stringify(relatedProducts))}
           />
         </div>
 
@@ -203,7 +231,7 @@ export default async function BoutiqueProductPage({ params }: Props) {
                         <p className="text-[10px] font-mono font-black uppercase tracking-widest text-stone-400">Status</p>
                         <div className="flex items-center gap-2 text-amber-600 font-mono text-xs uppercase tracking-widest">
                            <BadgeCheck size={14} />
-                           Verified Atelier
+                           Verified Designer & Tailor
                         </div>
                      </div>
                   </div>
@@ -223,13 +251,13 @@ export default async function BoutiqueProductPage({ params }: Props) {
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className="text-3xl font-serif text-stone-900">Bespoke Inquiries</h3>
+                    <h3 className="text-3xl font-serif text-stone-900">Custom Orders</h3>
                     <p className="text-stone-500 text-sm font-serif italic">Interested in a custom variation of this piece?</p>
                   </div>
                   
                   <div className="pt-6 space-y-4">
                     <button className="w-full flex items-center justify-center gap-4 py-5 rounded-full border-2 border-stone-900 text-[10px] font-mono font-black uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all group">
-                       <MessageSquare size={16} /> Consult with {profile.user.firstName}
+                       <MessageSquare size={16} /> Chat with {profile.user.firstName}
                     </button>
                     
                     <a 

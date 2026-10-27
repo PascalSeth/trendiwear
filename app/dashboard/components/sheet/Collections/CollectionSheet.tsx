@@ -49,12 +49,18 @@ interface CollectionSheetProps {
   onCollectionAdded: (collection: Collection) => void;
   collectionToEdit?: Collection;
   onCollectionUpdated?: (collection: Collection) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  hideTrigger?: boolean;
 }
 
 const CollectionSheet: React.FC<CollectionSheetProps> = ({
   onCollectionAdded,
   collectionToEdit,
   onCollectionUpdated,
+  isOpen: controlledIsOpen,
+  onClose,
+  hideTrigger = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -67,6 +73,29 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
     isFeatured: false,
     order: 0,
   });
+
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isControlled = typeof controlledIsOpen !== "undefined";
+  const open = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      if (onClose) onClose();
+      setFormData({
+        name: "",
+        slug: "",
+        description: "",
+        season: "",
+        isFeatured: false,
+        order: 0,
+      });
+      setImageFile(null);
+      setImagePreview(null);
+    }
+    if (!isControlled) {
+      setInternalIsOpen(newOpen);
+    }
+  };
 
   React.useEffect(() => {
     if (collectionToEdit) {
@@ -81,8 +110,11 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
       if (collectionToEdit.imageUrl) {
         setImagePreview(collectionToEdit.imageUrl);
       }
+      if (!isControlled) {
+        setInternalIsOpen(true);
+      }
     }
-  }, [collectionToEdit]);
+  }, [collectionToEdit, isControlled]);
 
 
   const handleNameChange = (value: string) => {
@@ -217,13 +249,15 @@ const CollectionSheet: React.FC<CollectionSheetProps> = ({
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Collection
-        </Button>
-      </SheetTrigger>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      {!hideTrigger && !isControlled && (
+        <SheetTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Collection
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{collectionToEdit ? 'Edit Collection' : 'Add Collection'}</SheetTitle>

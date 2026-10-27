@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, ExternalLink, Download, Sparkles, Loader2, X } from 'lucide-react';
+import { Search, ExternalLink, Download, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UnsplashPhoto {
   id: string;
@@ -117,7 +118,6 @@ export default function UnsplashModelGallery({
             Editorial Model Gallery &amp; Style Inspiration
           </p>
         </div>
-        <Sparkles className="text-amber-500" size={24} />
       </div>
 
       {/* SEARCH & TAGS CONTROLS */}
@@ -144,7 +144,7 @@ export default function UnsplashModelGallery({
           {/* POPULAR TREND TAGS */}
           <div className="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto">
             <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 mr-2 flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" /> Quick Trends:
+              <Search className="h-3 w-3 text-stone-400" /> Quick Trends:
             </span>
             {POPULAR_TREND_TAGS.map((tag) => (
               <button
@@ -165,11 +165,19 @@ export default function UnsplashModelGallery({
 
       {/* MASONRY PHOTO GRID */}
       {loading ? (
-        <div className="py-24 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-stone-400 mb-4" />
-          <p className="text-xs font-mono uppercase tracking-widest text-stone-500">
-            Fetching model inspirations from Unsplash...
-          </p>
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+          {[
+            "aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]", "aspect-[3/4]",
+            "aspect-[4/5]", "aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]"
+          ].map((aspect, i) => (
+            <div key={i} className="break-inside-avoid mb-6 bg-white border border-stone-200 overflow-hidden shadow-xs">
+              <Skeleton className={`w-full ${aspect} rounded-none bg-stone-200/70`} />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-3 w-3/4 rounded-xs bg-stone-200/60" />
+                <Skeleton className="h-2.5 w-1/2 rounded-xs bg-stone-200/40" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : photos.length === 0 ? (
         <div className="py-24 text-center">

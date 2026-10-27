@@ -204,8 +204,8 @@ export default function OrdersClient({ initialOrders, totalPages: total, current
              <ShoppingBag size={48} className="text-stone-300" />
           </div>
           <div className="space-y-4">
-             <h2 className="text-4xl font-serif italic text-stone-900">Your collection is empty.</h2>
-             <p className="text-stone-500 font-serif italic text-lg max-w-sm mx-auto">Start your fashion journey with TrendiZip curated collections.</p>
+             <h2 className="text-4xl font-serif italic text-stone-900">No orders placed yet.</h2>
+             <p className="text-stone-500 font-serif italic text-lg max-w-sm mx-auto">Start shopping with TrendiZip popular clothing collections.</p>
           </div>
           <Link href="/shopping" className="inline-flex items-center gap-4 bg-stone-900 text-white px-10 py-5 rounded-full font-mono text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-all">
              Discover Styles <ArrowRight size={14} />

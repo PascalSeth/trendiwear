@@ -1,12 +1,27 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Search, 
+  X, 
+  ArrowRight, 
+  ShieldCheck, 
+  Scissors, 
+  Truck, 
+  CreditCard, 
+  ChevronRight, 
+  ChevronLeft,
+  LayoutGrid, 
+  Grid3X3, 
+  ShoppingBag, 
+  RefreshCw
+} from 'lucide-react';
 import { ProductCard } from '@/components/common/ProductCard';
 import { CategoryNavigator } from './components/CategoryNavigator';
-import { ShoppingBag, ArrowRight, Plus, Compass } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // --- Types ---
 interface Category {
@@ -64,8 +79,15 @@ interface Product {
   createdAt: string | Date;
   _count: {
     wishlistItems: number;
-    reviews: number;
+    reviews?: number;
   };
+  effectivePrice?: number;
+  isDiscountActive?: boolean;
+  discountAmount?: number;
+  discountPercentage?: number | null;
+  discountEndDate?: string | null;
+  isPreorder?: boolean;
+  estimatedDelivery?: number;
 }
 
 interface ShoppingClientProps {
@@ -77,527 +99,618 @@ interface ShoppingClientProps {
   };
 }
 
-// ── CUSTOM CATEGORY PORTAL COMPONENT ──
-function CategoryChapter({ cat, index, variant, isMobile = false }: { cat: Category, index: number, variant: 'arch' | 'rect' | 'oval', isMobile?: boolean }) {
-  const shapeClass = variant === 'arch' ? 'rounded-t-full' : variant === 'oval' ? 'rounded-full' : 'rounded-[3rem]';
-  const paddingClass = isMobile ? 'p-6' : 'p-10';
-
-  return (
-    <Link href={`/shopping/categories/${cat.slug}`} className="group block relative">
-      <motion.div 
-        whileHover={{ y: -10 }}
-        className={`relative w-full aspect-[3/4] overflow-hidden ${shapeClass} transition-all duration-1000 shadow-2xl bg-stone-200`}
-      >
-        <Image 
-          src={cat.imageUrl || "/placeholder-category.jpg"} 
-          alt={cat.name} 
-          fill 
-          className="object-cover transition-transform duration-[2s] group-hover:scale-110" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent opacity-70 group-hover:opacity-80 transition-opacity" />
-        
-        {/* Luxury Numbering */}
-        <div className="absolute top-8 left-10 overflow-hidden">
-          <motion.span 
-            initial={{ y: 40, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 0.2 }}
-            viewport={{ once: true }}
-            className="block text-7xl font-serif italic text-white"
-          >
-            {(index + 1).toString().padStart(2, '0')}
-          </motion.span>
-        </div>
-
-        {/* Product Count Sidebar (Desktop only) */}
-        {!isMobile && (
-          <div className="absolute top-1/2 -right-8 -translate-y-1/2 rotate-90 origin-center hidden xl:block">
-            <span className="text-[9px] font-mono uppercase tracking-[0.5em] text-white/40 whitespace-nowrap">
-              Collection No. {index + 1}{" // "}{cat._count.products} Pieces
-            </span>
-          </div>
-        )}
-
-        {/* Content Overlay */}
-        <div className={`absolute inset-x-0 bottom-0 ${paddingClass} flex flex-col items-start`}>
-           <div className="flex items-center gap-3 mb-4 overflow-hidden">
-              <motion.div 
-                initial={{ x: -20, opacity: 0 }}
-                whileInView={{ x: 0, opacity: 1 }}
-                className="w-8 h-[1px] bg-amber-500" 
-              />
-              <span className="text-amber-500 text-[10px] font-mono uppercase tracking-[0.3em] font-black">
-                Essential Chapter
-              </span>
-           </div>
-           
-           <h3 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white tracking-tighter leading-[0.9] mb-8">
-             {cat.name.split(' ').map((word: string, i: number) => (
-               <span key={i} className="block">
-                 {i % 2 === 1 ? <span className="italic font-light text-stone-300">{word}</span> : word}
-               </span>
-             ))}
-           </h3>
-
-           <div className="group/btn inline-flex items-center gap-4 text-white/50 text-[10px] font-mono uppercase tracking-[0.4em] hover:text-white transition-colors">
-              Explore Now
-              <div className="w-8 h-px bg-white/20 group-hover/btn:w-16 group-hover/btn:bg-amber-500 transition-all duration-500" />
-           </div>
-        </div>
-      </motion.div>
-      
-      {/* Decorative Floating Label */}
-      {!isMobile && (
-        <motion.div 
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full hidden lg:block"
-        >
-          <span className="text-[9px] font-mono uppercase tracking-widest text-white/80">Premium Access Original</span>
-        </motion.div>
-      )}
-    </Link>
-  );
-}
+const POPULAR_SEARCH_TAGS = [
+  'Dresses',
+  'Kente',
+  'Kaftans',
+  'Shirts',
+  'Suits',
+  'Accessories'
+];
 
 export default function ShoppingClient({ initialData }: ShoppingClientProps) {
   const { categories, featuredProducts, trendingProducts, collections } = initialData;
-  const [activeTab, setActiveTab] = useState<'featured' | 'trending'>('featured');
-  const sectionRef = useRef<HTMLElement>(null);
 
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"]
-  });
+  // --- Combined product universe ---
+  const allInitialProducts = useMemo(() => {
+    const map = new Map<string, Product>();
+    featuredProducts.forEach((p) => map.set(p.id, p));
+    trendingProducts.forEach((p) => map.set(p.id, p));
+    return Array.from(map.values());
+  }, [featuredProducts, trendingProducts]);
 
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  // --- Client State ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'featured' | 'trending' | 'under300' | 'custom'>('all');
+  const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'newest'>('recommended');
+  const [gridCols, setGridCols] = useState<4 | 5>(5);
 
-  // Column Speeds
-  const leftY = useTransform(smoothProgress, [0, 1], [0, -150]);
-  const centerY = useTransform(smoothProgress, [0, 1], [0, 150]);
-  const rightY = useTransform(smoothProgress, [0, 1], [0, -80]);
+  const catalogRef = useRef<HTMLElement>(null);
+  const collectionScrollRef = useRef<HTMLDivElement>(null);
 
-  // Distribution for Triple Column
-  const colLeft = categories.filter((_, i) => i % 3 === 0);
-  const colCenter = categories.filter((_, i) => i % 3 === 1);
-  const colRight = categories.filter((_, i) => i % 3 === 2);
+  // Scroll to catalog helper
+  const scrollToCatalog = () => {
+    if (catalogRef.current) {
+      catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Quick tag selection
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag);
+    setSelectedCategory(null);
+    scrollToCatalog();
+  };
+
+  // Scroll collections horizontal
+  const handleScrollCollections = (direction: 'left' | 'right') => {
+    if (!collectionScrollRef.current) return;
+    const offset = direction === 'left' ? -380 : 380;
+    collectionScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
+  // --- Filtering & Sorting ---
+  const filteredProducts = useMemo(() => {
+    let list: Product[] = [];
+
+    // 1. Filter by Tab
+    if (activeTab === 'featured') {
+      list = [...featuredProducts];
+    } else if (activeTab === 'trending') {
+      list = [...trendingProducts];
+    } else if (activeTab === 'under300') {
+      list = allInitialProducts.filter((p) => (p.effectivePrice ?? p.price) <= 300);
+    } else if (activeTab === 'custom') {
+      list = allInitialProducts.filter((p) => p.isPreorder || (p.sizes && p.sizes.length > 0));
+    } else {
+      list = [...allInitialProducts];
+    }
+
+    // 2. Filter by Category Slug
+    if (selectedCategory) {
+      list = list.filter((p) =>
+        p.categories?.some((c) => c.slug === selectedCategory)
+      );
+    }
+
+    // 3. Filter by Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q);
+        const catMatch = p.categories?.some((c) => c.name.toLowerCase().includes(q));
+        const sellerMatch =
+          p.professional?.firstName.toLowerCase().includes(q) ||
+          p.professional?.lastName.toLowerCase().includes(q) ||
+          p.professional?.professionalProfile?.businessName?.toLowerCase().includes(q);
+
+        return nameMatch || descMatch || catMatch || sellerMatch;
+      });
+    }
+
+    // 4. Sort
+    if (sortBy === 'price-asc') {
+      list.sort((a, b) => (a.effectivePrice ?? a.price) - (b.effectivePrice ?? b.price));
+    } else if (sortBy === 'price-desc') {
+      list.sort((a, b) => (b.effectivePrice ?? b.price) - (a.effectivePrice ?? a.price));
+    } else if (sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    return list;
+  }, [allInitialProducts, featuredProducts, trendingProducts, activeTab, selectedCategory, searchQuery, sortBy]);
+
+  // Active category display name
+  const activeCategoryObj = useMemo(() => {
+    if (!selectedCategory) return null;
+    return categories.find((c) => c.slug === selectedCategory);
+  }, [categories, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] relative overflow-hidden selection:bg-stone-900 selection:text-stone-50">
+    <div className="min-h-screen bg-[#FAF9F5] text-stone-900 selection:bg-stone-900 selection:text-amber-100 overflow-x-hidden">
       
-      {/* ── Full-Page Animated Background ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Floating circles */}
-        <motion.div
-           animate={{ y: [0, -40, 0], x: [0, 20, 0] }}
-           transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-           className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full border border-amber-200/20"
-        />
-        <motion.div
-           animate={{ y: [0, 30, 0], x: [0, -15, 0] }}
-           transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-           className="absolute top-[30%] -left-20 w-[300px] h-[300px] rounded-full border border-stone-200/30"
-        />
-        {/* Floating dots */}
-        <motion.div
-           animate={{ y: [0, -20, 0] }}
-           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-           className="absolute top-[15%] left-[20%] w-2 h-2 rounded-full bg-amber-300/20"
-        />
-        <motion.div
-           animate={{ y: [0, 40, 0] }}
-           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-           className="absolute top-[45%] right-[15%] w-3 h-3 rounded-full bg-stone-300/40"
-        />
-        {/* Animated wave paths (squiggles) */}
-        <svg className="absolute top-0 left-0 w-full h-[3000px] pointer-events-none opacity-[0.12]" viewBox="0 0 1440 3000" preserveAspectRatio="none">
-           <motion.path
-             d="M0 100 Q360 0, 720 100 T1440 100 T2160 100 T2880 100 T3600 100"
-             stroke="rgb(180 170 160)"
-             strokeWidth="1.5"
-             fill="none"
-             initial={{ pathLength: 0 }}
-             animate={{ pathLength: 1 }}
-             transition={{ duration: 5, ease: 'easeInOut' }}
-           />
-           <motion.path
-             d="M1440 500 Q1080 400, 720 500 T0 500"
-             stroke="rgb(180 83 9)"
-             strokeWidth="1"
-             fill="none"
-             initial={{ pathLength: 0 }}
-             animate={{ pathLength: 1 }}
-             transition={{ duration: 6, ease: 'easeInOut', delay: 1 }}
-           />
-           <motion.path
-             d="M0 1500 Q720 1400, 1440 1500 T2880 1500"
-             stroke="rgb(160 150 140)"
-             strokeWidth="0.8"
-             fill="none"
-             initial={{ pathLength: 0 }}
-             animate={{ pathLength: 1 }}
-             transition={{ duration: 8, ease: 'easeInOut', delay: 2 }}
-           />
-        </svg>
-      </div>
+      {/* ── 1. HERO SECTION ── */}
+      <section className="relative pt-20 sm:pt-22 lg:pt-24 pb-8 sm:pb-10 lg:pb-12 border-b border-stone-200/70">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Column: Heading & Search */}
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-left">
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal tracking-tight text-stone-900 leading-[1.15]">
+                  Shop African Fashion &amp; Tailoring
+                </h1>
+                <p className="text-xs sm:text-sm text-stone-600 max-w-lg font-sans leading-relaxed">
+                  Ready-to-wear clothing and custom tailoring from designers across Ghana.
+                </p>
+              </div>
 
-      <div className="relative z-10 overflow-x-hidden">
-      
-      {/* ── CINEMATIC HERO ── */}
-      <section className="relative h-[90vh] lg:h-screen flex items-center justify-center pt-20 overflow-hidden">
-        {/* Background Text Decor */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none">
-          <motion.h1 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 0.03, scale: 1 }}
-            transition={{ duration: 2 }}
-            className="text-[40vw] font-serif font-black leading-none"
-          >
-            ATELIER
-          </motion.h1>
-        </div>
-
-        <div className="max-w-[1800px] mx-auto px-6 w-full grid lg:grid-cols-12 gap-12 items-center relative z-10">
-          <div className="lg:col-span-7">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span className="inline-block text-[10px] font-mono uppercase tracking-[0.5em] text-amber-700 mb-6 px-4 py-1.5 border border-amber-200/50 rounded-full bg-amber-50/50 backdrop-blur-sm">
-                The Shopping Experience
-              </span>
-              <h1 className="text-7xl md:text-9xl lg:text-[10rem] font-serif font-medium leading-[0.85] tracking-tighter mb-10">
-                Curated <br />
-                <span className="italic font-light text-stone-400">Aesthetics.</span>
-              </h1>
-              
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 pl-2">
-                <Link href="#collections">
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-stone-900 text-white px-10 py-5 rounded-full text-[10px] font-mono uppercase tracking-widest hover:shadow-2xl hover:shadow-stone-900/20 transition-all flex items-center gap-3"
+              {/* Instant Search Bar */}
+              <div className="space-y-2.5 pt-0.5">
+                <div className="relative max-w-lg flex items-center bg-white rounded-2xl shadow-xs border border-stone-200 p-1.5 focus-within:border-stone-900 focus-within:ring-1 focus-within:ring-stone-900 transition-all">
+                  <div className="pl-3.5 text-stone-400">
+                    <Search size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') scrollToCatalog();
+                    }}
+                    placeholder="Search by item, category, or designer..."
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-transparent outline-none text-stone-800 placeholder:text-stone-400 font-sans"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="p-1 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition-colors mr-1"
+                      aria-label="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={scrollToCatalog}
+                    className="bg-stone-900 text-white px-4.5 py-2 rounded-xl text-xs font-semibold hover:bg-black transition-all shrink-0"
                   >
-                    Enter Atelier <ArrowRight size={14} />
-                  </motion.button>
-                </Link>
-                  <p className="text-sm font-serif italic text-stone-500 leading-relaxed">
-                    Connecting discerning individuals with the world&apos;s most talented independent artisans and tailors.
-                  </p>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="lg:col-span-5 relative hidden lg:block">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
-              animate={{ opacity: 1, scale: 1, rotate: -2 }}
-              transition={{ duration: 1.2, delay: 0.3 }}
-              className="relative aspect-[4/5] w-full max-w-md mx-auto group"
-            >
-              {/* Decorative Frame */}
-              <div className="absolute inset-0 border border-stone-200 rounded-2xl -translate-x-4 translate-y-4 group-hover:-translate-x-2 group-hover:translate-y-2 transition-transform duration-700" />
-              
-              <div className="relative h-full rounded-2xl overflow-hidden shadow-2xl">
-                <Image 
-                  src="/woman.png" 
-                  alt="Editorial" 
-                  fill 
-                  className="object-cover group-hover:scale-110 transition-transform duration-1000"
-                  priority
-                />
-                <div className="absolute inset-0 bg-stone-900/10 mix-blend-overlay" />
-              </div>
-
-              {/* Float Cards */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-10 -right-10 bg-white p-4 rounded-xl shadow-xl border border-stone-100 z-20 hidden xl:block"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
-                    <ShoppingBag size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-mono uppercase text-stone-400">Verified</p>
-                    <p className="text-xs font-serif font-bold italic">Boutique Service</p>
-                  </div>
+                    Search
+                  </button>
                 </div>
-              </motion.div>
-            </motion.div>
+
+                {/* Popular Tags */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-stone-400 font-medium text-[11px] mr-1">Popular:</span>
+                  {POPULAR_SEARCH_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleTagClick(tag)}
+                      className="px-2.5 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors text-[11px] font-medium"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Clean Editorial Photo */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative mx-auto max-w-sm lg:max-w-md w-full">
+                <div className="relative h-[250px] sm:h-[280px] lg:h-[320px] w-full rounded-2xl overflow-hidden shadow-sm border border-stone-200 bg-stone-100">
+                  <Image
+                    src="/woman.png"
+                    alt="African Fashion"
+                    fill
+                    className="object-cover object-[center_12%]"
+                    priority
+                  />
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-
-        {/* Scroll Indicator */}
-        <motion.div 
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        >
-          <span className="text-[9px] font-mono uppercase tracking-widest text-stone-400">Scroll</span>
-          <div className="w-[1px] h-12 bg-stone-200" />
-        </motion.div>
       </section>
 
-      {/* ── VISUAL NAVIGATION ── */}
-      <section className="bg-white/50 border-y border-stone-100 sticky top-0 md:relative z-40 backdrop-blur-sm">
-        <CategoryNavigator categories={categories} />
-      </section>
-
-      {/* ── THE COLLECTIONS GALLERY ── */}
-      {collections.length > 0 && (
-        <section id="collections" className="py-32 px-6 max-w-[1800px] mx-auto overflow-hidden relative">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 relative z-10">
-            <div className="max-w-xl text-stone-900">
-              <span className="text-amber-700 text-[10px] font-mono uppercase tracking-[0.4em] mb-4 block">Limited Series</span>
-              <h2 className="text-5xl md:text-7xl font-serif leading-none tracking-tighter text-stone-900">Iconic <span className="italic font-light text-stone-400">Collections.</span></h2>
+      {/* ── 2. VALUE PROPOSITIONS BAR ── */}
+      <section className="bg-white border-b border-stone-200/80 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+            
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-700 shrink-0 mt-0.5">
+                <Scissors size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-semibold text-stone-900">Custom Tailoring</h4>
+                <p className="text-[11px] sm:text-xs text-stone-500 leading-snug mt-0.5">
+                  Made to measure with your sizes or fabric.
+                </p>
+              </div>
             </div>
-            <p className="max-w-xs text-sm font-serif italic text-stone-500 leading-relaxed">
-              Discover specially curated artistic directions and seasonal signatures, crafted with an unwavering commitment to refinement.
-            </p>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-700 shrink-0 mt-0.5">
+                <ShieldCheck size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-semibold text-stone-900">Verified Designers</h4>
+                <p className="text-[11px] sm:text-xs text-stone-500 leading-snug mt-0.5">
+                  Authentic Ghanaian fashion brands and tailors.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-700 shrink-0 mt-0.5">
+                <Truck size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-semibold text-stone-900">Nationwide Delivery</h4>
+                <p className="text-[11px] sm:text-xs text-stone-500 leading-snug mt-0.5">
+                  Delivery available across all regions in Ghana.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-700 shrink-0 mt-0.5">
+                <CreditCard size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-semibold text-stone-900">Mobile Money &amp; Cards</h4>
+                <p className="text-[11px] sm:text-xs text-stone-500 leading-snug mt-0.5">
+                  Pay with MTN MoMo, Telecel Cash, or debit cards.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. STICKY CATEGORY NAVIGATOR STRIP ── */}
+      <section className="bg-stone-50/90 border-b border-stone-200/80 sticky top-16 md:top-20 z-30 backdrop-blur-md shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <CategoryNavigator
+            categories={categories}
+            activeCategory={selectedCategory}
+            onSelectCategory={(slug) => {
+              setSelectedCategory(slug);
+              scrollToCatalog();
+            }}
+          />
+        </div>
+      </section>
+
+      {/* ── 4. CATEGORIES ── */}
+      {categories.length > 0 && (
+        <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 tracking-tight">
+              Categories
+            </h2>
           </div>
 
-          <div className="flex gap-10 overflow-x-auto no-scrollbar pb-12 -mx-6 px-6 lg:mx-0 lg:px-0">
-            {collections.map((col, i) => (
-              <motion.div
-                key={col.id}
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.8 }}
-                className="shrink-0 group pointer-events-auto"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {categories.slice(0, 6).map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/shopping/categories/${cat.slug}`}
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-stone-100 block"
               >
-                <Link href={`/shopping/collections/${col.slug}`}>
-                  <div className="relative w-[300px] md:w-[500px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-700 group-hover:scale-[0.98]">
-                    <Image 
-                      src={col.imageUrl || "/placeholder-collection.jpg"} 
-                      alt={col.name}
-                      fill
-                      className="object-cover transition-transform duration-1500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
-                    
-                    <div className="absolute inset-x-0 bottom-0 p-10 flex flex-col items-start translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                      <div className="flex items-center gap-3 mb-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <div className="w-8 h-px bg-white/40" />
-                         <span className="text-white/60 text-[10px] font-mono uppercase tracking-widest">
-                           {col._count.products} Product Masterpieces
-                         </span>
-                      </div>
-                      <h3 className="text-3xl md:text-5xl font-serif text-white mb-6 leading-none">
-                        {col.name}
-                      </h3>
-                      <button className="bg-white text-stone-900 text-[9px] font-mono uppercase tracking-widest px-8 py-4 rounded-full hover:bg-stone-900 hover:text-white transition-all shadow-xl">
-                        View Collection
-                      </button>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
+                <Image
+                  src={cat.imageUrl || "/placeholder-category.jpg"}
+                  alt={cat.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent opacity-70 group-hover:opacity-85 transition-opacity" />
+                
+                <div className="absolute inset-x-0 bottom-0 p-3.5 flex flex-col justify-end text-white">
+                  <span className="text-[10px] font-mono text-stone-300 mb-0.5">
+                    {cat._count.products} items
+                  </span>
+                  <h3 className="text-sm sm:text-base font-medium leading-tight">
+                    {cat.name}
+                  </h3>
+                </div>
+              </Link>
             ))}
           </div>
         </section>
       )}
 
-        {/* ── THE LIQUID PARALLAX GALLERY ── */}
-        <section ref={sectionRef} className="py-44 px-6 max-w-[1800px] mx-auto relative overflow-visible">
-          <div className="flex flex-col lg:flex-row items-baseline justify-between gap-12 mb-40 relative z-20">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-px bg-stone-900" />
-                <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-amber-700 font-black">The Atelier Archives</span>
-              </div>
-              <h2 className="text-6xl md:text-[8rem] lg:text-[11rem] font-serif leading-[0.75] tracking-tighter text-stone-900">
-                Essential <br />
-                <span className="italic font-extralight text-stone-300 ml-24 md:ml-40 block">Chapters.</span>
+      {/* ── 5. COLLECTIONS ── */}
+      {collections.length > 0 && (
+        <section className="py-12 bg-stone-100/60 border-y border-stone-200/80 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 tracking-tight">
+                Collections
               </h2>
-            </div>
-            <div className="max-w-xs space-y-8">
-               <div className="p-6 border-l border-stone-200">
-                  <p className="text-base font-serif italic text-stone-500 leading-relaxed">
-                    A fluid exploration of form and texture. Each chapter represents a dedicated study in artisanal craftsmanship.
-                  </p>
-               </div>
-               <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="w-16 h-16 rounded-full border border-stone-200 flex items-center justify-center text-stone-400 ml-6"
-               >
-                 <Compass size={24} strokeWidth={1} />
-               </motion.div>
-            </div>
-          </div>
-
-          {/* Desktop Parallax View */}
-          <div className="hidden lg:grid grid-cols-3 gap-16 relative perspective-1000">
-             {/* Left Column */}
-             <motion.div style={{ y: leftY }} className="flex flex-col gap-32 mt-40">
-                {colLeft.map((cat, i) => (
-                  <CategoryChapter key={cat.id} cat={cat} index={i * 3} variant="arch" />
-                ))}
-             </motion.div>
-
-             {/* Center Column */}
-             <motion.div style={{ y: centerY }} className="flex flex-col gap-32">
-                {colCenter.map((cat, i) => (
-                  <CategoryChapter key={cat.id} cat={cat} index={i * 3 + 1} variant="rect" />
-                ))}
-             </motion.div>
-
-             {/* Right Column */}
-             <motion.div style={{ y: rightY }} className="flex flex-col gap-32 mt-80">
-                {colRight.map((cat, i) => (
-                  <CategoryChapter key={cat.id} cat={cat} index={i * 3 + 2} variant="oval" />
-                ))}
-             </motion.div>
-
-             {/* Huge background text following scroll */}
-             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none -z-10 overflow-hidden">
-                <motion.h2 
-                  style={{ 
-                    x: centerY,
-                    opacity: useTransform(smoothProgress, [0, 0.5, 1], [0.03, 0.08, 0.03])
-                  }}
-                  className="text-[40vw] font-serif font-black text-stone-900 whitespace-nowrap"
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleScrollCollections('left')}
+                  className="w-8 h-8 rounded-full bg-white shadow-sm border border-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-900 hover:text-white transition-colors"
+                  aria-label="Previous collection"
                 >
-                  ARCHIVES
-                </motion.h2>
-             </div>
-          </div>
-
-          {/* Mobile Staggered Grid (Restored as per request) */}
-          <div className="grid lg:hidden grid-cols-2 gap-4">
-            {categories.map((cat, i) => (
-              <div 
-                key={cat.id} 
-                className={`${i % 3 === 0 ? 'col-span-2 aspect-[16/10]' : 'col-span-1 aspect-[3/4]'}`}
-              >
-                  <CategoryChapter cat={cat} index={i} variant="rect" isMobile />
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScrollCollections('right')}
+                  className="w-8 h-8 rounded-full bg-white shadow-sm border border-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-900 hover:text-white transition-colors"
+                  aria-label="Next collection"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
 
-          {/* Floating UI Elements */}
-          <div className="absolute top-0 right-0 p-20 hidden 2xl:block opacity-20 pointer-events-none">
-             <div className="w-[1px] h-[400px] bg-stone-300 relative">
-                <motion.div 
-                  style={{ top: useTransform(smoothProgress, [0, 1], ["0%", "100%"]) }}
-                  className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-stone-900"
-                />
-             </div>
+            <div
+              ref={collectionScrollRef}
+              className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar pb-2 scroll-smooth"
+            >
+              {collections.map((col) => (
+                <div
+                  key={col.id}
+                  className="shrink-0 w-[260px] sm:w-[320px] group cursor-pointer"
+                >
+                  <Link href={`/shopping/collections/${col.slug}`}>
+                    <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-sm border border-stone-200/60 transition-transform duration-300 group-hover:-translate-y-0.5">
+                      <Image
+                        src={col.imageUrl || "/placeholder-collection.jpg"}
+                        alt={col.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
+
+                      <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col items-start text-white">
+                        <span className="text-[10px] font-mono text-stone-300 mb-1">
+                          {col._count.products} items
+                        </span>
+                        <h3 className="text-xl font-serif font-medium leading-snug">
+                          {col.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
+      )}
 
-      {/* ── SHOPPING SPOTLIGHT ── */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="max-w-[1800px] mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-24 border-b border-stone-200 pb-12">
-            <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-amber-700" />
-                <span className="text-amber-700 text-[10px] font-mono uppercase tracking-widest">Atelier Favorites</span>
-              </div>
-              <h2 className="text-5xl md:text-8xl font-serif leading-none tracking-tighter italic text-stone-900">Just Landed.</h2>
-            </div>
-
-            <div className="flex gap-4">
-               <button 
-                onClick={() => setActiveTab('featured')}
-                className={`text-[10px] font-mono uppercase tracking-widest px-10 py-4 rounded-full transition-all border ${
-                  activeTab === 'featured' ? 'bg-stone-900 text-white shadow-xl px-12' : 'text-stone-400 border-stone-200 hover:border-stone-400'
-                }`}
-               >
-                 New Arrivals
-               </button>
-               <button 
-                onClick={() => setActiveTab('trending')}
-                className={`text-[10px] font-mono uppercase tracking-widest px-10 py-4 rounded-full transition-all border ${
-                  activeTab === 'trending' ? 'bg-stone-900 text-white shadow-xl px-12' : 'text-stone-400 border-stone-200 hover:border-stone-400'
-                }`}
-               >
-                 Trending Now
-               </button>
-            </div>
+      {/* ── 6. PRODUCTS CATALOG ── */}
+      <section ref={catalogRef} id="catalog" className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Catalog Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-200">
+          <div>
+            <h2 className="text-2xl sm:text-4xl font-serif text-stone-900 tracking-tight">
+              {activeCategoryObj ? activeCategoryObj.name : 'All Products'}
+            </h2>
           </div>
 
-          <motion.div 
+          {/* Tab Filters */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'featured', label: 'New In' },
+              { id: 'trending', label: 'Trending' },
+              { id: 'under300', label: 'Under GH₵300' },
+              { id: 'custom', label: 'Custom Fit' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all",
+                  activeTab === tab.id
+                    ? "bg-stone-900 text-white shadow-sm"
+                    : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Secondary Filter & Sort Toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
+          
+          {/* Active search or category status */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-stone-600">
+            <span>Showing <strong className="text-stone-900">{filteredProducts.length}</strong> items</span>
+
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-medium">
+                Category: {activeCategoryObj?.name || selectedCategory}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(null)}
+                  className="hover:text-amber-950 ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-200 text-stone-900 font-medium">
+                &ldquo;{searchQuery}&rdquo;
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="hover:text-black ml-1"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+
+            {(selectedCategory || searchQuery || activeTab !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearchQuery('');
+                  setActiveTab('all');
+                }}
+                className="text-stone-500 hover:text-stone-900 underline font-medium ml-1"
+              >
+                Reset all
+              </button>
+            )}
+          </div>
+
+          {/* Controls: Sorting & Grid Toggle */}
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            {/* Sort select */}
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-sm text-xs">
+              <span className="text-stone-400 font-medium">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                aria-label="Sort products by"
+                className="bg-transparent font-medium text-stone-800 outline-none cursor-pointer"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="newest">Newest Arrivals</option>
+              </select>
+            </div>
+
+            {/* Desktop Grid Switcher */}
+            <div className="hidden lg:flex items-center gap-1 bg-white p-1 rounded-xl border border-stone-200 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setGridCols(5)}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  gridCols === 5 ? "bg-stone-900 text-white" : "text-stone-400 hover:text-stone-700"
+                )}
+                aria-label="5 columns compact cute grid"
+                title="Cute Compact (5 columns)"
+              >
+                <Grid3X3 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setGridCols(4)}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  gridCols === 4 ? "bg-stone-900 text-white" : "text-stone-400 hover:text-stone-700"
+                )}
+                aria-label="4 columns grid"
+                title="Standard (4 columns)"
+              >
+                <LayoutGrid size={15} />
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Product Grid */}
+        {filteredProducts.length > 0 ? (
+          <motion.div
             layout
-            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-x-8 gap-y-12 md:gap-y-20 relative z-10"
+            className={cn(
+              "grid grid-cols-2 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 lg:gap-y-7 pt-3",
+              gridCols === 5
+                ? "sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+                : "sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5"
+            )}
           >
             <AnimatePresence mode="popLayout">
-              {(activeTab === 'featured' ? featuredProducts : trendingProducts).map((product, index) => (
-                  <ProductCard key={product.id} item={product as unknown as Parameters<typeof ProductCard>[0]['item']} index={index} />
+              {filteredProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  item={product as unknown as Parameters<typeof ProductCard>[0]['item']}
+                  index={index}
+                />
               ))}
             </AnimatePresence>
           </motion.div>
-
-          {/* Additional Squiggle for this section */}
-          <div className="absolute bottom-0 right-0 w-full h-1/2 pointer-events-none opacity-20">
-             <svg className="w-full h-full" viewBox="0 0 1000 500" preserveAspectRatio="none">
-                <motion.path 
-                  d="M0 250 Q250 100, 500 250 T1000 250" 
-                  stroke="rgb(251 191 36)" 
-                  strokeWidth="0.5" 
-                  fill="none"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  transition={{ duration: 3 }}
-                />
-             </svg>
+        ) : (
+          /* Empty State */
+          <div className="py-16 text-center space-y-4 bg-white rounded-2xl border border-stone-200 p-8 max-w-md mx-auto my-8">
+            <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center mx-auto">
+              <ShoppingBag size={22} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium text-stone-900">No products found</h3>
+              <p className="text-xs text-stone-500 font-sans">
+                Try clearing your search or changing the filters.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory(null);
+                setActiveTab('all');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 text-white text-xs font-medium hover:bg-black transition-all"
+            >
+              <RefreshCw size={12} />
+              <span>Clear filters</span>
+            </button>
           </div>
-        </div>
+        )}
+
       </section>
 
-      {/* ── CALL TO ACTION ── */}
-      <section className="py-40 px-6 relative overflow-hidden">
-        <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] text-stone-100 pointer-events-none" viewBox="0 0 1000 1000">
-           <path d="M0 500 C150 200, 350 200, 500 500 T1000 500" stroke="currentColor" fill="none" strokeWidth="0.5" />
-           <path d="M0 600 C150 300, 350 300, 500 600 T1000 600" stroke="currentColor" fill="none" strokeWidth="0.5" opacity="0.5" />
-        </svg>
-
-        <div className="max-w-4xl mx-auto text-center space-y-12 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-6 py-2 rounded-full border border-stone-200 bg-white shadow-sm"
-          >
-            <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-stone-500">Artisan Direct</span>
-          </motion.div>
-
-          <h3 className="text-4xl md:text-7xl font-serif leading-tight">
-            Tailoring is an <span className="italic">intimate</span> conversation between cloth and body.
-          </h3>
-          
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-8 pt-8">
-            <Link href="/register-as-professional">
-              <button className="bg-stone-900 text-white px-12 py-5 rounded-full text-[10px] font-mono uppercase tracking-widest hover:bg-black transition-all">
-                Join as Professional
+      {/* ── 7. BESPOKE TAILORING BANNER ── */}
+      <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-2xl bg-stone-900 text-white p-8 sm:p-10 border border-stone-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-xl space-y-2">
+            <h3 className="text-xl sm:text-2xl font-serif font-normal tracking-tight">
+              Have your own fabric?
+            </h3>
+            <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
+              Connect directly with verified tailors in Ghana for custom dressmaking, bridal wear, and tailored shirts with your fabric.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link href="/tailors-designers">
+              <button
+                type="button"
+                className="bg-amber-500 text-stone-950 px-5 py-2.5 rounded-full text-xs font-semibold hover:bg-amber-400 transition-all flex items-center gap-1.5"
+              >
+                <span>Find a Tailor</span>
+                <ArrowRight size={13} />
               </button>
             </Link>
-            <div className="flex -space-x-4">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-12 h-12 rounded-full border-4 border-[#FAFAF9] bg-stone-200 overflow-hidden relative">
-                   <Image src={`/tz/p${i}.jpg`} alt="User" fill className="object-cover" />
-                </div>
-              ))}
-              <div className="w-12 h-12 rounded-full border-4 border-[#FAFAF9] bg-amber-100 flex items-center justify-center text-amber-700 text-xs">
-                 <Plus size={16} />
-              </div>
-            </div>
+            <Link href="/fashion-trends">
+              <button
+                type="button"
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2.5 rounded-full text-xs font-medium transition-all"
+              >
+                View Styles
+              </button>
+            </Link>
           </div>
         </div>
       </section>
 
-      </div>{/* end z-10 content wrapper */}
+      {/* ── 8. JOIN AS DESIGNER CALLOUT ── */}
+      <section className="py-16 border-t border-stone-200 bg-white">
+        <div className="max-w-xl mx-auto px-4 text-center space-y-3">
+          <h3 className="text-2xl sm:text-3xl font-serif text-stone-900 tracking-tight">
+            Sell on TrendiZip
+          </h3>
+          <p className="text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
+            List your ready-to-wear clothing or offer custom tailoring services to customers in Ghana and abroad.
+          </p>
+          <div className="pt-2">
+            <Link href="/register-as-professional">
+              <button
+                type="button"
+                className="bg-stone-900 text-white px-6 py-3 rounded-full text-xs font-semibold hover:bg-black transition-all"
+              >
+                Register as a Professional
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      {/* GLOBAL SCROLLBAR STYLES */}
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
     </div>
   );
 }
+

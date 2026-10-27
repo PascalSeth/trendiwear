@@ -11,7 +11,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: "TrendiZip | Home",
-  description: "Experience the pinnacle of fashion at TrendiZip. Discover expert tailors, bespoke designers, and a curated marketplace for the modern trendsetter.",
+  description: "Find trusted tailors, talented fashion designers, and popular clothing collections on TrendiZip.",
   alternates: {
     canonical: 'https://trendizip.com',
   },
@@ -204,7 +204,7 @@ export default async function Page() {
   return (
     <div className='w-full min-h-screen'>
       {/* Search Engine Optimized Main Heading (Visually Hidden) */}
-      <h1 className="sr-only">TrendiZip | Bespoke Tailoring, Custom Fashion Design & Luxury Artisan Marketplace</h1>
+      <h1 className="sr-only">TrendiZip | Custom Tailoring, African Fashion & Popular Designer Marketplace</h1>
 
       {/* Hero Section - First Impression (Hydrated with server data) */}
       <ShowCase initialProducts={JSON.parse(JSON.stringify(hydratedShowcase))} />

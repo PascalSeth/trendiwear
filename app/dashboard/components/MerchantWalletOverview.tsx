@@ -79,83 +79,83 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
     <div className="space-y-6">
       
       {/* 3 WALLET STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
         
         {/* Card 1: Lifetime Earnings */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 relative overflow-hidden">
+        <div className="bg-white p-4 sm:p-4.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Total Lifetime Earnings
             </span>
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-              <TrendingUp className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200">
+              <TrendingUp className="h-4 w-4" />
             </div>
           </div>
 
           <div>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               {formatMoney(lifetimeEarnings)}
             </p>
-            <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mt-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Gross sales + Escrow + Paid Out
+            <p className="text-[10px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+              <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Gross sales + Escrow + Paid Out
             </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-600">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-semibold text-slate-600">
             <span>Total Paid Out:</span>
-            <span className="text-emerald-700 font-extrabold">{formatMoney(paidOutTotal)}</span>
+            <span className="text-emerald-700 font-bold">{formatMoney(paidOutTotal)}</span>
           </div>
         </div>
 
         {/* Card 2: Withdrawable Wallet Balance */}
-        <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-indigo-800 shadow-md flex flex-col justify-between relative overflow-hidden space-y-4">
+        <div className="bg-stone-950 text-white p-4 sm:p-4.5 rounded-xl border border-stone-800 shadow-xs flex flex-col justify-between relative overflow-hidden space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-300">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
               Withdrawable Wallet
             </span>
-            <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              <Wallet className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-stone-800/80 text-amber-400 border border-stone-700/60">
+              <Wallet className="h-4 w-4" />
             </div>
           </div>
 
           <div>
-            <p className="text-3xl font-black tracking-tight text-white">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               {formatMoney(balance)}
             </p>
-            <p className="text-[11px] font-medium text-emerald-400 flex items-center gap-1 mt-1">
-              <ShieldCheck className="h-3.5 w-3.5" /> Instant MoMo withdrawal available
+            <p className="text-[10px] font-medium text-emerald-400 flex items-center gap-1 mt-0.5">
+              <ShieldCheck className="h-3 w-3" /> Instant MoMo withdrawal available
             </p>
           </div>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+            className="w-full h-8 sm:h-9 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5"
           >
-            <ArrowUpRight className="w-4 h-4" /> Withdraw Cash to Mobile Money
+            <ArrowUpRight className="w-3.5 h-3.5" /> Withdraw Cash to MoMo
           </button>
         </div>
 
         {/* Card 3: Escrow Held Funds */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="bg-white p-4 sm:p-4.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Escrow Pending Release
             </span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-              <Lock className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-amber-50 text-amber-600 border border-amber-200">
+              <Lock className="h-4 w-4" />
             </div>
           </div>
 
           <div>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               {formatMoney(pendingEscrow)}
             </p>
-            <p className="text-[11px] font-medium text-slate-500 mt-1">
+            <p className="text-[10px] font-medium text-slate-500 mt-0.5">
               Released immediately upon order delivery
             </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-amber-700">
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-semibold text-amber-700">
             <span>Status:</span>
             <span>Buyer Escrow Protected</span>
           </div>
@@ -164,7 +164,7 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
       </div>
 
       {/* RECENT PAYOUT TRANSACTIONS TABLE */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-black text-slate-900 tracking-tight">Recent Payout Transactions</h3>
@@ -174,7 +174,7 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
           <button
             onClick={fetchPayoutData}
             disabled={loadingHistory}
-            className="p-2 text-slate-500 hover:text-indigo-600 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-1.5 text-xs font-bold"
+            className="p-2 text-slate-500 hover:text-amber-600 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-1.5 text-xs font-bold"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin' : ''}`} />
             Refresh
@@ -230,6 +230,7 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         availableBalance={balance}
+        currencySymbol={currencySymbol}
         defaultMomoNumber={momoNumber}
         defaultMomoProvider={momoProvider}
         onSuccess={handlePayoutSuccess}

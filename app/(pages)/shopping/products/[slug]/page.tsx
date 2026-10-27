@@ -68,7 +68,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const id = productInfo.id;
 
   // 2. Fetch rest in parallel using ID
-  const [product, reviews, purchase, hasReviewed] = await Promise.all([
+  const [product, reviews, purchase, hasReviewed, relatedProducts] = await Promise.all([
     prisma.product.findUnique({
       where: { id, isActive: true },
       include: {
@@ -161,6 +161,32 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         }
       }
     }) : null,
+    prisma.product.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        id: { not: id },
+      },
+      include: {
+        categories: { select: { name: true, slug: true } },
+        professional: {
+          select: {
+            firstName: true,
+            lastName: true,
+            professionalProfile: {
+              select: {
+                businessName: true,
+                businessImage: true,
+                rating: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   if (!product) {
@@ -274,6 +300,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         isLoggedIn={!!session?.user}
         hasPurchased={!!purchase}
         hasReviewed={!!hasReviewed}
+        relatedProducts={JSON.parse(JSON.stringify(relatedProducts))}
       />
     </>
   );

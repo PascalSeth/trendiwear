@@ -75,9 +75,9 @@ const RelatedPosts = ({ currentId, posts }: { currentId: string; posts: BlogPost
             {relatedPosts.map((post, index) => (
               <motion.div key={post.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: index * 0.1 }}>
                 <Link href={`/blog/${post.slug}`} className="group block">
-                  <div className="relative overflow-hidden aspect-[4/3] mb-6">
-                    {post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-110" /> : <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"><ArrowUpRight size={32} className="text-white" /></div>
+                  <div className="relative overflow-hidden aspect-[4/3] mb-6 rounded-xl bg-stone-100">
+                    {post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill className="object-cover transition-transform duration-700 ease-out scale-100 group-hover:scale-105" /> : <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"><ArrowUpRight size={28} className="text-white" /></div>
                   </div>
                   <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 block">{formatCategory(post.category)}</span>
                   <h3 className="text-xl font-serif leading-tight group-hover:underline decoration-1 underline-offset-4">{post.title}</h3>

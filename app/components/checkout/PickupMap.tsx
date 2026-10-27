@@ -149,7 +149,7 @@ export default function PickupMap({ userAddress, sellers }: PickupMapProps) {
       {!isLoaded && !error && (
         <div className="absolute inset-0 z-10 bg-stone-50 flex flex-col items-center justify-center gap-3">
           <div className="w-6 h-6 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Initializing Atelier Map...</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Loading Shop Map...</span>
         </div>
       )}
       
@@ -169,7 +169,7 @@ export default function PickupMap({ userAddress, sellers }: PickupMapProps) {
 
       <div className="absolute top-6 right-6 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
          <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-200 text-[9px] font-mono uppercase tracking-widest text-stone-900 shadow-xl">
-           Interacting with Atelier Map
+           Viewing Shop Map
          </span>
       </div>
     </div>

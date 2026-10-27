@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
                 id: `unsplash_${photo.id}`,
                 eventId: event.id,
                 title: photo.description || photo.alt_description || `${event.name} Concept`,
-                description: photo.description || photo.alt_description || `Curated look for ${event.name}`,
+                description: photo.description || photo.alt_description || `Popular look for ${event.name}`,
                 outfitImageUrl: photo.urls.regular,
                 downloadLocation: photo.links.download_location,
                 totalPrice: null,

@@ -263,7 +263,7 @@ export function ChatDrawer({
           {convLoading && !conversation && (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-stone-300" />
-              <p className="text-xs text-stone-400 font-serif italic">Setting up your atelier concierge...</p>
+              <p className="text-xs text-stone-400 font-serif italic">Connecting you with the shop...</p>
             </div>
           )}
 

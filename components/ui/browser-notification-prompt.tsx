@@ -71,7 +71,7 @@ export function BrowserNotificationPrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold tracking-tight truncate">Stay Updated</p>
-              <p className="text-[11px] text-stone-400 leading-tight mt-0.5 line-clamp-2">Enable concierge alerts to receive live atelier updates.</p>
+              <p className="text-[11px] text-stone-400 leading-tight mt-0.5 line-clamp-2">Turn on notifications to get live updates on your orders and custom fittings.</p>
               <div className="flex gap-4 pt-3">
                 <button
                   onClick={requestPermission}

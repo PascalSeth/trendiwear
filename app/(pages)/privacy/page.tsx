@@ -15,19 +15,19 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>2. Information We Curate</h2>
-        <p>To provide a bespoke experience, we collect information across three main pillars:</p>
+        <h2>2. Information We Collect</h2>
+        <p>To give you a great shopping and custom-fitting experience, we collect information in three key areas:</p>
         <ul>
-          <li><strong>Identity & Profile:</strong> Your name, email address, and professional credentials if you are an artisan.</li>
-          <li><strong>The Fit:</strong> Body measurements and sizing preferences provided voluntarily to ensure garment accuracy.</li>
-          <li><strong>Fashion Vibe (Smart Discovery):</strong> We observe your search patterns and favorite styles to train our Discovery Engine locally, ensuring you only see what truly resonates with your aesthetic.</li>
+          <li><strong>Identity & Profile:</strong> Your name, email address, and professional credentials if you are a tailor or designer.</li>
+          <li><strong>The Fit:</strong> Body measurements and sizing preferences provided voluntarily to ensure accurate clothing fits.</li>
+          <li><strong>Smart Discovery:</strong> We observe your search patterns and favorite styles to show you the outfits and recommendations that interest you most.</li>
         </ul>
       </section>
 
       <section>
         <h2>3. Localized Style Intelligence</h2>
         <p>
-          Our <strong>Fashion Discovery Engine</strong> uses keyword heuristic mapping to categorize products into &quot;vibes&quot; (e.g., Avant-Garde, Minimalist, Royal). This data is used to personalize your feed and is never sold to third-party advertisers. We value your taste as your intellectual property.
+          Our <strong>Fashion Discovery Engine</strong> uses keyword mapping to categorize products into popular styles (e.g., Streetwear, Modern Minimal, Traditional Royal). This data is used to personalize your feed and is never sold to third-party advertisers. We respect your privacy and style choices.
         </p>
       </section>
 

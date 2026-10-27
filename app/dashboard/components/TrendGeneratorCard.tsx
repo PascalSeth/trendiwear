@@ -39,7 +39,7 @@ const AFRO_FALLBACK_IMAGES = [
 export function TrendGeneratorCard() {
   const [events, setEvents] = useState<EventWithCount[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>("all");
-  const [engine, setEngine] = useState<string>("ai");
+  const [engine, setEngine] = useState<string>("dalle3");
   const [imagesPerCategory, setImagesPerCategory] = useState<number>(60);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -71,7 +71,7 @@ export function TrendGeneratorCard() {
   const handleReseedKeywords = async () => {
     try {
       setReseeding(true);
-      setStatusMessage("Re-seeding curated Afrocentric keywords & dress codes for all event categories...");
+      setStatusMessage("Updating popular African fashion keywords & dress codes for all event categories...");
       const res = await fetch("/api/admin/trends/reseed-event-keywords", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to re-seed event keywords");
@@ -170,19 +170,19 @@ export function TrendGeneratorCard() {
   };
 
   return (
-    <div className="bg-white text-stone-900 border border-stone-200 p-8 shadow-xs rounded-xl space-y-8 relative overflow-hidden font-sans">
+    <div className="bg-white text-slate-900 border border-slate-200/80 p-6 sm:p-8 shadow-xs rounded-2xl space-y-8 relative overflow-hidden font-sans">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-200 relative z-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 relative z-10">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-500 font-bold">Generative AI Studio</span>
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-800">Generative AI Studio</span>
           </div>
-          <h2 className="text-3xl font-serif italic font-medium text-stone-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             AI Trend Lookbook Generator
           </h2>
-          <p className="text-xs font-mono text-stone-500 mt-1 max-w-xl leading-relaxed">
+          <p className="text-xs font-medium text-slate-500 mt-1 max-w-xl leading-relaxed">
             Generate photorealistic 8k African fashion lookbooks (Owambe Aso-Ebi, Kente, Agbada, Modern African Streetwear, Corporate Ankara) stored directly in PostgreSQL.
           </p>
         </div>
@@ -191,8 +191,8 @@ export function TrendGeneratorCard() {
           <button
             onClick={handleReseedKeywords}
             disabled={reseeding || loading}
-            className="bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 font-mono text-xs uppercase tracking-wider px-3.5 py-2 flex items-center gap-1.5 transition-all rounded-lg font-bold"
-            title="Re-seed all database event categories with curated African fashion keywords"
+            className="bg-amber-50 border border-amber-200/80 text-amber-900 hover:bg-amber-100 text-xs font-bold px-3.5 py-2 flex items-center gap-1.5 transition-all rounded-xl shadow-2xs"
+            title="Update all database event categories with popular African fashion keywords"
           >
             {reseeding ? <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" /> : <Tag className="h-3.5 w-3.5 text-amber-600" />}
             Re-Seed Event Keywords
@@ -209,7 +209,7 @@ export function TrendGeneratorCard() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 bg-stone-50 p-6 border border-stone-200 rounded-xl">
         <div>
           <label className="block text-[10px] font-mono text-stone-500 uppercase tracking-widest mb-2 font-bold">
-            Curator Engine &amp; AI Provider
+            Image Generator &amp; AI Provider
           </label>
           <select
             value={engine}
@@ -217,10 +217,10 @@ export function TrendGeneratorCard() {
             disabled={loading || resetting}
             className="w-full bg-white border border-stone-300 rounded-lg px-4 py-3 text-xs font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
           >
+            <option value="dalle3">🎨 OpenAI GPT-Image Studio (Ultra HD)</option>
             <option value="ai">✨ High-Speed AI Engine (Pollinations / Flux)</option>
-            <option value="dalle3">🎨 OpenAI DALL-E 3 (HD 1024x1792)</option>
             <option value="replicate">⚡ Replicate Flux 1.1 Pro</option>
-            <option value="afrocentric_curated">🌍 Afrocentric Luxury Bank (Curated CDNs)</option>
+            <option value="afrocentric_curated">🌍 African Fashion Library (Photo Bank)</option>
             <option value="unsplash">📷 Unsplash African Search API</option>
           </select>
         </div>

@@ -20,7 +20,7 @@ export default async function DashboardBookingsPage() {
   }
 
   return (
-    <main className="p-8 md:p-12">
+    <main className="w-full max-w-7xl mx-auto p-3 sm:p-5">
       <BookingsManager />
     </main>
   );

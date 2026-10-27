@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { X, Check, ChevronRight, Sparkles } from "lucide-react";
+import { X, Check, ChevronRight, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
@@ -80,7 +80,6 @@ export const MultiCategoryPicker: React.FC<MultiCategoryPickerProps> = ({
         <AnimatePresence mode="popLayout">
           {selectedCategoryIds.length === 0 ? (
             <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-50/50 border border-slate-100 border-dashed">
-               <Sparkles className="w-3 h-3 text-blue-400" />
                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Selection Studio Empty</span>
             </div>
           ) : (
@@ -130,7 +129,7 @@ export const MultiCategoryPicker: React.FC<MultiCategoryPickerProps> = ({
               </button>
             )}
             <div className="flex-1 relative">
-              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
                 type="text"
                 placeholder={view === "parents" ? "Search categories..." : `Search in ${activeParent?.name}...`}

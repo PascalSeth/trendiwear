@@ -503,7 +503,7 @@ export default function SettingsClient({ initialProfile, specializations }: Sett
                <div className="space-y-12">
                   <div className="space-y-4">
                      <div className="flex justify-between items-center">
-                        <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Atelier Cover Image</Label>
+                        <Label className="text-[10px] font-mono uppercase tracking-[0.3em] text-stone-400">Shop & Studio Cover Image</Label>
                         <span className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Recommended: 1920 × 1080px (16:9)</span>
                      </div>
                      <div className="relative h-64 rounded-3xl overflow-hidden group bg-stone-100 ring-1 ring-stone-900/5">
