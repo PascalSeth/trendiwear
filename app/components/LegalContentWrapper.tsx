@@ -63,10 +63,10 @@ export default function LegalContentWrapper({
         {/* Footer Note */}
         <footer className="mt-16 text-center">
             <p className="text-xs font-mono text-stone-400 uppercase tracking-widest">
-              End of Document — Trendizip Inc.
+              End of Document — TrendiZip
             </p>
             <p className="mt-4 text-[10px] text-stone-400 italic">
-              Questions regarding these terms? Contact us at <a href="mailto:trendiziponline@gmail.com" className="text-stone-900 underline">trendiziponline@gmail.com</a>
+              Questions regarding these legal documents? Contact us at <a href="mailto:trendiziponline@gmail.com" className="text-stone-900 underline">trendiziponline@gmail.com</a>
             </p>
         </footer>
       </div>
@@ -74,19 +74,37 @@ export default function LegalContentWrapper({
       <style jsx global>{`
         .legal-content h2 {
           font-family: var(--font-serif);
-          font-size: 2rem;
+          font-size: 1.85rem;
           color: #1c1917;
           border-bottom: 1px solid #e7e5e4;
           padding-bottom: 0.5rem;
-          margin-top: 4rem;
-          margin-bottom: 1.5rem;
+          margin-top: 3.5rem;
+          margin-bottom: 1.25rem;
+        }
+        .legal-content h3 {
+          font-family: var(--font-serif);
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #292524;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
         }
         .legal-content p {
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.25rem;
+        }
+        .legal-content a {
+          color: #7f1d1d;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          transition: color 0.15s ease;
+        }
+        .legal-content a:hover {
+          color: #991b1b;
         }
         .legal-content ul {
           list-style: none;
           padding-left: 0;
+          margin-bottom: 1.5rem;
         }
         .legal-content li {
           position: relative;
@@ -102,6 +120,52 @@ export default function LegalContentWrapper({
         .legal-content strong {
           color: #1c1917;
           font-weight: 600;
+        }
+        .legal-table-container {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin: 1.5rem 0 2rem 0;
+          border: 1px solid #e7e5e4;
+          border-radius: 4px;
+        }
+        .legal-content table {
+          width: 100%;
+          border-collapse: collapse;
+          font-family: var(--font-geist-sans, system-ui, sans-serif);
+          font-size: 0.875rem;
+          line-height: 1.45;
+          text-align: left;
+        }
+        .legal-content thead th {
+          background-color: #f5f5f4;
+          color: #1c1917;
+          font-weight: 600;
+          padding: 0.75rem 1rem;
+          border-bottom: 2px solid #e7e5e4;
+          border-right: 1px solid #e7e5e4;
+          white-space: nowrap;
+        }
+        .legal-content thead th:last-child {
+          border-right: none;
+        }
+        .legal-content tbody td {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e7e5e4;
+          border-right: 1px solid #e7e5e4;
+          color: #44403c;
+          vertical-align: top;
+        }
+        .legal-content tbody td:last-child {
+          border-right: none;
+        }
+        .legal-content tbody tr:last-child td {
+          border-bottom: none;
+        }
+        .legal-content tbody tr:nth-child(even) {
+          background-color: #fafaf9;
+        }
+        .legal-content tbody tr:hover {
+          background-color: #f5f5f4;
         }
       `}</style>
     </div>

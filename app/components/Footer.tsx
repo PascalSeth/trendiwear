@@ -23,8 +23,8 @@ export default function Footer() {
   const companyLinks = [
     { label: "About", href: "/about" },
     { label: "Careers", href: "/careers" },
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms and Conditions", href: "/terms-conditions" },
   ];
 
   return (
@@ -97,8 +97,8 @@ export default function Footer() {
             &copy; {currentYear} Trendizip Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-[11px] text-stone-400">
-            <Link href="/privacy" className="hover:text-red-900 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-red-900 transition-colors">Terms</Link>
+            <Link href="/privacy-policy" className="hover:text-red-900 transition-colors">Privacy</Link>
+            <Link href="/terms-conditions" className="hover:text-red-900 transition-colors">Terms</Link>
             <span className="hidden sm:inline text-stone-300">·</span>
             <span className="hidden sm:inline">
               Built by <span className="text-stone-700 font-serif italic font-semibold">Stan Paraclete</span>

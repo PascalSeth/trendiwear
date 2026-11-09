@@ -146,9 +146,9 @@ export default function AuthPageClient({
             {/* Terms */}
             <p className="text-center text-[10px] text-stone-400 mt-10 leading-relaxed">
               By continuing, you agree to our{' '}
-              <a href="/terms" className="underline underline-offset-2 hover:text-stone-700 transition-colors">Terms</a>
+              <a href="/terms-conditions" className="underline underline-offset-2 hover:text-stone-700 transition-colors">Terms</a>
               {' '}&{' '}
-              <a href="/privacy" className="underline underline-offset-2 hover:text-stone-700 transition-colors">Privacy Policy</a>.
+              <a href="/privacy-policy" className="underline underline-offset-2 hover:text-stone-700 transition-colors">Privacy Policy</a>.
             </p>
 
             {/* Toggle Mode */}
