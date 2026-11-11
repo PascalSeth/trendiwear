@@ -124,7 +124,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
             badgeText: 'AI Suite',
             children: [
               { label: 'Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2, category: 'Creative Suite' },
-              { label: 'Market Research', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
+              { label: 'Market Radar', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
               { label: 'Pricing Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign, category: 'Strategy & Growth' },
               { label: 'Customer Intent', href: '/dashboard/ai/customer-intent', icon: Eye, category: 'Strategy & Growth' },
               { label: 'Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket, category: 'Strategy & Growth' },
@@ -160,7 +160,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ role, onToggle, col
             badgeText: 'AI Suite',
             children: [
               { label: 'Fashion Studio', href: '/dashboard/ai/visual-studio', icon: Wand2, category: 'Creative Suite' },
-              { label: 'Market Research', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
+              { label: 'Market Radar', href: '/dashboard/ai/market-research', icon: TrendingUp, category: 'Strategy & Growth' },
               { label: 'Pricing Strategist', href: '/dashboard/ai/pricing-strategist', icon: DollarSign, category: 'Strategy & Growth' },
               { label: 'Customer Intent', href: '/dashboard/ai/customer-intent', icon: Eye, category: 'Strategy & Growth' },
               { label: 'Launch Planner', href: '/dashboard/ai/launch-planner', icon: Rocket, category: 'Strategy & Growth' },

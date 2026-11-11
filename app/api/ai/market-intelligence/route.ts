@@ -8,6 +8,7 @@ import {
 } from "@/lib/ai/fashion-trend-radar";
 import { generateResearchSuggestions } from "@/lib/ai/market-suggestions";
 import { orchestrateMarketResearch } from "@/lib/ai/market-research-orchestrator";
+import { executeMarketRadar } from "@/lib/ai/market-radar/engine";
 
 export async function POST(request: NextRequest) {
   try {
@@ -449,6 +450,23 @@ CRITICAL FORMATTING & LANGUAGE DIRECTIVES:
         payload,
       });
     };
+
+    // --- ROUTE: MARKET RADAR (NEW LOCATION-AWARE & SEASONAL INTELLIGENCE) ---
+    if (normAction === "market-radar" || normAction === "radar") {
+      const radarResult = await executeMarketRadar({
+        city: payload.city || payload.cityLocation || (sellerProfile?.location as string),
+        region: payload.region,
+        country: payload.country,
+        category: payload.category,
+        viewMode: payload.viewMode,
+        month: payload.month ? Number(payload.month) : undefined,
+        year: payload.year ? Number(payload.year) : undefined,
+        customerSegment: payload.customerSegment,
+        priceBand: payload.priceBand,
+        customQuestion: payload.customQuestion || payload.query,
+      });
+      return NextResponse.json(radarResult);
+    }
 
     // --- ROUTE: TIKTOK & SOCIAL TREND RADAR ---
     if (normAction === "tiktok-trends") {

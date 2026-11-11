@@ -62,7 +62,7 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({
   const getPageTitle = (path: string) => {
     if (path === '/dashboard') return 'Overview';
     if (path.includes('/ai/visual-studio') || path.includes('/ai-studio')) return 'Visual Fashion Studio';
-    if (path.includes('/ai/market-research')) return 'Market & Trend Research';
+    if (path.includes('/ai/market-research')) return 'Market Radar';
     if (path.includes('/ai/pricing-strategist')) return 'Pricing & Profit Strategist';
     if (path.includes('/ai/launch-planner')) return 'Collection Launch Planner';
     if (path.includes('/outfit-inspirations')) return 'Outfit Inspirations';

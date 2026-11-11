@@ -7,6 +7,7 @@ import {
   Smartphone, Building2, Filter, ChevronRight
 } from 'lucide-react';
 import { PayoutRequestModal } from './PayoutRequestModal';
+import { ProviderLogo } from './ProviderLogos';
 
 interface PayoutRecord {
   id: string;
@@ -88,11 +89,7 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
   }, [history, statusFilter]);
 
   const getProviderIcon = (provider: string) => {
-    const p = (provider || '').toUpperCase();
-    if (p.includes('BANK')) {
-      return <Building2 className="w-3.5 h-3.5 text-indigo-600" />;
-    }
-    return <Smartphone className="w-3.5 h-3.5 text-amber-600" />;
+    return <ProviderLogo provider={provider} className="w-3.5 h-3.5" />;
   };
 
   const getProviderBadge = (provider: string) => {
@@ -308,22 +305,21 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
                   key={tx.id} 
                   className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 hover:bg-slate-50/60 rounded-xl px-2 sm:px-3 -mx-2 sm:-mx-3 transition-colors"
                 >
-                  {/* Left Column: Icon + Provider & Details */}
+                  {/* Left Column: Authentic Provider Logo + Status Indicator & Details */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`p-2.5 rounded-xl border shrink-0 ${
-                      isPaid 
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                        : isFailed 
-                        ? 'bg-red-50 text-red-600 border-red-200' 
-                        : 'bg-amber-50 text-amber-600 border-amber-200'
-                    }`}>
-                      {isPaid ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : isFailed ? (
-                        <AlertCircle className="w-4 h-4" />
-                      ) : (
-                        <Clock className="w-4 h-4" />
-                      )}
+                    <div className="relative shrink-0">
+                      <ProviderLogo provider={tx.provider} className="w-10 h-10" />
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-white border-2 border-white shadow-2xs ${
+                        isPaid ? 'bg-emerald-500' : isFailed ? 'bg-red-500' : 'bg-amber-500'
+                      }`}>
+                        {isPaid ? (
+                          <CheckCircle2 className="w-2.5 h-2.5 stroke-[3]" />
+                        ) : isFailed ? (
+                          <AlertCircle className="w-2.5 h-2.5 stroke-[3]" />
+                        ) : (
+                          <Clock className="w-2.5 h-2.5 stroke-[3]" />
+                        )}
+                      </div>
                     </div>
 
                     <div className="min-w-0 flex-1">

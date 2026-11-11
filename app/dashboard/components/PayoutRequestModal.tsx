@@ -8,6 +8,7 @@ import {
   Sparkles, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProviderLogo } from './ProviderLogos';
 
 interface PayoutLimits {
   tierName: string;
@@ -188,7 +189,7 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({
     },
     {
       id: 'AT',
-      name: 'AT / AirtelTigo',
+      name: 'AT Money',
       code: 'ATL',
       accent: 'border-blue-400 bg-blue-50 text-blue-950',
       badge: 'bg-blue-600 text-white',
@@ -391,29 +392,29 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({
                       key={prov.id}
                       type="button"
                       onClick={() => setProvider(prov.id)}
-                      className={`relative p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex flex-col justify-between h-[68px] sm:h-[72px] cursor-pointer ${
+                      className={`relative p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex flex-col justify-between min-h-[92px] sm:min-h-[98px] cursor-pointer group ${
                         isSelected
-                          ? `${prov.accent} ring-2 ring-amber-500/30 border-current shadow-xs`
-                          : 'border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700'
+                          ? `${prov.accent} ring-2 ring-amber-500/40 border-current shadow-xs`
+                          : 'border-slate-200/90 bg-white hover:bg-slate-50/80 text-slate-700 hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${prov.badge}`}>
-                          {prov.code}
-                        </span>
+                      <div className="flex items-center justify-between w-full mb-1.5">
+                        <ProviderLogo provider={prov.id} className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 transition-transform group-hover:scale-105" />
 
                         {isSelected ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
+                          <div className="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0" />
                         )}
                       </div>
 
                       <div>
-                        <p className="font-extrabold text-[11px] sm:text-xs truncate">
+                        <p className="font-extrabold text-[11px] sm:text-xs text-slate-900 leading-tight">
                           {prov.name}
                         </p>
-                        <p className="text-[9px] text-slate-400 font-medium truncate">
+                        <p className="text-[9px] text-slate-400 font-medium truncate mt-0.5">
                           {prov.hint}
                         </p>
                       </div>
@@ -426,18 +427,11 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({
             {/* Account Number & Account Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                  {provider === 'BANK' ? (
-                    <>
-                      <Building2 className="w-3 h-3 text-slate-500" />
-                      Bank Account Number
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-3 h-3 text-slate-500" />
-                      MoMo Phone Number
-                    </>
-                  )}
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <ProviderLogo provider={provider} className="w-4 h-4 p-0 rounded-sm border-0 shrink-0 inline-flex items-center justify-center" />
+                  <span>
+                    {provider === 'BANK' ? 'Bank Account Number' : 'MoMo Phone Number'}
+                  </span>
                   <span className="text-red-500">*</span>
                 </label>
 
@@ -530,10 +524,11 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({
                   <span>Minimum Threshold: {currencySymbol} {minThreshold.toFixed(2)}</span>
                 ) : (
                   <>
-                    <ArrowUpRight className="w-4 h-4 stroke-[3]" />
+                    <ProviderLogo provider={provider} className="w-5 h-5 p-0.5 rounded-md border-0 shrink-0 inline-flex items-center justify-center shadow-2xs" />
                     <span>
-                      Withdraw {numericAmount > 0 ? `${currencySymbol} ${numericAmount.toFixed(2)}` : 'Cash'} to {provider}
+                      Withdraw {numericAmount > 0 ? `${currencySymbol} ${numericAmount.toFixed(2)}` : 'Cash'} to {providers.find(p => p.id === provider)?.name || provider}
                     </span>
+                    <ArrowUpRight className="w-4 h-4 stroke-[3]" />
                   </>
                 )}
               </button>
