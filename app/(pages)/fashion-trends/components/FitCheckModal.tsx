@@ -294,8 +294,8 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl w-[94vw] max-h-[90vh] p-0 border border-stone-300 bg-[#FDFCF9] rounded-2xl overflow-hidden shadow-2xl flex flex-col filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.22)] [&>button]:hidden">
         {/* Subtle Canvas Dot Grid Texture */}
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-30 z-0" 
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 z-0"
           style={{ backgroundImage: "radial-gradient(#cfc7bd 1px, transparent 1px)", backgroundSize: "16px 16px" }}
         />
 
@@ -340,7 +340,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
           {/* SIDE-BY-SIDE PRESENTATION: REFERENCE FIT vs YOUR PHOTO */}
           {/* ========================================================= */}
           <div className="relative">
-            
+
             {/* Holographic Blend Wave Overlay active during generation */}
             {isGenerating && (
               <div className="absolute inset-0 z-30 pointer-events-none rounded-xl overflow-hidden border border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
@@ -365,7 +365,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-stretch">
-              
+
               {/* ===================================================== */}
               {/* LEFT CARD: TARGET LOOKBOOK FIT REFERENCE */}
               {/* ===================================================== */}
@@ -704,7 +704,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
 
                 {/* Dynamic Visual Cross-Image Blend Preview Animation */}
                 <div className="relative h-20 sm:h-24 rounded-xl bg-black/75 border border-white/10 overflow-hidden flex items-center justify-between px-3 sm:px-6 relative z-10">
-                  
+
                   {/* Left Ghost Thumbnail: Reference Outfit */}
                   <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-lg overflow-hidden border border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.25)] shrink-0 bg-stone-900 flex items-center justify-center p-0.5">
                     <Image
@@ -722,7 +722,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
 
                   {/* Energy Wave Particle Flow & Central Hologram Morph */}
                   <div className="flex-1 mx-2 sm:mx-4 flex flex-col items-center justify-center relative">
-                    
+
                     {/* Pulsing Central Hologram Morph Orb */}
                     <div className="relative h-9 w-9 rounded-full overflow-hidden border border-amber-400/90 shadow-[0_0_12px_#f59e0b] mb-1.5 flex items-center justify-center bg-stone-900">
                       <div className="absolute inset-0 opacity-40 mix-blend-screen">
@@ -744,7 +744,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
                         className="w-1/2 h-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_8px_#f59e0b]"
                       />
                     </div>
-                    
+
                     <div className="mt-1 text-center">
                       <span className="text-[10px] font-mono text-stone-300">
                         {generationStep === 1 && "Scanning facial coordinates & melanin..."}
@@ -801,7 +801,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
           {/* ========================================================= */}
           {!generatedImage && !isGenerating && (
             <div className="space-y-3">
-              
+
               {/* Optional Advanced Styling Toggle */}
               <div className="flex items-center justify-between text-xs">
                 <button
@@ -916,8 +916,8 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
                     <span>Ready for Fit Check</span>
                   </div>
                   <p className="text-[10px] text-stone-600">
-                    {userImage 
-                      ? "Your photo is uploaded. Click below to generate your fit check." 
+                    {userImage
+                      ? "Your photo is uploaded. Click below to generate your fit check."
                       : "Upload your photo in the card above to wear this lookbook outfit."}
                   </p>
                 </div>
@@ -958,7 +958,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
           {/* ========================================================= */}
           {generatedImage && (
             <div className="space-y-4 pt-1">
-              
+
               {/* Display Header Toolbar */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-stone-200 pb-2.5">
                 <div className="space-y-0.5">
@@ -1015,7 +1015,7 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
 
               {/* COMPARISON VIEWPORT */}
               <div className="relative rounded-2xl overflow-hidden bg-stone-950 shadow-xl border border-stone-800">
-                
+
                 {/* 1. SLIDER COMPARISON MODE */}
                 {comparisonMode === "slider" && userImage && (
                   <div
