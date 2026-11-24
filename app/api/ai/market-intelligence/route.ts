@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { 
-  fetchLiveTikTokTrends, 
-  type LiveTikTokScanResult 
+import {
+  fetchLiveTikTokTrends,
+  type LiveTikTokScanResult
 } from "@/lib/ai/fashion-trend-radar";
 import { generateResearchSuggestions } from "@/lib/ai/market-suggestions";
 import { orchestrateMarketResearch } from "@/lib/ai/market-research-orchestrator";
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     let marketplaceProducts: Record<string, unknown>[] = [];
     let recentSearches: Array<{ searchTerm: string; category?: string | null; resultsCount?: number }> = [];
     let marketplaceOrderItems: Array<{ size?: string | null; price?: number | null }> = [];
-    
+
     try {
       // 1. Products (including views, cart counts, wishlist counts, sales velocity)
       sellerProducts = await prisma.product.findMany({
@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
 
       // 9. Real marketplace benchmark products (excluding test products under 25 GH₵)
       marketplaceProducts = await prisma.product.findMany({
-        where: { 
-          isDeleted: false, 
+        where: {
+          isDeleted: false,
           isActive: true,
           price: { gte: 25 },
           name: {
@@ -215,8 +215,8 @@ export async function POST(request: NextRequest) {
     // --- COMPUTE ADVANCED SELLER TELEMETRY METRICS ---
     const totalProductsCount = sellerProducts.length;
     const totalInventoryStock = sellerProducts.reduce((sum, p) => sum + (Number(p.stockQuantity) || 0), 0);
-    const avgProductPrice = totalProductsCount > 0 
-      ? Math.round(sellerProducts.reduce((sum, p) => sum + (Number(p.price) || 0), 0) / totalProductsCount) 
+    const avgProductPrice = totalProductsCount > 0
+      ? Math.round(sellerProducts.reduce((sum, p) => sum + (Number(p.price) || 0), 0) / totalProductsCount)
       : 0;
 
     const topSellerNames = sellerProducts
@@ -498,8 +498,8 @@ Analyze emerging fashion trends for '${cityLocation}'. Provide:
 
     // --- ROUTE 2: WHAT'S SELLING NOW (RETRIEVAL-FIRST ORCHESTRATION) ---
     if (normAction === "whats-selling-now") {
-      const { 
-        cityLocation = "Accra, Ghana", 
+      const {
+        cityLocation = "Accra, Ghana",
         customerMarket = "Local Shoppers",
         attachedFile = null,
         attachedFileBase64 = null,
@@ -574,10 +574,10 @@ Cover: Accra 🇬🇭, Kumasi 🇬🇭, Takoradi 🇬🇭, Lagos 🇳🇬, Londo
 
     // --- ROUTE 6: PRICE INTELLIGENCE & PROFIT STRATEGIST ---
     if (normAction === "price-intelligence" || normAction === "pricing-strategy") {
-      const { 
-        currentPrice = 180, 
+      const {
+        currentPrice = 180,
         costPrice = 80,
-        productName = "Fashion Product", 
+        productName = "Fashion Product",
         netProfit = 85,
         marginPercent = 47,
         actionType = "smart-pricing"
@@ -605,10 +605,10 @@ Provide a structured, authoritative report formatted in markdown:
 
     // --- ROUTE 6.6: CONVERSATIONAL PRICING STRATEGIST (NEW) ---
     if (normAction === "pricing-chat") {
-      const { 
-        currentPrice = 180, 
+      const {
+        currentPrice = 180,
         costPrice = 80,
-        productName = "Fashion Product", 
+        productName = "Fashion Product",
         marginPercent = 47,
         discountPercent = 0,
         stockQuantity = 0,
@@ -617,7 +617,7 @@ Provide a structured, authoritative report formatted in markdown:
       } = payload;
 
       const systemPrompt = `You are Trendi, an expert fashion pricing AI and CFO. Provide a conversational response to the user's pricing query and an optional suggested strategy. You have full control over the profit simulator and direct access to the merchant's live sales telemetry.`;
-      
+
       const userPrompt = `${dbTelemetryContext}
 
 Current Product Under Optimization:
@@ -656,16 +656,16 @@ Respond ONLY with a valid JSON object matching this exact structure:
           suggestedStrategy: { hasStrategy: false, newPrice: null, newDiscount: null, newCostPrice: null, newDeliveryFee: null, newMarketingCost: null, buttonLabel: "" }
         };
       }
-      return NextResponse.json({ 
-        success: true, 
-        result: parsed, 
-        engineUsed, 
+      return NextResponse.json({
+        success: true,
+        result: parsed,
+        engineUsed,
         telemetry: {
           totalProductsCount,
           totalInventoryStock,
           totalUnitsSold,
           totalProductRevenue
-        } 
+        }
       });
     }
 
@@ -798,7 +798,7 @@ Output Requirements:
 
     // --- ROUTE 11: RETRIEVAL-FIRST FASHION RESEARCH ENGINE (DEEPSEEK REASONING) ---
     if (normAction === "fashion-copilot" || normAction === "market-research" || normAction === "sourced-research") {
-      const { 
+      const {
         cityLocation = "Accra, Ghana",
         customerMarket = "Local Shoppers",
         customQuery = "",
@@ -839,7 +839,7 @@ Output Requirements:
       const userPrompt = `Generate 5 specific fashion research questions for a merchant selling in '${cityLocation}'. Return ONLY a JSON array: ["question 1", "question 2", "question 3", "question 4", "question 5"].`;
 
       const { text, engineUsed } = await callReasoningAPI(systemPrompt, userPrompt, customKey);
-      
+
       let promptsArr: string[] = [];
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -1253,8 +1253,8 @@ Based on customer searches and buying patterns in ${city}, shoppers want clothes
 
 // Internal reasoning API caller supporting DeepSeek-R1, DeepSeek-V3, OpenAI GPT-4o, and dynamic high-value fallback
 async function callReasoningAPI(
-  systemPrompt: string, 
-  userPrompt: string, 
+  systemPrompt: string,
+  userPrompt: string,
   customKey?: string,
   fallbackContext?: FallbackContext
 ): Promise<{ text: string; engineUsed: string }> {

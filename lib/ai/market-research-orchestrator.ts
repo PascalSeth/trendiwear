@@ -256,10 +256,10 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
   for (const ord of rawOrders) {
     const prodName = ord.product?.name || "";
     const prodNameLower = prodName.toLowerCase();
-    
+
     // Exclude dummy test items, samples, and placeholders
     if (
-      prodNameLower.includes("dummy") || 
+      prodNameLower.includes("dummy") ||
       prodNameLower.includes("sample") ||
       prodNameLower.includes("placeholder") ||
       prodNameLower.includes("temp")
@@ -269,7 +269,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
     const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || ord.product?.categories?.some((c: { name: string }) => c.name.toLowerCase().includes(k)));
     if (!isRelevant) continue;
 
-    const isBespoke = 
+    const isBespoke =
       ord.product?.isCustomizable === true ||
       ord.product?.tags?.includes("CUSTOM_MADE") ||
       prodNameLower.includes("bespoke") ||
@@ -280,7 +280,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
 
     const sellerShopName = ord.product?.professional?.professionalProfile?.businessName || ord.product?.professional?.name || "Verified TrendiZip Merchant";
     const sellerLoc = ord.product?.professional?.professionalProfile?.location || `${locationCity}, Ghana`;
-    const retrievedDate = ord.order?.createdAt 
+    const retrievedDate = ord.order?.createdAt
       ? new Date(ord.order.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
       : "Recent 30 Days";
 
@@ -375,7 +375,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
     const prodName = prod.name || "";
     const prodNameLower = prodName.toLowerCase();
     if (
-      prodNameLower.includes("dummy") || 
+      prodNameLower.includes("dummy") ||
       prodNameLower.includes("sample") ||
       prodNameLower.includes("placeholder") ||
       prodNameLower.includes("temp")
@@ -390,7 +390,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
     const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || prod.categories?.some((c: { name: string }) => c.name.toLowerCase().includes(k)));
     if (!isRelevant) continue;
 
-    const isBespoke = 
+    const isBespoke =
       prod.isCustomizable === true ||
       prod.tags?.includes("CUSTOM_MADE") ||
       prodNameLower.includes("bespoke") ||
@@ -451,13 +451,13 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
   // 5. EXTERNAL WEB SEARCH (Google Serper / Tavily / Brave / Public Live Web)
   // =========================================================================
   const lowerLoc = cityLocation.toLowerCase();
-  const targetCountry = lowerLoc.includes("nigeria") || lowerLoc.includes("lagos") 
-    ? "Nigeria" 
-    : lowerLoc.includes("uk") || lowerLoc.includes("london") 
-    ? "United Kingdom" 
-    : lowerLoc.includes("usa") || lowerLoc.includes("new york") 
-    ? "United States" 
-    : "Ghana";
+  const targetCountry = lowerLoc.includes("nigeria") || lowerLoc.includes("lagos")
+    ? "Nigeria"
+    : lowerLoc.includes("uk") || lowerLoc.includes("london")
+      ? "United Kingdom"
+      : lowerLoc.includes("usa") || lowerLoc.includes("new york")
+        ? "United States"
+        : "Ghana";
 
   const searchKeyword = detectedGarmentFromImage?.name || matchedKeywords[0] || question.split(" ").slice(0, 5).join(" ");
   const webSearchResult = await searchWebForFashionListings(searchKeyword, locationCity, targetCountry);
@@ -752,14 +752,14 @@ Respond ONLY with a valid JSON object matching this schema:
 
   const investigatedStyles: InvestigatedStyle[] = Array.isArray(deepSeekResponse?.investigatedStyles) && deepSeekResponse.investigatedStyles.length > 0
     ? (deepSeekResponse.investigatedStyles as Array<Record<string, unknown>>).map((s) => ({
-        title: String(s.title || "Fashion Style"),
-        categoryOrOccasion: String(s.categoryOrOccasion || "Apparel"),
-        description: String(s.description || "Style to investigate across local listings."),
-        evidenceStatus: (s.evidenceStatus as ResearchEvidenceStatus) || "insufficient_evidence",
-        evidenceStatusLabel: String(s.evidenceStatusLabel || (!hasVerifiedLocalSales ? "Market demand not established" : "Supported inference")),
-        tradeOffs: s.tradeOffs ? String(s.tradeOffs) : undefined,
-        recommendedAction: s.recommendedAction ? String(s.recommendedAction) : undefined,
-      }))
+      title: String(s.title || "Fashion Style"),
+      categoryOrOccasion: String(s.categoryOrOccasion || "Apparel"),
+      description: String(s.description || "Style to investigate across local listings."),
+      evidenceStatus: (s.evidenceStatus as ResearchEvidenceStatus) || "insufficient_evidence",
+      evidenceStatusLabel: String(s.evidenceStatusLabel || (!hasVerifiedLocalSales ? "Market demand not established" : "Supported inference")),
+      tradeOffs: s.tradeOffs ? String(s.tradeOffs) : undefined,
+      recommendedAction: s.recommendedAction ? String(s.recommendedAction) : undefined,
+    }))
     : defaultInvestigatedStyles;
 
   const answerSummary = deepSeekResponse?.answerSummary ||
@@ -780,8 +780,8 @@ Testing sample pieces with pre-orders or customer feedback gives you real demand
     (hasSufficientComparableData
       ? `Observed listings for comparable ready-to-wear garments center around GH₵ ${avgPrice}. A defensible retail price must be calculated from your actual fabric yardage, tailor wages, and overhead rather than copying competitor asking prices.`
       : readyPrices.length > 0
-      ? `Only ${readyPrices.length} comparable listing(s) were found in the database. Calculating a statistical market average would be commercially misleading. The observed listing price of GH₵ ${minPrice}${minPrice !== maxPrice ? ` – GH₵ ${maxPrice}` : ""} is provided for context only.`
-      : `No verified comparable listings were retrieved for this specific category in ${locationCity}. To establish your price, calculate your cost of production (fabric + labour + packaging) and add your target gross margin.`);
+        ? `Only ${readyPrices.length} comparable listing(s) were found in the database. Calculating a statistical market average would be commercially misleading. The observed listing price of GH₵ ${minPrice}${minPrice !== maxPrice ? ` – GH₵ ${maxPrice}` : ""} is provided for context only.`
+        : `No verified comparable listings were retrieved for this specific category in ${locationCity}. To establish your price, calculate your cost of production (fabric + labour + packaging) and add your target gross margin.`);
 
   const costInputsNeeded = deepSeekResponse?.recommendedPriceRange?.costInputsNeeded || [
     "Exact fabric cost per yard (e.g. pure linen vs cotton blend)",
@@ -791,23 +791,23 @@ Testing sample pieces with pre-orders or customer feedback gives you real demand
 
   const nextSteps = Array.isArray(deepSeekResponse?.nextSteps) && deepSeekResponse.nextSteps.length > 0
     ? (deepSeekResponse.nextSteps as Array<Record<string, unknown>>).map((step) => ({
-        title: String(step.title || "Next Step"),
-        desc: String(step.desc || "Action item for this week."),
-      }))
+      title: String(step.title || "Next Step"),
+      desc: String(step.desc || "Action item for this week."),
+    }))
     : [
-        {
-          title: "Calculate True Unit Costs",
-          desc: "Determine exact yardage cost, tailor labor per piece, and packaging expenses before setting your price.",
-        },
-        {
-          title: "Construct 1-2 Pilot Prototypes",
-          desc: "Sew a single sample in your target silhouette to verify fit, drape, and photo lighting.",
-        },
-        {
-          title: "Gauge Pre-Orders Before Bulk Sewing",
-          desc: "Share sample photos with your customer base or social channels to verify interest before purchasing fabric rolls.",
-        },
-      ];
+      {
+        title: "Calculate True Unit Costs",
+        desc: "Determine exact yardage cost, tailor labor per piece, and packaging expenses before setting your price.",
+      },
+      {
+        title: "Construct 1-2 Pilot Prototypes",
+        desc: "Sew a single sample in your target silhouette to verify fit, drape, and photo lighting.",
+      },
+      {
+        title: "Gauge Pre-Orders Before Bulk Sewing",
+        desc: "Share sample photos with your customer base or social channels to verify interest before purchasing fabric rolls.",
+      },
+    ];
 
   const smallTestBatch = deepSeekResponse?.smallTestBatch ||
     "Construct 1 or 2 sample pieces to photograph. Share them with your target customers or social channels to collect feedback and pre-orders before investing capital in fabric bolts.";
@@ -815,17 +815,17 @@ Testing sample pieces with pre-orders or customer feedback gives you real demand
   const assumptions = Array.isArray(deepSeekResponse?.assumptions) && deepSeekResponse.assumptions.length > 0
     ? deepSeekResponse.assumptions.map(String)
     : [
-        "Assumes standard ready-to-wear production rather than multi-fitting bespoke couture.",
-        "Assumes fabric is sourced at current wholesale rates in local markets.",
-      ];
+      "Assumes standard ready-to-wear production rather than multi-fitting bespoke couture.",
+      "Assumes fabric is sourced at current wholesale rates in local markets.",
+    ];
 
   const missingInformation = Array.isArray(deepSeekResponse?.missingInformation) && deepSeekResponse.missingInformation.length > 0
     ? deepSeekResponse.missingInformation.map(String)
     : [
-        "Your specific fabric cost per yard (e.g. imported linen vs local cotton).",
-        "Whether your garment includes custom alterations or is standard ready-to-wear.",
-        "Your target gross margin after tailor and delivery costs.",
-      ];
+      "Your specific fabric cost per yard (e.g. imported linen vs local cotton).",
+      "Whether your garment includes custom alterations or is standard ready-to-wear.",
+      "Your target gross margin after tailor and delivery costs.",
+    ];
 
   // =========================================================================
   // 10. CITATION VALIDATION (CONTROL 4 - ONLY VERIFIED REAL SOURCES)

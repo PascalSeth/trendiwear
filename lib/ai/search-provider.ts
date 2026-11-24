@@ -54,7 +54,7 @@ export function extractPriceFromText(text: string): { price?: number; currency?:
 
   // 1. Ghana Cedi patterns (GH₵, GHS, Ghc, Cedis)
   const ghcMatch = text.match(/(?:GH[₵c]|GHS|Cedis?)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?|[0-9]+)/i) ||
-                   text.match(/([0-9]+)\s*(?:GH[₵c]|GHS|Cedis)/i);
+    text.match(/([0-9]+)\s*(?:GH[₵c]|GHS|Cedis)/i);
   if (ghcMatch && ghcMatch[1]) {
     const p = parseFloat(ghcMatch[1].replace(/,/g, ""));
     if (p >= 25 && p <= 50000) return { price: Math.round(p), currency: "GH₵" };
@@ -90,7 +90,7 @@ export function extractPriceFromText(text: string): { price?: number; currency?:
 export function inferProductionType(text: string): "ready_to_wear" | "bespoke_custom" {
   const lower = text.toLowerCase();
   const bespokeTerms = [
-    "bespoke", "custom", "made to measure", "tailored to fit", 
+    "bespoke", "custom", "made to measure", "tailored to fit",
     "fitting", "couture", "aso ebi", "asoebi", "wedding gown", "agbada",
     "bridal", "client measurements"
   ];
@@ -107,7 +107,7 @@ export function classifyProductionType(title: string, snippet?: string): "ready_
 function extractFabric(text: string): string | undefined {
   const lower = text.toLowerCase();
   const fabrics = [
-    "pure linen", "linen blend", "linen", "duchess satin", "satin", 
+    "pure linen", "linen blend", "linen", "duchess satin", "satin",
     "raw silk", "silk chiffon", "silk", "kente", "ankara", "guinea brocade",
     "brocade", "cotton", "lace", "crepe", "chiffon", "organza", "wool"
   ];
@@ -147,7 +147,7 @@ async function searchTavily(query: string, apiKey: string): Promise<ExternalSear
     if (r.url) {
       try {
         domain = new URL(r.url).hostname.replace(/^www\./, "");
-      } catch {}
+      } catch { }
     }
     return {
       id: `tavily-${idx}-${Date.now()}`,
@@ -193,7 +193,7 @@ async function searchSerper(query: string, apiKey: string): Promise<ExternalSear
     if (r.link) {
       try {
         domain = new URL(r.link).hostname.replace(/^www\./, "");
-      } catch {}
+      } catch { }
     }
 
     return {
@@ -238,7 +238,7 @@ async function searchBrave(query: string, apiKey: string): Promise<ExternalSearc
     if (r.url) {
       try {
         domain = new URL(r.url).hostname.replace(/^www\./, "");
-      } catch {}
+      } catch { }
     }
 
     return {
@@ -310,7 +310,7 @@ async function searchPublicLiveWeb(query: string): Promise<ExternalSearchItem[]>
             retrievedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
           });
           idx++;
-        } catch {}
+        } catch { }
       }
     }
 

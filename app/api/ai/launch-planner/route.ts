@@ -484,8 +484,8 @@ Return a valid JSON object matching this exact TypeScript structure:
         reasoning: idx === 0
           ? "Signature silhouette that sets the mood of your collection."
           : idx === 1
-          ? "Balanced price point with strong margins for repeat buying."
-          : "Highly shareable styling piece ideal for short-form video hooks.",
+            ? "Balanced price point with strong margins for repeat buying."
+            : "Highly shareable styling piece ideal for short-form video hooks.",
         stockStatus: p.isPreorder ? "PREORDER_AVAILABLE" : p.stockQuantity <= 3 ? "LOW_STOCK" : "HEALTHY",
         stockWarning: p.stockQuantity <= 3 && !p.isPreorder ? "Only 3 units left—highlight rarity!" : undefined,
       }));
