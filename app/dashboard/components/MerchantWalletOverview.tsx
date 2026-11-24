@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Wallet, Lock, ShieldCheck, ArrowUpRight, CheckCircle2, 
-  Clock, RefreshCw, TrendingUp, AlertCircle, Sparkles,
-  Smartphone, Building2, Filter, ChevronRight
+  Clock, RefreshCw, TrendingUp, AlertCircle
 } from 'lucide-react';
 import { PayoutRequestModal } from './PayoutRequestModal';
 import { ProviderLogo } from './ProviderLogos';
@@ -87,10 +86,6 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
     if (statusFilter === 'FAILED') return history.filter((tx) => tx.status === 'FAILED' || tx.status === 'REJECTED');
     return history;
   }, [history, statusFilter]);
-
-  const getProviderIcon = (provider: string) => {
-    return <ProviderLogo provider={provider} className="w-3.5 h-3.5" />;
-  };
 
   const getProviderBadge = (provider: string) => {
     const p = (provider || '').toUpperCase();
@@ -298,7 +293,6 @@ export const MerchantWalletOverview: React.FC<MerchantWalletOverviewProps> = ({
             {filteredHistory.map((tx) => {
               const isPaid = tx.status === 'PAID';
               const isFailed = tx.status === 'FAILED' || tx.status === 'REJECTED';
-              const isProcessing = tx.status === 'PROCESSING' || tx.status === 'PENDING';
 
               return (
                 <div 

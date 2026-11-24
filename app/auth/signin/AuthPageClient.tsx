@@ -12,6 +12,8 @@ export default function AuthPageClient({
   productCount: number;
   proCount: number
 }) {
+  void productCount;
+  void proCount;
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)

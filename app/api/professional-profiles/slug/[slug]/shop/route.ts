@@ -66,6 +66,7 @@ export async function GET(
           select: {
             id: true,
             name: true,
+            slug: true,
           },
         },
         collections: {
@@ -116,27 +117,26 @@ export async function GET(
     interface CategoryItem {
       id: string;
       name: string;
+      slug: string;
     }
     const catIdSet = new Set<string>();
     products.forEach(p => {
       p.categories.forEach((c: CategoryItem) => catIdSet.add(c.id));
     });
 
-    const categories = Array.from(catIdSet).map(async (categoryId) => {
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
-        select: { id: true, name: true, slug: true, imageUrl: true }
-      });
-      return {
-        id: category?.id || categoryId,
-        name: category?.name || 'Unknown',
-        slug: category?.slug || 'unknown',
-        imageUrl: category?.imageUrl || null,
-        productCount: products.filter(p => p.categories.some((c: CategoryItem) => c.id === categoryId)).length,
-      };
+    const catIdList = Array.from(catIdSet);
+    const dbCategories = await prisma.category.findMany({
+      where: { id: { in: catIdList } },
+      select: { id: true, name: true, slug: true, imageUrl: true }
     });
 
-    const resolvedCategories = await Promise.all(categories);
+    const resolvedCategories = dbCategories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      imageUrl: cat.imageUrl || null,
+      productCount: products.filter(p => p.categories.some((c: CategoryItem) => c.id === cat.id)).length,
+    }));
 
     return NextResponse.json({
       profile,

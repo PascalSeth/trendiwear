@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, MapPin, Check, Globe } from "lucide-react";
+import { X, MapPin, Check } from "lucide-react";
 import { RadarLocation } from "@/lib/ai/market-radar/types";
 
 interface LocationSetupModalProps {
@@ -68,7 +68,7 @@ export function LocationSetupModal({
 }: LocationSetupModalProps) {
   const [city, setCity] = useState(currentLocation.city);
   const [country, setCountry] = useState(currentLocation.country);
-  const [currency, setCurrency] = useState(currentLocation.currency);
+  const [currency] = useState(currentLocation.currency);
 
   const handleSelectPreset = (preset: RadarLocation) => {
     onSave(preset);

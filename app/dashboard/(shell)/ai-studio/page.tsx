@@ -7,8 +7,8 @@ import {
   Wand2, Palette, Image as ImageIcon, Loader2, 
   Zap, Upload, Download, X, Key,
   FolderPlus, Check, Layers,
-  TrendingUp, DollarSign, FileText, Rocket, BarChart3, Calculator, Package,
-  Bot, ShoppingBag, AlertTriangle, ArrowRight, ArrowUpRight, CheckCircle2, RefreshCw, Send, Eye
+  TrendingUp, DollarSign, Rocket, BarChart3, Calculator, Package,
+  Bot, ArrowRight, ArrowUpRight, RefreshCw, Send, Eye
 } from "lucide-react";
 import { toast } from "sonner";
 

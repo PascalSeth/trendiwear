@@ -8,7 +8,6 @@ import {
   getOrderRiskMetrics, 
   getCustomerMetrics 
 } from "@/lib/ai/deterministic-analytics";
-import { generateText } from "@/lib/ai/provider";
 
 export async function POST(request: NextRequest) {
   try {

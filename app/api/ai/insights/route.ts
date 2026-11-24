@@ -9,7 +9,6 @@ import {
   getCustomerMetrics 
 } from "@/lib/ai/deterministic-analytics";
 import { generateBusinessInsights } from "@/lib/ai/insights-engine";
-import { generateText } from "@/lib/ai/provider";
 
 export async function GET() {
   try {

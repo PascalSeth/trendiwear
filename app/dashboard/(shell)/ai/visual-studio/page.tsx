@@ -8,7 +8,7 @@ import {
   ShoppingBag, Zap, Eye, EyeOff, Search, Shirt,
   Check, Sliders, ChevronRight, ChevronLeft,
   Plus, Copy, RefreshCw, Wand2, Scissors, Maximize2,
-  Palette, Layers, SunMedium, ChevronDown, User,
+  Palette, SunMedium, ChevronDown,
   UserCheck, Crown, Flame, Wine, Briefcase, Palmtree,
   Store, Landmark, Camera, ShieldCheck, Type, Compass,
   Image as ImageIcon, type LucideIcon, MoreHorizontal
@@ -384,7 +384,7 @@ export default function VisualStudioPage() {
             id: found.name,
             name: found.name,
             hex: "hex" in found && found.hex !== "transparent" ? (found.hex as string) : undefined,
-            bgClass: "bgClass" in found ? (found.bgClass as string) : ("bg" in found ? `${(found as any).bg} ${(found as any).border}` : undefined)
+            bgClass: "bgClass" in found ? (found.bgClass as string) : ("bg" in found ? `${(found as { bg: string; border?: string }).bg} ${(found as { bg: string; border?: string }).border || ""}` : undefined)
           });
           seen.add(found.name.toLowerCase());
         }
@@ -610,13 +610,6 @@ export default function VisualStudioPage() {
     link.click();
     document.body.removeChild(link);
     toast.success("Downloading image");
-  };
-
-  const cycleEngine = (direction: 1 | -1) => {
-    const idx = AI_ENGINES.findIndex((e) => e.id === transformProvider);
-    const nextIdx = (idx + direction + AI_ENGINES.length) % AI_ENGINES.length;
-    setTransformProvider(AI_ENGINES[nextIdx].id);
-    toast.success(`Engine: ${AI_ENGINES[nextIdx].label}`);
   };
 
   const activeCard = displayDeck[activeCardIndex] || displayDeck[0];

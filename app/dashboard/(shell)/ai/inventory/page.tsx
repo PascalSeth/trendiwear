@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
-  AlertTriangle, CheckCircle2, Clock, RefreshCw, 
-  ArrowLeft, Package, Sparkles, ArrowRight, ShieldAlert 
+  RefreshCw, 
+  ArrowLeft, Sparkles 
 } from "lucide-react";
 import type { InventoryAnalyticsData, InventoryRiskItem } from "@/lib/ai/types";
 

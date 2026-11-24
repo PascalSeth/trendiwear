@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import { Sparkles, TrendingUp, Search, BarChart3 } from "lucide-react";
+import { Sparkles, TrendingUp, Search } from "lucide-react";
 
 interface SearchItem {
   term: string;

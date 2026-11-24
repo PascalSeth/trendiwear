@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Wallet, ArrowUpRight, Loader2, 
   AlertCircle, Award, CheckCircle2, ShieldCheck,
-  Smartphone, Building2, HelpCircle, ArrowRight,
-  Sparkles, RefreshCw
+  Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProviderLogo } from './ProviderLogos';
@@ -42,7 +41,7 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({
   const [accountName, setAccountName] = useState<string>('');
   const [provider, setProvider] = useState<string>(defaultMomoProvider || 'MTN');
   const [loading, setLoading] = useState<boolean>(false);
-  const [loadingLimits, setLoadingLimits] = useState<boolean>(false);
+  const [, setLoadingLimits] = useState<boolean>(false);
   const [limits, setLimits] = useState<PayoutLimits | null>(null);
 
   useEffect(() => {

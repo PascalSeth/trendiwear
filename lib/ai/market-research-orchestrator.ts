@@ -140,7 +140,7 @@ export interface OrchestratorInput {
  * Main Orchestrator Function with Strict Evidence Validation
  */
 export async function orchestrateMarketResearch(input: OrchestratorInput): Promise<SourcedResearchReport> {
-  const { userId, question, cityLocation, customerMarket = "Local Shoppers", attachedFileName } = input;
+  const { question, cityLocation, customerMarket = "Local Shoppers", attachedFileName } = input;
   const locationCity = cityLocation.split(",")[0].trim() || "Accra";
 
   // =========================================================================
@@ -170,7 +170,31 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
   // 2. VALIDATION LAYER: CONFIRMED ORDERS (EXCLUDING TEST CHARGES)
   // =========================================================================
   // Control: Exclude test orders (charges < 25 GH₵, test product names, dummy data, cancelled orders)
-  let rawOrders: any[] = [];
+  type RawOrderItem = {
+    id: string;
+    price: number;
+    quantity?: number | null;
+    order?: { createdAt?: Date | string } | null;
+    product?: {
+      id?: string | null;
+      slug?: string | null;
+      name?: string | null;
+      material?: string | null;
+      isCustomizable?: boolean | null;
+      tags?: string[] | null;
+      categories?: Array<{ name: string }> | null;
+      professional?: {
+        id?: string | null;
+        name?: string | null;
+        professionalProfile?: {
+          businessName?: string | null;
+          location?: string | null;
+          slug?: string | null;
+        } | null;
+      } | null;
+    } | null;
+  };
+  let rawOrders: RawOrderItem[] = [];
   try {
     rawOrders = await prisma.orderItem.findMany({
       where: {
@@ -242,7 +266,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
     ) continue;
 
     // Filter by keyword relevance if specific garment asked
-    const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || ord.product?.categories?.some((c: any) => c.name.toLowerCase().includes(k)));
+    const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || ord.product?.categories?.some((c: { name: string }) => c.name.toLowerCase().includes(k)));
     if (!isRelevant) continue;
 
     const isBespoke = 
@@ -280,7 +304,29 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
   // =========================================================================
   // 3. VALIDATION LAYER: MARKETPLACE PUBLIC LISTINGS (TESTS EXCLUDED)
   // =========================================================================
-  let rawProducts: any[] = [];
+  type RawProductItem = {
+    id: string;
+    name: string;
+    price: number;
+    slug?: string | null;
+    material?: string | null;
+    createdAt?: Date | string | null;
+    viewCount?: number | null;
+    soldCount?: number | null;
+    isCustomizable?: boolean | null;
+    tags?: string[] | null;
+    categories?: Array<{ name: string }> | null;
+    professional?: {
+      id?: string | null;
+      name?: string | null;
+      professionalProfile?: {
+        businessName?: string | null;
+        location?: string | null;
+        slug?: string | null;
+      } | null;
+    } | null;
+  };
+  let rawProducts: RawProductItem[] = [];
   try {
     rawProducts = await prisma.product.findMany({
       where: {
@@ -341,7 +387,7 @@ export async function orchestrateMarketResearch(input: OrchestratorInput): Promi
     if (seenProductIds.has(prod.id)) continue;
     seenProductIds.add(prod.id);
 
-    const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || prod.categories?.some((c: any) => c.name.toLowerCase().includes(k)));
+    const isRelevant = matchedKeywords.length === 0 || matchedKeywords.some(k => prodNameLower.includes(k) || prod.categories?.some((c: { name: string }) => c.name.toLowerCase().includes(k)));
     if (!isRelevant) continue;
 
     const isBespoke = 
@@ -582,6 +628,7 @@ RESEARCH QUERY:
 - Target Location: ${cityLocation} (City: ${locationCity})
 - Customer Market Segment: ${customerMarket}
 ${attachedFileName ? `- Reference Image Attached: ${attachedFileName}` : ""}
+${visionPromptContext}
 
 EVIDENCE VALIDATION STATUS:
 - Evidence Tier: ${evidenceTier}
@@ -639,10 +686,36 @@ Respond ONLY with a valid JSON object matching this schema:
 }
 `;
 
-  let deepSeekResponse: any = null;
+  interface ResearchAIResponse {
+    answerSummary?: string;
+    reasoning?: string;
+    smallTestBatch?: string;
+    assumptions?: string[];
+    missingInformation?: string[];
+    recommendedPriceRange?: {
+      explanation?: string;
+      costInputsNeeded?: string[];
+    };
+    investigatedStyles?: Array<{
+      title?: string;
+      categoryOrOccasion?: string;
+      description?: string;
+      evidenceStatus?: ResearchEvidenceStatus;
+      evidenceStatusLabel?: string;
+      tradeOffs?: string;
+      recommendedAction?: string;
+    }>;
+    nextSteps?: Array<{
+      title?: string;
+      desc?: string;
+    }>;
+    [key: string]: unknown;
+  }
+
+  let deepSeekResponse: ResearchAIResponse | null = null;
   try {
     const rawAiText = await generateText(userPrompt, systemPrompt, { isResearch: true, temperature: 0.2 });
-    deepSeekResponse = extractJSON(rawAiText);
+    deepSeekResponse = extractJSON(rawAiText) as ResearchAIResponse | null;
   } catch (aiErr) {
     console.warn("[DeepSeek Research Generation Warning]:", aiErr);
   }
@@ -678,7 +751,7 @@ Respond ONLY with a valid JSON object matching this schema:
   ];
 
   const investigatedStyles: InvestigatedStyle[] = Array.isArray(deepSeekResponse?.investigatedStyles) && deepSeekResponse.investigatedStyles.length > 0
-    ? deepSeekResponse.investigatedStyles.map((s: any) => ({
+    ? (deepSeekResponse.investigatedStyles as Array<Record<string, unknown>>).map((s) => ({
         title: String(s.title || "Fashion Style"),
         categoryOrOccasion: String(s.categoryOrOccasion || "Apparel"),
         description: String(s.description || "Style to investigate across local listings."),
@@ -717,7 +790,7 @@ Testing sample pieces with pre-orders or customer feedback gives you real demand
   ];
 
   const nextSteps = Array.isArray(deepSeekResponse?.nextSteps) && deepSeekResponse.nextSteps.length > 0
-    ? deepSeekResponse.nextSteps.map((step: any) => ({
+    ? (deepSeekResponse.nextSteps as Array<Record<string, unknown>>).map((step) => ({
         title: String(step.title || "Next Step"),
         desc: String(step.desc || "Action item for this week."),
       }))

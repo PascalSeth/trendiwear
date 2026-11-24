@@ -206,7 +206,7 @@ function Navbar({ role, user, profileSlug }: NavbarProps) {
               <button onClick={() => setIsSearchOpen(true)} className="p-1.5 text-stone-600 hover:text-stone-950 transition-colors">
                 <Search size={18} strokeWidth={1.5} />
               </button>
-              <NotificationBell context="personal" />
+              {user && <NotificationBell context="personal" />}
               <CartSheetTrigger />
 
               {user ? (

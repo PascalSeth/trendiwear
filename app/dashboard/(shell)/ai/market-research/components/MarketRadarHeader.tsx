@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { RefreshCw, Bookmark, Sparkles, Clock, MapPin } from "lucide-react";
+import { RefreshCw, Bookmark, Sparkles, Clock } from "lucide-react";
 import { MarketRadarContext } from "@/lib/ai/market-radar/types";
 
 interface MarketRadarHeaderProps {

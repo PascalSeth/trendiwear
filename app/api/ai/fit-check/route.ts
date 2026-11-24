@@ -99,7 +99,14 @@ async function analyzePersonAndGarment(
   apiKey: string
 ): Promise<VisionAnatomyInfo> {
   try {
-    const visionMessages: any[] = [
+    type VisionContentPart =
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string; detail?: string } };
+    type VisionMessage =
+      | { role: "system"; content: string }
+      | { role: "user"; content: VisionContentPart[] };
+
+    const visionMessages: VisionMessage[] = [
       {
         role: "system",
         content: `You are an elite haute-couture fashion director and forensic visual analyst.
@@ -175,7 +182,8 @@ Return strictly JSON matching this structure:
     ];
 
     if (outfitBuffer) {
-      visionMessages[1].content.push({
+      const userContent = visionMessages[1].content as VisionContentPart[];
+      userContent.push({
         type: "image_url",
         image_url: { url: `data:image/png;base64,${outfitBuffer.toString("base64")}`, detail: "high" }
       });
@@ -426,8 +434,8 @@ Commercial Vogue lookbook catalog, razor-sharp focus on the person, 8K micro-det
           lastError = data.error?.message || `Model ${model} returned error`;
           console.warn(`[Fit Check] OpenAI edit ${model} failed:`, lastError);
         }
-      } catch (err: any) {
-        lastError = err?.message || `Exception in ${model}`;
+      } catch (err: unknown) {
+        lastError = err instanceof Error ? err.message : `Exception in ${model}`;
         console.warn(`[Fit Check] OpenAI edit ${model} exception:`, lastError);
       }
     }
@@ -492,10 +500,11 @@ Commercial Vogue lookbook catalog, razor-sharp focus on the person, 8K micro-det
       },
       engineUsed,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Fit Check API Route Error]", error);
+    const message = error instanceof Error ? error.message : "Failed to generate AI Fit Check. Please try again.";
     return NextResponse.json(
-      { error: error?.message || "Failed to generate AI Fit Check. Please try again." },
+      { error: message },
       { status: 500 }
     );
   }

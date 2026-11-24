@@ -312,7 +312,18 @@ export function resolveOccasionsForContext(
       return occ.daysUntilStart >= -2 && occ.daysUntilStart <= 60;
     })
     .slice(0, 3)
-    .map(({ prepStartMs, startMs, endMs, daysUntilStart, ...rest }): RadarOccasion => rest);
+    .map((occ): RadarOccasion => ({
+      id: occ.id,
+      name: occ.name,
+      category: occ.category,
+      startDate: occ.startDate,
+      endDate: occ.endDate,
+      timingPhase: occ.timingPhase,
+      preparationDaysBefore: occ.preparationDaysBefore,
+      description: occ.description,
+      clothingImplications: occ.clothingImplications,
+      sourceUrl: occ.sourceUrl,
+    }));
 }
 
 export const getOccasionsForContext = resolveOccasionsForContext;

@@ -165,12 +165,13 @@ function MarketRadarContent() {
 
         // Keep detail panel in sync if already open
         if (detailOpportunity) {
-          const fresh = json.opportunities.find((o) => o.id === detailOpportunity.id);
+          const fresh = json.opportunities.find((o: { id: string }) => o.id === detailOpportunity.id);
           if (fresh) setDetailOpportunity(fresh);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[Market Radar UI Fetch Error]:", err);
-        setFetchError(err?.message || "Failed to load market intelligence. Please try again.");
+        const message = err instanceof Error ? err.message : "Failed to load market intelligence. Please try again.";
+        setFetchError(message);
       } finally {
         setIsLoading(false);
       }
@@ -350,7 +351,7 @@ function MarketRadarContent() {
               <h3 className="text-sm font-bold text-foreground">No matching garment opportunities</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 No high-confidence seasonal recommendations found for the selected category in this period.
-                Try switching to "All Clothing" or adjusting your target month.
+                Try switching to &quot;All Clothing&quot; or adjusting your target month.
               </p>
             </div>
           )}

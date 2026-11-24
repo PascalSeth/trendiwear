@@ -92,6 +92,7 @@ export async function fetchGarmentTrendTelemetry(
   selectedYear: number = new Date().getFullYear(),
   isFutureMonth: boolean = false
 ): Promise<TrendAggregationResult> {
+  void selectedYear;
   const garmentsTelemetry: Record<string, GarmentTrendTelemetry> = {};
   const allEvidence: EvidenceRecord[] = [];
 

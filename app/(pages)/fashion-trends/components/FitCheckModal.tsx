@@ -6,9 +6,9 @@ import Link from "next/link";
 import {
   Sparkles, Upload, Camera, X, Check, ArrowRight,
   RefreshCw, Download, Share2, Sliders, ShieldCheck,
-  UserCheck, ShoppingBag, Wand2, Layers, AlertCircle,
-  SunMedium, Store, Landmark, ChevronRight, ArrowLeftRight,
-  RotateCcw, Eye, Zap, Scissors, Maximize2
+  ShoppingBag, Wand2, Layers, AlertCircle,
+  SunMedium, Store, Landmark, ChevronRight,
+  RotateCcw, Maximize2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -119,7 +119,6 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
     silhouetteDrape: string;
     stylistAdvice: string;
   } | null>(null);
-  const [engineUsed, setEngineUsed] = useState<string>("");
 
   // Interactive slider state
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -250,13 +249,13 @@ export default function FitCheckModal({ isOpen, onClose, outfit }: FitCheckModal
 
       setGeneratedImage(data.fitCheckImageUrl);
       setFitAnalysis(data.fitAnalysis);
-      setEngineUsed(data.engineUsed || "AI Virtual Try-On");
       setSliderPosition(50);
       toast.success("Fit Check complete! Exact reference scene, background & pose preserved.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Fit Check Error]", err);
-      setGenerationError(err?.message || "An unexpected error occurred during generation.");
-      toast.error(err?.message || "Generation failed. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during generation.";
+      setGenerationError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
       setGenerationStep(0);

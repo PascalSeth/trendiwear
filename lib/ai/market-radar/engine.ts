@@ -10,7 +10,7 @@
  * - No Hardcoding: Fully dynamic based on merchant location, timezone, and calendar date.
  */
 
-import { generateText, extractJSON } from "@/lib/ai/provider";
+import { generateText } from "@/lib/ai/provider";
 import {
   MarketRadarRequestParams,
   MarketRadarResponse,
@@ -137,6 +137,7 @@ function calculateTiming(
   demandWindow: string;
   prepWindow?: string;
 } {
+  void occasions;
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   if (viewMode === "sell-now") {
@@ -463,7 +464,7 @@ RULES:
     if (aiBrief && aiBrief.trim().length > 15) {
       marketBrief = aiBrief.trim();
     }
-  } catch (err) {
+  } catch {
     // Keep deterministic fallback brief
   }
 

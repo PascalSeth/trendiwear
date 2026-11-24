@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,8 +8,7 @@ import {
   Upload, X, Video, ChevronRight, ChevronLeft,
   Check, Tag, Palette, Image as ImageIcon,
   Loader2, DollarSign, Wand2, Sparkles, Camera, Eye,
-  AlertCircle, ArrowRight, Star, RefreshCw, Layers, ShieldCheck,
-  Package, Scissors, CheckCircle2, CircleDashed
+  CheckCircle2, CircleDashed
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

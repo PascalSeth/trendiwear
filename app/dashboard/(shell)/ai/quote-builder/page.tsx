@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { 
   Calculator, ArrowLeft, Copy, Check, Sparkles, 
-  DollarSign, Clock, ShieldCheck, UserCheck, Scissors 
+  Scissors 
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PricingResult } from "@/lib/ai/types";
@@ -20,7 +20,7 @@ export default function QuoteBuilderPage() {
   const [laborHours, setLaborHours] = useState(12);
   const [hourlyRate, setHourlyRate] = useState(35);
   const [notionsCost, setNotionsCost] = useState(60);
-  const [overheadCost, setOverheadCost] = useState(40);
+  const [overheadCost] = useState(40);
   const [targetMargin, setTargetMargin] = useState(35);
   const [rushFee, setRushFee] = useState(0);
 

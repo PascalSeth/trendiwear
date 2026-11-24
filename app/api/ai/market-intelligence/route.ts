@@ -3,8 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { 
   fetchLiveTikTokTrends, 
-  type LiveTikTokScanResult, 
-  type LiveTikTokTag 
+  type LiveTikTokScanResult 
 } from "@/lib/ai/fashion-trend-radar";
 import { generateResearchSuggestions } from "@/lib/ai/market-suggestions";
 import { orchestrateMarketResearch } from "@/lib/ai/market-research-orchestrator";
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest) {
     let sellerOrderItems: Record<string, unknown>[] = [];
     let sellerReviews: Record<string, unknown>[] = [];
     let sellerProfile: Record<string, unknown> | null = null;
-    let sellerAnalytics: Record<string, unknown> | null = null;
     let marketplaceCategories: Record<string, unknown>[] = [];
     let marketplaceProducts: Record<string, unknown>[] = [];
     let recentSearches: Array<{ searchTerm: string; category?: string | null; resultsCount?: number }> = [];
@@ -150,23 +148,6 @@ export async function POST(request: NextRequest) {
           completedOrders: true,
           location: true,
           specialization: { select: { name: true } },
-        },
-      });
-
-      // 7. Analytics Record
-      sellerAnalytics = await prisma.professionalAnalytics.findUnique({
-        where: { professionalId: user.id },
-        select: {
-          totalRevenue: true,
-          totalOrders: true,
-          avgOrderValue: true,
-          totalBookings: true,
-          completedOrders: true,
-          cancelledOrders: true,
-          avgRating: true,
-          profileViews: true,
-          responseRate: true,
-          onTimeDelivery: true,
         },
       });
 
@@ -402,7 +383,7 @@ CRITICAL FORMATTING & LANGUAGE DIRECTIVES:
         userTargetQuery,
         sellerProfile,
         marketplaceProducts,
-        recentSearches: recentSearches as any,
+        recentSearches: recentSearches as unknown as Array<{ searchTerm: string; category?: string; resultsCount?: number }>,
         topMarketSizes,
       });
 
@@ -669,7 +650,7 @@ Respond ONLY with a valid JSON object matching this exact structure:
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         const cleanText = jsonMatch ? jsonMatch[0] : text.replace(/```json/g, '').replace(/```/g, '').trim();
         parsed = JSON.parse(cleanText);
-      } catch (e) {
+      } catch {
         parsed = {
           message: text?.trim() || "I recommend adjusting your price based on local demand trends. Let me know if you want to run a specific promotion.",
           suggestedStrategy: { hasStrategy: false, newPrice: null, newDiscount: null, newCostPrice: null, newDeliveryFee: null, newMarketingCost: null, buttonLabel: "" }

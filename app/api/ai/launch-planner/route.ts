@@ -112,7 +112,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const productWhere: any = { isDeleted: false };
+    const productWhere: Record<string, unknown> = { isDeleted: false };
     if (user.role === "PROFESSIONAL") {
       productWhere.professionalId = user.id;
     }
@@ -213,7 +213,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const {
       collectionName = "",
-      collectionId = "",
       selectedProductIds = [],
       goal = "Sell as many products as possible",
       channels = ["TikTok & Instagram", "Trendizip storefront", "WhatsApp VIP Broadcast"],
@@ -240,7 +239,7 @@ export async function POST(request: NextRequest) {
       categories?: { name: string }[];
     };
 
-    const prodWhere: any = { isDeleted: false };
+    const prodWhere: Record<string, unknown> = { isDeleted: false };
     if (user.role === "PROFESSIONAL") {
       prodWhere.professionalId = user.id;
     }
@@ -402,12 +401,51 @@ Return a valid JSON object matching this exact TypeScript structure:
   ]
 }`;
 
-    const aiPlan = await generateJSON<any>(systemPrompt, userPrompt);
+    interface AIPlanResult {
+      heroProducts?: Array<{
+        productId?: string;
+        role?: LaunchHeroProduct["role"];
+        roleLabel?: string;
+        reasoning?: string;
+        stockWarning?: string;
+        [key: string]: unknown;
+      }>;
+      strategy?: {
+        campaignTitle?: string;
+        theme?: string;
+        targetCustomerProfile?: {
+          demographic?: string;
+          styleAesthetic?: string;
+          lifestyleAndOccasion?: string;
+          buyingMotivation?: string;
+        };
+        positioningStatement?: string;
+        pricingAndPromoAdvice?: string;
+        budgetAllocation?: {
+          creatorGiftingGHS?: number;
+          socialAdsGHS?: number;
+          showcaseAndMarketplaceGHS?: number;
+          packagingAndExperienceGHS?: number;
+        };
+      };
+      marketingAssets?: {
+        instagramCaption?: string;
+        tiktokHookScript?: string;
+        whatsappBroadcast?: string;
+        promotionalOfferAnnouncement?: string;
+        videoBriefs?: LaunchVideoBrief[];
+      };
+      calendar?: LaunchContentCalendarItem[];
+      checklist?: LaunchChecklistItem[];
+      decisionMatrix?: CollectionLaunchPlan["decisionMatrix"];
+      engineUsed?: string;
+    }
+    const aiPlan = await generateJSON<AIPlanResult>(systemPrompt, userPrompt);
 
     // Build the final complete CollectionLaunchPlan
     let finalHeroProducts: LaunchHeroProduct[] = [];
     if (aiPlan?.heroProducts && Array.isArray(aiPlan.heroProducts)) {
-      finalHeroProducts = aiPlan.heroProducts.map((h: any, idx: number) => {
+      finalHeroProducts = aiPlan.heroProducts.map((h, idx: number) => {
         const matchingProd = targetProducts.find(p => p.id === h.productId) || targetProducts[idx % targetProducts.length];
         const stockQty = matchingProd?.stockQuantity || 1;
         const isPre = Boolean(matchingProd?.isPreorder);
@@ -423,7 +461,7 @@ Return a valid JSON object matching this exact TypeScript structure:
           stockQuantity: stockQty,
           isPreorder: isPre,
           imageUrl: matchingProd?.images?.[0] || undefined,
-          role: h.role || "LEAD_ANCHOR",
+          role: h.role || (idx === 0 ? "LEAD_ANCHOR" : idx === 1 ? "PROFIT_DRIVER" : "VIRAL_HOOK"),
           roleLabel: h.roleLabel || "Lead Anchor Piece",
           reasoning: h.reasoning || "Chosen for its high visual appeal and strong buyer resonance.",
           stockStatus,
@@ -621,7 +659,7 @@ Return a valid JSON object matching this exact TypeScript structure:
 
       checklist: Array.isArray(aiPlan?.checklist) && aiPlan.checklist.length > 0 ? aiPlan.checklist : defaultChecklist,
       decisionMatrix: Array.isArray(aiPlan?.decisionMatrix) && aiPlan.decisionMatrix.length > 0 ? aiPlan.decisionMatrix : defaultDecisionRules,
-      engineUsed: aiPlan?.engineUsed || "DeepSeek Flash Strategist",
+      engineUsed: String(aiPlan?.engineUsed || "DeepSeek Flash Strategist"),
       generatedAt: new Date().toISOString(),
     };
 

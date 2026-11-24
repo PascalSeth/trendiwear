@@ -62,7 +62,6 @@ export function generateResearchSuggestions(ctx: SuggestionContext): MarketSugge
   const products = ctx.sellerProducts || [];
   const marketProds = ctx.marketplaceProducts || [];
   const searches = ctx.recentSearches || [];
-  const topSizes = ctx.topMarketSizes || "Medium and Large";
  
   // Filter out test records, placeholders, and dummy prices (< 25 GH₵)
   const validMarketProds = marketProds.filter((p) => {

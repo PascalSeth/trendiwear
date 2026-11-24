@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, DollarSign, Package, TrendingUp, ShieldCheck, CheckCircle2, Clock, Users, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, DollarSign, Package, TrendingUp, ShieldCheck, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'

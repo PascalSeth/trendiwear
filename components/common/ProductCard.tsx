@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, ArrowUpRight, Clock, BadgeCheck } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 import { WishlistButton } from '@/components/ui/wishlist-button';
 import { AddToCartButton } from '@/components/ui/add-to-cart-button';
 import { QuickAddModal } from '@/components/common/QuickAddModal';
@@ -48,43 +47,11 @@ interface ProductCardProps {
   hrefOverride?: string;
 }
 
-// Countdown hook for discount timer
-function useCountdown(endDate: string | null | undefined) {
-  const [timeLeft, setTimeLeft] = useState('');
-  
-  useEffect(() => {
-    if (!endDate) return;
-    
-    const calculateTimeLeft = () => {
-      const end = new Date(endDate).getTime();
-      const now = Date.now();
-      const diff = end - now;
-      
-      if (diff <= 0) return '';
-      
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      if (days > 0) return `${days}d ${hours}h`;
-      if (hours > 0) return `${hours}h ${minutes}m`;
-      return `${minutes}m`;
-    };
-    
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
-    return () => clearInterval(timer);
-  }, [endDate]);
-  
-  return timeLeft;
-}
-
 export const ProductCard = ({ item, index, hrefOverride }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const timeLeft = useCountdown(item.discountEndDate);
 
   const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -124,9 +91,6 @@ export const ProductCard = ({ item, index, hrefOverride }: ProductCardProps) => 
   }, [isHovered]);
 
   const sellerName = item.professional.professionalProfile?.businessName || `${item.professional.firstName} ${item.professional.lastName}`;
-  const sellerProfilePicUrl = item.professional.professionalProfile?.businessImage || '/placeholder-avatar.jpg';
-  const isVerified = item.professional.professionalProfile?.isVerified || false;
-  const isTrendiZip = sellerName === 'TrendiZip';
   const categoryName = item.categories?.[0]?.name || (typeof item.category === 'string' ? item.category : item.category?.name) || 'Fashion';
   const hasVariations = (item.sizes?.length || 0) > 0 || (item.colors?.length || 0) > 0;
   

@@ -22,7 +22,6 @@ import {
   Compass,
   DollarSign,
   ChevronRight,
-  Sliders,
   Scissors
 } from "lucide-react";
 import type { CustomerBehaviorAnalyticsData, BehavioralProductItem, BehavioralQuadrant } from "@/lib/ai/types";

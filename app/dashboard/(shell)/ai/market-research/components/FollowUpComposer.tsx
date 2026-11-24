@@ -1,7 +1,32 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Mic, MicOff, Send, Sparkles, X } from "lucide-react";
+import { Search, Mic, MicOff, Sparkles, X } from "lucide-react";
+
+interface SpeechRecognitionResultItem {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: {
+    [index: number]: SpeechRecognitionResultItem;
+  };
+}
+
+interface SpeechRecognitionCustomEvent {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: () => void;
+  onend: () => void;
+  onerror: () => void;
+  onresult: (event: SpeechRecognitionCustomEvent) => void;
+  start: () => void;
+}
 
 interface FollowUpComposerProps {
   onSubmitQuestion: (question: string) => void;
@@ -39,8 +64,13 @@ export function FollowUpComposer({
     }
 
     try {
+      const windowWithSpeech = window as unknown as {
+        SpeechRecognition?: new () => SpeechRecognitionInstance;
+        webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+      };
       const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
@@ -49,7 +79,7 @@ export function FollowUpComposer({
       recognition.onstart = () => setIsListening(true);
       recognition.onend = () => setIsListening(false);
       recognition.onerror = () => setIsListening(false);
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionCustomEvent) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setQuestion(transcript);

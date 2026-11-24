@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   TrendingUp, TrendingDown, DollarSign, ShoppingBag, 
-  ArrowLeft, ArrowUpRight, BarChart3, RefreshCw, AlertCircle, Sparkles, CheckCircle2 
+  ArrowLeft, BarChart3, RefreshCw, Sparkles, CheckCircle2 
 } from "lucide-react";
 import type { SalesAnalyticsData } from "@/lib/ai/types";
 

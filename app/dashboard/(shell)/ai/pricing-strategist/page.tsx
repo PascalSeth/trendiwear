@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
-  Calculator, Loader2,
-  Activity, ShoppingBag,
-  Search, RefreshCw, Send,
+  Calculator,
+  ShoppingBag,
+  Search, Send,
   MessageSquare, Sparkles, TrendingUp
 } from "lucide-react";
 import { toast } from "sonner";
@@ -304,13 +304,13 @@ function FormattedChatMarkdown({ content }: { content: string }) {
 
 export default function TrendiChatPricingAndProfitStudioPage() {
   const [dbProducts, setDbProducts] = useState<DBProduct[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
+  const [, setLoadingProducts] = useState<boolean>(true);
   const [selectedProductId, setSelectedProductId] = useState<string>("demo-1");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Active Product State
   const [productName, setProductName] = useState<string>("Luxury Silk Kaftan & Wrap Set");
-  const [productImage, setProductImage] = useState<string>(HIGH_RES_FASHION_DEMOS[0].imageUrl);
+  const [, setProductImage] = useState<string>(HIGH_RES_FASHION_DEMOS[0].imageUrl);
   const [stockQuantity, setStockQuantity] = useState<number>(24);
   const [soldCount, setSoldCount] = useState<number>(42);
   
@@ -445,7 +445,7 @@ export default function TrendiChatPricingAndProfitStudioPage() {
         content: aiResponse.message,
         suggestedStrategy: aiResponse.suggestedStrategy
       }]);
-    } catch (err: unknown) {
+    } catch {
       toast.error("Could not complete AI analysis");
     } finally {
       setIsTyping(false);

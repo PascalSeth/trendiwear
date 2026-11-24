@@ -11,7 +11,7 @@
  *   otherwise notes limited sample size.
  */
 
-import { searchWebForFashionListings, ExternalSearchResponse, ExternalSearchItem } from "@/lib/ai/search-provider";
+import { searchWebForFashionListings, ExternalSearchResponse } from "@/lib/ai/search-provider";
 import { EvidenceRecord, ProviderOperationalStatus } from "../types";
 
 export interface GarmentListingStats {
@@ -66,7 +66,7 @@ export async function fetchGarmentListings(
     try {
       const response: ExternalSearchResponse = await searchWebForFashionListings(garment, city, country);
       return { garment, response };
-    } catch (err: any) {
+    } catch {
       return {
         garment,
         response: {
@@ -75,7 +75,7 @@ export async function fetchGarmentListings(
           status: "error" as const,
           items: [],
           queryUsed: garment,
-          error: err?.message,
+          error: "Search retrieval failed",
         },
       };
     }

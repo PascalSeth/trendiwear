@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Bookmark, Trash2, ChevronRight, Clock, MapPin, Tag } from "lucide-react";
+import { X, Bookmark, Trash2, ChevronRight, Clock, MapPin } from "lucide-react";
 import { Opportunity } from "@/lib/ai/market-radar/types";
 
 interface SavedResearchModalProps {

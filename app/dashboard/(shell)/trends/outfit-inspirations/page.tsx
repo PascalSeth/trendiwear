@@ -19,7 +19,6 @@ import {
   UploadCloud,
   FolderPlus,
   Image as ImageIcon,
-  Check,
   X,
   ChevronLeft,
   ChevronRight,
@@ -257,10 +256,6 @@ export default function OutfitInspirationsTrendsPage() {
   // Computed summary metrics
   const totalLikes = useMemo(() => {
     return outfits.reduce((acc, o) => acc + (o.likes || 0), 0);
-  }, [outfits]);
-
-  const totalSaves = useMemo(() => {
-    return outfits.reduce((acc, o) => acc + (o._count?.savedByUsers || 0), 0);
   }, [outfits]);
 
   const featuredCount = useMemo(() => {

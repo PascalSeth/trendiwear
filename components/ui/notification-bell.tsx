@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -57,6 +58,7 @@ const notificationColors: Record<string, string> = {
 // Component
 export function NotificationBell({ context }: { context?: 'business' | 'personal' }) {
   const router = useRouter();
+  const { status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [permissionState, setPermissionState] = useState<string>('default');
   const lastNotifiedIdRef = useRef<string | null>(null);
@@ -74,12 +76,12 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
   });
   if (context) queryParams.append('context', context);
   
-  const swrKey = `/api/notifications?${queryParams.toString()}`;
+  const swrKey = status === 'authenticated' ? `/api/notifications?${queryParams.toString()}` : null;
 
   const { data, mutate, isLoading } = useSWR(
     swrKey,
     fetcher,
-    { refreshInterval: 5000, deduplicatingInterval: 2000, revalidateOnFocus: true, revalidateOnReconnect: true }
+    { refreshInterval: 15000, deduplicatingInterval: 2000, revalidateOnFocus: true, revalidateOnReconnect: true, shouldRetryOnError: false }
   );
 
   const notifications = useMemo(() => data?.notifications || [], [data?.notifications]);
@@ -205,6 +207,10 @@ export function NotificationBell({ context }: { context?: 'business' | 'personal
         break;
     }
   };
+
+  if (status !== 'authenticated') {
+    return null;
+  }
 
   return (
     <div className="relative">

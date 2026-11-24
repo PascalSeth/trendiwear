@@ -32,11 +32,12 @@ export async function fetchSalesTelemetry(
   city: string,
   countryCode: string = "GH"
 ): Promise<SalesAggregationResult> {
+  void countryCode;
   const providerId = "trendizip-sales-engine";
   const providerName = "TrendiZip Verified Orders";
 
   try {
-    const rawOrderItems: any = await prisma.orderItem.findMany({
+    const rawOrderItems = await prisma.orderItem.findMany({
       where: {
         price: { gte: 25 }, // Exclude test charges under GH₵ 25
         order: {
@@ -72,7 +73,7 @@ export async function fetchSalesTelemetry(
     });
 
     const validOrderItems = (rawOrderItems || []).filter(
-      (it: any) => it.product?.name && !it.product.name.toLowerCase().includes("test")
+      (it: { product?: { name?: string } | null }) => it.product?.name && !it.product.name.toLowerCase().includes("test")
     );
 
     if (validOrderItems.length === 0) {
@@ -106,7 +107,6 @@ export async function fetchSalesTelemetry(
 
     for (const item of validOrderItems) {
       const pName = (item.product.name || "").toLowerCase();
-      const pCat = item.product.categories?.[0]?.name?.toLowerCase() || "apparel";
       const itemCity = (item.order.address?.city || "").toLowerCase();
 
       if (itemCity.includes(cleanCity)) {

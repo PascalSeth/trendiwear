@@ -4,14 +4,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Rocket, Calendar, Video, Mail, Loader2,
-  BarChart3, Users, Gift, PackageCheck, CheckSquare, MessageSquare,
-  Layers, Target, Copy, Check, ArrowRight, Share2, MessageCircle, Sparkles,
-  ShoppingBag, DollarSign, Clock, ChevronRight, AlertTriangle, Eye, ShieldCheck,
-  TrendingUp, RefreshCw, CheckCircle2, Circle, Edit3, ExternalLink,
-  Smartphone, Volume2, Heart, Bookmark, Filter, Sliders,
-  Wand2, ChevronLeft, ArrowUpRight, Info, CheckCheck, HelpCircle, Tag,
-  ChevronDown, ChevronUp, Zap, Flame, PieChart, ShieldAlert
+  Calendar, Video, Loader2,
+  BarChart3, Users, PackageCheck, CheckSquare,
+  Target, Copy, MessageCircle, Sparkles,
+  ShoppingBag, AlertTriangle, ShieldCheck,
+  CheckCircle2, Circle,
+  Smartphone, Volume2, Heart, Bookmark, Sliders,
+  Wand2, ChevronLeft, CheckCheck, Tag,
+  ChevronDown, ChevronUp, Flame
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,7 @@ import { cn } from "@/lib/utils";
 import type {
   CollectionLaunchPlan,
   LaunchHeroProduct,
-  LaunchContentCalendarItem,
-  LaunchVideoBrief,
-  LaunchChecklistItem,
-  LaunchDecisionRule
+  LaunchChecklistItem
 } from "@/app/api/ai/launch-planner/route";
 
 interface ProductCatalogItem {
@@ -1115,7 +1112,7 @@ export default function LaunchPlannerPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as "simulator" | "runway" | "calendar" | "checklist" | "telemetry")}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0",
                   isSel

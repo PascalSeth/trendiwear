@@ -1,26 +1,47 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
-import Link from 'next/link';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef, useId } from "react";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import Link from "next/link";
+import Image from "next/image";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
-  Star, MapPin,
-  ArrowRight, ShoppingBag, MessageSquare, Scissors,
-  Globe, Settings, BadgeCheck, Archive,
-  ChevronLeft, X, Copy, Check
-} from 'lucide-react';
-import { FaInstagram, FaFacebook, FaXTwitter, FaTiktok, FaYoutube, FaPinterest, FaLinkedin } from 'react-icons/fa6';
-import { cn } from '@/lib/utils';
-import { ProductCard } from '@/components/common/ProductCard';
-import { ServiceListItem } from '@/app/components/services/ServiceListItem';
-import { type ServiceWithVariants } from '@/app/components/services/ServiceCard';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
-import { ChatDrawer } from '@/app/components/chat/ChatDrawer';
-import { AtelierBackground } from '@/app/components/creative/AtelierBackground';
+  Star,
+  MapPin,
+  ShoppingBag,
+  MessageSquare,
+  Scissors,
+  Globe,
+  Settings,
+  BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Copy,
+  Check,
+  ArrowUpRight,
+  Clock,
+  Search,
+  Images,
+  RefreshCw,
+} from "lucide-react";
+import {
+  FaInstagram,
+  FaFacebook,
+  FaXTwitter,
+  FaTiktok,
+  FaYoutube,
+  FaPinterest,
+  FaLinkedin,
+} from "react-icons/fa6";
+import { cn } from "@/lib/utils";
+import { ProductCard } from "@/components/common/ProductCard";
+import { ServiceListItem } from "@/app/components/services/ServiceListItem";
+import { type ServiceWithVariants } from "@/app/components/services/ServiceCard";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { ChatDrawer } from "@/app/components/chat/ChatDrawer";
 
 // --- TYPES ---
 interface DayHours {
@@ -50,13 +71,24 @@ interface Location {
 }
 
 // Helper to check if currently open
-function checkIfOpen(availabilityRaw?: string): { isOpen: boolean; nextChange: string } {
-  if (!availabilityRaw) return { isOpen: false, nextChange: '' };
+function checkIfOpen(availabilityRaw?: string): {
+  isOpen: boolean;
+  nextChange: string;
+} {
+  if (!availabilityRaw) return { isOpen: false, nextChange: "" };
 
   try {
     const hours: BusinessHours = JSON.parse(availabilityRaw);
     const now = new Date();
-    const dayNames: (keyof BusinessHours)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNames: (keyof BusinessHours)[] = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
     const currentDay = dayNames[now.getDay()];
     const todayHours = hours[currentDay];
 
@@ -70,23 +102,29 @@ function checkIfOpen(availabilityRaw?: string): { isOpen: boolean; nextChange: s
           return { isOpen: false, nextChange: `Opens ${dayLabel}` };
         }
       }
-      return { isOpen: false, nextChange: 'Closed' };
+      return { isOpen: false, nextChange: "Closed" };
     }
 
-    const [openHour, openMin] = todayHours.open.split(':').map(Number);
-    const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
+    const [openHour, openMin] = todayHours.open.split(":").map(Number);
+    const [closeHour, closeMin] = todayHours.close.split(":").map(Number);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
 
     if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
       const closeHour12 = closeHour % 12 || 12;
-      const closeAmPm = closeHour >= 12 ? 'PM' : 'AM';
-      return { isOpen: true, nextChange: `Closes ${closeHour12}:${closeMin.toString().padStart(2, '0')} ${closeAmPm}` };
+      const closeAmPm = closeHour >= 12 ? "PM" : "AM";
+      return {
+        isOpen: true,
+        nextChange: `Closes ${closeHour12}:${closeMin.toString().padStart(2, "0")} ${closeAmPm}`,
+      };
     } else if (currentMinutes < openMinutes) {
       const openHour12 = openHour % 12 || 12;
-      const openAmPm = openHour >= 12 ? 'PM' : 'AM';
-      return { isOpen: false, nextChange: `Opens ${openHour12}:${openMin.toString().padStart(2, '0')} ${openAmPm}` };
+      const openAmPm = openHour >= 12 ? "PM" : "AM";
+      return {
+        isOpen: false,
+        nextChange: `Opens ${openHour12}:${openMin.toString().padStart(2, "0")} ${openAmPm}`,
+      };
     } else {
       // Past closing time, find next open day
       for (let i = 1; i <= 7; i++) {
@@ -97,10 +135,10 @@ function checkIfOpen(availabilityRaw?: string): { isOpen: boolean; nextChange: s
           return { isOpen: false, nextChange: `Opens ${dayLabel}` };
         }
       }
-      return { isOpen: false, nextChange: 'Closed' };
+      return { isOpen: false, nextChange: "Closed" };
     }
   } catch {
-    return { isOpen: false, nextChange: '' };
+    return { isOpen: false, nextChange: "" };
   }
 }
 
@@ -201,873 +239,1204 @@ export interface ProfileClientProps {
   baseUrl?: string;
 }
 
-// --- Profile Map Component ---
-const ProfileMap = ({ lat, lng }: { lat: number, lng: number }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-
+// Palette is scoped to this component; no global theme changes are required.
+const theme = {
+  "--studio-bg": "#F6F5EF",
+  "--studio-ink": "#173E35",
+  "--studio-accent": "#DCE99B",
+  "--studio-line": "#DFE4D9",
+} as React.CSSProperties;
+const primary =
+  "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-[var(--studio-ink)] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#25584B]";
+const secondary =
+  "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-line)] bg-white px-3 py-2 text-xs font-medium text-[var(--studio-ink)] transition hover:bg-[#EFF3E7]";
+const eyebrow = "text-[11px] font-semibold uppercase tracking-[0.18em]";
+const socialIcons: Record<string, React.ElementType> = {
+  INSTAGRAM: FaInstagram,
+  FACEBOOK: FaFacebook,
+  X: FaXTwitter,
+  TIKTOK: FaTiktok,
+  YOUTUBE: FaYoutube,
+  PINTEREST: FaPinterest,
+  LINKEDIN: FaLinkedin,
+  WEBSITE: Globe,
+};
+function safeExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+const ProfileMap = ({ lat, lng }: { lat: number; lng: number }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    setOptions({
-      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-      v: "weekly"
-    });
-
-    Promise.all([
-      importLibrary("maps"),
-      importLibrary("marker")
-    ]).then(() => {
-      if (mapRef.current) {
-        const center = { lat, lng };
-        const map = new google.maps.Map(mapRef.current, {
-          center,
+    let cancelled = false;
+    let map: google.maps.Map | undefined;
+    let marker: google.maps.Marker | undefined;
+    setFailed(false);
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!key) {
+      setFailed(true);
+      return;
+    }
+    setOptions({ key, v: "weekly" });
+    importLibrary("maps")
+      .then(() => {
+        if (cancelled || !ref.current) return;
+        map = new google.maps.Map(ref.current, {
+          center: { lat, lng },
           zoom: 15,
           disableDefaultUI: true,
           zoomControl: true,
-          styles: [
-            {
-              "featureType": "all",
-              "elementType": "all",
-              "stylers": [{ "saturation": -100 }, { "gamma": 0.5 }]
-            },
-            {
-              "featureType": "water",
-              "elementType": "all",
-              "stylers": [{ "color": "#e9e9e9" }, { "visibility": "on" }]
-            }
-          ]
+          gestureHandling: "cooperative",
+          styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
         });
-
-        new google.maps.Marker({
-          position: center,
+        marker = new google.maps.Marker({
+          position: { lat, lng },
           map,
-          title: "Shop & Studio Location",
-          animation: google.maps.Animation.DROP
+          title: "Studio location",
         });
-      }
-    }).catch(err => console.error("Google Maps failed to load", err));
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+      marker?.setMap(null);
+      if (map) google.maps.event.clearInstanceListeners(map);
+    };
   }, [lat, lng]);
+  return failed ? (
+    <div className="flex h-full items-center justify-center gap-2 bg-[#EAF0DF] px-4 text-sm text-[#52665A]">
+      <MapPin size={18} /> Map unavailable. Use directions below.
+    </div>
+  ) : (
+    <div ref={ref} className="h-full w-full" aria-label="Studio location map" />
+  );
+};
+function EmptyState({
+  icon: Icon,
+  title,
+  detail,
+}: {
+  icon: React.ElementType;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="col-span-full flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[#CED9CB] bg-white/60 p-8 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF0DF] text-[#476047]">
+        <Icon size={23} strokeWidth={1.5} />
+      </div>
+      <h3 className="text-base font-semibold">{title}</h3>
+      <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#667268]">
+        {detail}
+      </p>
+    </div>
+  );
+}
+
+type Tab = "products" | "services" | "gallery" | "reviews";
+const tabConfig = {
+  products: {
+    label: "Shop",
+    title: "The collection",
+    subtitle: "Discover pieces from the studio.",
+    icon: ShoppingBag,
+  },
+  services: {
+    label: "Services",
+    title: "Made for you",
+    subtitle: "Explore services and book your next appointment.",
+    icon: Scissors,
+  },
+  gallery: {
+    label: "Portfolio",
+    title: "A closer look",
+    subtitle: "Explore the work, one collection at a time.",
+    icon: Images,
+  },
+  reviews: {
+    label: "Reviews",
+    title: "In their words",
+    subtitle: "Experiences shared by clients.",
+    icon: MessageSquare,
+  },
+};
+
+const ProfileClient = ({
+  profile,
+  slug,
+  isOwner,
+  baseUrl,
+}: ProfileClientProps) => {
+  const displayName =
+    profile.businessName ||
+    `${profile.user.firstName} ${profile.user.lastName}`;
+  const profileImage =
+    profile.businessImage ||
+    profile.user.profileImage ||
+    "/placeholder-avatar.jpg";
+  const isModel = profile.specialization?.name?.toLowerCase().includes("model");
+  const [activeTab, setActiveTab] = useState<Tab>(
+    isModel ? "gallery" : "products",
+  );
+  const [services, setServices] = useState<ServiceWithVariants[]>([]);
+  const [serviceStatus, setServiceStatus] = useState<
+    "idle" | "loading" | "loaded" | "error"
+  >("idle");
+  const [query, setQuery] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedCollection, setSelectedCollection] =
+    useState<PortfolioCollection | null>(null);
+  const [viewer, setViewer] = useState<{
+    images: string[];
+    index: number;
+    title: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [openStatus, setOpenStatus] = useState<{
+    isOpen: boolean;
+    nextChange: string;
+  } | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
+  const tabsId = useId();
+  const reducedMotion = useReducedMotion();
+  const router = useRouter();
+  const { data: session } = useSession();
+  const products = profile.featuredProducts || [];
+  const collections = [...(profile.portfolioCollections || [])].sort(
+    (a, b) => a.order - b.order,
+  );
+  const legacyImages = profile.galleryImages || [];
+  const reviewCount = profile.totalReviews ?? profile.reviews?.length ?? 0;
+  const search = query.trim().toLowerCase();
+  const visibleProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(search),
+  );
+  const visibleServices = services.filter(
+    (s) => !search || JSON.stringify(s).toLowerCase().includes(search),
+  );
+  const hasCoordinates =
+    Number.isFinite(profile.location?.latitude) &&
+    Number.isFinite(profile.location?.longitude);
+  const address = [
+    profile.location?.address,
+    profile.location?.city,
+    profile.location?.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hasCoordinates ? `${profile.location!.latitude},${profile.location!.longitude}` : address)}`;
+  const tabs: Tab[] = isModel
+    ? ["gallery", "services", "products", "reviews"]
+    : ["products", "services", "gallery", "reviews"];
+  const tabInfo = tabConfig[activeTab];
+
+  useEffect(() => {
+    const refresh = () =>
+      setOpenStatus(checkIfOpen(profile.location?.availabilityRaw));
+    refresh();
+    const interval = setInterval(refresh, 60000);
+    return () => clearInterval(interval);
+  }, [profile.location?.availabilityRaw]);
+  useEffect(() => {
+    requestRef.current?.abort();
+    setServices([]);
+    setServiceStatus("idle");
+    return () => requestRef.current?.abort();
+  }, [profile.user.id]);
+  useEffect(
+    () => () => {
+      if (copyTimeout.current) clearTimeout(copyTimeout.current);
+    },
+    [],
+  );
+  const fetchServices = useCallback(async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setServiceStatus("loading");
+    try {
+      const response = await fetch(
+        `/api/services?professionalId=${encodeURIComponent(profile.user.id)}&limit=50`,
+        { signal: controller.signal },
+      );
+      if (!response.ok) throw new Error("Unable to load services");
+      const data: { services: ServiceWithVariants[] } = await response.json();
+      if (!controller.signal.aborted) {
+        setServices(data.services || []);
+        setServiceStatus("loaded");
+      }
+    } catch {
+      if (!controller.signal.aborted) setServiceStatus("error");
+    }
+  }, [profile.user.id]);
+  useEffect(() => {
+    if (activeTab === "services" && serviceStatus === "idle")
+      void fetchServices();
+  }, [activeTab, serviceStatus, fetchServices]);
+
+  const viewerOpen = viewer !== null;
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const dialog = dialogRef.current;
+    lastFocus.current = document.activeElement as HTMLElement;
+    dialog?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+      lastFocus.current?.focus();
+    };
+  }, [viewerOpen]);
+  const moveImage = (delta: number) =>
+    setViewer((v) =>
+      v
+        ? {
+          ...v,
+          index: Math.max(0, Math.min(v.images.length - 1, v.index + delta)),
+        }
+        : v,
+    );
+  const handleCopyLink = async () => {
+    try {
+      const origin = baseUrl?.replace(/\/$/, "") || window.location.origin;
+      await navigator.clipboard.writeText(`${origin}/tz/${slug}`);
+      setCopied(true);
+      toast.success("Profile link copied");
+      if (copyTimeout.current) clearTimeout(copyTimeout.current);
+      copyTimeout.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error(
+        "Could not copy the link. Please copy it from your address bar.",
+      );
+    }
+  };
+  const openChat = () => {
+    if (!session) {
+      toast.error("Please sign in to message this professional");
+      return;
+    }
+    setIsChatOpen(true);
+  };
+  const chooseTab = (tab: Tab, scroll = false) => {
+    setActiveTab(tab);
+    setQuery("");
+    if (scroll)
+      contentRef.current?.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+  };
+  const handleBookService = (service: ServiceWithVariants) =>
+    router.push(`/tz/${profile.slug}/book/${service.professionalServiceId}`);
+  const photo = (
+    src: string,
+    title: string,
+    onClick: () => void,
+    featured = false,
+  ) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "group relative block w-full overflow-hidden rounded-2xl bg-[#E8ECDF] text-left",
+        featured ? "aspect-[4/5] sm:aspect-[4/3]" : "aspect-[4/5]",
+      )}
+      aria-label={`Open ${title}`}
+    >
+      <Image
+        src={src}
+        alt={title}
+        fill
+        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
+        className="object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-[1.035]"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
+        <span className="font-serif text-xl leading-tight">{title}</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/40 bg-white/10 backdrop-blur">
+          <ArrowUpRight size={18} />
+        </span>
+      </div>
+    </button>
+  );
 
   return (
     <div
-      ref={mapRef}
-      className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 ease-out"
-    />
-  );
-};
-
-const ProfileClient = ({ profile, slug, isOwner, baseUrl }: ProfileClientProps) => {
-  const displayName = profile.businessName || `${profile.user.firstName} ${profile.user.lastName}`;
-  const coverImage = profile.coverImage || "/default-cover.png";
-  const profileImage = profile.businessImage || profile.user.profileImage || '/placeholder-avatar.jpg';
-
-  // Tabs & modals state
-  const isModel = profile.specialization?.name?.toLowerCase().includes('model');
-  const [activeTab, setActiveTab] = useState<'products' | 'services' | 'reviews' | 'gallery'>(isModel ? 'gallery' : 'products')
-  const [services, setServices] = useState<ServiceWithVariants[]>([])
-  const [servicesLoading, setServicesLoading] = useState(false)
-  const router = useRouter();
-  const { data: session } = useSession();
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<PortfolioCollection | null>(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [copied, setCopied] = useState(false);
-  const fullProfileUrl = baseUrl ? `${baseUrl}/tz/${slug}` : '';
-
-  const handleCopyLink = () => {
-    if (!fullProfileUrl) return;
-    navigator.clipboard.writeText(fullProfileUrl);
-    setCopied(true);
-    toast.success("Profile link copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Real-time open/closed status
-  const [openStatus, setOpenStatus] = useState(() => checkIfOpen(profile.location?.availabilityRaw));
-
-  useEffect(() => {
-    setOpenStatus(checkIfOpen(profile.location?.availabilityRaw));
-    const interval = setInterval(() => {
-      setOpenStatus(checkIfOpen(profile.location?.availabilityRaw));
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [profile.location?.availabilityRaw]);
-
-  // Fetch services when tab changes
-  const fetchServices = useCallback(async () => {
-    try {
-      setServicesLoading(true);
-      const response = await fetch(`/api/services?professionalId=${profile.user.id}&limit=50`);
-      if (response.ok) {
-        const data: { services: ServiceWithVariants[] } = await response.json();
-        setServices(data.services || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch services:', error);
-    } finally {
-      setServicesLoading(false);
-    }
-  }, [profile.user.id]);
-
-  useEffect(() => {
-    if (activeTab === 'services' && services.length === 0) {
-      fetchServices();
-    }
-  }, [activeTab, services.length, fetchServices]);
-
-  const handleBookService = (service: ServiceWithVariants) => {
-    // Navigate to full-page booking experience
-    router.push(`/tz/${profile.slug}/book/${service.professionalServiceId}`);
-  };
-
-  return (
-    <div className="min-h-screen text-stone-900 pb-32 font-sans selection:bg-stone-200 relative overflow-x-hidden">
-
-      {/* 1. LAYER 0: Base Page Color */}
-      <div className="fixed inset-0 z-[-2] bg-[#FAFAF9]" />
-
-      {/* 2. LAYER 1: Professional Squiggle Background */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none">
-        <AtelierBackground />
-      </div>
-
-      {/* 1. CINEMATIC COVER BANNER (Full view, not cut in half) */}
-      <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[420px] bg-stone-900 overflow-hidden z-0">
-        <motion.div
-          initial={{ scale: 1.02 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="absolute inset-0"
-        >
-          <Image
-            src={coverImage}
-            alt="Cover"
-            fill
-            priority
-            className="object-cover object-center"
-            quality={95}
-            sizes="100vw"
-            unoptimized={coverImage.startsWith('/uploads')}
-          />
-        </motion.div>
-        {/* Subtle vignette protection */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
-      </div>
-
-      {/* 2. PROFILE IDENTITY HEADER (Gracefully overlapping cover) */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-16 md:-mt-20 mb-6 pb-6 border-b border-stone-200/80">
-          
-          {/* Avatar & Main Info */}
-          <div className="flex flex-row items-end gap-3.5 sm:gap-5 min-w-0">
-            {/* Signature Floating Avatar */}
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-white p-1.5 shadow-xl border border-stone-200/70">
-                <div className="w-full h-full rounded-xl overflow-hidden bg-stone-100 relative">
-                  <Image
-                    src={profileImage}
-                    alt={displayName}
-                    fill
-                    sizes="128px"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              {profile.isVerified && (
-                <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1 rounded-full border-2 border-white shadow-sm" title="Verified Professional">
-                  <BadgeCheck className="w-3.5 h-3.5 text-white" />
-                </div>
-              )}
-            </div>
-
-            {/* Name & Metadata */}
-            <div className="space-y-1 pb-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 font-medium text-[10px] tracking-wide border border-stone-200/60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {profile.specialization.name}
+      style={theme}
+      className="studio-profile min-h-screen bg-[var(--studio-bg)] pb-12 font-sans text-[var(--studio-ink)] selection:bg-[#DCE99B]"
+    >
+      <style>{`.studio-profile :is(button,a,input,summary):focus-visible{outline:3px solid #718E35;outline-offset:4px}.studio-profile button:disabled{cursor:not-allowed}.studio-profile dialog::backdrop{background:rgba(8,25,21,.92);backdrop-filter:blur(10px)}`}</style>
+      <div className="mx-auto max-w-[1440px] px-3 pt-3 sm:px-5 sm:pt-4 lg:px-8">
+        {/* One unified identity and cover composition. */}
+        <header className="overflow-hidden rounded-[20px] border border-[#D8E0D1] bg-[#EAF0DF] sm:rounded-[24px]">
+          <div className="grid md:grid-cols-[1fr_1fr]">
+            <div className="relative order-2 flex flex-col justify-between p-4 sm:p-5 md:order-1 lg:p-6">
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <span
+                  className={cn(
+                    eyebrow,
+                    "flex items-center gap-2 text-[#52684B]",
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#718E35]" />{" "}
+                  {profile.specialization?.name || "Independent creative"}
                 </span>
-                {profile.rating && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
-                    <Star size={11} className="fill-amber-400 text-amber-400" />
-                    <span>{profile.rating.toFixed(1)}</span>
-                    <span className="text-[10px] text-amber-700/70 font-normal">({profile.totalReviews})</span>
-                  </span>
+                {isOwner && (
+                  <Link
+                    href="/settings"
+                    className="flex min-h-11 items-center gap-1.5 text-xs font-semibold"
+                  >
+                    <Settings size={15} /> Edit profile
+                  </Link>
                 )}
               </div>
-
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif text-stone-900 leading-tight truncate">
-                {displayName}
-              </h1>
-
-              {profile.location && (
-                <p className="flex items-center gap-1 text-xs text-stone-500">
-                  <MapPin size={12} className="text-amber-600 shrink-0" />
-                  <span className="truncate">{profile.location.address || profile.location.city}</span>
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 self-start sm:self-end pt-2 sm:pt-0">
-            <Link
-              href={`/tz/${slug}/shop`}
-              className="bg-stone-900 hover:bg-stone-800 text-white px-5 py-2.5 rounded-full text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap"
-            >
-              <ShoppingBag size={13} />
-              <span>Enter Shop</span>
-            </Link>
-
-            {isOwner && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={handleCopyLink}
-                  className="bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 px-3 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all text-xs shadow-sm"
-                  title="Copy Profile Link"
-                >
-                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                  <span className="hidden sm:inline">Copy Link</span>
-                </button>
-
-                <Link
-                  href="/settings"
-                  className="bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 px-3 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all text-xs shadow-sm"
-                  title="Edit Profile"
-                >
-                  <Settings size={13} />
-                  <span className="hidden sm:inline">Edit Profile</span>
-                </Link>
-              </div>
-            )}
-
-            {(!session || !isOwner) && (
-              <button
-                onClick={() => {
-                  if (!session) {
-                    toast.error("Please sign in to message this professional");
-                    return;
-                  }
-                  setIsChatOpen(true);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0"
-                title="Send Message"
-              >
-                <MessageSquare size={14} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. THE ATELIER FOUNDATION (Bio & Concept) */}
-      <section className="pt-8 pb-6 px-4 sm:px-6 relative z-10">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="space-y-2"
-          >
-            {isOwner && (
-              <div className="flex flex-col items-center gap-1 mb-4">
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400">Your Public Profile Link /</span>
-                <code className="bg-stone-100 px-3 py-1 rounded text-xs font-mono text-stone-600 border border-stone-200">
-                  {fullProfileUrl}
-                </code>
-              </div>
-            )}
-            <h3 className="text-[9px] font-mono font-bold uppercase tracking-widest text-stone-400">The Philosophy</h3>
-            <p className="font-serif text-base sm:text-lg md:text-xl text-stone-800 leading-relaxed italic">
-              &quot;{profile.bio 
-                  ? (profile.bio.split(/\s+/).length > 35 ? profile.bio.split(/\s+/).slice(0, 35).join(' ') + '...' : profile.bio) 
-                  : `Mastering the art of ${profile.specialization.name} through timeless craftsmanship and contemporary vision.`}&quot;
-            </p>
-          </motion.div>
-
-          {/* Socials & Status Metadata Bar */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 pt-4 border-t border-stone-200/60 text-xs"
-          >
-            <div className="flex items-center gap-2">
-              <div className={cn("w-2 h-2 rounded-full animate-pulse", openStatus.isOpen ? "bg-emerald-500" : "bg-stone-300")} />
-              <span className="text-xs font-semibold text-stone-900">
-                {openStatus.isOpen ? "Shop Open" : "Shop Closed"}
-              </span>
-              <span className="text-[10px] text-stone-400">— {openStatus.nextChange}</span>
-            </div>
-
-            {profile.socials && Object.keys(profile.socials).length > 0 && (
-              <div className="flex items-center gap-5">
-                {Object.entries(profile.socials).map(([platform, url]) => {
-                  const icons: Record<string, React.ElementType> = {
-                    'INSTAGRAM': FaInstagram,
-                    'FACEBOOK': FaFacebook,
-                    'X': FaXTwitter,
-                    'TIKTOK': FaTiktok,
-                    'YOUTUBE': FaYoutube,
-                    'PINTEREST': FaPinterest,
-                    'LINKEDIN': FaLinkedin,
-                    'WEBSITE': Globe
-                  };
-                  const Icon = icons[platform] || Globe;
-                  return (
-                    <Link key={platform} href={url} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-900 transition-colors transform hover:scale-110">
-                      <Icon size={15} />
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 3. THE ARRIVAL PANORAMA (Map) */}
-      {profile.location && (
-        <section className="px-4 sm:px-6 pb-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-stone-200/80 shadow-md relative group bg-stone-100"
-          >
-            {(profile.location.latitude && profile.location.longitude) ? (
-              <div className="aspect-[21/6] max-h-48 w-full">
-                <ProfileMap
-                  lat={profile.location.latitude}
-                  lng={profile.location.longitude}
-                />
-              </div>
-            ) : (
-              <div className="aspect-[21/6] max-h-48 flex items-center justify-center bg-stone-50">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-stone-300">Location Imagery Pending</p>
-              </div>
-            )}
-
-            {/* Location Detail Overlay */}
-            <div className="absolute bottom-3 left-3 z-20 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-stone-100 shadow-md max-w-xs hidden md:block">
-              <h4 className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5">Address</h4>
-              <p className="font-serif text-sm text-stone-900 leading-tight mb-0.5">{profile.location.address}</p>
-              <p className="text-[10px] text-stone-500">{profile.location.city}, {profile.location.country}</p>
-            </div>
-          </motion.div>
-        </section>
-      )}
-
-      {/* 4. THE EXHIBITION WORKSPACE (Tabs) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        {/* Navigation Horizon */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-white border border-stone-200/80 p-1 rounded-full shadow-sm flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
-            {(isModel
-              ? ['gallery', 'products', 'services', 'reviews'] as const
-              : ['products', 'services', 'gallery', 'reviews'] as const
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'px-4 py-1.5 rounded-full text-xs font-semibold capitalize tracking-wide transition-all duration-200 flex items-center gap-1.5',
-                  activeTab === tab
-                    ? 'bg-stone-900 text-white shadow-sm'
-                    : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'
-                )}
-              >
-                {tab === 'products' && <ShoppingBag size={13} />}
-                {tab === 'services' && <Scissors size={13} />}
-                {tab === 'gallery' && <Archive size={13} />}
-                {tab === 'reviews' && <Star size={13} />}
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Full-Width Content Layer */}
-        <motion.div
-          layout
-          className="transition-all duration-500 ease-out snap-start scroll-mt-24 pb-16"
-        >
-          <AnimatePresence mode="wait">
-
-            {activeTab === 'gallery' && (
-              <motion.section
-                key="gallery"
-                initial={{ opacity: 0, y: 10, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.3 }}
-                className="relative z-10"
-              >
-                <div className="flex items-center justify-between mb-6 pb-2 border-b border-stone-200">
-                  <div className="flex items-center gap-3">
-                    {selectedCollection && (
+              <div>
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border-2 border-white shadow-sm">
+                    <Image
+                      src={profileImage}
+                      alt={displayName}
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="text-[11px] leading-relaxed text-[#5F715B]">
+                    {profile.isVerified ? (
+                      <span className="flex items-center gap-1.5 font-semibold text-[#31533E]">
+                        <BadgeCheck size={14} /> Verified professional
+                      </span>
+                    ) : (
+                      <span>Meet the creative</span>
+                    )}
+                    {profile.location?.city && (
+                      <span className="mt-1 flex items-center gap-1">
+                        <MapPin size={12} />
+                        {profile.location.city}
+                        {profile.location.country
+                          ? `, ${profile.location.country}`
+                          : ""}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <h1 className="max-w-xl break-words font-serif text-[28px] leading-[1.1] tracking-[-0.025em] sm:text-3xl xl:text-[36px]">
+                  {displayName}
+                  <span className="text-[#8DA54F]">.</span>
+                </h1>
+                {profile.bio && (
+                  <div className="mt-3 max-w-lg">
+                    <p
+                      className={cn(
+                        "whitespace-pre-line text-xs leading-5 text-[#566650]",
+                        !bioExpanded && "line-clamp-3",
+                      )}
+                    >
+                      {profile.bio}
+                    </p>
+                    {profile.bio.length > 160 && (
                       <button
-                        onClick={() => setSelectedCollection(null)}
-                        className="w-8 h-8 rounded-full border border-stone-200 flex items-center justify-center text-stone-500 hover:bg-stone-50 transition-colors"
+                        type="button"
+                        onClick={() => setBioExpanded(!bioExpanded)}
+                        aria-expanded={bioExpanded}
+                        className="mt-0.5 min-h-8 text-[11px] font-semibold underline decoration-[#A7BA87] underline-offset-4"
                       >
-                        <ChevronLeft size={16} />
+                        {bioExpanded ? "Read less" : "More about the studio"}
                       </button>
                     )}
-                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">
-                      {selectedCollection ? selectedCollection.name : "Portfolio Showcase"}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400 border border-stone-200 rounded-full px-3 py-1 hidden sm:block">
-                      {selectedCollection ? "Collection" : "Works"}
-                    </span>
-                  </div>
-                </div>
-
-                <AnimatePresence mode="wait">
-                  {selectedCollection ? (
-                    <motion.div
-                      key="collection-detail"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                    >
-                      {selectedCollection.description && (
-                        <p className="max-w-2xl mb-8 font-serif text-xl italic text-stone-500 leading-relaxed">
-                          &quot;{selectedCollection.description}&quot;
-                        </p>
-                      )}
-
-                      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-8 space-y-12 transition-all duration-700">
-                        {selectedCollection?.images.map((img, i) => (
-                          <motion.div
-                            layoutId={`gallery-img-${img}`}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: i * 0.08, duration: 0.8 }}
-                            key={i}
-                            style={{
-                              marginTop: i % 2 === 0 ? '0' : '4rem' // Staggered Museum Wall
-                            }}
-                            onClick={() => setSelectedImageIndex(i)}
-                            className="break-inside-avoid w-full relative group cursor-pointer"
-                          >
-                            <div className="overflow-hidden rounded-sm bg-stone-100">
-                              <Image
-                                src={img}
-                                alt={`${selectedCollection.name} ${i}`}
-                                width={800}
-                                height={1000}
-                                className="w-full h-auto object-cover transition-all duration-1500 ease-out group-hover:scale-[1.05] md:grayscale md:hover:grayscale-0"
-                              />
-                            </div>
-
-                            {/* Archive Index Pin - Visible on mobile, hover-revealed on desktop */}
-                            <div className="absolute top-4 left-4 opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500 pointer-events-none">
-                              <span className="text-[7px] font-mono text-stone-900 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-sm uppercase tracking-[0.3em]">
-                                REF.{String(i + 1).padStart(2, '0')}
-                              </span>
-                            </div>
-
-                            {/* Transparent Signature Detail - Visible on mobile, hover-revealed on desktop */}
-                            <div className="absolute bottom-4 right-4 opacity-50 md:opacity-0 md:group-hover:opacity-100 transition-all duration-700">
-                              <div className="h-8 w-8 rounded-full border border-white/50 backdrop-blur-sm flex items-center justify-center">
-                                <span className="text-[8px] font-mono text-white uppercase italic">S.{i + 1}</span>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="collections-list"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className={cn(
-                        "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 transition-all duration-700"
-                      )}
-                    >
-                      {profile.portfolioCollections && profile.portfolioCollections.length > 0 ? (
-                        profile.portfolioCollections.map((collection, i) => (
-                          <motion.div
-                            key={collection.id}
-                            initial={{ opacity: 0, y: 40 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                            onClick={() => setSelectedCollection(collection)}
-                            className="group cursor-pointer relative"
-                          >
-                            <div className="relative aspect-[3/4] overflow-hidden bg-stone-50 transition-all duration-1000 group-hover:shadow-2xl">
-                              <Image
-                                src={collection.coverImage || collection.images[0] || '/placeholder-portfolio.jpg'}
-                                alt={collection.name}
-                                fill
-                                className="object-cover md:grayscale md:hover:grayscale-0 transition-all duration-2000 ease-out group-hover:scale-110"
-                              />
-
-                              {/* Vertical Archive Index - Persistent on mobile */}
-                              <div className="absolute top-0 right-4 h-full flex items-center">
-                                <span className="vertical-rl text-[8px] font-mono text-stone-400 uppercase tracking-[0.5em] opacity-80 md:opacity-40 md:group-hover:opacity-100 transition-opacity duration-700 select-none">
-                                  Archive / A.{String(i + 1).padStart(2, '0')}
-                                </span>
-                              </div>
-
-                              {/* Intersecting Typography Label */}
-                              <div className="absolute -bottom-2 -left-2 z-20 transition-transform duration-700 group-hover:-translate-y-2">
-                                <div className="bg-stone-900 px-6 py-3 shadow-2xl relative overflow-hidden">
-                                  <motion.div
-                                    className="absolute inset-0 bg-amber-500/10"
-                                    initial={{ x: '-100%' }}
-                                    whileHover={{ x: '100%' }}
-                                    transition={{ duration: 0.5 }}
-                                  />
-                                  <h3 className="text-lg lg:text-xl font-serif text-white uppercase tracking-tighter leading-none relative z-10">
-                                    {collection.name}
-                                  </h3>
-                                  <p className="text-[7px] font-mono text-stone-400 uppercase tracking-[0.3em] mt-1 relative z-10">
-                                    {collection.images.length} Archival Prints
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))
-                      ) : (
-                        // Fallback to legacy galleryImages if no collections
-                        profile.galleryImages && profile.galleryImages.length > 0 ? (
-                          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-8 space-y-8 transition-all duration-700">
-                            {profile.galleryImages.map((img, i) => (
-                              <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                key={i}
-                                className="break-inside-avoid w-full relative rounded-3xl overflow-hidden group cursor-pointer bg-stone-100 shadow-sm"
-                              >
-                                <Image src={img} alt={`Gallery ${i}`} width={600} height={800} className="w-full h-auto object-cover" />
-                              </motion.div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="col-span-2 h-64 flex flex-col items-center justify-center text-stone-400 border border-dashed border-stone-200 rounded-3xl bg-white">
-                            <p className="font-mono text-xs uppercase tracking-[0.2em]">No archives found</p>
-                          </div>
-                        )
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.section>
-            )}
-
-            {activeTab === 'products' && (
-              <motion.section
-                key="products"
-                initial={{ opacity: 0, y: 10, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6 relative z-10"
-              >
-                <div className="flex items-end justify-between border-b border-stone-200 pb-2">
-                  <div>
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Collection</span>
-                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Ready to Wear</h2>
-                  </div>
-                  <Link href={`/tz/${slug}/shop`} className="font-mono text-[10px] uppercase tracking-wider text-stone-900 hover:text-amber-600 transition-colors flex items-center gap-1.5 pb-1 group">
-                    View Full <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2.5 sm:gap-x-3.5 lg:gap-x-4 gap-y-4 sm:gap-y-6 transition-all duration-500">
-                  {profile.featuredProducts?.map((product, index) => (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      key={product.id}
-                    >
-                      <ProductCard
-                        item={{
-                          ...product,
-                        }}
-                        index={index}
-                        hrefOverride={`/tz/${slug}/shop/${product.slug}`}
-                      />
-                    </motion.div>
-                  ))}
-                  {(!profile.featuredProducts || profile.featuredProducts.length === 0) && (
-                    <div className="col-span-2 py-16 text-center border border-dashed border-stone-200 rounded-2xl bg-white">
-                      <p className="font-mono text-xs uppercase tracking-wider text-stone-400">No products available</p>
-                    </div>
-                  )}
-                </div>
-              </motion.section>
-            )}
-
-            {activeTab === 'services' && (
-              <motion.section
-                key="services"
-                initial={{ opacity: 0, y: 10, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.3 }}
-                className="relative z-10"
-              >
-                <div className="mb-6 border-b border-stone-200 pb-2">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Custom Tailoring & Orders</span>
-                  <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Services</h2>
-                </div>
-
-                {servicesLoading ? (
-                  <div className="py-16 flex flex-col items-center justify-center gap-4">
-                    <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-stone-400">Loading Services</p>
-                  </div>
-                ) : services.length === 0 ? (
-                  <div className="py-16 border border-dashed border-stone-200 rounded-2xl text-center bg-white">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-stone-400">No services offered presently</p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {Object.entries(
-                      services.reduce((acc, s) => {
-                        const cat = s.category?.name || "Custom Service";
-                        if (!acc[cat]) acc[cat] = [];
-                        acc[cat].push(s);
-                        return acc;
-                      }, {} as Record<string, ServiceWithVariants[]>)
-                    ).map(([category, catServices], gIdx) => (
-                      <div key={category} className="space-y-6">
-                        <motion.h3
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: gIdx * 0.05 }}
-                          className="text-lg sm:text-xl font-serif text-stone-900 border-l-2 border-amber-500 pl-3 flex flex-col"
-                        >
-                          <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mb-0.5 font-normal">Category</span>
-                          {category}
-                        </motion.h3>
-                        <div className="flex flex-col space-y-3">
-                          {catServices.map((service, idx) => (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: (gIdx * 0.05) + (idx * 0.05) }}
-                              key={service.id}
-                              className="group relative"
-                            >
-                              {idx !== 0 && <div className="absolute -top-1.5 left-0 w-full h-[1px] bg-stone-100" />}
-                              <ServiceListItem service={service} onBook={handleBookService} index={idx} />
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 )}
-              </motion.section>
-            )}
-
-            {activeTab === 'reviews' && (
-              <motion.section
-                key="reviews"
-                initial={{ opacity: 0, y: 10, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.3 }}
-                className="relative z-10"
-              >
-                <div className="flex items-end justify-between border-b border-stone-200 pb-2 mb-6">
-                  <div>
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 mb-0.5 block">Client Feedback</span>
-                    <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 leading-tight">Reviews</h2>
-                  </div>
-                  <Link href={`/tz/${slug}/reviews`} className="font-mono text-[10px] uppercase tracking-wider text-stone-900 hover:text-amber-600 transition-colors pb-1 group flex items-center gap-1.5">
-                    Read All <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-
-                <div className="grid gap-4">
-                  {profile.reviews?.slice(0, 5).map((review, rIdx) => (
-                    <motion.div
-                      key={review.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: rIdx * 0.05 }}
-                      className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/70 shadow-sm"
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {isModel ? (
+                    <button
+                      type="button"
+                      className={primary}
+                      onClick={() => chooseTab("gallery", true)}
                     >
-                      <div className="flex items-start gap-3.5 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-stone-100 overflow-hidden flex-shrink-0 ring-2 ring-stone-50">
-                          {review.userAvatar ? (
-                            <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-stone-400 font-serif text-base font-bold">
-                              {review.userName.charAt(0)}
+                      Explore portfolio <ArrowUpRight size={15} />
+                    </button>
+                  ) : (
+                    <Link className={primary} href={`/tz/${slug}/shop`}>
+                      Explore the shop <ArrowUpRight size={15} />
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className={cn(secondary, "bg-transparent")}
+                    onClick={() => chooseTab("services", true)}
+                  >
+                    Book a service <Scissors size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#CCD7BF] pt-2 text-[11px]">
+                {reviewCount > 0 && typeof profile.rating === "number" ? (
+                  <button
+                    type="button"
+                    className="flex min-h-8 items-center gap-2"
+                    onClick={() => chooseTab("reviews", true)}
+                  >
+                    <Star size={15} className="fill-[#718E35] text-[#718E35]" />
+                    <strong>{profile.rating.toFixed(1)}</strong>
+                    <span className="text-[#5F715B]">
+                      {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
+                    </span>
+                  </button>
+                ) : (
+                  <span className="text-[#5F715B]">
+                    Independent style. Personal service.
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="ml-auto flex min-h-8 items-center gap-2 font-medium"
+                  aria-live="polite"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Copied" : "Share profile"}
+                </button>
+              </div>
+            </div>
+            <div className="relative order-1 min-h-[160px] bg-[#284A3D] sm:min-h-[190px] md:order-2 md:min-h-[300px]">
+              {profile.coverImage ? (
+                <Image
+                  src={profile.coverImage}
+                  alt={`${displayName} — studio cover`}
+                  fill
+                  priority
+                  quality={90}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  unoptimized={profile.coverImage.startsWith("/uploads")}
+                  className="object-cover"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                  aria-hidden="true"
+                >
+                  <div className="absolute h-[300px] w-[300px] rounded-full border border-[#B6C894]/25" />
+                  <div className="absolute h-[210px] w-[210px] rounded-full border border-[#B6C894]/30" />
+                  <span className="font-serif text-[100px] italic text-[#DAE6C4]">
+                    {displayName.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#102C23]/65 via-transparent to-black/10" />
+              <div className="absolute left-4 top-4 rounded-full border border-white/30 bg-black/20 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md sm:left-5 sm:top-5">
+                The independent edit
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4 text-white sm:bottom-5 sm:left-5 sm:right-5">
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/80">
+                    Inside the studio
+                  </p>
+                  <p className="font-serif text-lg sm:text-xl">
+                    A world of their own.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Explore portfolio"
+                  onClick={() => chooseTab("gallery", true)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--studio-accent)] text-[var(--studio-ink)] transition hover:bg-white"
+                >
+                  <ArrowUpRight size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="mt-5 grid items-start gap-5 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_260px] xl:gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <section
+            ref={contentRef}
+            className="min-w-0 scroll-mt-6"
+            aria-label="Explore this professional"
+          >
+            <div
+              role="tablist"
+              aria-label="Profile sections"
+              className="flex overflow-x-auto border-b border-[#D8E0D1]"
+            >
+              {tabs.map((tab, index) => {
+                const Icon = tabConfig[tab].icon;
+                const count =
+                  tab === "products"
+                    ? products.length
+                    : tab === "reviews"
+                      ? reviewCount
+                      : undefined;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    id={`${tabsId}-${tab}`}
+                    aria-selected={activeTab === tab}
+                    aria-controls={`${tabsId}-panel-${tab}`}
+                    tabIndex={activeTab === tab ? 0 : -1}
+                    onClick={() => chooseTab(tab)}
+                    onKeyDown={(e) => {
+                      let target: Tab | undefined;
+                      if (e.key === "ArrowRight")
+                        target = tabs[(index + 1) % tabs.length];
+                      if (e.key === "ArrowLeft")
+                        target = tabs[(index + tabs.length - 1) % tabs.length];
+                      if (e.key === "Home") target = tabs[0];
+                      if (e.key === "End") target = tabs[tabs.length - 1];
+                      if (target) {
+                        e.preventDefault();
+                        chooseTab(target);
+                        document.getElementById(`${tabsId}-${target}`)?.focus();
+                      }
+                    }}
+                    className={cn(
+                      "flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-3 text-xs font-medium transition sm:px-4",
+                      activeTab === tab
+                        ? "border-[#173E35] text-[#173E35]"
+                        : "border-transparent text-[#737D70] hover:text-[#173E35]",
+                    )}
+                  >
+                    <Icon size={16} />
+                    <span>{tabConfig[tab].label}</span>
+                    {count !== undefined && (
+                      <span
+                        className={cn(
+                          "hidden rounded-md px-1.5 py-0.5 text-[10px] sm:inline",
+                          activeTab === tab ? "bg-[#DFE9C8]" : "bg-[#ECEEE5]",
+                        )}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="my-5 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className={cn(eyebrow, "mb-2 text-[#7B886D]")}>
+                  {activeTab === "gallery"
+                    ? "Selected work"
+                    : "Discover the studio"}
+                </p>
+                <h2 className="font-serif text-2xl tracking-tight sm:text-[28px]">
+                  {tabInfo.title}
+                </h2>
+                <p className="mt-1.5 text-xs text-[#697461]">
+                  {tabInfo.subtitle}
+                </p>
+              </div>
+              {(activeTab === "products" || activeTab === "reviews") && (
+                <Link
+                  href={`/tz/${slug}/${activeTab === "products" ? "shop" : "reviews"}`}
+                  className="flex min-h-11 items-center gap-1.5 text-xs font-semibold"
+                >
+                  View all <ArrowUpRight size={16} />
+                </Link>
+              )}
+            </div>
+            {(activeTab === "products" || activeTab === "services") && (
+              <label className="mb-6 flex min-h-11 items-center gap-2 rounded-xl border border-[#DEE4D6] bg-white px-3 text-[#7A8573]">
+                <Search size={16} />
+                <span className="sr-only">
+                  Search{" "}
+                  {activeTab === "products" ? "featured products" : "services"}
+                </span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={
+                    activeTab === "products"
+                      ? "Search featured pieces…"
+                      : "Find a service…"
+                  }
+                  className="min-w-0 flex-1 bg-transparent py-3 text-sm text-[#173E35] placeholder:text-[#7A8573]"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    className="flex h-9 w-9 items-center justify-center"
+                    onClick={() => setQuery("")}
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </label>
+            )}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTab}
+                role="tabpanel"
+                tabIndex={0}
+                id={`${tabsId}-panel-${activeTab}`}
+                aria-labelledby={`${tabsId}-${activeTab}`}
+                initial={{
+                  opacity: reducedMotion ? 1 : 0,
+                  y: reducedMotion ? 0 : 6,
+                }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: reducedMotion ? 1 : 0 }}
+                transition={{ duration: reducedMotion ? 0 : 0.15 }}
+              >
+                {activeTab === "products" && (
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 xl:grid-cols-3">
+                    {visibleProducts.map((product, index) => (
+                      <div
+                        key={product.id}
+                        className="min-w-0 overflow-hidden rounded-2xl border border-[#E1E6DA] bg-white p-2"
+                      >
+                        <ProductCard
+                          item={{ ...product }}
+                          index={index}
+                          hrefOverride={`/tz/${slug}/shop/${product.slug || product.id}`}
+                        />
+                      </div>
+                    ))}
+                    {visibleProducts.length === 0 && (
+                      <EmptyState
+                        icon={ShoppingBag}
+                        title={
+                          query
+                            ? "No matching pieces"
+                            : "The collection is coming together"
+                        }
+                        detail={
+                          query
+                            ? "Try a different search or explore the full shop."
+                            : "New pieces will appear here when the studio adds them."
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+                {activeTab === "services" && (
+                  <div aria-busy={serviceStatus === "loading"}>
+                    {serviceStatus === "idle" || serviceStatus === "loading" ? (
+                      <div role="status" className="space-y-3">
+                        <span className="sr-only">Loading services</span>
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="h-28 animate-pulse rounded-2xl bg-[#E5EADD] motion-reduce:animate-none"
+                          />
+                        ))}
+                      </div>
+                    ) : serviceStatus === "error" ? (
+                      <div
+                        className="rounded-2xl border border-[#DEE4D6] bg-white p-8 text-center"
+                        role="alert"
+                      >
+                        <p className="text-sm">We couldn’t load services.</p>
+                        <button
+                          type="button"
+                          onClick={() => void fetchServices()}
+                          className={cn(secondary, "mt-4")}
+                        >
+                          <RefreshCw size={15} />
+                          Try again
+                        </button>
+                      </div>
+                    ) : visibleServices.length ? (
+                      <div className="space-y-7">
+                        {Object.entries(
+                          visibleServices.reduce(
+                            (groups, service) => {
+                              const name =
+                                service.category?.name || "Studio services";
+                              (groups[name] ||= []).push(service);
+                              return groups;
+                            },
+                            {} as Record<string, ServiceWithVariants[]>,
+                          ),
+                        ).map(([category, items]) => (
+                          <div key={category}>
+                            <h3 className="mb-3 flex items-center gap-3 text-sm font-semibold">
+                              <span className="h-2 w-2 rounded-full bg-[#9BAF64]" />
+                              {category}
+                            </h3>
+                            <div className="space-y-3">
+                              {items.map((service, index) => (
+                                <div
+                                  key={service.id}
+                                  className="overflow-hidden rounded-2xl border border-[#DFE5D7] bg-white p-3 sm:p-4"
+                                >
+                                  <ServiceListItem
+                                    service={service}
+                                    onBook={handleBookService}
+                                    index={index}
+                                  />
+                                </div>
+                              ))}
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        icon={Scissors}
+                        title={
+                          query
+                            ? "No matching services"
+                            : "No services listed yet"
+                        }
+                        detail={
+                          query
+                            ? "Try a different keyword."
+                            : "You can message the studio to ask about their work."
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+                {activeTab === "gallery" && (
+                  <div>
+                    {selectedCollection ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCollection(null)}
+                          className="mb-5 flex min-h-11 items-center gap-2 text-sm"
+                        >
+                          <ChevronLeft size={17} />
+                          All collections
+                        </button>
+                        <div className="mb-5">
+                          <h3 className="font-serif text-2xl">
+                            {selectedCollection.name}
+                          </h3>
+                          {selectedCollection.description && (
+                            <p className="mt-2 text-sm leading-6 text-[#697461]">
+                              {selectedCollection.description}
+                            </p>
                           )}
                         </div>
-                        <div className="flex-1 mt-0.5">
-                          <p className="font-serif text-sm font-semibold text-stone-900 mb-0.5">{review.userName}</p>
-                          <div className="flex text-amber-500 gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`${i < Math.floor(review.rating) ? 'fill-current' : 'text-stone-200'}`} size={11} />
+                        <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                          {selectedCollection.images.map((src, i) => (
+                            <div key={`${src}-${i}`}>
+                              {photo(
+                                src,
+                                `${selectedCollection.name} · ${i + 1}`,
+                                () =>
+                                  setViewer({
+                                    images: selectedCollection.images,
+                                    index: i,
+                                    title: selectedCollection.name,
+                                  }),
+                              )}
+                            </div>
+                          ))}
+                          {!selectedCollection.images.length && (
+                            <EmptyState
+                              icon={Images}
+                              title="Images coming soon"
+                              detail="The studio hasn’t added images to this collection yet."
+                            />
+                          )}
+                        </div>
+                      </>
+                    ) : collections.length ? (
+                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        {collections.map((collection, i) => (
+                          <div
+                            key={collection.id}
+                            className={cn(
+                              i === 0 &&
+                              collections.length > 2 &&
+                              "sm:col-span-2",
+                            )}
+                          >
+                            {photo(
+                              collection.coverImage ||
+                              collection.images[0] ||
+                              "/placeholder-portfolio.jpg",
+                              collection.name,
+                              () => setSelectedCollection(collection),
+                              i === 0 && collections.length > 2,
+                            )}
+                            <p className="mt-2.5 flex items-center justify-between px-1 text-xs text-[#697461]">
+                              <span>
+                                {collection.images.length}{" "}
+                                {collection.images.length === 1
+                                  ? "image"
+                                  : "images"}
+                              </span>
+                              <span>Explore collection</span>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : legacyImages.length ? (
+                      <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                        {legacyImages.map((src, i) => (
+                          <div key={`${src}-${i}`}>
+                            {photo(
+                              src,
+                              `Selected work ${String(i + 1).padStart(2, "0")}`,
+                              () =>
+                                setViewer({
+                                  images: legacyImages,
+                                  index: i,
+                                  title: "Selected work",
+                                }),
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        icon={Images}
+                        title="A new perspective is on its way"
+                        detail="Portfolio images will appear here when the studio shares them."
+                      />
+                    )}
+                  </div>
+                )}
+                {activeTab === "reviews" && (
+                  <div className="space-y-4">
+                    {reviewCount > 0 && typeof profile.rating === "number" && (
+                      <div className="mb-6 flex items-center gap-5 rounded-2xl bg-[#E7EDDA] p-6">
+                        <span className="font-serif text-5xl">
+                          {profile.rating.toFixed(1)}
+                        </span>
+                        <div>
+                          <div
+                            className="flex items-center gap-1 text-[#6E853F]"
+                            aria-label={`${profile.rating} out of 5 stars`}
+                          >
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <Star
+                                key={i}
+                                size={15}
+                                className={
+                                  i < Math.round(profile.rating!)
+                                    ? "fill-current"
+                                    : "opacity-30"
+                                }
+                              />
                             ))}
                           </div>
+                          <p className="mt-2 text-xs text-[#697461]">
+                            From {reviewCount}{" "}
+                            {reviewCount === 1 ? "review" : "reviews"}
+                          </p>
                         </div>
-                        <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400 bg-stone-50 px-2.5 py-1 rounded-full">{review.date}</span>
                       </div>
-
-                      <p className="font-serif text-sm text-stone-700 leading-relaxed italic border-l-2 border-stone-200 pl-3">
-                        &quot;{review.comment}&quot;
-                      </p>
-
-                      {review.productName && (
-                        <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-3">
-                          {review.productImage && (
-                            <div className="w-9 h-12 rounded bg-stone-100 overflow-hidden shrink-0">
-                              <Image src={review.productImage} alt={review.productName} width={36} height={48} className="object-cover w-full h-full" />
-                            </div>
-                          )}
-                          <div className="flex flex-col">
-                            <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400">Reviewed On</span>
-                            <span className="text-xs font-medium text-stone-900 font-serif">{review.productName}</span>
+                    )}
+                    {profile.reviews?.slice(0, 5).map((review) => (
+                      <article
+                        key={review.id}
+                        className="rounded-2xl border border-[#DFE5D7] bg-white p-5 sm:p-6"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF0DF] font-serif">
+                            {review.userAvatar ? (
+                              <Image
+                                src={review.userAvatar}
+                                alt=""
+                                width={40}
+                                height={40}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              review.userName.charAt(0)
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-sm font-semibold">
+                              {review.userName}
+                            </h3>
+                            <p className="mt-1 flex items-center gap-1 text-xs text-[#718547]">
+                              <Star size={12} className="fill-current" />
+                              {review.rating.toFixed(1)}
+                              <span className="ml-2 text-[#7A8573]">
+                                {review.date}
+                              </span>
+                            </p>
                           </div>
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
-                  {(!profile.reviews || profile.reviews.length === 0) && (
-                    <div className="py-16 text-center border border-dashed border-stone-200 rounded-2xl bg-white">
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-stone-400">No reviews yet.</p>
-                    </div>
-                  )}
-                </div>
-              </motion.section>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
+                        <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#566650]">
+                          {review.comment}
+                        </p>
+                        {review.productName && (
+                          <div className="mt-4 flex items-center gap-3 border-t border-[#EEF0E9] pt-3">
+                            {review.productImage && (
+                              <Image
+                                src={review.productImage}
+                                alt=""
+                                width={32}
+                                height={40}
+                                className="h-10 rounded object-cover"
+                              />
+                            )}
+                            <p className="text-xs text-[#697461]">
+                              Reviewed:{" "}
+                              <span className="font-medium text-[#31533E]">
+                                {review.productName}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                    {!profile.reviews?.length && (
+                      <EmptyState
+                        icon={MessageSquare}
+                        title="No reviews to show yet"
+                        detail="Client feedback will appear here once it’s available."
+                      />
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </section>
 
+          <aside
+            className="space-y-4 lg:sticky lg:top-6"
+            aria-label="Studio information"
+          >
+            <div className="relative overflow-hidden rounded-2xl bg-[#173E35] p-4 text-white">
+              <span
+                aria-hidden="true"
+                className="absolute -right-7 -top-7 h-32 w-32 rounded-full border border-[#DCE99B]/20"
+              />
+              <p className={cn(eyebrow, "relative text-[#C3D699]")}>
+                Let’s make it personal
+              </p>
+              <h2 className="relative mt-2 font-serif text-xl leading-tight">
+                Something in mind?
+              </h2>
+              <p className="relative mt-2 text-xs leading-5 text-[#D0DDCE]">
+                Ask about a piece, discuss an idea, or find the right service.
+              </p>
+              {!isOwner ? (
+                <button
+                  type="button"
+                  onClick={openChat}
+                  className="relative mt-4 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#DCE99B] px-3 py-2 text-xs font-semibold text-[#173E35] transition hover:bg-[#EBF3C4]"
+                >
+                  <MessageSquare size={16} />
+                  Message the studio
+                </button>
+              ) : (
+                <Link
+                  href="/settings"
+                  className="relative mt-4 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#DCE99B] px-3 py-2 text-xs font-semibold text-[#173E35]"
+                >
+                  <Settings size={16} />
+                  Manage your profile
+                </Link>
+              )}
+            </div>
+            {profile.location && (
+              <div className="overflow-hidden rounded-2xl border border-[#DFE5D7] bg-white">
+                <div className="p-5">
+                  <div className="mb-4 flex items-center gap-2">
+                    <MapPin size={17} />
+                    <h2 className="text-sm font-semibold">Visit the studio</h2>
+                  </div>
+                  <p className="text-sm leading-6 text-[#66725F]">
+                    {address || "Contact the studio for location details."}
+                  </p>
+                  <div className="mt-4 border-t border-[#EDF0E7] pt-4">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <Clock size={14} />
+                      {openStatus?.nextChange ? (
+                        <>
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              openStatus.isOpen
+                                ? "bg-[#6B8F3D]"
+                                : "bg-[#9DA494]",
+                            )}
+                          />
+                          {openStatus.isOpen ? "Open now" : "Currently closed"}
+                        </>
+                      ) : (
+                        "Opening hours"
+                      )}
+                    </div>
+                    {openStatus?.nextChange && (
+                      <p className="mt-1.5 pl-6 text-xs text-[#7A8573]">
+                        {openStatus.nextChange}
+                      </p>
+                    )}
+                    <p className="mt-2 whitespace-pre-line text-xs leading-6 text-[#697461]">
+                      {profile.location.hours ||
+                        (!openStatus?.nextChange
+                          ? "Contact the studio to confirm availability."
+                          : "")}
+                    </p>
+                    {openStatus?.nextChange && (
+                      <p className="mt-2 text-[10px] text-[#7A8573]">
+                        Status uses your device’s local time.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {hasCoordinates && (
+                  <div className="h-40 border-y border-[#EDF0E7]">
+                    <ProfileMap
+                      lat={profile.location.latitude!}
+                      lng={profile.location.longitude!}
+                    />
+                  </div>
+                )}
+                {(hasCoordinates || address) && (
+                  <a
+                    href={directions}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-h-12 items-center justify-between px-5 text-xs font-semibold transition hover:bg-[#F0F4E9]"
+                  >
+                    Get directions <ArrowUpRight size={16} />
+                  </a>
+                )}
+              </div>
+            )}
+            {profile.socials &&
+              Object.entries(profile.socials).some(([, url]) =>
+                safeExternalUrl(url),
+              ) && (
+                <div className="rounded-2xl border border-[#DFE5D7] bg-white p-5">
+                  <h2 className={cn(eyebrow, "text-[#7A8573]")}>Elsewhere</h2>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {Object.entries(profile.socials).map(
+                      ([platform, value]) => {
+                        const url = safeExternalUrl(value);
+                        const Icon =
+                          socialIcons[platform.toUpperCase()] || Globe;
+                        return url ? (
+                          <a
+                            key={platform}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Visit ${platform.toLowerCase()}`}
+                            title={platform.toLowerCase()}
+                            className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F3E9] transition hover:bg-[#DCE99B]"
+                          >
+                            <Icon size={18} />
+                          </a>
+                        ) : null;
+                      },
+                    )}
+                  </div>
+                </div>
+              )}
+            <p className="px-3 text-center text-[11px] leading-5 text-[#8A9381]">
+              Explore the work. Meet the maker.
+            </p>
+          </aside>
+        </div>
+      </div>
       <ChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         professionalId={profile.user.id}
         professionalName={displayName}
         professionalImage={profileImage}
-        currentUserId={session?.user?.id || ''}
+        currentUserId={session?.user?.id || ""}
       />
-
-      {/* 5. THE LIGHTBOX VERNISSAGE (Archival Viewer) */}
-      <AnimatePresence>
-        {selectedImageIndex !== null && selectedCollection && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/98 backdrop-blur-2xl px-6 lg:px-20 py-10 overflow-hidden"
-          >
-            {/* Film Grain Texture Overlay */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-
-            <button
-              onClick={() => setSelectedImageIndex(null)}
-              className="absolute top-8 right-8 text-stone-400 hover:text-white transition-colors z-[110] flex items-center gap-2 group"
-            >
-              <span className="font-mono text-[10px] uppercase tracking-[0.3em] opacity-0 group-hover:opacity-100 transition-opacity">Exit Archive</span>
-              <X size={24} />
-            </button>
-
-            <div className="max-w-7xl w-full h-full flex flex-col lg:flex-row gap-12 lg:gap-20 items-center justify-center relative">
-
-              {/* Previous Handle */}
-              <button
-                onClick={() => setSelectedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
-                disabled={selectedImageIndex === 0}
-                className={cn(
-                  "absolute left-0 top-1/2 -translate-y-1/2 z-[110] text-stone-500 hover:text-white transition-all disabled:opacity-0",
-                  "hidden lg:flex flex-col items-center gap-4"
-                )}
-              >
-                <div className="h-40 w-[1px] bg-stone-800 group-hover:bg-amber-500/50 transition-colors" />
-                <span className="vertical-rl text-[9px] font-mono uppercase tracking-[0.5em] -rotate-180">Scan Prev</span>
-              </button>
-
-              {/* Main Artifact Frame */}
-              <motion.div
-                layoutId={`gallery-img-${selectedCollection.images[selectedImageIndex]}`}
-                className="relative flex-1 h-full max-h-[70vh] lg:max-h-[85vh] aspect-[3/4] lg:aspect-auto flex items-center justify-center"
-              >
-                <Image
-                  src={selectedCollection.images[selectedImageIndex]}
-                  alt="Archival Print"
-                  fill
-                  className="object-contain shadow-2xl"
-                  priority
-                />
-              </motion.div>
-
-              {/* Archive Metadata Sidebar */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-                className="lg:w-80 space-y-12 shrink-0 border-l border-stone-800/60 pl-12 hidden lg:block"
-              >
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-amber-500/80">Collection</h4>
-                  <div className="space-y-1">
-                    <p className="font-serif text-3xl text-white uppercase tracking-tighter leading-tight">{selectedCollection.name}</p>
-                    <p className="text-[10px] font-mono text-stone-500 uppercase tracking-widest">
-                      Selection {selectedImageIndex + 1} of {selectedCollection.images.length}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-10">
-                  <div className="flex items-center gap-3 pt-6 border-t border-stone-800/50">
-                    <div className="h-[1px] w-8 bg-stone-700" />
-                    <span className="text-[9px] font-mono text-stone-600 uppercase tracking-[0.3em]">Creative Note</span>
-                  </div>
-                  <p className="text-sm text-stone-300 font-serif italic leading-relaxed">
-                    Handcrafted {profile.specialization.name} styles, blending traditional African fashion with clean, modern tailoring.
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* NEXT Handle */}
-              <button
-                onClick={() => setSelectedImageIndex((prev) => (prev !== null && prev < selectedCollection.images.length - 1 ? prev + 1 : prev))}
-                disabled={selectedImageIndex === selectedCollection.images.length - 1}
-                className={cn(
-                  "absolute right-0 top-1/2 -translate-y-1/2 z-[110] text-stone-500 hover:text-white transition-all disabled:opacity-0",
-                  "hidden lg:flex flex-col items-center gap-4"
-                )}
-              >
-                <span className="vertical-rl text-[9px] font-mono uppercase tracking-[0.5em]">Scan Next</span>
-                <div className="h-40 w-[1px] bg-stone-800" />
-              </button>
-
-              {/* Mobile Swipe / Progress Indicator */}
-              <div className="lg:hidden flex flex-col items-center gap-6 w-full">
-                <div className="h-[1px] w-full bg-stone-800 relative">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 bg-amber-500"
-                    animate={{ width: `${((selectedImageIndex + 1) / selectedCollection.images.length) * 100}%` }}
-                  />
-                </div>
-                <div className="flex justify-between w-full font-mono text-[9px] text-stone-500 uppercase tracking-widest">
-                  <span>Arch. {selectedImageIndex + 1}</span>
-                  <span>Total {selectedCollection.images.length}</span>
-                </div>
+      {viewer && (
+        <dialog
+          ref={dialogRef}
+          onCancel={(e) => {
+            e.preventDefault();
+            setViewer(null);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewer(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              moveImage(-1);
+            }
+            if (e.key === "ArrowRight") {
+              e.preventDefault();
+              moveImage(1);
+            }
+          }}
+          aria-labelledby={`${tabsId}-viewer-title`}
+          className="fixed inset-0 m-auto h-[92dvh] max-h-none w-[96vw] max-w-6xl overflow-hidden rounded-2xl border border-white/15 bg-[#112A23] p-0 text-white shadow-2xl"
+        >
+          <div className="flex h-full flex-col p-4 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h2
+                  id={`${tabsId}-viewer-title`}
+                  className="font-serif text-xl"
+                >
+                  {viewer.title}
+                </h2>
+                <p className="mt-1 text-xs text-[#C5D3BF]" aria-live="polite">
+                  {viewer.index + 1} / {viewer.images.length}
+                </p>
               </div>
-
+              <button
+                autoFocus
+                type="button"
+                aria-label="Close image viewer"
+                onClick={() => setViewer(null)}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+              >
+                <X size={20} />
+              </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="relative min-h-0 flex-1">
+              <Image
+                src={viewer.images[viewer.index]}
+                alt={`${viewer.title} — image ${viewer.index + 1}`}
+                fill
+                sizes="96vw"
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={viewer.index === 0}
+                onClick={() => moveImage(-1)}
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm disabled:opacity-30"
+              >
+                <ChevronLeft size={18} />
+                Previous
+              </button>
+              <span className="hidden text-xs text-[#A8BEA1] sm:inline">
+                Use ← → to browse · Esc to close
+              </span>
+              <button
+                type="button"
+                disabled={viewer.index === viewer.images.length - 1}
+                onClick={() => moveImage(1)}
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm disabled:opacity-30"
+              >
+                Next
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };
-
 export default ProfileClient;

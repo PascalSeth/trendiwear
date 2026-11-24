@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
       region: searchParams.get("region") || undefined,
       country: searchParams.get("country") || undefined,
       category: searchParams.get("category") || undefined,
-      viewMode: (searchParams.get("viewMode") as any) || undefined,
+      viewMode: (searchParams.get("viewMode") as MarketRadarRequestParams["viewMode"]) || undefined,
       month: searchParams.get("month") ? Number(searchParams.get("month")) : undefined,
       year: searchParams.get("year") ? Number(searchParams.get("year")) : undefined,
-      customerSegment: (searchParams.get("customerSegment") as any) || undefined,
-      priceBand: (searchParams.get("priceBand") as any) || undefined,
+      customerSegment: (searchParams.get("customerSegment") as MarketRadarRequestParams["customerSegment"]) || undefined,
+      priceBand: (searchParams.get("priceBand") as MarketRadarRequestParams["priceBand"]) || undefined,
       customQuestion: searchParams.get("customQuestion") || undefined,
     };
 
@@ -37,10 +37,11 @@ export async function GET(request: NextRequest) {
     const result = await executeMarketRadar(params, bypassCache);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Market Radar API GET Error]:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to generate market radar intelligence", message: error?.message },
+      { error: "Failed to generate market radar intelligence", message },
       { status: 500 }
     );
   }
@@ -69,10 +70,11 @@ export async function POST(request: NextRequest) {
     const result = await executeMarketRadar(params, bypassCache);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Market Radar API POST Error]:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to execute market radar", message: error?.message },
+      { error: "Failed to execute market radar", message },
       { status: 500 }
     );
   }

@@ -141,22 +141,24 @@ async function searchTavily(query: string, apiKey: string): Promise<ExternalSear
   const data = await res.json();
   const results = data.results || [];
 
-  return results.map((r: any, idx: number) => {
-    const priceInfo = extractPriceFromText(`${r.title} ${r.content}`);
+  return results.map((r: { title?: string; description?: string; content?: string; url?: string }, idx: number) => {
+    const priceInfo = extractPriceFromText(`${r.title || ""} ${r.content || ""}`);
     let domain = "web";
-    try {
-      domain = new URL(r.url).hostname.replace(/^www\./, "");
-    } catch {}
+    if (r.url) {
+      try {
+        domain = new URL(r.url).hostname.replace(/^www\./, "");
+      } catch {}
+    }
     return {
       id: `tavily-${idx}-${Date.now()}`,
       title: r.title || "Fashion Listing",
-      url: r.url,
+      url: r.url || "",
       snippet: r.content || "",
       domain,
       observedPrice: priceInfo.price,
       currency: priceInfo.currency,
-      productionType: inferProductionType(`${r.title} ${r.content}`),
-      fabric: extractFabric(`${r.title} ${r.content}`),
+      productionType: inferProductionType(`${r.title || ""} ${r.content || ""}`),
+      fabric: extractFabric(`${r.title || ""} ${r.content || ""}`),
       retrievedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
     };
   });
@@ -184,18 +186,20 @@ async function searchSerper(query: string, apiKey: string): Promise<ExternalSear
   const data = await res.json();
   const organic = data.organic || [];
 
-  return organic.map((r: any, idx: number) => {
-    const combined = `${r.title} ${r.snippet}`;
+  return organic.map((r: { title?: string; snippet?: string; link?: string }, idx: number) => {
+    const combined = `${r.title || ""} ${r.snippet || ""}`;
     const priceInfo = extractPriceFromText(combined);
     let domain = "google.com";
-    try {
-      domain = new URL(r.link).hostname.replace(/^www\./, "");
-    } catch {}
+    if (r.link) {
+      try {
+        domain = new URL(r.link).hostname.replace(/^www\./, "");
+      } catch {}
+    }
 
     return {
       id: `serper-${idx}-${Date.now()}`,
       title: r.title || "Fashion Listing",
-      url: r.link,
+      url: r.link || "",
       snippet: r.snippet || "",
       domain,
       observedPrice: priceInfo.price,
@@ -227,18 +231,20 @@ async function searchBrave(query: string, apiKey: string): Promise<ExternalSearc
   const data = await res.json();
   const results = data.web?.results || [];
 
-  return results.map((r: any, idx: number) => {
-    const combined = `${r.title} ${r.description}`;
+  return results.map((r: { title?: string; description?: string; content?: string; url?: string }, idx: number) => {
+    const combined = `${r.title || ""} ${r.description || ""}`;
     const priceInfo = extractPriceFromText(combined);
     let domain = "web";
-    try {
-      domain = new URL(r.url).hostname.replace(/^www\./, "");
-    } catch {}
+    if (r.url) {
+      try {
+        domain = new URL(r.url).hostname.replace(/^www\./, "");
+      } catch {}
+    }
 
     return {
       id: `brave-${idx}-${Date.now()}`,
       title: r.title || "Fashion Listing",
-      url: r.url,
+      url: r.url || "",
       snippet: r.description || "",
       domain,
       observedPrice: priceInfo.price,
@@ -371,8 +377,9 @@ export async function searchWebForFashionListings(
         errorMsg = "Commercial search provider key (SERPER_API_KEY or TAVILY_API_KEY) not configured.";
       }
     }
-  } catch (err: any) {
-    console.warn(`[Search Provider: ${providerName} Warning]:`, err?.message || err);
+  } catch (err: unknown) {
+    const errorMsgText = err instanceof Error ? err.message : String(err);
+    console.warn(`[Search Provider: ${providerName} Warning]:`, errorMsgText);
     try {
       providerName = "Live Public Web Search (Fallback)";
       items = await searchPublicLiveWeb(searchQuery);
@@ -380,7 +387,7 @@ export async function searchWebForFashionListings(
       isConfigured = items.length > 0;
     } catch {
       status = "error";
-      errorMsg = err?.message || "Search retrieval failed.";
+      errorMsg = errorMsgText || "Search retrieval failed.";
     }
   }
 

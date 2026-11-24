@@ -134,7 +134,7 @@ interface ProductClientProps {
    isLoggedIn: boolean;
    hasPurchased: boolean;
    hasReviewed: boolean;
-   relatedProducts?: any[];
+   relatedProducts?: React.ComponentProps<typeof ProductCard>['item'][];
 }
 
 export default function ProductClient({

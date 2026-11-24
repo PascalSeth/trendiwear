@@ -1,12 +1,10 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import {
   Bookmark,
   ChevronRight,
   ShieldCheck,
-  Clock,
   Layers,
   MapPin,
   Tag,
